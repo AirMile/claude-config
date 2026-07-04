@@ -2,8 +2,7 @@
 
 > **design-ship copy** — executed by AGENT 3 (check) under the non-interactive contract, inside
 > the build worktree. Always **targeted mode** with `targetType = "feature"` and `featureName`
-> from your prompt — the batch-mode branches in this file never fire; skip every `$BATCH_MODE`
-> block. Auto-scope per the §0.2 table (feature with/without routes) — do not present scope
+> from your prompt. Auto-scope per the §0.2 table (feature with/without routes) — do not present scope
 > modals. **You choose the fixes yourself**: fix scope = All CRITICAL + HIGH (log it in
 > `autoDecisions`). The dev server runs against the worktree; `.project/` paths resolve to the
 > main repo. Scan procedure files (`scan-*.md`) are read from design-ship's own vendored
@@ -11,10 +10,7 @@
 
 Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout, darkmode pixel diff, error states, smoke, and user flows. Generation-time static checks (token literals, dark/responsive coverage, A11Y static patterns, motion literals) are now enforced during `/design-convert` Convert via `design.principles[].forbid` and `design.banPacks` — they are not repeated here.
 
-**Two modes:**
-
-- **Batch-mode** (no argument): iterate over all features in backlog where `status === "DOING"` (and not already checked at HEAD) or `lastCheckedSha !== shippedSha`. Runs at end of release cycle.
-- **Targeted mode**: single feature or URL, all runtime scopes. (This is the only mode design-ship's check runs.)
+**Mode:** targeted — a single feature or URL, all runtime scopes. (design-ship's check always runs targeted, feature mode.)
 
 **Related skills:** `/design-convert` · `/design-tokens` · `/core-setup`
 
@@ -47,27 +43,6 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
 > **Todo**: call `TaskCreate` with the 5 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 ### 0.1 Target Selection
-
-**Batch-mode** — if `$1` is empty:
-
-1. Read `.project/backlog.json` → parse features.
-2. Collect candidates (HEAD = current commit SHA):
-   - `status === "DOING"` AND `lastCheckedSha !== HEAD` — in progress, not yet checked at this commit; OR
-   - `status === "DONE"` AND (`!lastCheckedSha` OR `lastCheckedSha !== shippedSha`) — shipped but changed since last check.
-
-   A COMPONENT stays `DOING` until its consuming page ships, but once checked at HEAD it leaves the queue until code changes — so it is not re-audited every run.
-
-3. If no candidates: show `"No features pending runtime audit."` and stop.
-4. Set `$BATCH_MODE = true`, `$BATCH_TARGETS = [candidate list]`. Queue presentation + confirmation are owned by `batch.md §0` (auto-proceed ≤3, else confirm) — do not pre-print a queue block here. The full batch flow — queue confirmation, sequential scan + triage, ONE combined report, ONE fix-scope approval, per-feature fix with rollback, single batch completion — is driven entirely by the batch reference. Do NOT run the per-feature single-target loop or per-feature approval prompts.
-
-   **Team-mode batch guard:** If `TEAM_MODE == "team"` → follow `shared/PROJECT-MODE.md § Team-mode batch guard` before proceeding to the batch reference. (Each PAGE ships via its own PR in team mode — batch check produces a combined pass without per-feature finalize.)
-
-> **Batch mode does not run in design-ship** — this is a single-target ship (per the header, batch
-> branches never fire). This Todo is inert; no batch reference is read.
-
-Batch-mode skips PHASE 0.2 scope selection (scope is auto-derived per feature from the §0.2 table inside the batch flow).
-
----
 
 Detect input type via fixed order:
 
@@ -120,7 +95,7 @@ multiSelect: false
 
 **Auditing a COMPONENT** — pick the mount in this order:
 
-1. **Through its consuming page** — if a page that renders it has a route (built/DONE, or also a candidate in this batch), audit the component via that route. Real context, best coverage, no harness. Find the page via the component's `pageHint[]`, or a page whose `dependencies[]` lists it.
+1. **Through its consuming page** — if a page that renders it has a route (built/DONE), audit the component via that route. Real context, best coverage, no harness. Find the page via the component's `pageHint[]`, or a page whose `dependencies[]` lists it.
 2. **Temporary harness route** — component is the audit target and no page renders it yet: mount it on a throwaway route (realistic props, all variants), run A11Y + Smoke, then remove the route + harness file before completion.
 3. **Defer** — incidental and unrendered: record `lastCheckedSha`, note it ships with its page.
 
@@ -207,7 +182,7 @@ Audits:     [Performance, SEO, AEO, Responsive]
 
 ### 0.3.5 Build & Serve Health Gate
 
-Runtime scans need a compiling app on a reachable dev server — gate before PHASE 1 (in batch mode, once before the sequential scan):
+Runtime scans need a compiling app on a reachable dev server — gate before PHASE 1:
 
 1. Probe the dev-server URL (`project.json#localUrl`/`devServer`, else framework default). If unreachable, start it in the background (`npm run dev`/`start`) and wait until it responds.
 2. Confirm the app compiles — watch the dev-server/build log for compile errors, or run the typecheck/build once.
@@ -314,8 +289,6 @@ Fix:      [suggestion]
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-> **Batch mode** (`$BATCH_MODE`): emit the single combined cross-feature report and the single fix-scope approval from `references/batch.md § §2` instead of the per-feature single-target report + Scope Selection below. Skip the rest of this PHASE 2 single-target block.
-
 Combined report across all audit axes:
 
 ```
@@ -415,8 +388,6 @@ multiSelect: false
 ## PHASE 3: Fix
 
 > **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
-
-> **Batch mode** (`$BATCH_MODE`): fix + re-audit + completion are driven by `references/batch.md § §3` and `§ §5` (per-feature fix with snapshot rollback, then a single batch completion). It reuses `fix-reaudit.md`'s Fix Order, Per Fix format, and 4.1 Re-scan. Single-target mode continues with `fix-reaudit.md` directly below.
 
 > **Todo**: Read '.claude/skills/design-ship/references/design-check/fix-reaudit.md'
 

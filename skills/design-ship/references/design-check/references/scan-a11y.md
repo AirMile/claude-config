@@ -2,8 +2,6 @@
 
 Only if scope "A11Y" is selected. If argument was a source-path → use as scan scope. Otherwise: project-wide scan.
 
-**Batch mode** (`$BATCH_MODE`): skip every AskUserQuestion gate below (multi-route, live-check, keyboard). Run static analysis + the live check headless over all candidate routes, and skip the full-keyboard prompt. Per-feature modals don't scale across a batch.
-
 **Stack detection (quick):** detect framework, component library, existing a11y setup (eslint-plugin-jsx-a11y, axe-core, @testing-library).
 
 **Multi-route live check (optional):** if `.project/project.json → context.routing` contains routes, offer to run the live check over all routes:
