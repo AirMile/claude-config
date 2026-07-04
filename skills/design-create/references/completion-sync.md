@@ -89,8 +89,7 @@ Next steps:
   3. /design-create       → generate Claude Design brief (brief-mode)
   4. /design-create       → convert an existing design to code (paste sketch/URL)
   5. /design-content      → fill built pages/components with real copy (placeholders → on-brand text)
-  6. /design-check        → performance/SEO audit (if flows defined: Flow scope also available)
-  7. /design-check --scope=a11y → accessibility audit
+  6. /design-ship         → build + runtime check (performance, SEO, a11y, responsive)
 
 [Only show for each newly added/updated PAGE/COMPONENT — the spec is now persisted, so the review route resolves it:]
 Visual review:

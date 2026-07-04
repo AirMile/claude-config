@@ -15,7 +15,7 @@ Manages the full design system: vocabulary tokens (colors, typography, spacing, 
 
 **Keywords:** animation, motion, pack, spring, iOS, Apple, Material, Fluent, Carbon, glass, vibrancy, choreography, micro-interactions, easing, playful, transitions, hover, press, entrance, delight, styleguide, PDF, brand intake
 
-**Related skills:** `/design-create` · `/design-check`
+**Related skills:** `/design-create` · `/design-ship`
 
 ## References — Tokens
 
@@ -261,8 +261,7 @@ Next steps:
   2. /design-create → convert a sketch or design with these tokens
   3. /design-tokens → motion pack → set spring physics, choreography, glass (if not yet done)
   4. /design-tokens → Extract from styleguide (if you have a brand PDF or URL with remaining tokens)
-  5. /design-check → check performance and SEO
-  6. /design-check --scope=a11y → accessibility audit
+  5. /design-ship → build + runtime check (performance, SEO, accessibility)
 ```
 
 After the report, present a visual token gallery (web domain only — game tokens render as a Godot `Theme`, not in a browser):

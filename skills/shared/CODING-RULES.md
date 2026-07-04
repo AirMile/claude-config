@@ -212,17 +212,17 @@ test("checkout confirms order with payment success", async () => {
 
 ```
 Path A — Build with Claude Code:
-/design-create (Build) → /design-check
+/design-create (Build) → /design-ship
 
 Path B — Brief for Claude Design / Figma:
-/design-create (Brief) → [external design] → /design-create (Convert) → /design-check
+/design-create (Brief) → [external design] → /design-create (Convert) → /design-ship
 ```
 
 - Works standalone — no dev-pipeline required
 - Fits: design-system work, static sites, portfolios, everything without business-logic features
 - Output: code directly to repo (Build) or markdown handoff (Brief)
 - PAGE/COMPONENT TODOs live exclusively on the **Design track** in the backlog
-- `/design-check` PASS is terminal for design cards — no refactor step
+- `/design-ship` PASS is terminal for design cards — no refactor step
 - Cross-pipeline coupling runs exclusively via `feature.json#frontend.linkedEntities[]` and `dependencies[]`
 
 **Dev pipeline (functionality):**

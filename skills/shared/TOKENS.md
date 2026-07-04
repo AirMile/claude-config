@@ -6,7 +6,7 @@ Skills that generate UI code MUST use token names — never hardcoded color valu
 Token names are the stable contract. Values are supplied later by `/design-tokens`.
 
 > **Producer:** `/design-tokens` (writes `project.json#theme`)
-> **Consumers:** `dev-ship`, `project-plan`, `design-create`, `design-check`
+> **Consumers:** `dev-ship`, `project-plan`, `design-create`, `design-ship`
 
 ---
 
@@ -331,7 +331,7 @@ When replacing hardcoded values, map to nearest token by visual role (not exact 
 | `design-create` Convert (inspiration/sketch)     | Empty       | **Abort** — run `/design-tokens` first                                       |
 | `design-create` Convert (1:1 copy)               | Empty       | Allow hardcoded, warn                                                        |
 | `design-create` brief mode                       | Empty       | Note "Tailwind defaults", suggest tokens                                     |
-| `design-check` audit                             | Empty       | Audit T101-T111 against fallback tokens; skip TA001 (requires project theme) |
+| `design-ship` audit                             | Empty       | Audit T101-T111 against fallback tokens; skip TA001 (requires project theme) |
 
 ---
 

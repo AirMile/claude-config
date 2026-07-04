@@ -48,7 +48,7 @@ Standalone (dev): `/dev-security` (security audit).
                           └─→ clears devinfo.tokenDrift.affectedFeatures on completion
                           │
                           ▼
-                     /design-check (batch at release end) ──► runtime: perf/SEO/A11Y/responsive/motion audit
+                     /design-ship (check phase) ──► runtime: perf/SEO/A11Y/responsive/motion audit
 ```
 
 **Recommended order: build dev-features first, then compose PAGEs.**

@@ -25,7 +25,7 @@ Three signals:
 | Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)            | —                                                   |
 | Define              | `/dev-ship` (define phase), `/design-create`                                | —                                                   |
 | Build               | `/dev-ship` (build phase), `/design-create` Build, `/design-create` Convert | —                                                   |
-| Test                | `/dev-ship` (verify phase), `/design-check`                                 | —                                                   |
+| Test                | `/dev-ship` (verify phase), `/design-ship`                                 | —                                                   |
 | Commit              | `/core-commit` (detects team commit convention automatically)               | —                                                   |
 | Refactor            | `/dev-ship` (refactor phase)                                                | —                                                   |
 | Review              | `/team-review` (PRs), `/team-verify` (completeness)                         | —                                                   |

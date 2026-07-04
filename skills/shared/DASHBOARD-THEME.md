@@ -175,7 +175,7 @@
 ```
 
 `domain` = active rendering domain (`"web" | "game" | "native"`, default `"web"`) — selects which export block and renderer the design skills use. Resolution rules: see [DOMAIN.md](DOMAIN.md). The structured vocabulary tokens above (colors, typography, spacing, borderRadius, shadows, motion springs/choreography) are **domain-neutral** — the single source of truth. The export blocks below are **derived** per domain.
-`cssVars` = complete CSS variables export — **web domain** (derived; consumed by `/design-create` and `/design-check`)
+`cssVars` = complete CSS variables export — **web domain** (derived; consumed by `/design-create` and `/design-ship`)
 `modes` = light/dark mode CSS (object with mode name as key) — **web domain**
 `godotTheme` = **game domain** export (derived; written by `/design-tokens` emit-godot route). Points at the generated Godot resources rather than inlining them: `resourcePath`/`darkResourcePath` = the `Theme` `.tres` files written into the Godot project (dark mode is a **separate Theme variant** — Godot has no CSS cascade); `fonts[]` = generated `FontFile` resources per typography token; `motionScript` = a GDScript autoload exposing duration/spring tables for `Tween` use (Godot Theme has no motion slot). Glass/backdrop-filter has no native Godot equivalent → `surfaces.glass` falls back to solid (or a shader, out of scope). Consumed by `/design-create` render-godot route.
 `motion.pack` + `motion.axes` + `motion.spring[]` + `motion.choreography{}` + `surfaces{}` = managed by `/design-tokens` (Motion Pack route)

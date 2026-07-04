@@ -39,6 +39,6 @@ stack, theme, auto-scope from SHIP_PLAN.checkScope}
    `SHIP_DESIGN_CHECK_RESULT_START/END`.
 2. `status: failed` → mark PHASE 1+2 `completed`, leave PHASE 3 `in_progress`, skip to PHASE 5:
    "Check failed at {failedAt}, worktree intact — fix the build error, then
-   `/design-check {target}` in the worktree." Do not finalize.
+   re-run `/design-ship {target}` to resume." Do not finalize.
 3. `status: green` → **re-read `.project/` from disk**, carry `readyForDone` +
    `criticalRemaining` into the PHASE 4 review.

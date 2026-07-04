@@ -163,7 +163,7 @@ routing anywhere. Only a genuine build/check failure follows the branches below.
 - `failedPhase: "check"` → mark PHASE 1+2 `completed`, leave PHASE 3 `in_progress`; checkpoint
   `status: "failed"`, `completedPhases += ["PHASE 1", "PHASE 2"]`, skip to PHASE 5: "Check failed at
   `{check.failedAt}` (app does not build/serve), worktree intact — fix the build error, then
-  `/design-check {target}`, or re-run `/design-ship {target}` to resume." Do not finalize.
+  re-run `/design-ship {target}` to resume." Do not finalize.
 
 **Fallback** (Workflow tool unavailable): spawn AGENT 1 → 2 → 3 sequentially via the Agent tool
 per the Spawn sections in the three `agent-*.md` files (models per the § Design matrix, effort not

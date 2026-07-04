@@ -348,7 +348,7 @@ elements.forEach((el, i) => {
 
 ## Error State Rules (E-series)
 
-> **Scope:** Validation of how the app responds to error scenarios — 404, offline, slow connection. Tested via `/design-check` scope "Error states".
+> **Scope:** Validation of how the app responds to error scenarios — 404, offline, slow connection. Tested via `/design-ship`'s check phase (Error states scope).
 
 ### MUST_DO (Critical)
 
@@ -368,7 +368,7 @@ elements.forEach((el, i) => {
 
 ## Flow Rules (F-series)
 
-> **Scope:** Validation of navigation journeys defined in `design.flows[]`. Tested via `/design-check` scope "Flow".
+> **Scope:** Validation of navigation journeys defined in `design.flows[]`. Tested via `/design-ship`'s check phase (Flow scope).
 
 ### MUST_DO (Critical)
 
@@ -684,7 +684,7 @@ A11Y CHECK
 [ ] A003 - Modals/dialogs trap focus
 [ ] A005 - Focus indicators visible
 [ ] A006 - ARIA states synchronized
-[ ] A007 - Tab order logical (full keyboard test — /design-check --scope=a11y)
+[ ] A007 - Tab order logical (full keyboard test — /design-ship check phase, A11Y scope)
 [ ] A008 - All interactive elements reachable via Tab
 [ ] A009 - No keyboard focus trap outside modals
 [ ] R001 - Semantic elements used

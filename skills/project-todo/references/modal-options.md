@@ -81,7 +81,7 @@ header: "Type"
 question: "What type of design/quality item is this?"
 options:
   - label: "THEME (Recommended)", description: "Design tokens — colors, typography, spacing via /design-tokens"
-  - label: "A11Y", description: "Accessibility improvement via /design-check --scope=a11y"
-  - label: "PERF", description: "Performance or SEO optimization via /design-check"
+  - label: "A11Y", description: "Accessibility improvement via /design-ship's check phase"
+  - label: "PERF", description: "Performance or SEO optimization via /design-ship's check phase"
 multiSelect: false
 ```

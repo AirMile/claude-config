@@ -704,7 +704,7 @@
           return null;
         }
 
-        // PAGE/COMPONENT mini-pipeline: design → convert → content → /design-check (batch)
+        // PAGE/COMPONENT mini-pipeline: design → convert → content → /design-ship (check)
         if (DESIGN_PIPELINE_TYPES.includes(f.type)) {
           if (f.status === "TODO")
             // Web PAGE/COMPONENT start met de ship-flow (build→content→check);
@@ -720,7 +720,7 @@
             // Show content-fill button when built but not yet content-filled
             if (f.stage === "built" && f.contentStatus !== "filled")
               return { cmd: `/design-content ${f.name}` };
-            return null; // content done or pre-build — runtime audit via /design-check batch at release end
+            return null; // content done or pre-build — runtime audit runs inside /design-ship's check phase
           }
           return null; // DONE: no button
         }
@@ -731,9 +731,9 @@
           case "THEME":
             return { cmd: `/design-tokens` };
           case "A11Y":
-            return { cmd: `/design-check --scope=a11y ${f.name}` };
+            return { cmd: `/design-ship ${f.name}` };
           case "PERF":
-            return { cmd: `/design-check ${f.name}` };
+            return { cmd: `/design-ship ${f.name}` };
         }
         return null;
       }

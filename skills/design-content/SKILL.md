@@ -21,12 +21,12 @@ metadata:
 # Content
 
 Fill built pages and components with real, on-brand copy. Runs after `design-create` build/convert
-and before `design-check`. Upgrades contextual placeholders to reviewed, seed-grounded text via an
+and before the runtime check. Upgrades contextual placeholders to reviewed, seed-grounded text via an
 intentional pipeline: archetype → brief → scan → generate → review → apply.
 
-**Pipeline position:** `design-tokens → design-create → design-content → design-check`
+**Pipeline position:** `design-tokens → design-create → design-content → /design-ship` (check + ship)
 
-**Related skills:** `/design-create` · `/design-check` · `/marketing-research`
+**Related skills:** `/design-create` · `/design-ship` · `/marketing-research`
 
 ## References
 
@@ -212,7 +212,7 @@ If all targets return 0 placeholders:
 
 ```
 Scan:    No placeholders found — pages/components may already have real copy.
-         Check via git diff or run /design-check to audit.
+         Check via git diff or run /design-ship to audit.
 ```
 
 Stop (no backlog write, no transition clear — standalone runs only; backlog items keep transition for retry).

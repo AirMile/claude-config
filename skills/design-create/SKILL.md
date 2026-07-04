@@ -30,7 +30,7 @@ One skill, two routes:
 
 The router below classifies the argument and dispatches to the appropriate route reference file. Each route file is only loaded in sessions where it is needed.
 
-**Related skills:** `/design-tokens` · `/design-check` · `/core-setup`
+**Related skills:** `/design-tokens` · `/design-ship` · `/core-setup`
 
 ## References
 

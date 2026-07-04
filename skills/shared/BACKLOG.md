@@ -70,7 +70,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
 }
 ```
 
-The `audit` field is **design-track-specific** (type `PAGE` or `COMPONENT`). `buildScreenshot`/`buildSmokeStatus`/`buildSmokeError` are written by `/design-create` Build (smoke-render). `lastRun`/`scopes`/`findings` are written by `/design-check` PHASE 4.3. No field is required; consumers check for presence. PASS status can be derived from `findings.critical === 0` — no separate boolean needed.
+The `audit` field is **design-track-specific** (type `PAGE` or `COMPONENT`). `buildScreenshot`/`buildSmokeStatus`/`buildSmokeError` are written by `/design-create` Build (smoke-render). `lastRun`/`scopes`/`findings` are written by `/design-ship`'s check phase. No field is required; consumers check for presence. PASS status can be derived from `findings.critical === 0` — no separate boolean needed.
 
 ## Description quality
 
@@ -170,16 +170,16 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 | `TODO`      | To design  | `/design-create` Capture, `/project-todo`, `/project-plan`, reuse-discovery            |
 | `DEFINED`   | To convert | `/design-create` Brief (Path B — offline handoff)                                      |
 | `DOING`     | Building   | `/design-create` Build (Path A) or `/design-create` Convert route (Path B)             |
-| `DONE`      | Shipped    | `/design-check` (PAGE PASS) — both build and convert pages                             |
+| `DONE`      | Shipped    | `/design-ship` (PAGE PASS at PHASE 4) — both build and convert pages                   |
 | `CANCELLED` | Archived   | Manually via UI (○ button), `/project-plan` update mode (cancel-proposal) — restorable |
 
 **Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
 
 **Path B** (Brief for external design): TODO → DEFINED → DOING → DONE.
 
-`/design-check` (batch mode or targeted) runs at end of release cycle across DOING features — not per-component inline. Sets `lastCheckedSha`; for PAGE scope on PASS: sets `f.shipped = true` and `status: "DONE"`. A COMPONENT is never auto-`DONE` — it ships with the page/feature that consumes it.
+`/design-ship` runs the runtime audit as its check phase and finalizes on PASS at PHASE 4: sets `lastCheckedSha`; for PAGE scope: sets `f.shipped = true` and `status: "DONE"`. A COMPONENT is never auto-`DONE` — it ships with the page/feature that consumes it. (The former release-cycle **batch** audit across all DOING features — the standalone `/design-check` — no longer exists; pages are checked per ship run.)
 
-`/core-finalize` (and any PHASE Finalize via `shared/FINALIZE.md`) is a merge/cleanup step — it **never promotes `DOING` → `DONE`**. It only stamps `shipped`/`shippedSha` on a PAGE that is **already `DONE`**; a `DOING` PAGE stays at TO CHECK until `/design-check` ships it, and a COMPONENT is left untouched. This mirrors dev-track, where `/dev-ship`'s verify phase never writes `shipped` — its refactor phase does.
+`/core-finalize` (and any PHASE Finalize via `shared/FINALIZE.md`) is a merge/cleanup step — it **never promotes `DOING` → `DONE`**. It only stamps `shipped`/`shippedSha` on a PAGE that is **already `DONE`**; a `DOING` PAGE stays at TO CHECK until `/design-ship` ships it, and a COMPONENT is left untouched. This mirrors dev-track, where `/dev-ship`'s verify phase never writes `shipped` — its refactor phase does.
 
 ### When to use which skill for PAGE/COMPONENT
 
@@ -220,7 +220,7 @@ At scale, shipped features become dead weight for every backlog load (measured: 
 - **File:** `.project/archive/backlog-archive.json` — `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`
 - **Writer:** `/dev-ship` (refactor phase) and `/game-ship` (refactor phase) — in the same sync that sets `shipped: true`, remove the feature object from `backlog.json#features[]` and append it to `archived[]` (create the file with the scaffold above if absent). Mirrors the existing `.project/features/archive/` dir convention.
 - **Readers:** the dashboard shipped-showcase (server merges `archived[]` into the served features view, in-memory) and humans. Pipeline skills never need archived features — that is the point.
-- **Design-track exception:** PAGE/COMPONENT features shipped by `/design-check` **stay in `backlog.json`** — the batch filter `lastCheckedSha !== shippedSha` re-audits them when the page changes after shipping. Only dev-track (non-PAGE/COMPONENT) features archive.
+- **Design-track exception:** PAGE/COMPONENT features shipped by `/design-ship` **stay in `backlog.json`** — the `lastCheckedSha`/`shippedSha` fields let a later re-ship detect that the page changed after shipping. Only dev-track (non-PAGE/COMPONENT) features archive.
 - **Restore:** move the object back to `features[]` manually (or via board UI in a future iteration); idempotent in both directions.
 
 **`f.shipped` field:**
@@ -306,13 +306,13 @@ TODO (To design) → DOING (Building) → DONE (Shipped)       ← Path A
 TODO (To design) → DEFINED (To convert) → DOING → DONE     ← Path B
 ```
 
-| Step    | Skill            | Output                                                  |
-| ------- | ---------------- | ------------------------------------------------------- |
-| Design  | `/design-create` | code (Build) or brief (Brief) + demo-page for COMPONENT |
-| Convert | `/design-create` | code from visual input — Convert route (Path B)         |
-| Audit   | `/design-check`  | A11Y + tokens + responsive — terminal, sets `shipped`   |
+| Step    | Skill            | Output                                                             |
+| ------- | ---------------- | ------------------------------------------------------------------ |
+| Design  | `/design-create` | code (Build) or brief (Brief) + demo-page for COMPONENT            |
+| Convert | `/design-create` | code from visual input — Convert route (Path B)                    |
+| Audit   | `/design-ship`   | check phase: A11Y + tokens + responsive — terminal, sets `shipped` |
 
-**`/design-check` PASS is terminal** — no refactor step. Item ships directly to Dashboard.
+**`/design-ship`'s check PASS is terminal** — no refactor step. Item ships directly to Dashboard.
 
 ### Discovery by dev-skills
 
@@ -417,7 +417,7 @@ No backlog write — `transition` remains as set by the dashboard, user can re-c
 
 ### Skill filter & status transition table
 
-The GAME pipeline's standalone skills use `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`; `/game-ship` runs the whole game flow end-to-end via `"shipping"` (dev-track features likewise run through `/dev-ship` via `"shipping"`). The DESIGN pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab. There is no `"auditing"` transition — `design-check` runs in batch mode at release end, not per item.
+The GAME pipeline's standalone skills use `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`; `/game-ship` runs the whole game flow end-to-end via `"shipping"` (dev-track features likewise run through `/dev-ship` via `"shipping"`). The DESIGN pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab. There is no `"auditing"` transition — the runtime audit runs as the check phase inside `/design-ship`, not as a separate per-item skill.
 
 | Skill            | Filter                                                                                     | New status on success                           |
 | ---------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
@@ -426,7 +426,6 @@ The GAME pipeline's standalone skills use `transition` values `"defining"` / `"b
 | `design-create`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`                | `"DOING"` (Path A — DEFINED is skipped)         |
 | `design-create`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"`               | `"DOING"`                                       |
 | `design-content` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "contenting"`               | keep `"DOING"`, sets `contentStatus: "filled"`  |
-| `design-check`   | batch: `status === "DOING"` or `lastCheckedSha !== shippedSha`                             | sets `lastCheckedSha`; PAGE PASS → `"DONE"`     |
 | `design-ship`    | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "shipping"` (no-arg pickup) | full pipeline → PAGE `"DONE"` + `shipped: true` |
 | `game-ship`      | `transition === "shipping" && type !== PAGE/COMPONENT` (game project; no-arg pickup)       | full pipeline → `shipped: true` via refactor    |
 

@@ -1,6 +1,6 @@
 # Shared PR Creation Flow
 
-Single source of truth for `gh pr create` in the claude-config pipeline. Used by `core-finalize` and the optional PR offer at the end of `dev-ship (refactor phase)`, `game-ship (refactor phase)`, `design-check`.
+Single source of truth for `gh pr create` in the claude-config pipeline. Used by `core-finalize` and the optional PR offer at the end of `dev-ship (refactor phase)`, `game-ship (refactor phase)`, `design-ship`.
 
 ## Detection
 
@@ -36,7 +36,7 @@ gh pr list --head {source-branch} --state all --json number,url,state --limit 1
 
 ## Preconditions (for the refactor/check PR offer)
 
-When called from `dev-ship (refactor phase)`, `game-ship (refactor phase)`, `design-check` — all must hold. If any fails → fall through to caller's worktree-integration hint.
+When called from `dev-ship (refactor phase)`, `game-ship (refactor phase)`, `design-ship` — all must hold. If any fails → fall through to caller's worktree-integration hint.
 
 | Check                    | Command                                                      | Fail behaviour        |
 | ------------------------ | ------------------------------------------------------------ | --------------------- |

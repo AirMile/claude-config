@@ -474,9 +474,9 @@ TODO ADDED
   [If type is THEME:]
   - /design-tokens - Set up design tokens (color, typography, spacing)
   [If type is A11Y:]
-  - /design-check --scope=a11y {name} - Run accessibility audit
+  - /design-ship {name} - Ship the page (build + runtime check: a11y/perf/SEO)
   [If type is PERF:]
-  - /design-check {name} - Run performance and SEO audit
+  - /design-ship {name} - Ship the page; its check phase runs the performance and SEO audit
   [If type is PAGE-GAP:]
   - /dev-ship {name} - Define the missing functionality
 ```

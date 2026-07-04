@@ -13,7 +13,7 @@ emit React/TSX). It turns the **domain-neutral design spec** (`project.json#desi
   layout), not from an image. If a user passes an image/URL on a game project, explain this and
   fall back to the Design route (capture the intent into the spec first, then generate).
 - **No responsive breakpoints.** Layout uses Godot anchors + Container nodes, not media queries.
-- **Tokens come from the Theme**, never inlined (see G1/G2 in `design-check/references/scan-godot.md`).
+- **Tokens come from the Theme**, never inlined (read via `get_theme_color(...)` / the `Palette` type, not hardcoded `Color(...)` / `font_size`).
 
 ## Inputs
 
@@ -82,7 +82,7 @@ text = "Play"
   contract as web — universal). Record the generated `.tscn` path on the spec entry.
 - Stub interactions (button `pressed` with no handler script) → gap-discovery suggests a game
   FEATURE/MECHANIC todo, mirroring the web `frontend→dev` gap flow (see `shared/SKILL-PATTERNS.md`).
-- Runtime/feel verification → `/game-ship` (playtest phase); static Theme-consistency → `/design-check` (game path).
+- Runtime/feel verification → `/game-ship` (playtest phase). (Static Theme-consistency has no separate audit skill — the former `/design-check` game path was removed; keep tokens Theme-sourced at generation time.)
 
 ## native domain
 

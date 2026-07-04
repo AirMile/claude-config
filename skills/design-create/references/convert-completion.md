@@ -39,7 +39,7 @@ If match found, branch on entity type:
 
 **Page scope** (`$CONVERT_TARGET` resolves to a page):
 
-- Set `status: "DOING"`, `stage: "built"`, `data.updated` to today — same as the Build route (`build-completion-sync.md` 10d). The page lands at TO CHECK; `/design-check` is the only gate to `DONE` for pages (build and convert alike). Convert's visual verification loop is a complementary pre-check, not a substitute for the runtime audit (a11y/responsive/darkmode/perf).
+- Set `status: "DOING"`, `stage: "built"`, `data.updated` to today — same as the Build route (`build-completion-sync.md` 10d). The page lands at TO CHECK; `/design-ship` is the only gate to `DONE` for pages (build and convert alike). Convert's visual verification loop is a complementary pre-check, not a substitute for the runtime audit (a11y/responsive/darkmode/perf).
 - Remove `transition`, `completedAt`, and `contentStatus` fields if present — `contentStatus` reset ensures the "Fill content" board button and badge reappear after a re-convert so copy is re-reviewed against the new markup.
 - Write back via Edit
 
@@ -86,8 +86,7 @@ Files ([N]):
   Page:       [page file path]
   Components: [component paths]
 
-Next: run /design-check (batch over all DOING items) at end of release cycle,
-      or /design-check {name} for a targeted runtime audit — moves PAGE to DONE on PASS.
+Next: run /design-ship {name} — build + runtime check, moves PAGE to DONE on PASS.
 
 ═══════════════════════════════════════════════════════════
 ```
@@ -158,4 +157,4 @@ Dispatch (no `AskUserQuestion` for the merge/cleanup decision):
 
 The design-track backlog sync (PAGE ships only when already `DONE`, COMPONENT left untouched) is handled inside `shared/FINALIZE.md`.
 
-For component scope: this is the canonical close point — do not skip even if design-check was not run.
+For component scope: this is the canonical close point — do not skip even if design-ship was not run.

@@ -274,7 +274,7 @@ Consult `.claude/skills/shared/CODEGEN.md` for full patterns. Output path determ
 **Demo page for COMPONENT:** how the demo is exposed depends on the framework's routing model — detect from `project.json#stack.framework`:
 
 - **File-based routing** (Next.js, Nuxt, SvelteKit): generate a gitignored demo page at the framework's dev path (e.g. Next `app/_dev/components/{name}/page.tsx`) showing all variants × sizes × states. Dropping the file auto-creates the route `/_dev/components/{name}` — no router edit needed. Template below (adapt to the framework's component language).
-- **Explicit-router** (Angular, Vue Router): a component file does NOT create a route. Do NOT generate a throwaway dev route by default — verification falls back to the non-browser smoke in Step 8b. (Optional: if the user wants to inspect the component in a browser, generate a demo component + register a lazy dev route, then hand off to /design-check.)
+- **Explicit-router** (Angular, Vue Router): a component file does NOT create a route. Do NOT generate a throwaway dev route by default — verification falls back to the non-browser smoke in Step 8b. (Optional: if the user wants to inspect the component in a browser, generate a demo component + register a lazy dev route, then hand off to /design-ship.)
 
 ```tsx
 // Auto-generated — gitignored
@@ -364,7 +364,7 @@ multiSelect: false
 
 #### Step 8b: Render smoke check
 
-Single-round render check — catches crashes and broken imports, NOT visual quality (that stays /design-check's job). If `playwright-cli` or a dev server is unavailable (detection per `shared/PLAYWRIGHT.md`): skip silently, set `$SMOKE = "SKIPPED"`.
+Single-round render check — catches crashes and broken imports, NOT visual quality (that stays /design-ship's job). If `playwright-cli` or a dev server is unavailable (detection per `shared/PLAYWRIGHT.md`): skip silently, set `$SMOKE = "SKIPPED"`.
 
 **Determine the smoke target first.** PAGE → its route pattern (browser path below). COMPONENT with an auto-created demo route (file-based routing, Step 7) → demo route `/_dev/components/{name}` (browser path below). COMPONENT **without** a demo route (explicit-router frameworks — Angular, Vue Router) → use the **non-browser fallback** below; skip the Playwright steps.
 
@@ -376,13 +376,13 @@ Browser path:
 4. Renders + no unfiltered errors → `$SMOKE = "PASS"`.
 5. Crash/blank/console errors → apply ONE targeted fix (import/crash only), re-run steps 2-3 once. Still failing → `$SMOKE = "FAIL"`, store first error as `$SMOKE_ERROR`, continue (non-blocking). No multi-round loop.
 
-**Non-browser fallback (no demo route):** run the framework's build/compile plus the component's unit/component test, rendering through the framework test harness (Angular TestBed, Vue Test Utils, etc. — typically via the project's test command). Both green → `$SMOKE = "PASS"`. Compile or test failure → `$SMOKE = "FAIL"`, store first error as `$SMOKE_ERROR` (non-blocking). Set `$SMOKE_SHOT = null` — no screenshot. Browser-based a11y/visual checks (axe-core) stay /design-check's job once the component lands on a real route.
+**Non-browser fallback (no demo route):** run the framework's build/compile plus the component's unit/component test, rendering through the framework test harness (Angular TestBed, Vue Test Utils, etc. — typically via the project's test command). Both green → `$SMOKE = "PASS"`. Compile or test failure → `$SMOKE = "FAIL"`, store first error as `$SMOKE_ERROR` (non-blocking). Set `$SMOKE_SHOT = null` — no screenshot. Browser-based a11y/visual checks (axe-core) stay /design-ship's job once the component lands on a real route.
 
 `$SMOKE_SHOT` backs `devinfo.handoff.buildScreenshot` if a build-incomplete handoff is later written (schema: `shared/DEVINFO.md § devinfo.handoff`).
 
 #### Step 9: Verification status
 
-Build runs no inline verification handoff — never prompt to run `/design-check`. Always set `$VERIFY_STATUS = "SKIPPED"` (`$VERIFY_ERROR` stays unset). `/design-check` remains a separate, user-initiated skill — the gate to DONE for pages — surfaced in the Step 11 "Next:" line.
+Build runs no inline verification handoff — never prompt to run `/design-ship`. Always set `$VERIFY_STATUS = "SKIPPED"` (`$VERIFY_ERROR` stays unset). `/design-ship` remains a separate, user-initiated skill — the gate to DONE for pages — surfaced in the Step 11 "Next:" line.
 
 Step 10 reads `$VERIFY_STATUS` to set `feature.audit.buildSmokeStatus`.
 
@@ -412,7 +412,7 @@ Page deps:        +{$COMP_FEAT_COUNT} feature deps, {$COMP_COMP_COUNT} component
 pageHint:         {$PAGEHINT_COUNT} features updated   (PAGE only)
 Worktree:         {worktree-{$TARGET}} — MERGED (Step 12) | not in a worktree
 Next:             /design-content {$TARGET} — fill copy (placeholders → real text)   (PAGE/COMPONENT, when $VERIFY_STATUS != FAIL)
-                  /design-check {$TARGET}  — runtime audit, moves PAGE to DONE on PASS   (after content filled)
+                  /design-ship {$TARGET}  — runtime audit, moves PAGE to DONE on PASS   (after content filled)
 ```
 
 If the smoke check rendered a live page (`$SMOKE != "SKIPPED"` and `$SMOKE_URL` is set), present that live page in the browser — the real, interactive build, not a screenshot:
@@ -433,7 +433,7 @@ The report is **not** the end of the build — Step 12 (worktree finalize) runs 
 > `git worktree remove`. End your run after the Step 11 report (skip its HTML preview and
 > clipboard offer per the non-interactive contract) and return your result.
 
-The Build route owns the **full** worktree lifecycle: Step 7b opens the worktree, this step closes it. There is no separate frontend-verify skill (`/design-check` is the post-merge quality pass — dev-ship's refactor-phase role, not its verify-phase role), so the build must finalize its own worktree rather than leave it dangling. Mirrors dev-ship's verify phase's PHASE Finalize and the Convert route's `convert-completion.md §4.5–4.6`.
+The Build route owns the **full** worktree lifecycle: Step 7b opens the worktree, this step closes it. There is no separate frontend-verify skill (`/design-ship` is the post-merge quality pass — dev-ship's refactor-phase role, not its verify-phase role), so the build must finalize its own worktree rather than leave it dangling. Mirrors dev-ship's verify phase's PHASE Finalize and the Convert route's `convert-completion.md §4.5–4.6`.
 
 **Skip if no worktree was created this run** — detect: `current branch != worktree-{$TARGET}` (Step 7b was skipped because already on a feature branch, or the Step 2.5 gate exited "save spec only" before reaching Step 7b). Then print `Worktree: not in a worktree` and end the build.
 
@@ -474,7 +474,7 @@ Otherwise:
 
 3. **Session-reorientation guard (cleanup path only)** — before `git worktree remove`, if `pwd` is inside the worktree, `cd {main-repo-path}` first; after successful cleanup print the `🏠 Worktree removed` banner (per `dev-ship/references/dev-verify/references/finalize.md`).
 
-For COMPONENT scope this is the canonical close point — do not skip even if `/design-check` was not run. The code lands on the default branch via the merge; `/design-check` (later, on main) is the gate that promotes a consuming PAGE to `DONE`.
+For COMPONENT scope this is the canonical close point — do not skip even if `/design-ship` was not run. The code lands on the default branch via the merge; `/design-ship` (later, on main) is the gate that promotes a consuming PAGE to `DONE`.
 
 ---
 
@@ -487,4 +487,4 @@ This route must **NEVER**:
 - Create a worktree before the Step 7 `ExitPlanMode` — worktree creation (Step 7b) runs only after plan mode exits and only on the "Build it" path; a spec-only outcome must not leave an empty worktree
 - ~~End the build with an open worktree without running Step 12 auto-finalize~~ — **inverted in design-ship**: the worktree MUST stay open (Step 12 is skipped); design-ship PHASE 4 owns the finalize after content + check + visual review.
 - Present design directions that reference levers the theme doesn't have
-- Run more than one smoke fix-round (multi-round verification is /design-check's job)
+- Run more than one smoke fix-round (multi-round verification is /design-ship's job)

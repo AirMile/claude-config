@@ -565,6 +565,6 @@ The `design` key in `project.json` is managed exclusively by the `design-create`
 
 ---
 
-**`features[].lastCheckedSha?: string`** — Set by `design-check` after a successful runtime-scan of this feature. Used by batch-mode to skip features where `lastCheckedSha === shippedSha` (no code changes since last check).
+**`features[].lastCheckedSha?: string`** — Set by `/design-ship`'s check phase after a successful runtime-scan of this feature. A later re-ship compares it against `shippedSha` to detect whether the page changed since the last check.
 
 **Merge strategy:** `MERGE on name` — pages/flows/principles/components merge on name, update fields, never auto-delete. `components[].motion{}` and `pages[].transitions{}` use key-level merge (never auto-delete keys, only add/update).
