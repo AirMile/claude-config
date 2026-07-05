@@ -4,7 +4,10 @@
 walkthrough used by the auto-mode ship: the whole checklist is presented **once**, judged in **one**
 `AskUserQuestion` round, and screenshots are taken only on demand — instead of the standalone
 per-item loop (`dev-ship/references/dev-verify/references/manual-walkthrough.md`). MANUAL = human perception/judgment,
-real-credential auth, physical-device, or audio/screen-reader checks — not visual polish.
+real-credential auth, physical-device, or audio/screen-reader checks. Visual polish is not a MANUAL
+_verification_ item — but the running app routinely sparks change requests, so this round also
+accepts a **Tweak** outcome ("works, but I want it different") and routes it to iterate mode, not a
+FAIL.
 
 ## Step A — Board signal (amber: waiting on the user)
 
@@ -53,14 +56,19 @@ questions per call, ≤ 4 options per question, `multiSelect: true`):
 ## Step D — Follow-up only for flagged items
 
 For the items the user flagged (if any), ask **one** follow-up round (a single `AskUserQuestion`,
-≤ 4 flagged items per call) to classify each and capture one line of detail:
+≤ 4 flagged items per call) to classify each into **Fail / Tweak / Skip / Defer** and capture detail:
 
-- **Fail** → "what went wrong?" (one line — the observed vs expected). Offer to capture a Playwright
-  screenshot as diagnosis if the item is DOM-observable.
+- **Fail** → acceptance criterion not met. Capture the observed vs expected. For any DOM-observable
+  or visual item, capture a Playwright screenshot **by default** (not "on demand") and ask for a
+  one-line element pointer — the fix path needs this signal to converge (see
+  `phase-3-manual-finalize.md § On any manual FAIL`).
+- **Tweak** → works as specced but the user wants it different (design/behaviour change). Same
+  capture as Fail for visual items (screenshot + pointer). Routes to iterate mode, not FAIL-routing.
 - **Skip** → note reason ("not testing, accept as-is"). Does **not** block completion.
 - **Defer** → which external prereq blocks it (account, CORS-origin, API-token, third-party
   config). Stays open for re-test; does **not** block completion.
 
 Record all outcomes. Nothing flagged ⇒ all Pass → return to `phase-3-manual-finalize.md` Step 3
-(completion). Any **Fail** ⇒ the FAIL-routing block in `phase-3-manual-finalize.md`
-Step 2 decides what happens next (background fix agent / interactive debug / stop).
+(completion). Any **Fail** ⇒ the FAIL-routing block in `phase-3-manual-finalize.md § On any manual
+FAIL` (categorize → main-chat direct fix / background agent / ladder escalation). Any **Tweak** ⇒
+`phase-3-manual-finalize.md § Tweak / iterate mode`.

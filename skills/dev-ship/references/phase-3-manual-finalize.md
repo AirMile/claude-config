@@ -82,20 +82,40 @@ Then run the **batched** walkthrough: Read
 `AskUserQuestion` round, and screenshots are taken only on demand (this replaces the per-item
 loop). Record outcomes.
 
-**On any manual FAIL — route the fix (one `AskUserQuestion`, first option recommended):**
+**On any manual FAIL — first categorize, then route.** Skip straight to a background fix agent and a
+one-line descriptor is the old failure mode: vague input ("layout is off", "button doesn't work")
+gives the agent too little signal, so it takes several rounds and still misses. Categorize each
+failed item first (same vocabulary as `dev-verify/references/fix-loop.md § Categorize`):
 
-- **Fix via background agent (Recommended)** → write a compact failure descriptor (each failed
-  item: title, steps, expected, and the observed result from the follow-up round) to
-  `.project/session/ship-prompts/{feature}-fix.txt`, then spawn **one** `general-purpose` `Task`
-  with this pointer prompt (paths, not bodies — the same discipline as the phase agents):
+| Category   | Trigger                                                  | Route                                            |
+| ---------- | -------------------------------------------------------- | ------------------------------------------------ |
+| TESTABLE   | Wrong behaviour with a concrete expected value/output    | background fix agent (test-guarded)              |
+| MEASURABLE | Numeric/visual threshold — styling, layout, timing, copy | **main-chat direct fix** + live re-check         |
+| SUBJECTIVE | Vague ("feels off", "looks wrong") — cannot fix as-is    | one clarifying `AskUserQuestion` → re-categorize |
+
+- **SUBJECTIVE first** → one clarifying `AskUserQuestion` to make it concrete: which element/page,
+  what you expected vs saw, too much/too little, wrong position/timing/behaviour. Re-categorize the
+  answer as TESTABLE or MEASURABLE, then route below. Never hand a SUBJECTIVE item to a fix agent
+  un-clarified.
+- **MEASURABLE → fix in the main chat** (the running app is right here — cheapest path to
+  convergence): apply the styling/layout/timing/copy change in the worktree, hot-reload, and let the
+  user confirm live. No reproduction test, no background agent. These do **not** consume the fix-round
+  guard below — they loop until the user is satisfied with that item, then re-check the rest.
+- **TESTABLE → background fix agent** (one `AskUserQuestion`, first option recommended, if the user
+  prefers not to fix inline). Write a **rich** failure descriptor (each failed item: title, category,
+  steps, expected, observed, and — for any DOM-observable/visual item — a Playwright screenshot
+  captured **by default** plus a one-line element pointer, not "offered on demand") to
+  `.project/session/ship-prompts/{feature}-fix.txt`, then spawn **one** `general-purpose` `Task` with
+  this pointer prompt (paths, not bodies — the same discipline as the phase agents):
 
   ```
   You are a fix agent in the dev-ship pipeline for feature "{feature}". First switch into
   worktree-{feature} at {worktreePath} (via .claude/skills/shared/WORKTREE.md). Read
-  `.claude/skills/dev-ship/references/non-interactive-contract.md` and obey it. Read the failure
-  descriptor at `.project/session/ship-prompts/{feature}-fix.txt`. For each failed item: write a
-  reproduction test where feasible, fix the cause, and get the FULL suite green before returning.
-  Commit scoped to the worktree; never merge. Return ONLY:
+  `.claude/skills/dev-ship/references/non-interactive-contract.md` and obey it, and
+  `.claude/skills/shared/DEBUG-LADDER.md` (fix by evidence, not guess-and-check). Read the failure
+  descriptor at `.project/session/ship-prompts/{feature}-fix.txt`. For each failed item: confirm the
+  cause before editing, write a reproduction test where feasible, fix the cause, and get the FULL
+  suite green before returning. Commit scoped to the worktree; never merge. Return ONLY:
   SHIP_FIX_RESULT_START
   status: fixed | partial | failed
   itemsFixed: [<item title>, ...]
@@ -104,9 +124,11 @@ loop). Record outcomes.
   ```
 
   On return, **re-present only the previously-failed items** (batched, via the same walkthrough).
-  Max **2** fix rounds; if still failing after two, hard-halt: report + hand to `/dev-debug {feature}`.
-  Keep the checkpoint `phase: "PHASE 3"` throughout (resumable). Do not finalize until every
-  previously-failed item passes.
+  **Escalate via the ladder, don't dead-end:** after **2** failed agent rounds on the same item, do
+  not hard-halt to `/dev-debug` — Read `.claude/skills/shared/DEBUG-LADDER.md` and move to **tier 2 in
+  the main chat** (the app is running; instrument + confirm the root cause here is cheap), and only if
+  that fails to **tier 3 `/dev-debug {feature}`**. Keep the checkpoint `phase: "PHASE 3"` throughout
+  (resumable). Do not finalize until every previously-failed item passes.
 
 - **Interactive debug** → stop the hands-off flow and hand to `/dev-debug {feature}` (or
   `/dev-verify {feature} {feedback}`) in the main chat. The worktree stays intact.
@@ -116,13 +138,29 @@ loop). Record outcomes.
 `Skip` / `Defer` outcomes do not block finalize — they are recorded (deferred items stay open for a
 later re-test), and the flow continues.
 
-**Net-new scope during the manual round** (user requests a feature not in `remainingManualItems` —
-common when the running app sparks ideas): treat it as new work, not a failed re-test. Either (a) run
-one bounded fix-agent round via the same background-agent mechanism above — the max-2-rounds guard
-counts **re-tests of failed items**, so net-new requests don't consume it, but keep each round scoped
-+ test-guarded and cap by judgment; or (b) if it is sizeable or out-of-theme, defer it to a follow-up
-backlog item (`/project-todo`) and finish the ship on the verified scope. Do not silently fold
-unbounded scope into the fix loop.
+## Tweak / iterate mode (the running app sparked a change)
+
+Seeing the built feature live routinely sparks "it works as specced, but I want it **different**" —
+a design/behaviour change, not a failed acceptance criterion. That is a first-class outcome here (the
+walkthrough offers **Tweak** alongside Fail/Skip/Defer), distinct from a FAIL and from net-new scope:
+
+- **Tweak = adjust existing scope** (move it, restyle it, change the wording/timing/interaction of
+  something already built). Run an **open iterate loop in the main chat**: the user describes the
+  change → (one clarifying question only if vague) → apply it in the worktree → reload → the user
+  judges → next. **No round cap** — the max-2-rounds guard governs failed re-tests, not design
+  iteration; iterate until the user is satisfied. Commit each accepted tweak (or a small batch)
+  scoped to the worktree.
+- **Net-new = a new capability** not in `remainingManualItems`. Keep it out of the iterate loop:
+  either (a) one bounded, test-guarded fix-agent round via the background mechanism above if it is
+  small and in-theme (it does not consume the failed-re-test guard), or (b) if sizeable or
+  out-of-theme, defer it to a follow-up backlog item (`/project-todo`) and finish the ship on the
+  verified scope. Do not fold unbounded new scope into the iterate loop.
+
+## Regression re-check (before completion)
+
+If **any** PHASE 3 fix or tweak touched code, run the FULL test suite once before Step 3. New
+failures → back into the fix routing above (ladder escalation applies); clean → proceed to Step 3.
+Skip only when nothing was changed in this phase (all items passed first time).
 
 ## Step 3 — Completion (DONE)
 

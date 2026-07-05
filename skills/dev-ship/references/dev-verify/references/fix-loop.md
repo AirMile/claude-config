@@ -102,7 +102,7 @@ All pass → PHASE 5c.
 Items still failing → AskUserQuestion: More details (Recommended) | Different approach | Accept | Fix yourself.
 Loop back to PHASE 3. AUTO items → re-run in PHASE 5A. MANUAL items → re-test in PHASE 5B.
 
-**Max 3 fix attempts per item.** After the 3rd failed re-test of the same item, stop looping for that item and AskUserQuestion: "Accept anyway" | "Escalate to manual root-cause analysis (/dev-debug)". This prevents an unbounded PHASE 3 → 5 → 5b cycle.
+**Max 3 fix attempts per item.** Each failed re-test escalates one tier per `shared/DEBUG-LADDER.md` (don't retry the same tier with the same information). After the 3rd failed re-test of the same item, stop looping for that item and AskUserQuestion: "Accept anyway" | "Escalate to manual root-cause analysis (/dev-debug)". This prevents an unbounded PHASE 3 → 5 → 5b cycle.
 
 ---
 
