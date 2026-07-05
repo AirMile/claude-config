@@ -195,6 +195,25 @@
       function getLiveSignal(f) {
         return (window._activeSessions || {})[f.name] || null;
       }
+      // Parked-checkpoint label (ship-*.json survives session death → the /session
+      // API marks it {parked:true, pipeline, phase, status}). Maps to a human label.
+      function parkedLabel(entry) {
+        if (!entry) return "parked";
+        var phase = entry.phase || "";
+        if (entry.status === "failed") {
+          return "failed at " + (phase || "an earlier phase");
+        }
+        if (phase.indexOf("plan gate") !== -1) return "plan approval pending";
+        if (phase === "PHASE 3") {
+          return entry.pipeline === "game"
+            ? "playtest pending"
+            : "manual tests pending";
+        }
+        if (phase === "PHASE 4" && entry.pipeline === "design") {
+          return "review pending";
+        }
+        return "interrupted at " + (phase || "an earlier phase");
+      }
       // In progress = queued (transition set by a copy action) OR a live
       // skill signal. These rows render in the dedicated IN PROGRESS section.
       function isInProgress(f) {
@@ -892,10 +911,14 @@
           }
           if (items.length === 0) return;
 
-          // Waiting-for-input rows first (most actionable), then live, then queued
+          // Waiting-for-input rows first (most actionable), then parked
+          // checkpoints, then live, then queued.
           const progressRank = (f) => {
             const l = getLiveSignal(f);
-            return l ? (l.waiting ? 0 : 1) : 2;
+            if (!l) return 3;
+            if (l.waiting) return 0;
+            if (l.parked) return 1;
+            return 2;
           };
           items.sort((a, b) => progressRank(a) - progressRank(b));
 
@@ -908,8 +931,13 @@
           const waitCount = items.filter(
             (f) => getLiveSignal(f) && getLiveSignal(f).waiting,
           ).length;
+          const parkedCount = items.filter(
+            (f) => getLiveSignal(f) && getLiveSignal(f).parked,
+          ).length;
           const liveCount =
-            items.filter((f) => getLiveSignal(f)).length - waitCount;
+            items.filter((f) => getLiveSignal(f)).length -
+            waitCount -
+            parkedCount;
           const headerCounts =
             [
               liveCount
@@ -917,6 +945,9 @@
                 : "",
               waitCount
                 ? `<span class="header-wait-count">⏸ ${waitCount} input needed</span>`
+                : "",
+              parkedCount
+                ? `<span class="header-wait-count">⏸ ${parkedCount} parked</span>`
                 : "",
             ]
               .filter(Boolean)
@@ -1149,6 +1180,7 @@
 
         const row = document.createElement("div");
         const live = getLiveSignal(f);
+        const isParked = !!(live && live.parked);
         const isWaiting = !!(live && live.waiting);
         const isQueued = !!f.transition && !live;
         row.className =
@@ -1156,30 +1188,49 @@
           (isBlocked ? " row--blocked" : "") +
           (isQueued ? " row--active row--queued" : "") +
           (live ? " row--live" : "") +
-          (isWaiting ? " row--waiting" : "");
+          (isWaiting ? " row--waiting" : "") +
+          (isParked ? " row--waiting row--parked" : "");
         row.dataset.name = f.name;
 
         const next = getNextSkill(f);
         const copyCmd = next ? next.cmd : null;
         const copyTitle = copyCmd || f.name;
 
+        // A parked checkpoint is resumed by re-invoking its ship skill with the
+        // feature name — carry that command on the copy button.
+        const PARKED_SHIP_CMD = {
+          dev: "/dev-ship",
+          game: "/game-ship",
+          design: "/design-ship",
+        };
+        const parkedResumeCmd = isParked
+          ? `${PARKED_SHIP_CMD[live.pipeline] || "/dev-ship"} ${f.name}`
+          : null;
+
+        // parked → copy button carrying the resume command (one-click resume)
         // live → pulsing dot (skill is running, not cancellable from the board)
         // queued → cancel button (undo the copy) · idle → copy button
-        const actionBtnHtml = live
-          ? `<span class="row-live-dot" title="${isWaiting ? `waiting for input: ${esc(live.waiting)}` : `running: ${esc(live.skill || "")}`}"></span>`
-          : isQueued
-            ? `<button class="row-annuleer-btn" title="Cancel">
+        const actionBtnHtml = isParked
+          ? `<button class="row-copy-btn ${typeInfo.cls}" title="parked at ${esc(live.phase || "")} — copy to resume" data-cmd="${esc(parkedResumeCmd)}">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
+             </button>`
+          : live
+            ? `<span class="row-live-dot" title="${isWaiting ? `waiting for input: ${esc(live.waiting)}` : `running: ${esc(live.skill || "")}`}"></span>`
+            : isQueued
+              ? `<button class="row-annuleer-btn" title="Cancel">
               <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 2l12 12M14 2L2 14"/></svg>
              </button>`
-            : `<button class="row-copy-btn ${typeInfo.cls}" title="${copyTitle}" data-cmd="${copyCmd || ""}">
+              : `<button class="row-copy-btn ${typeInfo.cls}" title="${copyTitle}" data-cmd="${copyCmd || ""}">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
              </button>`;
 
-        const progressLabelHtml = live
-          ? `<span class="row-live-label">${esc(LIVE_SKILL_LABELS[live.skill] || live.skill || "active")}${isWaiting ? " · input needed" : ""}</span>`
-          : isQueued
-            ? `<span class="row-transition-label row-transition-label--queued">⧉ ${esc(f.transition)} · queued</span>`
-            : "";
+        const progressLabelHtml = isParked
+          ? `<span class="row-live-label">⏸ ${esc(parkedLabel(live))} · parked</span>`
+          : live
+            ? `<span class="row-live-label">${esc(LIVE_SKILL_LABELS[live.skill] || live.skill || "active")}${isWaiting ? " · input needed" : ""}</span>`
+            : isQueued
+              ? `<span class="row-transition-label row-transition-label--queued">⧉ ${esc(f.transition)} · queued</span>`
+              : "";
 
         const menuItemsHtml = (() => {
           if (f.status === "TODO" || f.status === "DEFINED") {

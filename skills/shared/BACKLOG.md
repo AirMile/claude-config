@@ -167,9 +167,9 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 
 | Status      | Label      | Set by                                                                                 |
 | ----------- | ---------- | -------------------------------------------------------------------------------------- |
-| `TODO`      | To design  | `/design-convert` Capture, `/project-todo`, `/project-plan`, reuse-discovery            |
-| `DEFINED`   | To convert | `/design-convert` Brief (Path B — offline handoff)                                      |
-| `DOING`     | Building   | `/design-convert` Build (Path A) or `/design-convert` Convert route (Path B)             |
+| `TODO`      | To design  | `/design-convert` Capture, `/project-todo`, `/project-plan`, reuse-discovery           |
+| `DEFINED`   | To convert | `/design-convert` Brief (Path B — offline handoff)                                     |
+| `DOING`     | Building   | `/design-convert` Build (Path A) or `/design-convert` Convert route (Path B)           |
 | `DONE`      | Shipped    | `/design-ship` (PAGE PASS at PHASE 4) — both build and convert pages                   |
 | `CANCELLED` | Archived   | Manually via UI (○ button), `/project-plan` update mode (cancel-proposal) — restorable |
 
@@ -183,12 +183,12 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
 
 ### When to use which skill for PAGE/COMPONENT
 
-| Situation                                               | Skill                                                                   |
-| ------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Quick "just thought of something" addition              | `/project-todo`                                                         |
+| Situation                                               | Skill                                                                    |
+| ------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Quick "just thought of something" addition              | `/project-todo`                                                          |
 | Full design (screenshot, Figma, brief)                  | `/design-convert` Capture                                                |
-| Bulk-init from concept or brainstorm output             | `/project-plan`                                                         |
-| Pattern detection during build (cross-page reuse)       | `/project-plan` reuse-discovery                                         |
+| Bulk-init from concept or brainstorm output             | `/project-plan`                                                          |
+| Pattern detection during build (cross-page reuse)       | `/project-plan` reuse-discovery                                          |
 | Convert existing card from sketch/wireframe/Figma/Canva | `/design-convert` (paste sketch/URL, or board ⋯ → "Convert from sketch") |
 
 All routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. All routes **except `/project-plan` bulk-init** also set **`transition: "designing"`**, which enables `/design-convert` to auto-detect these items without a manual dashboard click. `/project-plan` omits `transition` at creation — the dashboard sets it when the user clicks copy-prompt (see `project-plan/references/generate-backlog.md` transition field rule). `/design-convert` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/design-convert` Build fills them in later.
@@ -306,11 +306,11 @@ TODO (To design) → DOING (Building) → DONE (Shipped)       ← Path A
 TODO (To design) → DEFINED (To convert) → DOING → DONE     ← Path B
 ```
 
-| Step    | Skill            | Output                                                             |
-| ------- | ---------------- | ------------------------------------------------------------------ |
+| Step    | Skill             | Output                                                             |
+| ------- | ----------------- | ------------------------------------------------------------------ |
 | Design  | `/design-convert` | code (Build) or brief (Brief) + demo-page for COMPONENT            |
 | Convert | `/design-convert` | code from visual input — Convert route (Path B)                    |
-| Audit   | `/design-ship`   | check phase: A11Y + tokens + responsive — terminal, sets `shipped` |
+| Audit   | `/design-ship`    | check phase: A11Y + tokens + responsive — terminal, sets `shipped` |
 
 **`/design-ship`'s check PASS is terminal** — no refactor step. Item ships directly to Dashboard.
 
@@ -368,8 +368,8 @@ Skills do **not** write to the backlog at start — saves a read+write roundtrip
 | Value          | Dashboard sets when user copies prompt for                                                                                       | Consumed by                              |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `"defining"`   | THEME setup prompt                                                                                                               | `design-tokens` (THEME)                  |
-| `"designing"`  | Design/build prompt for a TODO PAGE or COMPONENT                                                                                 | `design-convert`                          |
-| `"converting"` | Convert prompt for a DEFINED PAGE or COMPONENT                                                                                   | `design-convert`                          |
+| `"designing"`  | Design/build prompt for a TODO PAGE or COMPONENT                                                                                 | `design-convert`                         |
+| `"converting"` | Convert prompt for a DEFINED PAGE or COMPONENT                                                                                   | `design-convert`                         |
 | `"contenting"` | Fill-content prompt for a built (DOING) PAGE/COMPONENT                                                                           | `design-content`                         |
 | `"shipping"`   | ⚡ Ship (auto) menu item on a TODO feature — dev-track → `/dev-ship`, game-track → `/game-ship`, PAGE/COMPONENT → `/design-ship` | `dev-ship` / `game-ship` / `design-ship` |
 
@@ -382,13 +382,22 @@ type: `design-ship` picks `"shipping"` on PAGE/COMPONENT, while a non-design (FE
 `dev-ship` in a dev project and `game-ship` in a game project (dev-ship vs game-ship is disambiguated
 by project type — a project is one or the other).
 
-**Board rendering (three progress states).** The dashboard shows a `transition` without a live
+**Board rendering (four progress states).** The dashboard shows a `transition` without a live
 skill signal as **queued** (dim, "⧉ {transition} · queued"), a feature with a
 `.project/session/active-{name}.json` signal as **live** (pulsing "{skill}ing" badge), and a live
 signal with the optional `waiting` field as **waiting for input** (amber, static
 "⏸ {label} · input needed" — sorted to the top; written by dev-ship's manual walkthrough (PHASE 3),
-game-ship's playtest wait (PHASE 3), and design-ship's PHASE 4 review). All three group in the IN PROGRESS
-section at the top of the board. See `DEVINFO.md § Active Feature Signal`.
+game-ship's playtest wait (PHASE 3), and design-ship's PHASE 4 review). The fourth state is
+**parked**: a ship checkpoint (`.project/session/ship-{name}.json` — see `SHIP-CHECKPOINT.md`) with
+`status != "complete"` and **no** live signal for that feature. Because the checkpoint survives a full
+session end (unlike `active-*.json`), it renders across sessions as an amber, static
+"⏸ {label} · parked" row (`plan approval pending` at the plan gate, `manual tests pending` /
+`playtest pending` / `review pending` at the interactive phase, `interrupted at {phase}` otherwise,
+`failed at {phase}` on a failed run). Its action is a **copy button carrying the
+`/{pipeline}-ship {name}` resume command** (one-click resume), not a live dot. Live/waiting wins over
+parked for the same feature; the parked row disappears when the run resumes (a live signal returns)
+or completes (the checkpoint is removed). All four group in the IN PROGRESS section at the top of the
+board. See `DEVINFO.md § Active Feature Signal`.
 
 ### Read (PHASE 0)
 
@@ -423,8 +432,8 @@ The GAME pipeline's standalone skills use `transition` values `"defining"` / `"b
 | ---------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
 | `design-tokens`  | `type === "THEME" && transition === "defining"`                                            | `"DONE"`                                        |
 | `dev-ship`       | `transition === "shipping" && type !== PAGE/COMPONENT` (no-arg pickup)                     | full pipeline → `shipped: true` via refactor    |
-| `design-convert`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`                | `"DOING"` (Path A — DEFINED is skipped)         |
-| `design-convert`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"`               | `"DOING"`                                       |
+| `design-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`                | `"DOING"` (Path A — DEFINED is skipped)         |
+| `design-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"`               | `"DOING"`                                       |
 | `design-content` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "contenting"`               | keep `"DOING"`, sets `contentStatus: "filled"`  |
 | `design-ship`    | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "shipping"` (no-arg pickup) | full pipeline → PAGE `"DONE"` + `shipped: true` |
 | `game-ship`      | `transition === "shipping" && type !== PAGE/COMPONENT` (game project; no-arg pickup)       | full pipeline → `shipped: true` via refactor    |

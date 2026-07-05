@@ -651,6 +651,15 @@ body {
   color: var(--warn, #d29922);
 }
 
+/* Parked: a ship checkpoint (ship-*.json) survives session death with no live
+   signal — the run is dormant, resumable from a fresh chat. Reuses the amber
+   waiting look (row--waiting) but slightly dimmed to read as paused-not-active,
+   and its action is a copy button (resume command), not a live dot. */
+.row--parked .row-name,
+.row--parked .row-live-label {
+  opacity: 0.82;
+}
+
 /* In progress section header */
 .group-header--inprogress h2 {
   color: var(--doing, #58a6ff);
