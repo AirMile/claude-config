@@ -82,29 +82,32 @@ Then run the **batched** walkthrough: Read
 `AskUserQuestion` round, and screenshots are taken only on demand (this replaces the per-item
 loop). Record outcomes.
 
-**On any manual FAIL — first categorize, then route.** Skip straight to a background fix agent and a
-one-line descriptor is the old failure mode: vague input ("layout is off", "button doesn't work")
-gives the agent too little signal, so it takes several rounds and still misses. Categorize each
-failed item first (same vocabulary as `dev-verify/references/fix-loop.md § Categorize`):
+**On any manual FAIL — categorize, then fix in the main chat by default.** The app is running and the
+user is watching, so the fastest path to convergence is to fix **here** with a live re-check — not to
+hand a one-line descriptor to a background agent that cannot see the app (the old failure mode: vague
+input, blind fix, several rounds, still wrong). Categorize each failed item first
+(category semantics + the SUBJECTIVE-clarify rule: `shared/FEEDBACK-CATEGORIZATION.md`):
 
 | Category   | Trigger                                                  | Route                                            |
 | ---------- | -------------------------------------------------------- | ------------------------------------------------ |
-| TESTABLE   | Wrong behaviour with a concrete expected value/output    | background fix agent (test-guarded)              |
-| MEASURABLE | Numeric/visual threshold — styling, layout, timing, copy | **main-chat direct fix** + live re-check         |
 | SUBJECTIVE | Vague ("feels off", "looks wrong") — cannot fix as-is    | one clarifying `AskUserQuestion` → re-categorize |
+| MEASURABLE | Numeric/visual threshold — styling, layout, timing, copy | **main-chat fix** + live re-check                |
+| TESTABLE   | Wrong behaviour with a concrete expected value/output    | **main-chat fix** (+ repro test) + live re-check |
 
 - **SUBJECTIVE first** → one clarifying `AskUserQuestion` to make it concrete: which element/page,
   what you expected vs saw, too much/too little, wrong position/timing/behaviour. Re-categorize the
   answer as TESTABLE or MEASURABLE, then route below. Never hand a SUBJECTIVE item to a fix agent
   un-clarified.
-- **MEASURABLE → fix in the main chat** (the running app is right here — cheapest path to
-  convergence): apply the styling/layout/timing/copy change in the worktree, hot-reload, and let the
-  user confirm live. No reproduction test, no background agent. These do **not** consume the fix-round
-  guard below — they loop until the user is satisfied with that item, then re-check the rest.
-- **TESTABLE → background fix agent** (one `AskUserQuestion`, first option recommended, if the user
-  prefers not to fix inline). Write a **rich** failure descriptor (each failed item: title, category,
-  steps, expected, observed, and — for any DOM-observable/visual item — a Playwright screenshot
-  captured **by default** plus a one-line element pointer, not "offered on demand") to
+- **Default → fix in the main chat** (both MEASURABLE and TESTABLE — the running app is right here):
+  Read `.claude/skills/shared/DEBUG-LADDER.md` and fix by evidence, not guess-and-check. Apply the
+  change in the worktree, hot-reload, and let the user confirm live. For TESTABLE, also write a
+  reproduction test where feasible and get the affected tests green. These loop until the item is
+  right (they do **not** consume the background-agent round guard below), then re-check the rest.
+- **Background fix agent → opt-in** (offer via `AskUserQuestion`, **not** the default), for a TESTABLE
+  fail that is **pure logic/data with no live surface to watch**, or when the fix spans many files and
+  the user prefers not to watch it happen. Write a **rich** failure descriptor (each failed item:
+  title, category, steps, expected, observed, and — for any DOM-observable/visual item — a Playwright
+  screenshot captured **by default** plus a one-line element pointer) to
   `.project/session/ship-prompts/{feature}-fix.txt`, then spawn **one** `general-purpose` `Task` with
   this pointer prompt (paths, not bodies — the same discipline as the phase agents):
 
@@ -125,10 +128,10 @@ failed item first (same vocabulary as `dev-verify/references/fix-loop.md § Cate
 
   On return, **re-present only the previously-failed items** (batched, via the same walkthrough).
   **Escalate via the ladder, don't dead-end:** after **2** failed agent rounds on the same item, do
-  not hard-halt to `/dev-debug` — Read `.claude/skills/shared/DEBUG-LADDER.md` and move to **tier 2 in
-  the main chat** (the app is running; instrument + confirm the root cause here is cheap), and only if
-  that fails to **tier 3 `/dev-debug {feature}`**. Keep the checkpoint `phase: "PHASE 3"` throughout
-  (resumable). Do not finalize until every previously-failed item passes.
+  not hard-halt to `/dev-debug` — Read `.claude/skills/shared/DEBUG-LADDER.md` and pull the fix back
+  into **tier 2 in the main chat** (the app is running; instrument + confirm the root cause here is
+  cheap), and only if that fails to **tier 3 `/dev-debug {feature}`**. Keep the checkpoint
+  `phase: "PHASE 3"` throughout (resumable). Do not finalize until every previously-failed item passes.
 
 - **Interactive debug** → stop the hands-off flow and hand to `/dev-debug {feature}` (or
   `/dev-verify {feature} {feedback}`) in the main chat. The worktree stays intact.

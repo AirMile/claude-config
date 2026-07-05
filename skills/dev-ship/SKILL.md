@@ -238,13 +238,15 @@ checklist is presented once and judged in one batched round (see
 `references/manual-batch-walkthrough.md`). On all-green (or empty), complete the feature (DONE write)
 and **stay in the worktree** — finalize/merge runs at the end of PHASE 4 so refactor commits land on
 the feature branch. On a manual **FAIL**, the reference categorizes each item first
-(TESTABLE/MEASURABLE/SUBJECTIVE): SUBJECTIVE → one clarifying question; MEASURABLE (styling/layout/
-timing) → fixed **inline in the main chat** with a live re-check; TESTABLE → the background fix agent
-— and after 2 failed rounds it escalates via `shared/DEBUG-LADDER.md` (tier-2 evidence-first in the
-main chat, then `/dev-debug`) rather than dead-ending. Seeing the app live also routinely sparks
-change requests: a **Tweak** outcome runs an open iterate loop in the main chat (no round cap) to
-adjust existing scope; net-new work defers to `/project-todo`. Any code touched in PHASE 3 →
-regression re-check before completion. No refactor/finalize until failed items pass.
+(TESTABLE/MEASURABLE/SUBJECTIVE) and — because the app is running and the user is watching — **fixes
+in the main chat by default** (evidence-first per `shared/DEBUG-LADDER.md`, live re-check): SUBJECTIVE
+→ one clarifying question; MEASURABLE and TESTABLE → inline fix (+ repro test for TESTABLE). The
+background fix agent is **opt-in**, only for pure logic/data fails with no live surface — and after 2
+failed agent rounds the fix is pulled back to the main chat (ladder tier-2) then `/dev-debug` rather
+than dead-ending. Seeing the app live also routinely sparks change requests: a **Tweak** outcome runs
+an open iterate loop in the main chat (no round cap) to adjust existing scope; net-new work defers to
+`/project-todo`. Any code touched in PHASE 3 → regression re-check before completion. No
+refactor/finalize until failed items pass.
 
 ### PHASE 4: Refactor (AGENT 3) [+ optional security AGENT S] + Finalize/merge — Workflow 2
 
