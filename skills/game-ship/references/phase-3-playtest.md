@@ -59,7 +59,8 @@ Route the fix work via **one `AskUserQuestion`** (first option recommended):
   You are a fix agent in the game-ship pipeline for feature "{feature}". First switch into
   worktree-{feature} at {worktreePath} (via .claude/skills/shared/WORKTREE.md). Read
   `.claude/skills/game-ship/references/non-interactive-contract.md` and obey it (headless GUT only,
-  never launch a game window — contract rule 8). Read the failure descriptor at
+  never launch a game window — contract rule 8), and `.claude/skills/shared/DEBUG-LADDER.md` (fix by
+  evidence, not guess-and-check). Read the failure descriptor at
   `.project/session/ship-prompts/{feature}-fix.txt`. For each failed item: for TESTABLE write a
   reproduction GUT test then fix; for MEASURABLE adjust the value. Get the FULL GUT suite green
   (headless) before returning. Commit scoped to the worktree; never merge. Return ONLY:
@@ -71,10 +72,12 @@ Route the fix work via **one `AskUserQuestion`** (first option recommended):
   ```
 
   On return, **re-present only the previously-failed items** against a fresh game launch (batched,
-  via the same walkthrough). Max **2-3** fix rounds; if still failing after that, route via a second
-  `AskUserQuestion`: background fix agent again / interactive `/game-debug {feature}` / stop. Keep the
-  checkpoint `phase: "PHASE 3"` throughout (resumable). Do not finalize until every previously-failed
-  item passes.
+  via the same walkthrough). **Escalate via the ladder, don't dead-end:** each failed round escalates
+  one tier per `.claude/skills/shared/DEBUG-LADDER.md` (don't retry the same tier with the same
+  information). After **2-3** failed rounds on the same item, move to ladder tier 3 —
+  `AskUserQuestion`: interactive `/game-debug {feature}` (Recommended) / one more fix-agent round /
+  stop. Keep the checkpoint `phase: "PHASE 3"` throughout (resumable). Do not finalize until every
+  previously-failed item passes.
 
 - **Interactive debug** → stop the hands-off flow and hand to `/game-debug {feature}` (or
   `/game-verify {feature} {feedback}`) in the main chat. The worktree stays intact.
@@ -84,9 +87,24 @@ Route the fix work via **one `AskUserQuestion`** (first option recommended):
 `Skip` / `Defer` outcomes do not block completion — they are recorded (deferred items stay open for a
 later re-test), and the flow continues.
 
-**Regression re-check after fixes** — if any PHASE 3 fix was applied, re-run the FULL GUT suite
-headless (`"{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit`) once before
-Step 3. New failures → back into the fix loop (max rounds as above); clean → continue.
+## Tweak / iterate mode (the live game sparked a change)
+
+Playing the build routinely sparks "it works, but it should **feel** different" — a design/tuning
+change, not a failed acceptance item. The playtest offers a **Tweak** outcome alongside
+Fail/Skip/Defer, distinct from a FAIL and from net-new scope:
+
+- **Tweak = tune existing scope** (a value, timing, feel, feedback of something already built). Run
+  an **open iterate loop in the main chat**: the user describes the change → (one clarifying question
+  if vague, per the SUBJECTIVE axes above) → adjust the value/scene → re-launch the live window → the
+  user judges → next. **No round cap** — the max-rounds guard governs failed re-tests, not tuning;
+  iterate until the user is satisfied. Commit each accepted tweak scoped to the worktree.
+- **Net-new = a new mechanic/scope** not in `remainingManualItems`. Keep it out of the iterate loop:
+  one bounded fix-agent round if small and in-theme, else defer to `/project-todo` and finish on the
+  verified scope. Then run the regression re-check below.
+
+**Regression re-check after fixes/tweaks** — if any PHASE 3 fix **or tweak** touched code, re-run the
+FULL GUT suite headless (`"{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit`)
+once before Step 3. New failures → back into the fix loop (max rounds as above); clean → continue.
 
 ## Step 3 — Completion (DONE)
 

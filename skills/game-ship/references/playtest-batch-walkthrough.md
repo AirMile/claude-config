@@ -68,15 +68,20 @@ For the items the user flagged (if any), ask **one** follow-up round (a single `
 game-verify's TESTABLE / MEASURABLE / SUBJECTIVE categorization used by the `phase-3-playtest.md`
 FAIL-routing:
 
+Classify each flagged item into **Fail / Tweak / Skip / Defer**:
+
 - **Fail** → "what went wrong?" (one line — observed vs expected). Offer to capture DebugListener
   output (`get_debug_output`, or the scene's debug log under `.project/features/{feature}/` when
   godot-mcp is unavailable) as diagnosis. A concrete value ("radius 50, should be 100") makes it
   TESTABLE; a relative complaint ("too slow") MEASURABLE; a vague one ("feels off") SUBJECTIVE →
   clarify.
+- **Tweak** → works as specced but the user wants it to feel/behave different (tuning, not a failed
+  criterion). Routes to iterate mode, not FAIL-routing.
 - **Skip** → note reason ("not testing, accept as-is"). Does **not** block completion.
 - **Defer** → which external prereq blocks it (missing asset, addon, export preset). Stays open for
   re-test; does **not** block completion.
 
 Record all outcomes. Nothing flagged ⇒ all Pass → return to `phase-3-playtest.md` Step 3
 (completion). Any **Fail** ⇒ the FAIL-routing block in `phase-3-playtest.md` Step 2 decides what
-happens next (categorize → bounded fix loop via background agent / interactive `/game-debug` / stop).
+happens next (categorize → bounded fix loop via background agent / ladder escalation / stop). Any
+**Tweak** ⇒ `phase-3-playtest.md § Tweak / iterate mode`.
