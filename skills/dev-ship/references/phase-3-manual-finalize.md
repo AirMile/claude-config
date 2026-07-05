@@ -23,6 +23,10 @@ before anything else: execute `.claude/skills/shared/WORKTREE.md` with `feature-
 and `feature.status = DOING`. This switches to `worktree-{feature}` (needed for the dev-server /
 Playwright daemon that the walkthrough uses) and runs the symlink-integrity gate.
 
+> **Gate scope:** only the 4 required symlinks (`backlog.json`, `features`, `project.json`,
+> `project-context.json`) gate the switch. `wireframes`/`screenshots`/`thinking` may dangle safely
+> (their source dirs don't always exist in main) — do **not** abort the gate on those.
+
 ## Step 2 — Manual walkthrough (only if `remainingManualItems` non-empty)
 
 Skip this step entirely when AGENT 2 returned `remainingManualItems: none` (the 85% case) — go
@@ -111,6 +115,14 @@ loop). Record outcomes.
 
 `Skip` / `Defer` outcomes do not block finalize — they are recorded (deferred items stay open for a
 later re-test), and the flow continues.
+
+**Net-new scope during the manual round** (user requests a feature not in `remainingManualItems` —
+common when the running app sparks ideas): treat it as new work, not a failed re-test. Either (a) run
+one bounded fix-agent round via the same background-agent mechanism above — the max-2-rounds guard
+counts **re-tests of failed items**, so net-new requests don't consume it, but keep each round scoped
++ test-guarded and cap by judgment; or (b) if it is sizeable or out-of-theme, defer it to a follow-up
+backlog item (`/project-todo`) and finish the ship on the verified scope. Do not silently fold
+unbounded scope into the fix loop.
 
 ## Step 3 — Completion (DONE)
 

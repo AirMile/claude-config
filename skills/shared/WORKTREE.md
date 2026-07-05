@@ -339,13 +339,19 @@ fi
 
 ### Verify symlink integrity
 
-After Step 3 completes (and on every silent-reuse path), verify all expected symlinks resolve. Idempotent — re-running repairs broken links.
+After Step 3 completes (and on every silent-reuse path), verify the **required** symlinks resolve. Idempotent — re-running repairs broken links.
+
+Only 4 links gate the worktree; the other 3 may dangle safely and must **not** fail the gate:
 
 ```bash
 WT="{main_root}/.claude/worktrees/{feature-name}"
-EXPECTED=("backlog.json" "features" "wireframes" "screenshots" "thinking" "project.json" "project-context.json")
+# Required — a broken one means .project/ writes from the worktree won't reach main.
+REQUIRED=("backlog.json" "features" "project.json" "project-context.json")
+# Optional (wireframes/screenshots/thinking): their source dirs don't always exist in main
+# (a fresh project has none yet), so their links legitimately dangle. `ln -sfn` still created
+# the link, and it resolves itself once the first write makes the target — never fail on these.
 FAILED=()
-for name in "${EXPECTED[@]}"; do
+for name in "${REQUIRED[@]}"; do
   link="$WT/.project/$name"
   if [ ! -L "$link" ] || [ ! -e "$link" ]; then
     FAILED+=("$name")
@@ -356,7 +362,7 @@ if [ ${#FAILED[@]} -gt 0 ]; then
   echo "Re-run ## Shared .project/ via symlink. If failure persists, check permissions on $WT/.project/"
   exit 1
 fi
-echo "SYMLINKS: ok (7/7)"
+echo "SYMLINKS: ok (4/4 required; wireframes/screenshots/thinking optional — dangling is safe)"
 ```
 
 ---

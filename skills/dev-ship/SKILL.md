@@ -31,7 +31,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.6.0
+  version: 0.7.0
   category: dev
 ---
 
@@ -227,7 +227,13 @@ is already in the checkpoint's `results` (`resumeFromRunId` does not apply to th
 
 > **Todo**: mark PHASE 3 → `in_progress` (PHASE 1+2 were already flipped on the workflow return).
 > Rewrite the board live-signal with `skill: "verify"` (same `active-{feature}.json` write as PHASE 1),
-> and update the checkpoint `phase: "PHASE 3"`. With non-empty `remainingManualItems` you normally
+> and update the checkpoint `phase: "PHASE 3"`.
+> **Worktree path guard (PHASE 3 + 4):** cwd is now inside the worktree, and `.project/session/` is
+> worktree-local (not symlinked). The checkpoint is written via `ship-checkpoint.js`, which resolves
+> main_root itself — safe from any cwd. But the `active-{feature}.json` **live-signal** is a plain
+> write: target the **main checkout's** `.project/session/` (per `shared/DEVINFO.md § Active Feature
+Signal` worktree caveat), else the board reads the wrong (worktree-local) copy.
+> With non-empty `remainingManualItems` you normally
 > arrive here **from a fresh session** (the green branch's handoff parked the run) via the reference's
 > **Resume entry** note — re-enter the worktree + relaunch the app first — or from the same-session
 > **escape hatch** (the user chose to continue here). Either way re-arm the live signal, then proceed.

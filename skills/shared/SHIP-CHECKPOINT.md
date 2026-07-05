@@ -89,67 +89,39 @@ command). See `BACKLOG.md § Board rendering`.
 
 ---
 
-## Atomic write
+## Writing the checkpoint — via `ship-checkpoint.js`
 
-Never write the checkpoint in place — a crash mid-write would corrupt it. Write to a temp file and
-`mv` (rename is atomic on POSIX):
+All checkpoint writes go through `~/.claude/scripts/ship-checkpoint.js`. The script **resolves the
+main checkout root itself** (first line of `git worktree list --porcelain`) and always writes to
+`<main_root>/.project/session/ship-{name}.json`. This is the crux: the ship orchestrator runs with
+cwd **inside the feature worktree** during PHASE 3/4 (manual tests / refactor+finalize), where
+`.project/session/` is worktree-local — deliberately **not** symlinked — so a relative path would
+silently write the wrong (worktree-local) location. Because the script resolves main_root, callers
+may invoke it from **any cwd**. It does the atomic tmp+rename, deep-merges patches, and stamps
+`updatedAt` on every write. JSON travels on **stdin** (not argv) so the object/patch blob never
+fights shell quoting.
 
-```bash
-mkdir -p .project/session
-cat > .project/session/ship-{name}.json.tmp <<'JSON'
-{ ...checkpoint object... }
-JSON
-mv -f .project/session/ship-{name}.json.tmp .project/session/ship-{name}.json
-```
-
-```powershell
-# Windows (PowerShell)
-New-Item -ItemType Directory -Force .project/session | Out-Null
-Set-Content -Path .project/session/ship-{name}.json.tmp -Value $checkpointJson -Encoding utf8
-Move-Item -Force .project/session/ship-{name}.json.tmp .project/session/ship-{name}.json
-```
-
-The full heredoc above is the **first** write only — the write that creates the object, when it does
-not exist yet: **write point 0** (the dev/game light checkpoint at the plan gate) or, when there is
-no light checkpoint (design), **write point 1** (end of PHASE 0). Every later write patches the
-delta. Always set `updatedAt` to the current ISO time on every write.
-
-### Follow-up writes — patch the delta, don't re-emit
-
-Write points 2–5 change only a few keys (phase pointer, one merged result, cleared
-`activeWorkflow`/`prompts`). Re-emitting the whole object — `plan` + every accumulated `result` —
-each time is the main-chat token cost the ship pipeline pays ~5× per run. Instead **patch only the
-changed keys** with a read-merge-write that keeps the atomic `mv` (node is cross-platform, so this
-one form covers macOS and Windows):
-
-```bash
-node -e '
-  const fs=require("fs"), f=".project/session/ship-{name}.json";
-  const cur=JSON.parse(fs.readFileSync(f,"utf8"));
-  const patch=JSON.parse(process.argv[1]);
-  const merge=(a,b)=>{for(const k in b){a[k]=(b[k]&&typeof b[k]==="object"&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==="object")?merge(a[k],b[k]):b[k];}return a;};
-  merge(cur,patch); cur.updatedAt=new Date().toISOString();
-  fs.writeFileSync(f+".tmp",JSON.stringify(cur,null,2)); fs.renameSync(f+".tmp",f);
-' '{"phase":"PHASE 3","completedPhases":["PHASE 0","PHASE 1","PHASE 2"],"results":{"verify":{ ...just the returned verify object... }}}'
-```
+| Write kind                         | Command                                                                         | Notes                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **Create** (write point 0/1)       | `echo '<full object>' \| node ~/.claude/scripts/ship-checkpoint.js init {name}` | full checkpoint object; overwrites if present                              |
+| **Patch delta** (write points 1–4) | `echo '<delta>' \| node ~/.claude/scripts/ship-checkpoint.js patch {name}`      | deep-merge; pass `"key": null` to clear it (e.g. `"activeWorkflow": null`) |
+| **Complete** (write point 5)       | `node ~/.claude/scripts/ship-checkpoint.js complete {name}`                     | sets `status:"complete"`, then removes the file                            |
+| resolve path (debug)               | `node ~/.claude/scripts/ship-checkpoint.js path {name}`                         | prints the absolute checkpoint path, no write                              |
 
 - The merge is a **deep merge for nested objects** (`results`, `plan`) and a **replace for arrays
-  and scalars** — so `results.build` from an earlier write survives when this write adds
+  and scalars** — so `results.build` from an earlier write survives when a later write adds
   `results.verify`, while `completedPhases` is replaced wholesale. Passing `"activeWorkflow": null`
   (or `"prompts": null`) clears that key on a workflow return.
-- Emit **only** the keys that changed — never `plan` again after the first write. On Windows the
-  same `node -e` works; if PowerShell quoting of the JSON arg fights you, write the small patch to
-  `.project/session/ship-{name}.patch.json` and read it with `process.argv[1]` replaced by
-  `fs.readFileSync(".project/session/ship-{name}.patch.json","utf8")`.
-
-Use the heredoc for write 1 and this patcher for writes 2–5 at each write point below.
+- Emit **only** the keys that changed in a `patch` — never re-send `plan` after the first write.
+- `init` overwrites an existing file; `patch`/`complete` exit non-zero if the checkpoint does not
+  exist yet (run `init` first). The script is cross-platform (Node) — no separate Windows form.
 
 ### When the orchestrator writes
 
 0. **Light checkpoint at the plan gate (dev/game only)** — the object's first write. Written right
    after define finishes authoring the feature.json draft (**no** `DEFINED` flip yet — that is
    hoisted to gate-accept), **before** `EnterPlanMode` (plan mode blocks `.project/` writes, so this
-   is the last write slot before the gate). Heredoc form. Set `pipeline`, `feature`,
+   is the last write slot before the gate). Create via `init`. Set `pipeline`, `feature`,
    `startedAt`/`updatedAt`, `status: "running"`, `phase: "PHASE 0 · plan gate"`,
    `completedPhases: []`, `baselineSha`, empty `results`/`prompts`, `activeWorkflow: null`, and
    `plan: { featureDraft: <the in-memory draft> }`. The `featureDraft` is the draft's durable
@@ -160,9 +132,9 @@ Use the heredoc for write 1 and this patcher for writes 2–5 at each write poin
    post-gate), so for design write point 1 is the first write.
 1. **End of PHASE 0 (post-accept)** — for dev/game this **patches** the light checkpoint: set the
    formalized `plan` (SHIP_PLAN + verification/playtest profile) and drop the pre-accept
-   `plan.featureDraft` (pass `featureDraft: null` — the patcher deep-merges `plan`), advance
+   `plan.featureDraft` (pass `featureDraft: null` — `patch` deep-merges `plan`), advance
    `phase` = the first agent phase, `completedPhases: ["PHASE 0"]`. For design it is the **first**
-   write (heredoc). Either way set `plan` (the PHASE 0 selections), `baselineSha`
+   write (`init`). Either way set `plan` (the PHASE 0 selections), `baselineSha`
    (`git rev-parse HEAD` captured before any ship work), `phase` = the first agent phase,
    `completedPhases: ["PHASE 0"]`, `status: "running"`.
 2. **Immediately after launching a Workflow** — the tool result returns a `runId` even while the
@@ -174,8 +146,8 @@ Use the heredoc for write 1 and this patcher for writes 2–5 at each write poin
    `activeWorkflow`/`workflowRunId`/`prompts`.
 4. **On a failure-jump to the report phase** — set `status: "failed"` (keep everything else so the
    user can resume or inspect).
-5. **On successful completion (report phase)** — set `status: "complete"`, then remove the file
-   (`rm -f .project/session/ship-{name}.json`). Do **not** remove it on a failure exit.
+5. **On successful completion (report phase)** — run `complete` (sets `status: "complete"`, then
+   removes the file). Do **not** run it on a failure exit — a failed run keeps its checkpoint.
 
 Write the checkpoint at the **same boundaries** where the skill already rewrites
 `active-{name}.json` — that rewrite is the natural hook.

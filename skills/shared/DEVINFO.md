@@ -106,6 +106,14 @@ echo '{"feature":"FEATURE_NAME","skill":"SKILL_VERB","startedAt":"TIMESTAMP"}' >
 rm -f .project/session/active-FEATURE_NAME.json
 ```
 
+**Worktree caveat.** The signal always lives in the **main checkout's** `.project/session/` — that is
+what the board watches. Most skills write it from the main checkout, so a relative path is correct. But
+a skill that writes the signal while its cwd is **inside a worktree** (the ship pipelines during their
+in-worktree PHASE 3/4) must target main-root explicitly — `.project/session/` is worktree-local (not
+symlinked), so a relative write lands in the worktree and the board never sees it. Resolve
+`main_root = git worktree list --porcelain | head -1 | awk '{print $2}'` and write to
+`$main_root/.project/session/active-{name}.json`.
+
 Multiple features can be active simultaneously (e.g. parallel Claude sessions). Entries older than 2 hours are automatically ignored (staleness protection).
 
 The backlog dashboard detects changes in the session directory via SSE (`/{project}/session` API) and renders each active feature as a **live** row: pulsing dot + skill label ("building", "verifying", …), grouped in the IN PROGRESS section at the top of the board. This is distinct from the **queued** state (`transition` field in `backlog.json`, set by a board copy action) — queued means "command copied, waiting for pickup"; live means "a skill is running right now". `dev-ship` rewrites this file at every phase boundary (`define` → `build` → `verify` → `refactor`) and `design-ship` does the same (`design` → `build` → `content` → `check` → `ship`, the agents rewrite it themselves per the non-interactive contract), so the badge follows the pipeline; see `BACKLOG.md § Lifecycle Protocol` for the accompanying `transition: "shipping"` run marker.
