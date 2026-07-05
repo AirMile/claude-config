@@ -6,7 +6,9 @@ Loaded from PHASE 2b when ≥1 FAIL (SPEC or TESTABLE) was found. These phases w
 
 > **Todo**: mark PHASE 2b → `completed`, PHASE 3 → `in_progress`.
 
-Per FAIL: pick exactly one category.
+Per FAIL: pick exactly one category. Category semantics + the SUBJECTIVE-clarify rule are the shared
+definition — see `shared/FEEDBACK-CATEGORIZATION.md` (this fix-loop uses all four, including the
+dev-verify-specific **SPEC** = acceptance-criterion miss):
 
 | Category   | Trigger                                                         | Examples                                     |
 | ---------- | --------------------------------------------------------------- | -------------------------------------------- |
@@ -15,7 +17,7 @@ Per FAIL: pick exactly one category.
 | MEASURABLE | Failure has a numeric/visual threshold (timing, CSS, layout)    | Slow render, wrong color, layout-shift       |
 | SUBJECTIVE | Criterion is vague ("feels fast", "looks good") — ask user      | UX impressions, taste-level disagreements    |
 
-SUBJECTIVE → AskUserQuestion for clarification, then re-categorize as one of the other three.
+SUBJECTIVE → AskUserQuestion for clarification, then re-categorize as one of the other three (per the shared file).
 
 Technique mapping:
 

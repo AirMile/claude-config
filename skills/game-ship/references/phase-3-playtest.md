@@ -39,7 +39,8 @@ the whole TEST SCENARIO + EXPECTED BEHAVIOR checklist once, captures DebugListen
 in one batched `AskUserQuestion` round. Record outcomes.
 
 **On any playtest FAIL — categorize the feedback, then fix (bounded loop).** For each failed item,
-categorize per game-verify's Feedback Categorization (TESTABLE / MEASURABLE / SUBJECTIVE):
+categorize per `shared/FEEDBACK-CATEGORIZATION.md` (game routing in game-verify's Feedback
+Categorization) — TESTABLE / MEASURABLE / SUBJECTIVE:
 
 - **SUBJECTIVE** → one clarifying `AskUserQuestion` to make it concrete (too fast/slow, too
   strong/weak, wrong timing, visual, audio, other) → re-categorize as TESTABLE or MEASURABLE.

@@ -77,6 +77,9 @@ Everything works except puddle is too small and there's no sound
 
 ## Feedback Categorization
 
+Category semantics + the SUBJECTIVE-clarify rule are the shared definition —
+`shared/FEEDBACK-CATEGORIZATION.md`. Game routing (below) maps them to GUT/scene fixes:
+
 | Type           | Example                           | Action               |
 | -------------- | --------------------------------- | -------------------- |
 | **TESTABLE**   | "puddle radius=50, should be 100" | TDD fix loop         |
