@@ -3,7 +3,7 @@ name: core-audit
 description: Use with /core-audit to analyze and refine a skill from this conversation.
 metadata:
   author: claude-config
-  version: 4.0.0
+  version: 4.1.0
   category: core
 ---
 
@@ -74,8 +74,10 @@ Each selected pain point becomes a priority lens: findings in Steps 3–4 that e
 Run via Bash and record raw results:
 
 - **Size**: `wc -l` on SKILL.md and every file in `references/`/`techniques/`
+- **Hot-path cost**: `wc -c` on SKILL.md plus every reference read unconditionally near the top of the flow; `÷4 ≈` tokens loaded on every invocation. Report the eager/lazy ratio — what fraction of the total skill surface is hot path (always loaded) vs cold path (loaded only when a Read directive fires).
 - **Description budget**: character count of frontmatter `description` (target 40–80; long descriptions get truncated in the skill listing and break auto-routing)
 - **Reference integrity**: every `references/...`/`techniques/...` path mentioned in SKILL.md exists on disk, and every file on disk is mentioned somewhere (orphan check)
+- **Drift**: grep the skill surface for references to other skills (`/skill-name`, `skills/...` paths), `scripts/...` invocations, and `shared/*.md` files; verify each target exists on disk. (Catches stale pointers after renames/consolidations — a wider net than the reference-integrity check, which only covers the skill's own `references/`.)
 - **Handoff**: frontmatter declares `reads:`/`writes:` → run `python3 scripts/check-handoff.py` from the claude-config repo root and capture violations for the target skill
 - **Counterpart**: target matches `dev-*`/`game-*` with a pipeline counterpart → note it; structural findings must be flagged for sync (project CLAUDE.md § Rules for Changes)
 
@@ -90,12 +92,13 @@ Score each 1–5. Anchor: 5 = no findings, 4 = minor findings only, ≤3 = at le
 5. **Claude-Native Phrasing** — imperative and direct, no WHY for obvious decisions, trust Claude's formatting unless the format is critical, domain terms without definitions.
 6. **Frontmatter Health** — description trigger-based (`skills/shared/SKILL-PATTERNS.md § Description Format`) and within budget, name matches folder, metadata complete, no security violations.
 7. **Convention Compliance** — check against `skills/shared/SKILL-PATTERNS.md` (source of truth — cite sections, don't restate them):
-   - Lazy Reference Loading: ≥30-line blocks that are conditional, static templates, or end-of-flow still inline? Estimate the token cost per run.
    - Task Tracking: 5+ phases without the TaskCreate pattern (skip for thinking/CRUD/short skills)?
    - AskUserQuestion conventions: recommended-first, correct multiSelect, Modal Option Cap, Interview Checkpoint when 3+ inputs are gathered
    - Pipeline handoff: shared state touched without `reads:`/`writes:` declarations?
-8. **User Experience** — the run as the user experiences it: modal load (count, necessity, auto-decidable questions), approval gates (one clear gate, no double confirmation), output readability (does the user see decisions and results without digging), Next Steps guidance at completion, recommended defaults that match what most users pick. Static mode: judge the prescribed flow; trace mode: weigh against observed friction from Step 3.
-9. **Trace** (trace mode only) — weight of Step 3 observations: deviations, friction, auto-decidable modals, unused loads.
+8. **Token Efficiency** — check against `skills/shared/SKILL-PATTERNS.md § Token Efficiency` (cite, don't restate). Use the 4.1 hot-path cost + eager/lazy ratio as evidence. Look for: lazy-loading candidates left inline (`§ Lazy Reference Loading` criteria), the eager-read trap (references Read unconditionally at the top), shared content duplicated instead of cited, whole-file reads where a section would do, verbose mandatory output templates, deterministic work that belongs in a script, and agent-cost issues (`§ Pass Paths, Not Content`, `§ Agent Context Block`, `§ Agent Model Selection`, or agents spawned where an inline step suffices).
+9. **Robustness** — (a) **Failure paths**: does the skill define what happens when a script exits non-zero, a file is missing, or a precondition fails — or only the happy path? (b) **Repeat-safety**: on a second run, does it produce duplicate commits/backlog items, overwrite state, or break a handoff — or is it idempotent?
+10. **User Experience** — the run as the user experiences it: modal load (count, necessity, auto-decidable questions), approval gates (one clear gate, no double confirmation), output readability (does the user see decisions and results without digging), Next Steps guidance at completion, recommended defaults that match what most users pick. Static mode: judge the prescribed flow; trace mode: weigh against observed friction from Step 3.
+11. **Trace** (trace mode only) — weight of Step 3 observations: deviations, friction, auto-decidable modals, unused loads.
 
 ### 4.3 Present Analysis
 
@@ -113,10 +116,12 @@ ANALYSIS: [skill-name]
 | Claude-Native | X/5 | [one-line] |
 | Frontmatter | X/5 | [one-line] |
 | Conventions | X/5 | [one-line] |
+| Token Efficiency | X/5 | [one-line] |
+| Robustness | X/5 | [one-line] |
 | User Experience | X/5 | [one-line] |
 | Trace | X/5 | [one-line] (trace mode only)
 
-Overall: [X/40 or X/45] — [Grade: A/B/C/D/F]
+Overall: [X/50 or X/55] — [Grade: A/B/C/D/F]
 
 TOP FINDINGS:
 1. [finding] — [location] — [impact]

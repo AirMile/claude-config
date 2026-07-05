@@ -20,7 +20,7 @@ Generate an ASCII [diagram type] showing [what to visualize].
 
 | Use case              | Diagram type         | Example skills                                  |
 | --------------------- | -------------------- | ----------------------------------------------- |
-| Architecture/layers   | Component diagram    | dev-ship (define phase), design-convert          |
+| Architecture/layers   | Component diagram    | dev-ship (define phase), design-convert         |
 | Multi-step workflow   | Flowchart            | dev-ship (build phase), dev-ship (verify phase) |
 | Feature decomposition | Tree                 | project-plan                                    |
 | State transitions     | State machine        | game-ship                                       |
@@ -292,6 +292,24 @@ For conditional branches (read only when condition is met):
 **Examples:** `dev-ship/references/dev-verify/references/completion-sync.md` (end-of-flow sync, 237 lines) and `dev-ship/references/dev-build/techniques/tdd.md` (mutually-exclusive workflow, loaded on demand in PHASE 2).
 
 **Skip for:** Short inline phases (<30 lines), blocks that always run AND are always needed (no conditional savings), skills with fewer than 5 phases.
+
+---
+
+## Token Efficiency
+
+**When:** Auditing or authoring any skill. These techniques govern a skill's cost-per-run — both the context it loads (input tokens) and the output it is forced to emit. Lazy Reference Loading (above) is one technique; this is the full checklist.
+
+**Hot path vs cold path.** SKILL.md loads in full on every invocation (hot path). A reference file loads only when its Read directive fires (cold path). Keep the hot path — SKILL.md plus any file read unconditionally near the top — as small as the workflow allows. Estimate tokens as `wc -c ÷ 4`.
+
+**Checklist:**
+
+1. **Eager-read trap ("fake lazy loading").** A reference file that is Read unconditionally at the top of the flow saves nothing — it is hot-path cost wearing a cold-path costume. Extraction only pays off when the Read is conditional on a branch or lands late in the flow. Flag any `references/` file whose Read directive always fires early.
+2. **Lazy Reference Loading.** Apply the `§ Lazy Reference Loading` criteria (≥30 lines, conditional / static template / end-of-flow).
+3. **Cite, don't duplicate.** Content that lives in `shared/` (rules, schemas, patterns) is referenced by section, never restated in the skill. Restated shared content is dead weight that also drifts.
+4. **Scoped reads.** Prescribe reading the needed section, not the whole file, where a file is large and the target is local. Never re-read a file already in context.
+5. **Output-token cost.** Verbose mandatory templates (large ASCII tables, echoed summaries, repeated recaps) cost output tokens on every run. Prescribe a rigid format only where the format is load-bearing; otherwise trust Claude to format.
+6. **Script offload.** Deterministic work — validation, counting, path existence, schema checks — belongs in `scripts/`, not in model tokens. A `python3 scripts/x.py` call is cheaper and more reliable than asking the model to compute it.
+7. **Agent cost.** For skills that spawn sub-agents: `§ Pass Paths, Not Content` (never file contents in prompts), `§ Agent Context Block` (build context once), `§ Agent Model Selection` (tier matched to task). Inverse check too — agents spawned where an inline step would do (project CLAUDE.md § Agent Conventions) burn a full context for no isolation benefit.
 
 ---
 

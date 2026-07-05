@@ -15,7 +15,7 @@ Order significant changes by impact, highest first.
 
 - Remove what Claude already knows — redundancy reduces signal
 - Remove dead paths; restructure for top-to-bottom readability
-- Apply Lazy Reference Loading (`skills/shared/SKILL-PATTERNS.md`) when extraction criteria are met
+- Apply token-efficiency techniques (`skills/shared/SKILL-PATTERNS.md § Token Efficiency`, incl. Lazy Reference Loading) when criteria are met
 - Preserve unique project-specific knowledge and AskUserQuestion UX
 - Don't sacrifice clarity for brevity — if a longer explanation prevents mistakes, keep it
 
