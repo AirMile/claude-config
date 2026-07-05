@@ -121,11 +121,11 @@ multiSelect: false
 
 ### Designated alignment points
 
-| Skill                       | Alignment point                                                     | Plan mode? |
-| --------------------------- | ------------------------------------------------------------------- | ---------- |
-| `/dev-ship (define phase)`  | End of PHASE 2 Architecture, before ExitPlanMode                    | Yes        |
-| `/game-ship (define phase)` | End of PHASE 3 Architecture Design, before ExitPlanMode             | Yes        |
-| `/project-plan`             | After PHASE 3 Priority Assignment confirmation, before ExitPlanMode | Yes        |
+| Skill                       | Alignment point                                                        | Plan mode?  |
+| --------------------------- | ---------------------------------------------------------------------- | ----------- |
+| `/dev-ship (define phase)`  | During define's architecture interview (inline `AskUserQuestion`)      | No (inline) |
+| `/game-ship (define phase)` | During define's PHASE 3 architecture design (inline `AskUserQuestion`) | No (inline) |
+| `/project-plan`             | After PHASE 3 Priority Assignment confirmation, before ExitPlanMode    | Yes         |
 
 ---
 

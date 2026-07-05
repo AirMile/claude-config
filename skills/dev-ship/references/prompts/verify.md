@@ -30,7 +30,8 @@ SCOPE LIMITS (critical — this is a partial verify):
 - DO NOT run the MANUAL walkthrough (dev-verify PHASE 2 / manual-walkthrough.md) — collect the
   MANUAL items and return them instead.
 - DO NOT run completion-sync's DONE transition and DO NOT run PHASE Finalize — leave backlog status
-  as DOING and do NOT merge or remove the worktree. Finalize is the main chat's job (PHASE 3).
+  as DOING and do NOT merge or remove the worktree. Finalize is the main chat's job (PHASE 4, after
+  refactor).
 - Commit any AUTO fix-loop changes into the worktree branch (scoped commit), same as dev-verify.
 - If an AUTO item cannot be made to pass after the fix-loop: STOP, do not merge, return status
   "failed" with the item.

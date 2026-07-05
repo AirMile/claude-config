@@ -1,8 +1,21 @@
-# PHASE 3 — Human playtest + Finalize/merge (MAIN CHAT)
+# PHASE 3 — Human playtest + Completion (MAIN CHAT)
 
 Runs in the main chat so `AskUserQuestion` and the interactive game window reach the real user.
-Resumes the half of `game-verify` that AGENT 2 deliberately skipped: the live playtest (if any), the
-DONE completion, and the finalize/merge. AGENT 2's `remainingManualItems` is authoritative here.
+Resumes the half of `game-verify` that AGENT 2 deliberately skipped: the live playtest (if any) and
+the DONE completion. Finalize/merge has moved to the end of PHASE 4 (after refactor) so refactor
+commits land on the feature branch first. AGENT 2's `remainingManualItems` is authoritative here.
+
+## Resume entry (fresh session)
+
+When PHASE 3 is entered via a direct resume (a fresh chat re-invoking `/game-ship {feature}` after the
+last session handed off here — the deliberate token break after auto-verify leaves playtest items, the
+common case — or was interrupted), `results.verify` comes from
+the checkpoint (`ship-{feature}.json`), not from an in-context AGENT 2 return. Nothing else changes:
+run **Step 1** (enter the worktree, tag `stage: "testing"`) and **Step 2** (launch the live game
+window) exactly as on the normal path, then run the batched playtest over
+`results.verify.remainingManualItems`. The playtest walkthrough re-arms `active-{feature}.json` with
+`waiting: "playtest"`, so the board flips the row from **parked** back to **waiting**. Keep the
+checkpoint `phase: "PHASE 3"` throughout.
 
 ## Step 1 — Enter the worktree
 
@@ -68,16 +81,16 @@ Route the fix work via **one `AskUserQuestion`** (first option recommended):
 - **Stop and report** → do not finalize, do not proceed to PHASE 4; report the failed item in
   PHASE 5 and leave the worktree intact.
 
-`Skip` / `Defer` outcomes do not block finalize — they are recorded (deferred items stay open for a
+`Skip` / `Defer` outcomes do not block completion — they are recorded (deferred items stay open for a
 later re-test), and the flow continues.
 
 **Regression re-check after fixes** — if any PHASE 3 fix was applied, re-run the FULL GUT suite
 headless (`"{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit`) once before
 Step 3. New failures → back into the fix loop (max rounds as above); clean → continue.
 
-## Step 3 — Completion + Finalize/merge
+## Step 3 — Completion (DONE)
 
-All COVERED passed (AGENT 2) and no open playtest FAIL → complete and integrate:
+All COVERED passed (AGENT 2) and no open playtest FAIL → complete (but do **not** integrate yet):
 
 1. Run `game-verify`'s completion-sync to flip the feature to **DONE** (backlog + feature.json
    `tests` section: `finalStatus`, `sessions[]`, `requirements[].status`, `stage → "done"` + learning
@@ -88,19 +101,15 @@ All COVERED passed (AGENT 2) and no open playtest FAIL → complete and integrat
    output ends with a `Next steps` / Next-Step Clipboard Offer (`NEXT-STEP-OFFER.md`) — do **not**
    emit it. game-ship drives PHASE 4 refactor itself; keep only the DONE writes + learning extraction,
    drop the terminal handoff (adapter rule 4, applied here in the main chat).
-2. Finalize: run completion-finalize's **PHASE Finalize** block — detect `TEAM_MODE` + PR state, then
-   merge via `shared/FINALIZE.md` (solo → merge to main + worktree cleanup; open PR / team-no-PR →
-   halt with the printed message and leave the worktree, do not force a merge). Any solo-merge report
-   `Next:` line — ignore it; game-ship continues to PHASE 4. The **halt** messages (open PR / team)
-   are not handoff noise: they are the legitimate stop signal the Guard below acts on.
 
-After finalize, the shell is back on `main` and the worktree is removed (solo path). **Re-read
-`.project/` from disk** before PHASE 4.
+Do **not** finalize/merge here — stay in the worktree. Finalize runs at the end of PHASE 4
+(SKILL.md PHASE 4) so refactor commits land on the feature branch first. Proceed to PHASE 4 with the
+worktree active.
 
 ## Guard
 
-If Step 3's finalize halts (open PR, team mode) instead of merging, do **not** run PHASE 4 refactor
-on an unmerged feature — report the halt in PHASE 5 and stop. Refactor runs post-merge only.
+Never merge in this phase, even on all-green. The merge belongs to PHASE 4's finalize. (On a playtest
+FAIL the routing above already blocks PHASE 4.)
 
 ## Fallback — godot-mcp unavailable
 

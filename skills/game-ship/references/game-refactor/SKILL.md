@@ -24,7 +24,8 @@ Batch-first architecture: analyzes ALL features in parallel via Explore agents, 
 > as a **non-interactive subagent** under `references/non-interactive-contract.md` — that adapter
 > **blanket-overrides** the machinery below: no `TaskCreate`/`TaskUpdate`, no `EnterPlanMode`, no
 > `AskUserQuestion` (the PHASE 3 plan is auto-approved with scope "Apply everything"), headless GUT
-> test-guard (revert-on-red), single-feature scope, post-merge on main — **never merge**. Do not
+> test-guard (revert-on-red), single-feature scope, pre-merge in the feature worktree — **never
+> merge**. Do not
 > blind-sync.
 
 ## Scope Rule: Feature Files Only

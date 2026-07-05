@@ -73,11 +73,10 @@ FAIL-routing:
   godot-mcp is unavailable) as diagnosis. A concrete value ("radius 50, should be 100") makes it
   TESTABLE; a relative complaint ("too slow") MEASURABLE; a vague one ("feels off") SUBJECTIVE →
   clarify.
-- **Skip** → note reason ("not testing, accept as-is"). Does **not** block finalize.
+- **Skip** → note reason ("not testing, accept as-is"). Does **not** block completion.
 - **Defer** → which external prereq blocks it (missing asset, addon, export preset). Stays open for
-  re-test; does **not** block finalize.
+  re-test; does **not** block completion.
 
-Record all outcomes. Nothing flagged ⇒ all Pass → return to `phase-3-playtest.md` Step 3 (completion
-
-- finalize). Any **Fail** ⇒ the FAIL-routing block in `phase-3-playtest.md` Step 2 decides what
-  happens next (categorize → bounded fix loop via background agent / interactive `/game-debug` / stop).
+Record all outcomes. Nothing flagged ⇒ all Pass → return to `phase-3-playtest.md` Step 3
+(completion). Any **Fail** ⇒ the FAIL-routing block in `phase-3-playtest.md` Step 2 decides what
+happens next (categorize → bounded fix loop via background agent / interactive `/game-debug` / stop).

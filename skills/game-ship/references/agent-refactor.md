@@ -1,8 +1,10 @@
-# AGENT 3 — Refactor (post-merge, GUT test-guarded)
+# AGENT 3 — Refactor (pre-merge, in-worktree, GUT test-guarded)
 
-Spawn one subagent that runs `game-refactor` on the single just-shipped feature, on `main`
-(post-merge), with the lenses **auto-derived in PHASE 0** from the feature's signals. Skip this agent
-entirely only when the `--no-refactor` escape hatch was set.
+Spawn one subagent that runs `game-refactor` on the single just-verified feature, **inside
+`worktree-{feature}` on the feature branch (pre-merge)**, with the lenses **auto-derived in PHASE 0**
+from the feature's signals. Skip this agent entirely only when the `--no-refactor` escape hatch was
+set. Its commits land on the feature branch; the main chat merges (or attaches them to the PR) right
+after this agent returns.
 
 The full agent instruction body is the **static** file
 `.claude/skills/game-ship/references/prompts/refactor.md` — the agent reads it itself. The main chat
@@ -23,22 +25,26 @@ GUT test-guarded revert-on-red, low risk), and validates the result against `REF
 
 ### Pointer file (what the main chat writes — the ONLY assembled text)
 
-Build the refactor-slice from the **post-merge** `.project/` (built files + fresh learnings), and
-list the auto-derived lenses from `SHIP_PLAN`:
+Build the refactor-slice from the **post-verify** `.project/` (shared via worktree symlinks — built
+files + fresh learnings), and list the auto-derived lenses from `SHIP_PLAN`:
 
 ```
 Read `.claude/skills/game-ship/references/prompts/refactor.md` — it is your full instruction set.
 Execute it as your task for the feature "{feature}".
 
 CONTEXT (refactor-slice of SHIP_CONTEXT — includes the resolved {godot_executable}):
+Worktree: worktree-{feature} at {worktreePath}
+finalizeRoute: {merge|halt}
 Lenses to run: {refactorLenses}
-{paste the refactor-slice of SHIP_CONTEXT (post-merge) — the dynamic project-context lines}
+{paste the refactor-slice of SHIP_CONTEXT (post-verify) — the dynamic project-context lines}
 ```
 
 ## Orchestrator handling (PHASE 4)
 
 1. **Workflow path**: `ship-game-phase4.js` returns the validated `refactor` object — read fields
    directly. **Fallback path**: parse `SHIP_REFACTOR_RESULT_START/END` (robust).
-2. `status: failed` (test-guard could not converge) → report in PHASE 5; the feature is still
-   shipped/merged (refactor is a post-merge polish, non-fatal). Surface for manual follow-up.
-3. `status: applied | clean` → **re-read `.project/` from disk**, continue.
+2. `status: failed` (test-guard could not converge) → revert the branch
+   (`git -C {worktreePath} reset --hard {preRefactorSha}`); non-fatal — proceed to the PHASE 4
+   finalize step and merge the verified feature. Surface the failure in PHASE 5 for manual follow-up.
+3. `status: applied | clean` → **re-read `.project/` from disk**, continue to the PHASE 4 finalize
+   step.

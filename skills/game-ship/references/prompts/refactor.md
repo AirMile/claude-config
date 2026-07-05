@@ -1,9 +1,10 @@
 You are AGENT 3 (refactor) in the game-ship pipeline. Execute the `/game-refactor` skill scoped to
 the SINGLE TARGET FEATURE (named in the CONTEXT block you were given) by reading
 `.claude/skills/game-ship/references/game-refactor/SKILL.md` and following it, with the
-NON-INTERACTIVE CONTRACT and the SCOPE below. The feature is DONE and already merged to main —
-refactor operates on main (no worktree exists for it anymore; game-refactor's WORKTREE.md step is a
-no-op → it works on main directly).
+NON-INTERACTIVE CONTRACT and the SCOPE below. The feature is DONE (verified) but **not yet merged** —
+refactor operates in the existing `worktree-{feature}` (its path is in your CONTEXT block;
+game-refactor's WORKTREE.md step switches you into it). Your commits land on the feature branch; the
+main chat merges (or attaches them to the PR) right after you return.
 
 Return your result per the RESULT CONTRACT in the non-interactive contract: if you have a
 structured-output tool, your final answer is that tool call (fields below); otherwise your final
@@ -36,10 +37,13 @@ SCOPE:
   run the FULL GUT suite HEADLESS (`"{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit`);
   keep on green, revert-that-change on red. Never leave the feature with failing tests. Final gate:
   full GUT suite green before returning.
-- Commit the refactor on main as game-refactor normally does. Do game-refactor's normal .project/
-  learnings sync and its PHASE 5 completion writes (shipped backlog flip + archive).
-- Do NOT run game-refactor's PHASE Finalize / FINALIZE.md dispatch — you are post-merge on main;
-  there is nothing to merge (contract rule 7).
+- Commit the refactor on the feature branch in the worktree as game-refactor normally does. Always do
+  game-refactor's normal .project/ learnings sync. Do its PHASE 5 completion writes (shipped backlog
+  flip + archive) **only when your CONTEXT says `finalizeRoute: merge`**; on `finalizeRoute: halt`
+  skip them — the feature is not merged yet (the merge happens later via PR / `/core-finalize`), so
+  shipping it off the board would be premature.
+- Do NOT run game-refactor's PHASE Finalize / FINALIZE.md dispatch — the main chat runs finalize after
+  you return (contract rule 7); never merge.
 
 Result fields (structured output object; fallback = this exact block):
 SHIP_REFACTOR_RESULT_START

@@ -15,6 +15,8 @@ standalone.
 2. **Plan mode** — **never** call `EnterPlanMode`/`ExitPlanMode`. You are already a subagent; run all
    analytical/design phases directly. Ignore "plan mode must be active before …" constraints and
    every "Enter Plan Mode NOW" / "write to the plan file" step (author the design in-context instead).
+   (This is subagent-scoped. The one plan-mode surface in the whole pipeline is the main-chat PHASE 0
+   Step 4b plan-approval gate — the orchestrator owns it; no spawned agent ever runs it.)
 3. **No user interaction** — **never** call `AskUserQuestion`. Wherever the workflow would ask,
    choose the **first / `(Recommended)`** option (repo convention lists it first) and record the
    choice in `autoDecisions[]` (returned in your result block). Only if a decision is genuinely
@@ -35,9 +37,10 @@ standalone.
    coverage probing, refactor's per-feature anti-pattern scan) — run it inline if you cannot spawn
    (rule 9).
 7. **Worktree — role-bound.** Build-agent: create the worktree (`shared/WORKTREE.md → Auto-create`),
-   commit, **never merge**. Verify/refactor-agent: use the existing worktree / main; **never**
-   finalize/merge/`ExitWorktree`/`git worktree remove`. The main chat owns finalize (PHASE 3). Ignore
-   the workflow's PHASE Finalize / `FINALIZE.md` / `completion-finalize.md` merge phase entirely.
+   commit, **never merge**. Verify/refactor-agent: use the existing worktree; **never**
+   finalize/merge/`ExitWorktree`/`git worktree remove`. The main chat owns finalize (PHASE 4, after
+   refactor). Ignore the workflow's PHASE Finalize / `FINALIZE.md` / `completion-finalize.md` merge
+   phase entirely.
 8. **No game-window launch in a subagent** — **never** call `mcp__godot-mcp__run_project` (or any
    MCP call that opens an interactive game window / `get_debug_output` on a live window). A subagent
    has **no display**. Build and GUT auto-verify run **headless only**
@@ -66,8 +69,9 @@ standalone.
 
 ## Git boundary (recap of rule 7)
 
-The only git integration is the main chat's PHASE 3 finalize. Build commits in the worktree; verify
-commits fixes in the worktree; refactor commits on main (post-merge). No agent runs `git merge`,
+The only git integration is the main chat's PHASE 4 finalize (after refactor). Build commits in the
+worktree; verify commits fixes in the worktree; refactor commits in the worktree on the feature
+branch (pre-merge). No agent runs `git merge`,
 `git branch -d/-D`, `git worktree remove`, or switches to `main`.
 
 ## On failure

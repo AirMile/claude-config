@@ -1,13 +1,14 @@
 export const meta = {
   name: "ship-game-refactor",
   description:
-    "game-ship PHASE 4: single-feature game-refactor (sonnet/medium) on main, GUT test-guarded (revert-on-red)",
+    "game-ship PHASE 4: single-feature game-refactor (sonnet/medium) in the worktree (pre-merge), GUT test-guarded (revert-on-red)",
   whenToUse:
-    "Launched by the game-ship skill after PHASE 3 finalize — not intended for standalone use.",
+    "Launched by the game-ship skill after PHASE 3 playtest — finalize runs after this workflow returns — not intended for standalone use.",
   phases: [
     {
       title: "Refactor",
-      detail: "AGENT 3 — game-refactor on main, GUT test-guarded",
+      detail:
+        "AGENT 3 — game-refactor in the worktree (pre-merge), GUT test-guarded",
       model: "sonnet",
     },
   ],

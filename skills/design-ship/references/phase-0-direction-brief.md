@@ -11,15 +11,24 @@ detection against `.project/session/ship-{target}.json` (use the resolved arg fo
 `/design-ship` was called with no arg, first resolve the name via Step 1, then run this check). This
 is read-only, so it is fine before plan mode:
 
-- **Open checkpoint found** (`status != "complete"`) → present the Resume / Restart / Inspect
-  `AskUserQuestion` from SHIP-CHECKPOINT.md.
-  - **Resume** → run orphan/leak cleanup, load `plan` (→ `SHIP_PLAN` + the full PHASE 0 objects) +
-    `results` from the checkpoint (worktree path/branch live in `results.build`), re-derive
-    `SHIP_CONTEXT` fresh (Step 10), re-seed the 6-phase `TaskCreate` list (completed phases →
-    `completed`), and **jump to the recorded `phase`** (skip the rest of PHASE 0). This is the
-    credits-op / crash recovery path.
-  - **Restart** → archive the old checkpoint + clean the orphan worktree, then continue PHASE 0 fresh.
-  - **Inspect** → print checkpoint + worktree status, re-ask.
+- **Open checkpoint found** (`status != "complete"`) → apply SHIP-CHECKPOINT.md's resume logic.
+  - **Direct resume (fast path)** — when `/design-ship` was called with an **explicit** target arg
+    AND `pipeline: "design"` AND `status: "running"` AND `updatedAt` ≤ 24h: **no question**. Announce
+    `Resuming {target} at {phase} — checkpoint {age} old` and jump directly (interactive PHASE 4
+    review re-enters per SHIP-CHECKPOINT.md § On "Resume" step 4; a workflow phase relaunches per the
+    same section). Design has **no** `"PHASE 0 · plan gate"` light checkpoint — its PHASE 0 selections
+    are irreproducible user choices (direction, archetype, brief) written only at Step 9, post-plan-exit,
+    so the first checkpoint write already lands after the gate. This asymmetry with dev/game is
+    deliberate.
+  - **Edge cases** (no explicit arg, `status: "failed"`, or `updatedAt` > 24h) → present the Resume /
+    Restart / Inspect `AskUserQuestion` from SHIP-CHECKPOINT.md:
+    - **Resume** → run orphan/leak cleanup, load `plan` (→ `SHIP_PLAN` + the full PHASE 0 objects) +
+      `results` from the checkpoint (worktree path/branch live in `results.build`), re-derive
+      `SHIP_CONTEXT` fresh (Step 10), re-seed the 6-phase `TaskCreate` list (completed phases →
+      `completed`), and **jump to the recorded `phase`** (skip the rest of PHASE 0). This is the
+      credits-op / crash recovery path.
+    - **Restart** → archive the old checkpoint + clean the orphan worktree, then continue PHASE 0 fresh.
+    - **Inspect** → print checkpoint + worktree status, re-ask.
 - **No open checkpoint** → run the **preflight checks** (dirty working tree, colliding
   `worktree-{target}` from a prior aborted run without a checkpoint), surface any notice, then
   continue to Step 1.

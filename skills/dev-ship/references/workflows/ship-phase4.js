@@ -3,11 +3,12 @@ export const meta = {
   description:
     "dev-ship PHASE 4: single-feature refactor (sonnet/medium) in parallel with targeted OWASP scanners (sonnet/medium), then one opus triage pass over the findings",
   whenToUse:
-    "Launched by the dev-ship skill after PHASE 3 finalize — not intended for standalone use.",
+    "Launched by the dev-ship skill after PHASE 3 manual tests — finalize runs after this workflow returns — not intended for standalone use.",
   phases: [
     {
       title: "Refactor",
-      detail: "AGENT 3 — dev-refactor on main, test-guarded",
+      detail:
+        "AGENT 3 — dev-refactor in the worktree (pre-merge), test-guarded",
       model: "sonnet",
     },
     {
@@ -140,7 +141,7 @@ const TRIAGE_SCHEMA = {
 // property access on a string yields undefined (agents then get "the file at undefined").
 // Normalize once; the rest of the script reads from `A`. (See SKILL.md § Design.)
 const A = typeof args === "string" ? JSON.parse(args) : (args ?? {});
-if (!A.refactorPromptPath && !(A.scanners?.length)) {
+if (!A.refactorPromptPath && !A.scanners?.length) {
   log(
     `args-delivery: no refactor prompt and no scanners after normalize — refactorPromptPath=${A.refactorPromptPath}, scanners=${A.scanners?.length ?? 0}`,
   );
@@ -161,25 +162,31 @@ const thunks = [
     resumedRefactor
       ? Promise.resolve(resumedRefactor)
       : A.refactorPromptPath
-        ? agent(`Read and execute the full instructions in the file at ${A.refactorPromptPath}.`, {
-            label: "AGENT 3: refactor",
-            agentType: "general-purpose",
-            model: "sonnet",
-            effort: "medium",
-            phase: "Refactor",
-            schema: REFACTOR_SCHEMA,
-          })
+        ? agent(
+            `Read and execute the full instructions in the file at ${A.refactorPromptPath}.`,
+            {
+              label: "AGENT 3: refactor",
+              agentType: "general-purpose",
+              model: "sonnet",
+              effort: "medium",
+              phase: "Refactor",
+              schema: REFACTOR_SCHEMA,
+            },
+          )
         : Promise.resolve(null),
   ...scanners.map(
     (s) => () =>
-      agent(`Read and execute the full instructions in the file at ${s.promptPath}.`, {
-        label: `scan:${s.code}`,
-        agentType: `owasp-${s.code.toLowerCase()}-scanner`,
-        model: "sonnet",
-        effort: "medium",
-        phase: "Security",
-        schema: SCAN_SCHEMA,
-      }).then((r) => (r ? { code: s.code.toUpperCase(), ...r } : null)),
+      agent(
+        `Read and execute the full instructions in the file at ${s.promptPath}.`,
+        {
+          label: `scan:${s.code}`,
+          agentType: `owasp-${s.code.toLowerCase()}-scanner`,
+          model: "sonnet",
+          effort: "medium",
+          phase: "Security",
+          schema: SCAN_SCHEMA,
+        },
+      ).then((r) => (r ? { code: s.code.toUpperCase(), ...r } : null)),
   ),
 ];
 

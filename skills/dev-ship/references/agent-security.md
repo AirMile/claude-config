@@ -45,13 +45,15 @@ prompt-body file needed):
 
 ```
 Scope: security audit of feature "{feature}" ONLY — read the files in <reference-paths> below.
+The feature lives in the worktree at {worktreePath} — the paths in <reference-paths> are prefixed
+accordingly (pre-merge; these files do not exist on main yet).
 This is REPORT-ONLY: do not modify any file, do not fix, do not write .project/. Return your
 standard scanner output (score /10, positives, findings[{file,line,severity,confidence,issue,fix,
 CWE}], verdict) — via your structured-output tool if you have one, otherwise as your normal
 scanner report.
 
 <reference-paths>
-{categorized paths from feature.json#files[]}
+{categorized paths from feature.json#files[], each prefixed with {worktreePath}/}
 </reference-paths>
 
 OWASP_CONTEXT:
@@ -87,4 +89,4 @@ findingsAboveThreshold, triage: {confirmed[], dismissed[], summary}}` — read d
    criteria as the static triage file).
 2. **Do not apply fixes.** In PHASE 5, present `triage.confirmed` (priority-ordered) +
    `triage.summary` and offer (as plain text, not an auto-run): "Run `/dev-security {feature}` to
-   remediate." The feature stays shipped/merged regardless.
+   remediate." The PHASE 4 finalize still merges the verified feature regardless.

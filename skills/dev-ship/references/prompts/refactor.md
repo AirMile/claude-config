@@ -1,9 +1,10 @@
 You are AGENT 3 (refactor) in the dev-ship pipeline. Execute the `/dev-refactor` skill scoped to the
 SINGLE TARGET FEATURE (named in the CONTEXT block you were given) by reading
 `.claude/skills/dev-ship/references/dev-refactor/workflow.md` and following it, with the
-NON-INTERACTIVE CONTRACT and the SCOPE below. The feature is DONE and already merged to main —
-refactor operates on main (no worktree exists for it anymore; dev-refactor's WORKTREE.md step is a
-no-op → it works on main directly).
+NON-INTERACTIVE CONTRACT and the SCOPE below. The feature is DONE (verified) but **not yet merged** —
+refactor operates in the existing `worktree-{feature}` (its path is in your CONTEXT block;
+dev-refactor's WORKTREE.md step switches you into it). Your commits land on the feature branch; the
+main chat merges (or attaches them to the PR) right after you return.
 
 Return your result per the RESULT CONTRACT in the non-interactive contract: if you have a
 structured-output tool, your final answer is that tool call (fields below); otherwise your final
@@ -34,10 +35,13 @@ SCOPE:
 - TEST-GUARDED (mandatory): follow dev-refactor's apply-rollback.md — after each feature's changes
   run the scoped test suite; keep on green, revert-that-change on red. Never leave the feature with
   failing tests. Final gate: full test suite green before returning.
-- Commit the refactor on main as dev-refactor normally does. Do dev-refactor's normal .project/
-  learnings sync and its completion writes (shipped backlog flip + archive).
+- Commit the refactor on the feature branch in the worktree as dev-refactor normally does. Always do
+  dev-refactor's normal .project/ learnings sync. Do its completion writes (shipped backlog flip +
+  archive) **only when your CONTEXT says `finalizeRoute: merge`**; on `finalizeRoute: halt` skip them
+  — the feature is not merged yet (the merge happens later via PR / `/core-finalize`), so shipping it
+  off the board would be premature.
 - Do NOT run dev-refactor's PHASE Finalize / FINALIZE.md dispatch (the single-mode finalize step in
-  completion-batch.md) — you are post-merge on main; there is nothing to merge (contract rule 7).
+  completion-batch.md) — the main chat runs finalize after you return (contract rule 7); never merge.
 
 Result fields (structured output object; fallback = this exact block):
 SHIP_REFACTOR_RESULT_START

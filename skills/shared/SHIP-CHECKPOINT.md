@@ -5,7 +5,10 @@ makes any interruption — **credits exhausted, crash, killed process, or a mid-
 resumable pause: the run's coarse state (`backlog.status`, worktree, `.project/`) already survives
 on disk, and this checkpoint adds the **fine-grained run state** (which phase completed, the PHASE 0
 selections, the structured agent results) that otherwise lives only in the main-chat context and is
-lost on a full session end.
+lost on a full session end. The same machinery also powers a **deliberate handoff pause**: dev/game
+stop on purpose at the PHASE 2→3 boundary when auto-verify leaves manual items, parking the run so the
+expensive interactive phase (manual tests / playtest) resumes on a fresh, cheap session instead of on
+top of the whole build+verify transcript.
 
 **Single writer.** Only the ship **orchestrator (main chat)** reads/writes the checkpoint — the
 spawned subagents never touch it (non-interactive-contract rule 1: the ship skill owns phase
@@ -24,6 +27,11 @@ same key as `active-{name}.json`). Parallel to the live-signal, but with a diffe
 `active-{name}.json` is removed on **every** exit; the checkpoint is removed **only on
 `status: "complete"`** — on failure/interruption it stays, so a re-invoke can resume.
 
+Because the checkpoint survives a full session end (unlike `active-{name}.json`), the backlog board
+reads it too: a checkpoint with `status != "complete"` and no live signal renders as a **parked**
+row (amber ⏸ `{label} · parked`, with a copy-button carrying the `/{pipeline}-ship {name}` resume
+command). See `BACKLOG.md § Board rendering`.
+
 ### Schema
 
 ```json
@@ -34,13 +42,23 @@ same key as `active-{name}.json`). Parallel to the live-signal, but with a diffe
   "startedAt": "<ISO>",
   "updatedAt": "<ISO>",
   "status": "running", // "running" | "failed" | "complete"
-  "phase": "PHASE 2", // current phase pointer (label matches the skill's phase list)
+  "phase": "PHASE 2", // current phase pointer (label matches the skill's phase list); may also be
+  //                     the pre-approval value "PHASE 0 · plan gate" (dev/game light checkpoint —
+  //                     written after define authors the draft, before the plan gate;
+  //                     completedPhases:[], plan holds only featureDraft — see plan field below)
   "completedPhases": ["PHASE 0", "PHASE 1"],
   "baselineSha": "<git rev-parse HEAD before ship>", // rollback anchor
+  "preRefactorSha": "<worktree HEAD at PHASE 4 start>", // optional; revert anchor if refactor fails (dev/game)
   "plan": {
     /* dev: SHIP_PLAN (auto-derived refactorLenses, securityLight, securityDeep,
-                verificationProfile). design: the FULL PHASE 0 objects — direction (incl. its
-                token decisions + chosen layout), archetype, brief, checkScope, composition
+                verificationProfile). At the pre-accept "PHASE 0 · plan gate" the dev/game plan
+                holds ONLY `featureDraft` — the complete in-memory feature.json draft define
+                authored, before it is written to disk. feature.json is written only at
+                gate-accept (extracted from the plan-file appendix), so until then the checkpoint
+                is the draft's only durable home — the same deferred-write pattern design uses for
+                its inline spec (below). Step 5 (post-accept) drops `featureDraft` and replaces it
+                with the formalized SHIP_PLAN. design: the FULL PHASE 0 objects — direction (incl.
+                its token decisions + chosen layout), archetype, brief, checkScope, composition
                 (PAGE only), and the inline spec when captured (its disk write is deferred to
                 the build sync, so until the build completes the checkpoint is its only durable
                 home). Store the objects the agent prompts are assembled from — never
@@ -91,8 +109,10 @@ Set-Content -Path .project/session/ship-{name}.json.tmp -Value $checkpointJson -
 Move-Item -Force .project/session/ship-{name}.json.tmp .project/session/ship-{name}.json
 ```
 
-The full heredoc above is the **first** write only (end of PHASE 0 — the object does not exist yet).
-Always set `updatedAt` to the current ISO time on every write.
+The full heredoc above is the **first** write only — the write that creates the object, when it does
+not exist yet: **write point 0** (the dev/game light checkpoint at the plan gate) or, when there is
+no light checkpoint (design), **write point 1** (end of PHASE 0). Every later write patches the
+delta. Always set `updatedAt` to the current ISO time on every write.
 
 ### Follow-up writes — patch the delta, don't re-emit
 
@@ -126,7 +146,23 @@ Use the heredoc for write 1 and this patcher for writes 2–5 at each write poin
 
 ### When the orchestrator writes
 
-1. **End of PHASE 0** — first write. Set `plan` (the PHASE 0 selections), `baselineSha`
+0. **Light checkpoint at the plan gate (dev/game only)** — the object's first write. Written right
+   after define finishes authoring the feature.json draft (**no** `DEFINED` flip yet — that is
+   hoisted to gate-accept), **before** `EnterPlanMode` (plan mode blocks `.project/` writes, so this
+   is the last write slot before the gate). Heredoc form. Set `pipeline`, `feature`,
+   `startedAt`/`updatedAt`, `status: "running"`, `phase: "PHASE 0 · plan gate"`,
+   `completedPhases: []`, `baselineSha`, empty `results`/`prompts`, `activeWorkflow: null`, and
+   `plan: { featureDraft: <the in-memory draft> }`. The `featureDraft` is the draft's durable
+   pre-accept home (no `feature.json` exists yet) — it makes the gate resumable from a fresh session
+   **without re-running the interview**: a re-invoke direct-resumes to the gate and restores the draft
+   from here. `SHIP_PLAN` is not formalized until after the gate (Step 5, which drops `featureDraft`).
+   Design has no light checkpoint (its PHASE 0 selections are irreproducible user choices written
+   post-gate), so for design write point 1 is the first write.
+1. **End of PHASE 0 (post-accept)** — for dev/game this **patches** the light checkpoint: set the
+   formalized `plan` (SHIP_PLAN + verification/playtest profile) and drop the pre-accept
+   `plan.featureDraft` (pass `featureDraft: null` — the patcher deep-merges `plan`), advance
+   `phase` = the first agent phase, `completedPhases: ["PHASE 0"]`. For design it is the **first**
+   write (heredoc). Either way set `plan` (the PHASE 0 selections), `baselineSha`
    (`git rev-parse HEAD` captured before any ship work), `phase` = the first agent phase,
    `completedPhases: ["PHASE 0"]`, `status: "running"`.
 2. **Immediately after launching a Workflow** — the tool result returns a `runId` even while the
@@ -155,8 +191,26 @@ test -f .project/session/ship-{name}.json && echo EXISTS
 If a checkpoint exists with `status != "complete"`, an earlier run was interrupted. **First check
 `pipeline`** — if it names another pipeline, do not resume here: stop and point the user to the
 matching skill (`pipeline: "dev"` → `/dev-ship {name}`, `pipeline: "design"` → `/design-ship
-{name}`, `pipeline: "game"` → `/game-ship {name}`). Otherwise, do **not** silently continue and do
-**not** blindly restart — ask:
+{name}`, `pipeline: "game"` → `/game-ship {name}`).
+
+### Direct resume (fast path)
+
+When **all four** hold, skip the Resume/Restart/Inspect question entirely and resume in place — the
+common case (a fresh chat re-invoking to continue exactly where the last one stopped):
+
+1. the skill was invoked with an **explicit** feature/target arg (not a bare `/{pipeline}-ship`),
+2. the checkpoint's `pipeline` matches this skill,
+3. `status == "running"` (not `"failed"`),
+4. `updatedAt` is **≤ 24h** old.
+
+Print a one-line notice (`Resuming {name} at {phase} — checkpoint {age} old`) and execute the
+**§On "Resume"** steps below directly. The fast path applies to **any** recorded `phase`: workflow
+phases relaunch per On-Resume step 4's existing bullets; an interactive phase re-enters per its
+bullet there; `"PHASE 0 · plan gate"` jumps to the plan gate.
+
+Fall through to the `AskUserQuestion` below **only** when a fast-path condition fails: no explicit
+arg, `status: "failed"`, or `updatedAt` > 24h (staleness). Otherwise, do **not** silently continue
+and do **not** blindly restart — ask:
 
 - Compute staleness: if `updatedAt` is **older than 24h**, prefix the resume option with a
   staleness notice (the worktree/`.project` may have drifted).
@@ -200,9 +254,24 @@ options:
      workflow short-circuits the already-completed agents
      (`const build = resumedBuild ?? await agent(...)`) and only runs what remains. The worktree +
      `.project/` on disk supply the rest.
-   - **If the recorded phase is an interactive main-chat phase** (dev PHASE 3 finalize, design
-     PHASE 4 review) → resume it directly from the stored `results` (e.g. dev's
-     `results.verify.remainingManualItems` drives the manual walkthrough).
+   - **If the recorded phase is an interactive main-chat phase** (dev/game PHASE 3 manual
+     tests/playtest, design PHASE 4 review) → **first physically re-enter the run**, then restart the
+     walkthrough from the stored `results`. For dev/game this is not only crash recovery — it is the
+     **normal** route into PHASE 3 when manual items remain, because the green branch deliberately
+     hands off here (parks the run, ends the turn) so this phase runs on a fresh session. The re-entry steps live in the pipeline's own
+     interactive-phase file, not here (this spec stays pipeline-generic): dev/game run that file's
+     worktree-entry step (via `shared/WORKTREE.md`) + app/game-launch step before presenting the
+     checklist (dev: `phase-3-manual-finalize.md § Resume entry`; game: `phase-3-playtest.md`); design
+     re-enters its PHASE 4 review. Then the walkthrough replays from `results.verify.remainingManualItems`
+     (dev/game) / the stored check results (design). **PHASE 4 with `results.refactor` already present**
+     → skip the workflow relaunch and resume at the finalize step (the refactor ran; only the
+     merge/cleanup remains).
+   - **If the recorded phase is `"PHASE 0 · plan gate"`** (dev/game light checkpoint) → jump straight
+     to the pipeline's Step 4b plan-approval gate, restoring the in-memory draft from
+     `plan.featureDraft` (the durable pre-accept home — `feature.json` is not written until accept).
+     Re-write the plan-file appendix from it and present the gate; no interview re-run. (Step 3
+     patches its `verificationProfile`/`playtestProfile` into `plan.featureDraft` after write point 0,
+     so by the time the gate is reachable the stored draft already carries it — no re-derive needed.)
 
 ### On "Restart fresh"
 
@@ -259,7 +328,10 @@ return the base branch to a clean state with `git reset --hard {baselineSha}` (a
 worktree). The report phase surfaces `baselineSha` in the failure summary so the escape hatch is
 always visible — never run a destructive reset automatically.
 
-**Post-merge caveat**: `baselineSha` predates the finalize/merge. After a **post-merge** failure
-(e.g. dev PHASE 4 refactor/security), a hard reset to `baselineSha` also removes the
-already-merged, already-verified feature — in that case prefer reverting only the offending
-post-merge commits. The failure report should note this when the merge already happened.
+**Pre-merge refactor caveat**: for the dev/game pipelines, refactor/security now run **pre-merge**
+inside the worktree (PHASE 4), and the finalize/merge is PHASE 4's last step. So a PHASE 4 refactor
+failure is recovered by resetting the worktree branch to `preRefactorSha` (the HEAD captured at
+PHASE 4 start) — **not** `baselineSha` — after which finalize still merges the verified feature. Only
+**after** PHASE 4's finalize has merged does `baselineSha` become the post-merge escape hatch: a hard
+reset to it would also remove the already-merged, already-verified feature, so prefer reverting only
+the offending commits. The failure report notes which anchor applies.

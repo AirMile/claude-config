@@ -1,12 +1,12 @@
 # Shared Finalize Flow
 
-Single source of truth for finalizing a feature worktree — either solo-merge (no PR) or cleanup-only (after a merged PR). Used by `core-finalize`, and by the **PHASE Finalize** sections in `dev-ship (verify phase)`, `dev-ship (refactor phase)`, `game-ship (verify phase)`, `game-ship (refactor phase)`, and `design-ship` (PHASE 4).
+Single source of truth for finalizing a feature worktree — either solo-merge (no PR) or cleanup-only (after a merged PR). Used by `core-finalize`, and by the **PHASE Finalize** sections in `dev-ship` / `game-ship` (PHASE 4, after refactor) and `design-ship` (PHASE 4).
 
 ## Finalize Offer Decision
 
-Skills that opportunistically offer finalize (`dev-ship (refactor phase)`, `game-ship (refactor phase)`, `design-ship`) consult this matrix to decide whether/how to prompt the user. Differs from the Detection matrix below: this is about **whether we ask**, not about **what finalize executes**.
+Skills that opportunistically offer finalize (`design-ship`) consult this matrix to decide whether/how to prompt the user. Differs from the Detection matrix below: this is about **whether we ask**, not about **what finalize executes**.
 
-> **Note:** `dev-ship (verify phase)` and `game-ship (verify phase)` no longer use this matrix — they use an inline auto-dispatch (see their own `references/finalize.md` / `references/completion-finalize.md`). The matrix below is for the last step of the pipeline only.
+> **Note:** `dev-ship` / `game-ship` PHASE 4 finalize (after refactor) does not use this offer matrix — it uses an inline auto-dispatch (see their own `references/dev-verify/references/finalize.md` / `references/game-verify/references/completion-finalize.md` action tables). The matrix below is for the last step of the pipeline only.
 
 Read `TEAM_MODE` + detect PR state:
 
@@ -367,7 +367,7 @@ Also detect ghost cwd via `[ "$(pwd)" != "{main_root}" ] && [ ! -d "$(pwd)" ]`. 
    Start a fresh terminal in: {main_root}
 ```
 
-> **Scope of `Merge: {sha}`**: for **dev-track** features (not COMPONENT/PAGE), this SHA is informational only — do NOT write it to `backlog.json` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys for dev-track are set exclusively by `/dev-ship (refactor phase)` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). For **design-track**, the Backlog sync step above writes the merge SHA as `shippedSha` **only for a PAGE that is already `DONE`** — never as a `DOING` → `DONE` promotion, and never for a COMPONENT (which ships with its consuming page). A `DOING` PAGE stays at TO CHECK until `/design-ship` ships it. Skills consuming this report (`dev-ship (verify phase)`, `game-ship (verify phase)`, `design-ship`, `core-finalize`) MUST treat the SHA as display-only for dev-track.
+> **Scope of `Merge: {sha}`**: for **dev-track** features (not COMPONENT/PAGE), this SHA is informational only — do NOT write it to `backlog.json` or `feature.json` as `shippedSha`. The `shipped` / `shippedAt` / `shippedSha` keys for dev-track are set exclusively by `/dev-ship (refactor phase)` after CLEAN or REFACTORED review (see `shared/BACKLOG.md` Lifecycle Protocol). For **design-track**, the Backlog sync step above writes the merge SHA as `shippedSha` **only for a PAGE that is already `DONE`** — never as a `DOING` → `DONE` promotion, and never for a COMPONENT (which ships with its consuming page). A `DOING` PAGE stays at TO CHECK until `/design-ship` ships it. Skills consuming this report (`dev-ship` / `game-ship` PHASE 4 finalize, `design-ship`, `core-finalize`) MUST treat the SHA as display-only for dev-track.
 
 For cleanup-only with PR context:
 

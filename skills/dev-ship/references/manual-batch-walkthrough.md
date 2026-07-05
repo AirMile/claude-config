@@ -57,10 +57,10 @@ For the items the user flagged (if any), ask **one** follow-up round (a single `
 
 - **Fail** → "what went wrong?" (one line — the observed vs expected). Offer to capture a Playwright
   screenshot as diagnosis if the item is DOM-observable.
-- **Skip** → note reason ("not testing, accept as-is"). Does **not** block finalize.
+- **Skip** → note reason ("not testing, accept as-is"). Does **not** block completion.
 - **Defer** → which external prereq blocks it (account, CORS-origin, API-token, third-party
-  config). Stays open for re-test; does **not** block finalize.
+  config). Stays open for re-test; does **not** block completion.
 
 Record all outcomes. Nothing flagged ⇒ all Pass → return to `phase-3-manual-finalize.md` Step 3
-(completion + finalize). Any **Fail** ⇒ the FAIL-routing block in `phase-3-manual-finalize.md`
+(completion). Any **Fail** ⇒ the FAIL-routing block in `phase-3-manual-finalize.md`
 Step 2 decides what happens next (background fix agent / interactive debug / stop).
