@@ -132,6 +132,8 @@ If nothing available → continue without context (backwards compatible).
 
 Outcome: confirmed problem summary (type + symptom + context + details) — input for PHASE 2 investigation. Do not start investigating before the user confirms the summary.
 
+**Ladder gate (before the full pipeline).** Read `shared/DEBUG-LADDER.md` and apply its entry rule to the confirmed summary. When the signals point to **tier 1** (a MEASURABLE feel/value tweak — "animation too fast", "hitbox 4px too big" — cause visible, ≤1-2 files) offer a quick path — `AskUserQuestion`: "Quick fix now (Recommended)" (adjust the value + live re-check via GUT/scene, skip the investigation/plan/repro machinery) | "Full debug pipeline". Tier 2/3 signals (cause unclear, cross-scene, intermittent, or a prior attempt already failed) → continue the pipeline as normal. This keeps the 11-phase flow for real bugs and spares a feel-tweak from it.
+
 ---
 
 ## PHASE 2: Codebase Investigation (Explore agent)
@@ -271,11 +273,13 @@ For Performance Issue / Scene-Signal Issue, AskUserQuestion:
 - question: "Is this bug testable in an automated GUT test?"
 - options:
   - "Yes, write reproduction test (Recommended)" — Standard path for assertable bugs
+  - "No, skip — direct fix + live re-check" — MEASURABLE feel/timing/value tweak: adjust and confirm live, no test
   - "No, skip — Visual / Rendering" — No assertion on game output possible
-  - "No, skip — Performance without FPS threshold" — No concrete measurement definable
   - "No, skip — Production-only state" — Not reproducible in test environment
 
-"Skip" chosen → note `reproductionTest: { skipped: true, reason: "{reason}" }` and go to PHASE 8.
+(A MEASURABLE feel/timing/value tweak takes the "direct fix + live re-check" path — per `shared/DEBUG-LADDER.md` tier 1, no GUT test for "the animation is a touch too slow". GUT stays the test route for assertable bugs; there is no DOM-assertion path in Godot. "Skip — Performance without FPS threshold" also remains valid.)
+
+"Skip" chosen → note `reproductionTest: { skipped: true, reason: "{reason}" }` and go to PHASE 8. For a MEASURABLE feel/timing skip, apply the direct fix and confirm live (per `shared/DEBUG-LADDER.md` tier 1).
 
 ### Step 2: Write failing GUT test
 
