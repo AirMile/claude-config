@@ -29,7 +29,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.1.1
+  version: 0.2.1
   category: game
 ---
 
@@ -46,44 +46,31 @@ pipeline: it carries its own vendored copies of the four phase workflows under
 
 ## Design
 
-- **Two human touchpoints.** PHASE 0 (define only — technique passes are auto-derived) up front,
-  ending with a **plan-approval gate** (after define + classify the full feature plan is presented in
-  plan mode and the user accepts it, or rejects → revise, before build starts), and PHASE 3 (the live
-  playtest) mid-run. Everything else runs hands-off. The define-phase HTML preview is a **visual aid
-  shown only when the feature has a scene layout**; the plan-approval gate, not the preview, is the
-  review surface.
-- **The playtest is one flow, not two paths.** PHASE 3 either has MANUAL playtest items or falls
-  through to just the completion (DONE write) — the merge happens at the end of PHASE 4, after
-  refactor. The **playtest classification** computed in PHASE 0 (COVERED=GUT vs MANUAL=playtest) is an
-  **advisory estimate**; AGENT 2's returned `remainingManualItems` is authoritative for PHASE 3.
-- **Build and verify are separate agents (separate context windows)** — a fresh verify agent is
-  unbiased/adversarial, which is the whole value of verify. See `references/agent-verify.md`.
-- **No game window in a subagent.** Build and GUT auto-verify run **headless** (`gut_cmdln.gd`) — a
-  subagent has no display, so it must never call `mcp__godot-mcp__run_project`. The only interactive
-  game launch is the main chat's PHASE 3 playtest.
-- **`.project/` is shared on disk between agents; context is isolated.** The flow is sequential →
-  one writer at a time → no write-races. Re-read `.project/` from disk after every agent return.
-  See `references/non-interactive-contract.md`.
-- **`{godot_executable}` is resolved once in PHASE 0** (from `paths.yaml` / `CLAUDE_GODOT_EXECUTABLE`)
-  and injected into **every** agent slice — agents run GUT headless with it and never re-resolve.
-- **Agents run via the Workflow tool** (two runs: PHASE 1+2 and PHASE 4) with a per-agent
-  model + effort matrix and schema-validated structured results (no result-block parsing).
-  **Prompts are passed by pointer, never inline** — the static agent instruction bodies live in
-  `references/prompts/{build,verify,refactor}.md` and the spawned agent reads them itself (plus
-  `non-interactive-contract.md`, which it also reads). The main chat writes only a small
-  **pointer + dynamic SHIP_CONTEXT slice** file to `.project/session/ship-prompts/` and passes the
-  path in `args` — it does **not** read the `prompts/*` bodies or the contract. Some runtimes deliver
-  the `args` global to the script as a **JSON string** rather than an object (then every `args.x` is
-  `undefined`), so both workflow scripts **normalize `args` at the top**
-  (`typeof args === "string" ? JSON.parse(args) : args`) — the primary Workflow path is reliable.
-  The Agent-tool spawn path in each `agent-*.md` is the **fallback**, used only when the Workflow
-  tool is unavailable. Model override only there (the Agent tool cannot set effort).
+- **Two human touchpoints**: PHASE 0 (define + plan-approval gate) up front, PHASE 3 (live playtest)
+  mid-run; everything else hands-off. Merge happens at the end of PHASE 4. The playtest classification
+  (COVERED=GUT vs MANUAL=playtest) is advisory; AGENT 2's `remainingManualItems` is authoritative for
+  PHASE 3.
+- **Build and verify are separate agents/contexts** (fresh verify = adversarial). **`.project/` is
+  shared on disk, context isolated** — sequential, one writer, re-read `.project/` after every agent
+  return. See `references/agent-verify.md` / `references/non-interactive-contract.md`.
+- **No game window in a subagent** — build + GUT auto-verify run **headless** (`gut_cmdln.gd`); a
+  subagent has no display and must never call `mcp__godot-mcp__run_project`. The only interactive
+  launch is the main chat's PHASE 3 playtest. **`{godot_executable}` is resolved once in PHASE 0** and
+  injected into every agent slice (agents never re-resolve).
+- **Agents run via the Workflow tool** (PHASE 1+2, PHASE 4); prompts passed **by pointer, never
+  inline**; results schema-validated. Both workflow scripts **normalize `args`** at the top
+  (`typeof args === "string" ? JSON.parse(args) : args`) — a runtime may deliver `args` as a JSON
+  string. The Agent-tool path in each `agent-*.md` is the **fallback** (model override only there —
+  it cannot set effort).
 
   | Agent            | Model    | Effort   | Why                                                           |
   | ---------------- | -------- | -------- | ------------------------------------------------------------- |
   | AGENT 1 build    | `sonnet` | `high`   | contract-driven TDD — feature.json + tests bound the work     |
   | AGENT 2 verify   | `opus`   | `high`   | the one independent adversarial GUT judgment; backstops build |
   | AGENT 3 refactor | `sonnet` | `medium` | GUT test-guarded (revert-on-red), low risk                    |
+
+> Full rationale (two-touchpoint model, playtest 85/15, why fresh verify contexts, checkpoint
+> durability, `.project/` sharing, prompt-by-pointer): `references/design-rationale.md`.
 
 ## Workflow
 
@@ -92,22 +79,15 @@ pipeline: it carries its own vendored copies of the four phase workflows under
 `completed` at the end. During context compaction the task list remains visible.
 
 **Durable checkpoint (pause/resume across sessions)** — the `TaskCreate` list survives compaction
-but **not** a crash or credits-exhaustion that ends the session. So the orchestrator also mirrors
-the run to an on-disk checkpoint (`.project/session/ship-{feature}.json`) at every phase boundary,
-per `shared/SHIP-CHECKPOINT.md`. This records the phase pointer, the PHASE 0 selections
-(`SHIP_PLAN`), and each agent's structured result — the state that otherwise lives only in this
-context. The first write is the **light checkpoint** at the plan gate (`phase: "PHASE 0 · plan
-gate"`, before build), so even a define-then-crash is resumable. Any interruption becomes a resumable
-pause: re-invoking `/game-ship {feature}` with the feature name detects the checkpoint (PHASE 0) and,
-when it is fresh and running, **resumes directly with no prompt** — an interactive phase (PHASE 3
-playtest) re-enters the worktree, relaunches the game window, and continues the playtest; the plan
-gate re-presents. Beyond crash recovery, the PHASE 2→3 boundary is also a **deliberate handoff stop**:
-when auto-verify leaves manual playtest items, the recommended route into the playtest is a **fresh
-session** (the run parks itself and ends the turn — see the green branch below), so the expensive
-interactive phase runs on cheap context rather than on top of the whole build+verify transcript. Resume/Restart/Inspect is asked only on the edge cases (stale > 24h, `failed`, no
-feature arg, or pipeline mismatch). The checkpoint also drives the board's **parked** row, visible
-across sessions. Only the main chat writes it (subagents never touch it — contract rule 1). Use
-`pipeline: "game"` in the checkpoint.
+but not a crash/credits-exhaustion. So the orchestrator also mirrors the run to
+`.project/session/ship-{feature}.json` at every phase boundary via `ship-checkpoint.js` (use
+`pipeline: "game"` in the checkpoint), recording the phase pointer, PHASE 0 selections (`SHIP_PLAN`),
+and agent results. **Only the main chat writes it** (subagents never touch it — contract rule 1). The
+first write is the light checkpoint at the plan gate, so even a define-then-crash resumes; the PHASE
+2→3 boundary is a **deliberate handoff stop** (park + fresh-session resume into the playtest — see the
+green branch). Resume detection, the fast-path direct-resume, write points 0–5, orphan-cleanup, and
+the board's **parked** row are fully specified in `shared/SHIP-CHECKPOINT.md` — this skill follows it;
+the per-phase field patches below are the only checkpoint detail restated here.
 
 1. PHASE 0: Define + Classify + Auto-derive technique plan
 2. PHASE 1: Build (AGENT 1)

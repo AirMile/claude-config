@@ -24,7 +24,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 0.4.0
+  version: 0.4.1
   category: design
 ---
 
@@ -87,17 +87,15 @@ inherently interactive → `/design-convert` Convert. THEME → `/design-tokens`
 `completed` at the end. During context compaction the task list remains visible.
 
 **Durable checkpoint (pause/resume across sessions)** — the `TaskCreate` list survives compaction
-but **not** a crash or credits-exhaustion that ends the session. So the orchestrator also mirrors
-the run to an on-disk checkpoint (`.project/session/ship-{target}.json`) at every phase boundary,
-per `shared/SHIP-CHECKPOINT.md`. It records the phase pointer, the full PHASE 0 objects (direction
-incl. token decisions + layout, archetype, brief, checkScope, composition, inline spec), and each
-agent's structured result — the state that otherwise lives only in this context. Any interruption becomes a resumable pause: re-invoking `/design-ship {target}`
-with the target name detects the checkpoint (PHASE 0) and, when it is fresh and running, **resumes
-directly with no prompt** (the interactive PHASE 4 review re-enters); Resume/Restart/Inspect is asked
-only on the edge cases (stale > 24h, `failed`, no target arg, or pipeline mismatch). The checkpoint
-also drives the board's **parked** row, visible across sessions. Unlike dev/game, design has no
-light plan-gate checkpoint — the first write lands post-gate at Step 9 (its PHASE 0 selections are
-irreproducible user choices). Only the main chat writes it (subagents never touch it — contract rule 1).
+but not a crash/credits-exhaustion. So the orchestrator also mirrors the run to
+`.project/session/ship-{target}.json` at every phase boundary via `ship-checkpoint.js`, recording
+the phase pointer, the full PHASE 0 objects (direction incl. token decisions + layout, archetype,
+brief, checkScope, composition, inline spec), and agent results. **Only the main chat writes it**
+(subagents never touch it — contract rule 1). Unlike dev/game there is no light plan-gate checkpoint:
+the first write lands **post-gate** at Step 9 — the PHASE 0 selections are irreproducible user
+choices. Resume detection, the fast-path direct-resume, write points 0–5, orphan-cleanup, and the
+board's **parked** row are fully specified in `shared/SHIP-CHECKPOINT.md` — this skill follows it; the
+per-phase field patches below are the only checkpoint detail restated here.
 
 1. PHASE 0: Target + Direction + Brief
 2. PHASE 1: Build (AGENT 1)

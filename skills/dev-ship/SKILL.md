@@ -31,7 +31,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.7.0
+  version: 0.8.1
   category: dev
 ---
 
@@ -47,33 +47,17 @@ and drives them internally — there are no separate `/dev-define`…`/dev-refac
 
 ## Design
 
-- **One human touchpoint up front** (PHASE 0: define only — technique passes are auto-derived),
-  ending with a **plan-approval gate**: after define + classify the full feature plan is presented in
-  plan mode and the user accepts it (or rejects → revise) before build starts. Then hands-off —
-  except the conditional manual-test interlude (PHASE 3). The define-phase HTML preview is a **visual
-  aid shown only when the feature has UI**; the plan-approval gate, not the preview, is the review
-  surface.
-- **85/15 is one flow, not two paths.** PHASE 3 either has manual items or falls through to just
-  the completion (DONE write) — the merge happens at the end of PHASE 4, after refactor. The
-  `verificationProfile` computed in PHASE 0 is an **advisory estimate**; AGENT 2's returned
-  `remainingManualItems` is authoritative for PHASE 3.
-- **Build and verify are separate agents (separate context windows)** — a fresh verify agent is
-  unbiased/adversarial, which is the whole value of verify. See `references/agent-verify.md`.
-- **`.project/` is shared on disk between agents; context is isolated.** The flow is sequential →
-  one writer at a time → no write-races. Re-read `.project/` from disk after every agent return.
-  See `references/non-interactive-contract.md`.
-- **Agents run via the Workflow tool** (two runs: PHASE 1+2 and PHASE 4) with a per-agent
-  model + effort matrix and schema-validated structured results (no result-block parsing).
-  **Prompts are passed by pointer, never inline** — the static agent instruction bodies live in
-  `references/prompts/{build,verify,refactor,security-triage}.md` and the spawned agent reads them
-  itself (plus `non-interactive-contract.md`, which it also reads). The main chat writes only a small
-  **pointer + dynamic SHIP_CONTEXT slice** file to `.project/session/ship-prompts/` and passes the
-  path in `args` — it does **not** read the `prompts/*` bodies or the contract. Some
-  runtimes deliver the `args` global to the script as a **JSON string** rather than an object (then
-  every `args.x` is `undefined`), so both workflow scripts **normalize `args` at the top**
-  (`typeof args === "string" ? JSON.parse(args) : args`) — the primary Workflow path is reliable.
-  The Agent-tool spawn path in each `agent-*.md` is the **fallback**, used only when the Workflow
-  tool is unavailable. Model override only there (the Agent tool cannot set effort).
+- **One human touchpoint** (PHASE 0 define + plan-approval gate); then hands-off except the
+  conditional PHASE 3 manual round. Merge happens at the end of PHASE 4. `verificationProfile` is
+  advisory; AGENT 2's `remainingManualItems` is authoritative for PHASE 3.
+- **Build and verify are separate agents/contexts** (fresh verify = adversarial). **`.project/` is
+  shared on disk, context isolated** — sequential, one writer, re-read `.project/` after every agent
+  return. See `references/agent-verify.md` / `references/non-interactive-contract.md`.
+- **Agents run via the Workflow tool** (PHASE 1+2, PHASE 4); prompts passed **by pointer, never
+  inline**; results schema-validated. Both workflow scripts **normalize `args`** at the top
+  (`typeof args === "string" ? JSON.parse(args) : args`) — a runtime may deliver `args` as a JSON
+  string. The Agent-tool path in each `agent-*.md` is the **fallback** (model override only there —
+  it cannot set effort).
 
   | Agent            | Model    | Effort   | Why                                                           |
   | ---------------- | -------- | -------- | ------------------------------------------------------------- |
@@ -83,6 +67,9 @@ and drives them internally — there are no separate `/dev-define`…`/dev-refac
   | AGENT S scanners | `sonnet` | `medium` | pattern-driven read-only fan-out                              |
   | Security triage  | `opus`   | `high`   | only pass without a test backstop — judgment over findings    |
 
+> Full rationale (85/15 model, why fresh verify contexts, checkpoint durability, `.project/`
+> sharing, prompt-by-pointer): `references/design-rationale.md`.
+
 ## Workflow
 
 **Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items
@@ -90,21 +77,15 @@ and drives them internally — there are no separate `/dev-define`…`/dev-refac
 `completed` at the end. During context compaction the task list remains visible.
 
 **Durable checkpoint (pause/resume across sessions)** — the `TaskCreate` list survives compaction
-but **not** a crash or credits-exhaustion that ends the session. So the orchestrator also mirrors
-the run to an on-disk checkpoint (`.project/session/ship-{feature}.json`) at every phase boundary,
-per `shared/SHIP-CHECKPOINT.md`. This records the phase pointer, the PHASE 0 selections
-(`SHIP_PLAN`), and each agent's structured result — the state that otherwise lives only in this
-context. The first write is the **light checkpoint** at the plan gate (`phase: "PHASE 0 · plan
-gate"`, before build), so even a define-then-crash is resumable. Any interruption becomes a resumable
-pause: re-invoking `/dev-ship {feature}` with the feature name detects the checkpoint (PHASE 0) and,
-when it is fresh and running, **resumes directly with no prompt** — an interactive phase (PHASE 3
-manual tests) re-enters the worktree, relaunches the app, and continues the walkthrough; the plan
-gate re-presents. Beyond crash recovery, the PHASE 2→3 boundary is also a **deliberate handoff stop**:
-when auto-verify leaves manual items, the recommended route into the manual round is a **fresh session**
-(the run parks itself and ends the turn — see the green branch below), so the expensive interactive
-phase runs on cheap context rather than on top of the whole build+verify transcript. Resume/Restart/Inspect is asked only on the edge cases (stale > 24h, `failed`, no
-feature arg, or pipeline mismatch). The checkpoint also drives the board's **parked** row, visible
-across sessions. Only the main chat writes it (subagents never touch it — contract rule 1).
+but not a crash/credits-exhaustion. So the orchestrator also mirrors the run to
+`.project/session/ship-{feature}.json` at every phase boundary via `ship-checkpoint.js`, recording
+the phase pointer, PHASE 0 selections (`SHIP_PLAN`), and agent results. **Only the main chat writes
+it** (subagents never touch it — contract rule 1). The first write is the light checkpoint at the
+plan gate, so even a define-then-crash resumes; the PHASE 2→3 boundary is a **deliberate handoff
+stop** (park + fresh-session resume — see the green branch). Resume detection, the fast-path
+direct-resume, write points 0–5, orphan-cleanup, and the board's **parked** row are fully specified
+in `shared/SHIP-CHECKPOINT.md` — this skill follows it; the per-phase field patches below are the
+only checkpoint detail restated here.
 
 1. PHASE 0: Define + Classify + Auto-derive technique plan
 2. PHASE 1: Build (AGENT 1)
@@ -274,7 +255,8 @@ until the failed items pass.
 > `Workflow({scriptPath: ".claude/skills/dev-ship/references/workflows/ship-phase4.js", args: {feature, refactorPromptPath, scanners, triagePromptPath, resume}})`
 > — with `refactorPromptPath: null` only when the `--no-refactor` escape hatch was set, `scanners: []`
 > when `securityDeep` is empty (`scanners` = one `{code, promptPath}` per auto-derived OWASP code, each scanner prompt per
-> `agent-security.md` written to its own file; `triagePromptPath` = a pointer file per its § Triage section), and
+> `agent-security.md` written to its own file; `triagePromptPath` = a pointer file per its § Triage section,
+> pointing the triage agent at `references/prompts/security-triage.md`), and
 > `resume` = `null` fresh or the **completed** results `{refactor, triage}` from the checkpoint on a
 > Resume (a failed refactor re-runs). `ship-phase4.js` normalizes `args` like `ship-phase12.js`; the
 > same PHASE 1+2 empty-input safety net applies if an agent still reports no input.

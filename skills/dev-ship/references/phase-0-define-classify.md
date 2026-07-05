@@ -186,6 +186,11 @@ the fields that exist; `feature.*` below refers to that draft, not a file on dis
 > (auto-opens in the browser; `CLAUDE_AUTO_PREVIEW=0` opts out). One preview per run. The textual
 > "Verification profile" line (Step 3) still prints — the preview is the visual layer on top, not a
 > replacement.
+>
+> **Skip clause**: when the feature's ASCII wireframe already rides inside the Step 4b plan gate
+> (the gate presents the `design` sketch), the standalone HTML preview is redundant — skip it (no
+> browser side-trip). The gate is the review surface; render the HTML only when there is richer UI
+> to show than the gate's inline sketch. Skipping is expected, not a deviation.
 
 ## Step 3 — Compute the advisory `verificationProfile`
 
@@ -293,7 +298,9 @@ so entering plan mode now blocks nothing that was going to run before it.
      `node ~/.claude/scripts/feature-from-plan.js <plan-file> .project/features/{feature}/feature.json`
      writes `feature.json` from the appendix; (b) run define's PHASE 4 sync (backlog `status: "DEFINED"`
      with `auto: true`, plus project.json and project-context.json — per
-     `dev-define/references/phase4-sync.md`), and re-set `transition: "shipping"` (Step 2b); (c) rewrite
+     `dev-define/references/phase4-sync.md`; for Tauri/desktop projects the project.json **endpoint**
+     sync no-ops — `invoke` commands are not REST endpoints, so that array stays empty and only
+     project-context components update), and re-set `transition: "shipping"` (Step 2b); (c) rewrite
      `active-{feature}.json` **without** the `waiting` field. Then continue to Step 5 (checkpoint patch)
      → Step 6 → build.
    - **Reject** → return to the define interview to revise: re-run **Step 2** (`dev-define` inline)
