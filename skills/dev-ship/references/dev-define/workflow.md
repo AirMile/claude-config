@@ -7,10 +7,13 @@ PHASE 1 of the dev workflow: define → build → test.
 > **Copied & pre-adapted for dev-ship.** This tree is run **inline in the main chat** by dev-ship
 > PHASE 0 (Step 2 of `phase-0-define-classify.md`), not as a standalone skill. Per that file's
 > **deviations**, the **plan-mode machinery below is overridden**: never call
-> `EnterPlanMode`/`ExitPlanMode`, run every analytical/interview step directly, and author the
-> machine contract in-context (no plan file). Wherever a step says "in plan mode" / "Enter Plan Mode"
-> / "write to the plan file", treat it as "run directly / hold in memory". Do not blind-sync this
-> file from anywhere else.
+> `EnterPlanMode`/`ExitPlanMode` here, and run every analytical/interview step directly. Run only
+> **PHASE 0→2** (interview + architecture + authoring the complete feature.json draft) and **hold the
+> draft in memory** — do not write `feature.json`. PHASE 3 (write) and PHASE 4 (sync) are **hoisted to
+> dev-ship's gate-accept** (Step 4b): the draft becomes the plan-file appendix there, and
+> `feature-from-plan.js` writes `feature.json` on accept. Wherever a step says "in plan mode" / "write
+> to the plan file", treat it as "run directly / hold in memory (the gate writes the plan file)". Do
+> not blind-sync this file from anywhere else.
 
 ## Constraints (apply to every phase)
 
@@ -211,7 +214,7 @@ The full requirements table with acceptance criteria and the feature overview ta
 - **Allowed in plan file**: type signatures (`interface X { ... }`, `type Y = ...`, function signatures `(input: X) => Y`), file/module structure, feature flow as `→` chain, dependency graph, build sequence, test strategy table, durable decisions.
 - **Forbidden in plan file**: function bodies, `(set, get) => ({...})` blocks, `set({...})` calls, helper implementations, JSX, hook internals — even as "skeleton" or "pseudo-code." That work belongs to `/dev-build`. If a code fence contains anything beyond type declarations: stop and rewrite as an English description.
 
-**Plan file vs feature.json — role split**: full table in [references/feature-json-schema.md § Role split](references/feature-json-schema.md#role-split). Short rule: plan file = review-artefact (context, REQ-list, durable decisions 1-liners, flow, verification) + machine-contract appendix (drafted here, skipped in review). feature.json = canonical contract (acceptance criteria, build sequence, test strategy, type signatures, AI-navigability).
+**Plan file vs feature.json — role split**: full table in [shared/feature-json-schema.md § Role split](../../../shared/feature-json-schema.md#role-split). Short rule: plan file = review surface (context, REQ-list, durable decisions 1-liners, flow, verification) + a `## Appendix — machine contract` holding the **complete feature.json draft** as a ```json block (authored here in plan mode, skipped in review). PHASE 3 extracts that block into feature.json mechanically — the appendix IS the canonical contract, written once.
 
 Design in three steps:
 
@@ -238,7 +241,7 @@ Design in three steps:
    - **Routes registration** (frontend projects with `stack.framework` only): only `page`/`route` files with `action: CREATE` get an entry in `feature.architecture.routes[]` with `{ path, file, action, requirements[] }`. MODIFY-only route files: skip — `project-context.json#context.routing` leaves existing routes unchanged in PHASE 4. **Skip entirely** if no CREATE route/page files — omit the `routes[]` field from feature.json.
    - **Design sketch**: visual features only — ASCII wireframe + states (loading/empty/error). Confirm inline via AskUserQuestion: "Is this visual design correct?" — "Yes (Recommended)" / "Adjust". **Wait for user confirmation before continuing; no implicit 'Yes'.** Use token names (`bg-primary`, `text-foreground`), no hex. See `shared/TOKENS.md`.
    - **Durable decisions** (1-line each for plan-file review): full rationale and canonical form go to feature.json in PHASE 3.
-   - **Machine contract appendix** — design type signatures, build sequence, and test strategy NOW (inside plan mode, so the planning model authors them) and write them to the plan file under a `## Appendix — machine contract (skip review)` heading. The appendix is not part of the review surface — the heading tells the reviewer to skip it. PHASE 3 transcribes these sections into feature.json. Dependency analysis stays implicit — derived from `buildSequence[].dependsOn`, no separate section.
+   - **Machine contract appendix** — author the **complete feature.json draft** NOW (inside plan mode, so the planning model writes the canonical contract) as a single ```json fenced block under a `## Appendix — machine contract (skip review)` heading. Include every define-owned field per [shared/feature-json-schema.md](../../../shared/feature-json-schema.md): `name`, `status` (`"DEFINED"`), `created`, `depends`, `summary`, `requirements` (with full `acceptance[]`), `files`, `architecture` (incl. `interfaces[].definition` — type declarations only, per the Strict boundary above), `buildSequence`, `testStrategy`, plus the conditional fields (`design`, `apiContract`, `clarifications`, `durableDecisions`, `research`, `externalRef`, `pageHint`, `seedDrift`). The appendix is not part of the review surface — the heading tells the reviewer to skip it; the review sections above (context, REQ 1-liners, file table, flow, verification, durable-decision 1-liners) are the human review surface. PHASE 3 extracts this block mechanically into feature.json — no re-authoring. Dependency analysis stays implicit — derived from `buildSequence[].dependsOn`, no separate section.
    - **AI-navigability** (skip if ≤6 files AND no new registry): when applicable, identify new registries and record them in `architecture.registries[]` (written to feature.json in PHASE 3). Omit module-export lists, colocation notes, and import constraints — covered by project conventions.
 
 **Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision OR ≥1 clarification was recorded; below that skip silently, trivial features yield only drift-noise):
@@ -253,11 +256,17 @@ Follow [shared/BACKLOG.md](.claude/skills/shared/BACKLOG.md) § Impact Check. In
 
 ### PHASE 3: Write feature.json
 
-> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/dev-ship/references/dev-define/references/feature-json-schema.md` for the full field table, deltaOp rules, durableDecisions categories, and buildSequence structure.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
-Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema). Field conditions, deltaOp rules, durableDecisions categories, and buildSequence structure: see `references/feature-json-schema.md`.
+**Extract, don't re-author**: the complete feature.json draft was authored in PHASE 2 under plan mode (the `## Appendix — machine contract` block). Run:
 
-**Transcribe, don't re-design**: `architecture.interfaces` (type signatures), `buildSequence`, and `testStrategy` come from the plan file's `## Appendix — machine contract` section, authored in PHASE 2 under plan mode. Copy them 1:1 into feature.json, adjusting only JSON formatting. Fallback: appendix missing (legacy plan file, post-compaction loss) → generate these sections now as before.
+```
+node ~/.claude/scripts/feature-from-plan.js <plan-file> .project/features/{feature-name}/feature.json
+```
+
+where `<plan-file>` is the plan-mode path from PHASE 0 step 4. The script extracts the ```json appendix, validates it, and — in update-mode — merges over the existing file (preserving `build`/`tests`/`refactor`/etc. that the draft does not own). Check the exit status: exit 0 = written, done.
+
+**Fallback** (non-zero exit — appendix missing or invalid JSON in a legacy/post-compaction plan file): author `.project/features/{feature-name}/feature.json` by hand now, using `shared/feature-json-schema.md` for the full field table, deltaOp rules, durableDecisions categories, and buildSequence structure, and `shared/FEATURE.md` for the full schema.
 
 ### PHASE 4: Sync
 

@@ -1,0 +1,10 @@
+{
+  "name": "OLD-NAME",
+  "status": "DONE",
+  "requirements": [
+    { "id": "REQ-OLD", "description": "stale", "status": "pending" }
+  ],
+  "build": { "started": "2025-12-01", "testsPass": 5, "testsTotal": 5 },
+  "tests": { "finalStatus": "PASSED", "checklist": [] },
+  "refactor": { "status": "CLEAN" }
+}

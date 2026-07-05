@@ -35,10 +35,14 @@ The skill gathers requirements through targeted questions, optionally researches
 > **Copied & pre-adapted for game-ship.** This tree is run **inline in the main chat** by game-ship
 > PHASE 0 (Step 2 of `phase-0-define-classify.md`), not as a standalone skill. Per that file's
 > **deviations**, the **plan-mode machinery below is overridden**: never call
-> `EnterPlanMode`/`ExitPlanMode`, run every analytical/interview step directly, and author the
-> architecture in-context (no plan file). Wherever a step says "in plan mode" / "Enter Plan Mode" /
-> "write to the plan file", treat it as "run directly / hold in memory". The `AskUserQuestion`
-> checkpoints (scene layout, seed alignment, backlog impact) still run. Do not blind-sync this file.
+> `EnterPlanMode`/`ExitPlanMode` here, and run every analytical/interview step directly. Run only
+> **PHASE 0→3** (interview + architecture + authoring the complete feature.json draft) and **hold the
+> draft in memory** — do not write `feature.json`. PHASE 4 (write) and PHASE 5 (sync) are **hoisted to
+> game-ship's gate-accept** (Step 4b): the draft becomes the plan-file appendix there, and
+> `feature-from-plan.js` writes `feature.json` on accept. Wherever a step says "in plan mode" / "write
+> to the plan file", treat it as "run directly / hold in memory (the gate writes the plan file)". The
+> `AskUserQuestion` checkpoints (scene layout, seed alignment, backlog impact) still run. Do not
+> blind-sync this file.
 
 ## When to Use
 
@@ -557,15 +561,25 @@ into the plan file; resolution via the protocol's AskUserQuestion (allowed in
 plan mode). Approved verdicts carry to PHASE 5 as `backlogImpact[]` — mutations
 happen only in the sync batch, never here.
 
-**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 4 (writing feature.json).
+**Machine contract appendix**: before exiting plan mode, author the **complete feature.json draft** as a single ```json fenced block under a `## Appendix — machine contract (skip review)` heading in the plan file. Include every define-owned field per the PHASE 4 field table below (name/status/created/depends/summary, requirements with full `acceptance[]` + game fields `tuningLevers`/`errorScenarios`, files, architecture, buildSequence, testStrategy, and the conditional fields). `interfaces[].definition` holds signal/resource/script declarations only — no method bodies. The heading marks it non-review; the design narrative above it (scene tree, flow, verification) is the review surface. PHASE 4 extracts this block mechanically — no re-authoring.
+
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design + machine-contract appendix to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 4 (writing feature.json).
 
 ### PHASE 4: Write feature.json
 
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema).
+**Extract, don't re-author**: the complete feature.json draft was authored in the PHASE 3 machine-contract appendix under plan mode. Run:
 
-**Transcribe, don't re-design**: the architecture sections (scene tree, scripts, signals, resources, test strategy, implementation order/buildSequence) were authored in PHASE 2b/3 inside plan mode and live in the plan file — copy them 1:1 into feature.json, adjusting only JSON formatting.
+```
+node ~/.claude/scripts/feature-from-plan.js <plan-file> .project/features/{feature-name}/feature.json
+```
+
+where `<plan-file>` is the plan-mode path from PHASE 0 step 4. The script extracts the ```json appendix, validates it, and — in update-mode — merges over the existing file (preserving `build`/`tests`/`refactor`/etc. that the draft does not own). Exit 0 = written, done.
+
+**Fallback** (non-zero exit — appendix missing or invalid JSON in a legacy/post-compaction plan file): author `.project/features/{feature-name}/feature.json` by hand now, using the field table below and `shared/FEATURE.md` for the full schema.
+
+The field table governs the appendix draft (and this fallback):
 
 | Field                       | Condition                                                                                                                                                                                              |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

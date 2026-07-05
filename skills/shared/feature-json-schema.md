@@ -1,4 +1,6 @@
-# feature.json Field Conditions (PHASE 3)
+# feature.json Field Conditions
+
+These conditions govern the **complete feature.json draft authored in the PHASE 2 machine-contract appendix** (and the PHASE 3 hand-authored fallback). PHASE 3 normally just extracts the appendix via `scripts/feature-from-plan.js` — no re-authoring.
 
 ## Field Table
 
@@ -18,7 +20,7 @@
 | `durableDecisions`          | with >3 requirements — decisions that apply across all REQs                                                                                                                                                                                                                                                                                                                            |
 | `research`                  | only if research was performed                                                                                                                                                                                                                                                                                                                                                         |
 | `externalRef`               | only if the backlog item had this field — copy 1:1 (`type`, `id`, `url`, `labels`, `split`). Traceability to external issue tracker for downstream skills (`/dev-ship (build phase)`, `/core-commit`).                                                                                                                                                                                 |
-| `pageHint`                  | frontend projects only — array of PAGE names this feature surfaces on. Written from PHASE 1 page-placement sparring. Omit if empty or "Not on a page" was selected. Read by `/design-convert` Build to pre-populate the page-composition selection menu.                                                                                                                                |
+| `pageHint`                  | frontend projects only — array of PAGE names this feature surfaces on. Written from PHASE 1 page-placement sparring. Omit if empty or "Not on a page" was selected. Read by `/design-convert` Build to pre-populate the page-composition selection menu.                                                                                                                               |
 | `seedDrift`                 | only if PHASE 2 Seed Alignment Check ran and user chose "Skip" — array of `{ category, seedSays, featureDecides, requirementRef? }`. Omit when seed was updated (drift resolved) or no drift was detected.                                                                                                                                                                             |
 
 ## deltaOp on requirements
@@ -59,22 +61,9 @@ dev-ship's build phase iterates this directly:
 
 ## Role split
 
-What goes where between the plan file (review artefact) and feature.json (canonical contract):
+The plan file has two parts, both written in PHASE 2 under plan mode:
 
-| Content                            | Plan file    | feature.json                             |
-| ---------------------------------- | ------------ | ---------------------------------------- |
-| Context / rationale / why          | ✓            | —                                        |
-| REQ list (1-line descriptions)     | ✓            | —                                        |
-| Full acceptance criteria           | —            | ✓ (canonical)                            |
-| File structure table               | ✓            | ✓                                        |
-| Type signatures (typescript fence) | ✓ (appendix) | ✓ (`interfaces[].definition`)            |
-| Build sequence                     | ✓ (appendix) | ✓ (canonical)                            |
-| Test strategy table                | ✓ (appendix) | ✓ (canonical)                            |
-| Dependency analysis                | —            | — (derived from buildSequence.dependsOn) |
-| Durable decisions (1-line each)    | ✓            | ✓ (canonical with full rationale)        |
-| AI-navigability                    | —            | ✓ (`architecture.registries[]`)          |
-| Feature flow (→ chain)             | ✓            | —                                        |
-| Verification steps                 | ✓            | —                                        |
-| Out of scope                       | ✓            | —                                        |
+1. **Review surface** (top of the plan file) — the human-facing narrative: context / rationale / why, REQ list (1-line descriptions), file-structure table, feature flow (→ chain), verification steps, out of scope, durable decisions (1-line each).
+2. **Machine-contract appendix** (`## Appendix — machine contract (skip review)`) — a single ```json fence holding the **complete feature.json draft**: full acceptance criteria, `files`, `architecture` (incl. `interfaces[].definition` type signatures and `registries[]`), `buildSequence`, `testStrategy`, durable decisions (full rationale), and all conditional fields. Authored by the planning model (e.g. `opusplan` → Opus) so the canonical contract is written once, under the approval gate. The heading tells the reviewer to skip it.
 
-`✓ (appendix)` = written to the plan file under `## Appendix — machine contract (skip review)` during PHASE 2, so the planning model (e.g. `opusplan` → Opus) authors these sections instead of PHASE 3's post-plan-mode model. Not part of the review surface; PHASE 3 transcribes them into feature.json (the canonical home).
+PHASE 3 extracts the appendix into `.project/features/{name}/feature.json` mechanically via `scripts/feature-from-plan.js` — no transcription, no re-authoring. Dependency analysis stays implicit (derived from `buildSequence[].dependsOn`, no separate section).
