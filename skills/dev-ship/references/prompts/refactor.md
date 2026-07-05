@@ -39,7 +39,9 @@ SCOPE:
   dev-refactor's normal .project/ learnings sync. Do its completion writes (shipped backlog flip +
   archive) **only when your CONTEXT says `finalizeRoute: merge`**; on `finalizeRoute: halt` skip them
   — the feature is not merged yet (the merge happens later via PR / `/core-finalize`), so shipping it
-  off the board would be premature.
+  off the board would be premature. NOTE: you run **pre-merge**, so the `shippedSha` you write
+  (`git rev-parse HEAD` = your refactor commit) is **provisional** — the main chat re-stamps it to the
+  merge sha after finalize (SKILL.md PHASE 4 post-merge reconcile). Write it anyway; do not block on it.
 - Do NOT run dev-refactor's PHASE Finalize / FINALIZE.md dispatch (the single-mode finalize step in
   completion-batch.md) — the main chat runs finalize after you return (contract rule 7); never merge.
 

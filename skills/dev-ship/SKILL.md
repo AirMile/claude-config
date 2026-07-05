@@ -31,7 +31,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.8.1
+  version: 0.9.0
   category: dev
 ---
 
@@ -267,9 +267,18 @@ until the failed items pass.
 > non-fatal, record for the report). **Then finalize** — Read
 > `.claude/skills/dev-ship/references/dev-verify/references/finalize.md` and execute it (solo → merge
 > to main + worktree cleanup via `shared/FINALIZE.md`; open PR / team → halt with the printed message
-> and leave the worktree — refactor commits are already on the branch/PR). Only after finalize (or
-> halt): checkpoint `phase: "PHASE 5"`, `completedPhases += ["PHASE 4"]`, **re-read `.project/` from
-> disk**.
+> and leave the worktree — refactor commits are already on the branch/PR). **On the `merge` route,
+> post-merge reconcile the archive** (the pre-merge agent wrote its completion batch in the worktree
+> and could not see the merge, so enforce the archive postcondition here): verify the feature is
+> **absent** from `backlog.json#features[]` **and present** in
+> `.project/archive/backlog-archive.json#archived[]` with `shipped: true` — the same re-read invariant
+> `references/dev-refactor/references/completion-batch.md:87-88` already requires. **Self-heal a
+> half-run** — if the entry was removed from `features[]` but never archived, reconstruct the archive
+> entry from `feature.json`; if it is still in `features[]`, move it into the archive now — so a green
+> completion always ends archive-only. **Re-stamp `shippedSha`** in the archive entry to the merge sha
+> (`git -C {main_root} rev-parse HEAD`), not the pre-merge refactor commit the agent recorded. Only
+> after finalize (or halt): checkpoint `phase: "PHASE 5"`, `completedPhases += ["PHASE 4"]`, **re-read
+> `.project/` from disk**.
 
 The workflow runs AGENT 3 (pre-merge, inside `worktree-{feature}` on the feature branch) in
 **parallel** with the selected OWASP scanners (read-only, no `.project/` writes; they scan the
@@ -294,8 +303,11 @@ threshold-filtered findings.
 > phase `in_progress` and never mark a skipped phase `completed`), PHASE 5 → `in_progress`.
 > **Board cleanup** (every exit path, success or failure): `rm -f .project/session/active-{feature}.json`,
 > and if the feature still exists in `backlog.json#features[]` with `transition: "shipping"`, remove
-> that `transition` (on full success refactor's completion-batch already shipped + cleared it; this
-> catches failure-jumps and the `--no-refactor` escape hatch).
+> that `transition`. **On full success the feature is no longer in `features[]` at all** — refactor's
+> completion-batch shipped it and moved it to `backlog-archive.json`, verified by PHASE 4's post-merge
+> reconcile — so **never treat absence from `features[]` as data loss** (do not re-add the entry). The
+> `transition`-strip here is only for failure-jumps and the `--no-refactor` escape hatch, where the
+> feature is still present.
 > **Checkpoint cleanup** — asymmetric with the board signal (per `shared/SHIP-CHECKPOINT.md`): on a
 > green completion set the checkpoint `status: "complete"` then `rm -f .project/session/ship-{feature}.json`.
 > On a **failure-jump, leave the checkpoint on disk** (`status: "failed"`) so `/dev-ship {feature}`
