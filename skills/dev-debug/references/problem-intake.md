@@ -13,8 +13,10 @@ AskUserQuestion:
 - options:
   - "Runtime Error" — Crashes, exceptions, error messages in console or UI
   - "Logic Bug" — Wrong output, unexpected behavior
-  - "Performance Issue" — Slow, memory leaks, timeouts
-  - "Integration Issue" — API failures, data sync, external systems
+  - "Visual / UI" — Layout, styling, spacing, color, responsive — looks wrong (not a crash)
+  - "Performance / Integration" — Slow, memory, timeouts, or API/DB/external-system failures
+
+("Performance / Integration" splits back into its two detail branches in Step 2.)
 
 ## Step 2: Details (per type)
 
@@ -44,7 +46,22 @@ AskUserQuestion:
 
 Then: ask for specific expected vs actual behavior.
 
-**Performance Issue:**
+**Visual / UI:**
+AskUserQuestion:
+
+- header: "Visual Details"
+- question: "What's wrong visually?"
+- options:
+  - "Wrong position / layout" — Element misplaced, overlap, wrong order, layout shift
+  - "Wrong size / spacing" — Padding, margin, dimensions, alignment off
+  - "Wrong style" — Color, font, border, state (hover/active), dark mode
+  - "Responsive / breakpoint" — Breaks at a viewport size or device
+
+Then: ask which element/page, expected vs seen (one line), whether a screenshot is available, and
+whether it reproduces consistently. Most Visual/UI issues are MEASURABLE (a direct value fix) —
+carry that into PHASE 7's testability step (Playwright visual baseline / DOM assertion / no test).
+
+**Performance / Integration → Performance Issue:**
 AskUserQuestion:
 
 - header: "Performance Details"
@@ -55,9 +72,10 @@ AskUserQuestion:
   - "Over time" — Starts fast, becomes slower (memory leak)
   - "With large datasets" — Only slow with large amounts of data
 
-Then: ask about scale/context details.
+Then: ask about scale/context details. (If the user picked "Performance / Integration" but the
+symptom is an API/DB/external failure rather than slowness, use the Integration branch below instead.)
 
-**Integration Issue:**
+**Performance / Integration → Integration Issue:**
 AskUserQuestion:
 
 - header: "Integration Details"

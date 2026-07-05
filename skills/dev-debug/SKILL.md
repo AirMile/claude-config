@@ -117,6 +117,8 @@ If nothing available → continue without context (backwards compatible).
 
 Outcome: confirmed problem summary (type + symptom + context + details) — input for PHASE 2 investigation. Do not start investigating before the user confirms the summary.
 
+**Ladder gate (before the full pipeline).** Read `shared/DEBUG-LADDER.md` and apply its entry rule to the confirmed summary. When the signals point to **tier 1** (Visual/UI or MEASURABLE, symptom+cause both visible, ≤1-2 files) offer a quick path — `AskUserQuestion`: "Quick fix now (Recommended)" (direct fix + live re-check, skip the investigation/plan/repro machinery) | "Full debug pipeline". Tier 2/3 signals (cause unclear, cross-module, intermittent, or a prior attempt already failed) → continue the pipeline as normal. This keeps the 11-phase flow for real bugs and spares a padding tweak from it.
+
 ---
 
 ## PHASE 2: Codebase Investigation (Explore agent)
@@ -252,21 +254,27 @@ Parse → fix-set.
 
 Default for Runtime Error / Logic Bug: skip the question, go directly to Step 2.
 
-For Performance Issue / Integration Issue / non-runtime bugs, AskUserQuestion:
+For Visual/UI / Performance Issue / Integration Issue / non-runtime bugs, AskUserQuestion:
 
 - header: "Reproduction Test"
 - question: "Is this bug testable in an automated test?"
 - options:
   - "Yes, write reproduction test (Recommended)" — Standard path for assertable bugs
   - "Playwright visual baseline — UI visual / CSS" — toHaveScreenshot() baseline as reproduction test (runner required)
-  - "No, skip — Performance without threshold" — No concrete measurable value definable
-  - "No, skip — Production-only data" — Not reproducible in test environment
+  - "DOM assertion — Visual/UI structural" — assert the element's computed style/position/class (no screenshot runner)
+  - "No, skip — direct fix + live re-check" — MEASURABLE visual/timing tweak: fix and confirm live, no test
+
+(Visual/UI issues usually take the "DOM assertion" or "No, skip — direct fix + live re-check" path —
+a screenshot baseline is heavy for "move the padding 4px". "Skip — Production-only data" also remains
+valid for non-reproducible cases.)
 
 **"Playwright visual baseline" chosen:**
 
 > **Todo**: Read '.claude/skills/dev-debug/references/playwright-visual-baseline.md' — runner availability check + Step 2b (visual-baseline reproduction spec). Skips Step 2; continue at Step 4.
 
-**"Skip" chosen (performance or production-data):** note `reproductionTest: { skipped: true, reason: "{reason}" }` and go to PHASE 8.
+**"DOM assertion" chosen (Visual/UI structural):** write a test that asserts the element's computed style / position / class (e.g. `getComputedStyle`, `toHaveClass`, bounding-rect) — the expected value, failing before the fix — then continue at Step 2's run/verify.
+
+**"Skip" chosen (direct fix, performance, or production-data):** note `reproductionTest: { skipped: true, reason: "{reason}" }` and go to PHASE 8. For a MEASURABLE visual/timing skip, apply the direct fix and confirm live (per `shared/DEBUG-LADDER.md` tier 1).
 
 ### Step 2: Write failing test
 
