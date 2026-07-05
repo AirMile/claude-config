@@ -82,10 +82,11 @@ but not a crash/credits-exhaustion. So the orchestrator also mirrors the run to
 the phase pointer, PHASE 0 selections (`SHIP_PLAN`), and agent results. **Only the main chat writes
 it** (subagents never touch it — contract rule 1). The first write is the light checkpoint at the
 plan gate, so even a define-then-crash resumes; the PHASE 2→3 boundary is a **deliberate handoff
-stop** (park + fresh-session resume — see the green branch). Resume detection, the fast-path
-direct-resume, write points 0–5, orphan-cleanup, and the board's **parked** row are fully specified
-in `shared/SHIP-CHECKPOINT.md` — this skill follows it; the per-phase field patches below are the
-only checkpoint detail restated here.
+stop** (park + fresh-session resume — see the green branch). The checkpoint schema, write points 0–5,
+and the board's **parked** row are specified in `shared/SHIP-CHECKPOINT.md`; resume detection, the
+fast-path direct-resume, and orphan-cleanup live in `shared/SHIP-RESUME.md` (the cheap resume path).
+This skill follows both; the per-phase field patches below are the only checkpoint detail restated
+here.
 
 1. PHASE 0: Define + Classify + Auto-derive technique plan
 2. PHASE 1: Build (AGENT 1)
@@ -99,11 +100,19 @@ only checkpoint detail restated here.
 > **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred
 > and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above).
 > Mark PHASE 0 → `in_progress` via `TaskUpdate`.
-> Read `.claude/skills/dev-ship/references/phase-0-define-classify.md` and follow it — its **Step 0**
-> runs checkpoint-resume detection + preflight (per `shared/SHIP-CHECKPOINT.md`) **before** resolving
-> the feature. On a Resume, jump to the checkpoint's recorded phase instead of running PHASE 0 fresh
-> (direct, no prompt, when the fast-path conditions hold — explicit arg, matching pipeline, running,
-> ≤ 24h).
+> **Then route in two steps** (the resume path is deliberately cheap — it skips the fresh-run PHASE 0
+> file entirely):
+>
+> 1. **Resume check first.** If `/dev-ship` was called with an **explicit** `{feature}` arg and
+>    `test -f .project/session/ship-{feature}.json` succeeds (an open checkpoint) → Read
+>    `.claude/skills/shared/SHIP-RESUME.md` and follow it. The fast path jumps straight to the
+>    checkpoint's recorded phase (no prompt when explicit arg + matching pipeline + running + ≤ 24h)
+>    — so on the common parked-resume you land in PHASE 3 **without** loading
+>    `phase-0-define-classify.md`. (Only a "Restart fresh" choice falls through to step 2.)
+> 2. **Fresh / no-arg / no checkpoint** → Read
+>    `.claude/skills/dev-ship/references/phase-0-define-classify.md` and follow it from Step 0 (it
+>    resolves the feature name — needed before a no-arg resume check — then delegates resume
+>    detection to `SHIP-RESUME.md` and runs preflight + define for a genuine fresh run).
 
 Resolves the feature, runs `dev-define` inline (interactive, main chat) when it is not yet
 DEFINED, then computes the advisory `verificationProfile` and **auto-derives** the technique plan
@@ -228,9 +237,14 @@ Manual tests run in the main chat (you), so `AskUserQuestion` reaches the real u
 checklist is presented once and judged in one batched round (see
 `references/manual-batch-walkthrough.md`). On all-green (or empty), complete the feature (DONE write)
 and **stay in the worktree** — finalize/merge runs at the end of PHASE 4 so refactor commits land on
-the feature branch. On a manual FAIL, the reference's routing question decides: an isolated
-background fix agent (re-test, max 2 rounds), interactive `/dev-debug`, or stop — no refactor/finalize
-until the failed items pass.
+the feature branch. On a manual **FAIL**, the reference categorizes each item first
+(TESTABLE/MEASURABLE/SUBJECTIVE): SUBJECTIVE → one clarifying question; MEASURABLE (styling/layout/
+timing) → fixed **inline in the main chat** with a live re-check; TESTABLE → the background fix agent
+— and after 2 failed rounds it escalates via `shared/DEBUG-LADDER.md` (tier-2 evidence-first in the
+main chat, then `/dev-debug`) rather than dead-ending. Seeing the app live also routinely sparks
+change requests: a **Tweak** outcome runs an open iterate loop in the main chat (no round cap) to
+adjust existing scope; net-new work defers to `/project-todo`. Any code touched in PHASE 3 →
+regression re-check before completion. No refactor/finalize until failed items pass.
 
 ### PHASE 4: Refactor (AGENT 3) [+ optional security AGENT S] + Finalize/merge — Workflow 2
 

@@ -85,9 +85,10 @@ but not a crash/credits-exhaustion. So the orchestrator also mirrors the run to
 and agent results. **Only the main chat writes it** (subagents never touch it — contract rule 1). The
 first write is the light checkpoint at the plan gate, so even a define-then-crash resumes; the PHASE
 2→3 boundary is a **deliberate handoff stop** (park + fresh-session resume into the playtest — see the
-green branch). Resume detection, the fast-path direct-resume, write points 0–5, orphan-cleanup, and
-the board's **parked** row are fully specified in `shared/SHIP-CHECKPOINT.md` — this skill follows it;
-the per-phase field patches below are the only checkpoint detail restated here.
+green branch). The checkpoint schema, write points 0–5, and the board's **parked** row are specified
+in `shared/SHIP-CHECKPOINT.md`; resume detection, the fast-path direct-resume, and orphan-cleanup live
+in `shared/SHIP-RESUME.md` (the cheap resume path). This skill follows both; the per-phase field
+patches below are the only checkpoint detail restated here.
 
 1. PHASE 0: Define + Classify + Auto-derive technique plan
 2. PHASE 1: Build (AGENT 1)
@@ -101,11 +102,18 @@ the per-phase field patches below are the only checkpoint detail restated here.
 > **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred
 > and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above).
 > Mark PHASE 0 → `in_progress` via `TaskUpdate`.
-> Read `.claude/skills/game-ship/references/phase-0-define-classify.md` and follow it — its **Step 0**
-> runs checkpoint-resume detection + preflight (per `shared/SHIP-CHECKPOINT.md`) **before** resolving
-> the feature. On a Resume, jump to the checkpoint's recorded phase instead of running PHASE 0 fresh
-> (direct, no prompt, when the fast-path conditions hold — explicit arg, matching pipeline, running,
-> ≤ 24h).
+> **Then route in two steps** (the resume path skips the fresh-run PHASE 0 file):
+>
+> 1. **Resume check first.** If `/game-ship` was called with an **explicit** `{feature}` arg and
+>    `test -f .project/session/ship-{feature}.json` succeeds → Read
+>    `.claude/skills/shared/SHIP-RESUME.md` and follow it. The fast path jumps straight to the
+>    recorded phase (no prompt when explicit arg + matching pipeline + running + ≤ 24h) — so a parked
+>    resume lands in PHASE 3 **without** loading `phase-0-define-classify.md`. (Only "Restart fresh"
+>    falls through to step 2.)
+> 2. **Fresh / no-arg / no checkpoint** → Read
+>    `.claude/skills/game-ship/references/phase-0-define-classify.md` and follow it from Step 0 (it
+>    resolves the feature name, delegates resume detection to `SHIP-RESUME.md`, then runs preflight +
+>    define for a fresh run).
 
 Resolves the feature, runs `game-define` inline (interactive, main chat) when it is not yet
 DEFINED, then computes the advisory **playtest classification** (COVERED=GUT vs MANUAL=playtest) and

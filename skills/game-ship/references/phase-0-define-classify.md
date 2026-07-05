@@ -5,32 +5,21 @@ after runs hands-off until the live playtest in PHASE 3.
 
 ## Step 0 — Checkpoint-resume detection + preflight
 
-Before resolving the feature, Read `.claude/skills/shared/SHIP-CHECKPOINT.md` and run its resume
+Before resolving the feature, Read `.claude/skills/shared/SHIP-RESUME.md` and run its resume
 detection against `.project/session/ship-{feature}.json` (use the resolved arg for `{feature}`; if
-`/game-ship` was called with no arg, first resolve the name via Step 1, then run this check):
+`/game-ship` was called with no arg, first resolve the name via Step 1, then run this check).
+Normally an explicit arg + open checkpoint never reaches this file — `SKILL.md` PHASE 0 routes it
+straight to `SHIP-RESUME.md`; the cases that land here are **no arg**, a fast-path miss, or **no open
+checkpoint**.
 
-- **Open checkpoint found** (`status != "complete"`) → apply SHIP-CHECKPOINT.md's resume logic.
-  First check `pipeline`: a `pipeline: "game"` checkpoint resumes here; a `"dev"`/`"design"`
-  checkpoint is redirected to the matching skill.
-  - **Direct resume (fast path)** — when `/game-ship` was called with an **explicit** feature arg AND
-    `pipeline: "game"` AND `status: "running"` AND `updatedAt` ≤ 24h: **no question**. Announce
-    `Resuming {feature} at {phase} — checkpoint {age} old`, run orphan/leak cleanup, load `plan`
-    (→ `SHIP_PLAN`) + `results`, re-derive `SHIP_CONTEXT` (Step 6), re-seed the 6-phase `TaskCreate`
-    list (completed → `completed`), and jump to the recorded `phase`:
-    - `phase: "PHASE 3"` (interactive) → re-enter per `phase-3-playtest.md § Resume entry` (worktree
-      entry + game launch, then the playtest over `results.verify.remainingManualItems`).
-    - `phase: "PHASE 0 · plan gate"` → jump to **Step 4b**, restoring the `featureDraft` from the
-      checkpoint's `plan` (re-run Step 3 + Step 4 first only if they were never applied to the draft).
-    - a workflow phase (`PHASE 1/2/4`) → relaunch per SHIP-CHECKPOINT.md § On "Resume" step 4.
-  - **Edge cases** (no explicit arg, `status: "failed"`, or `updatedAt` > 24h) → present the Resume /
-    Restart / Inspect `AskUserQuestion` from SHIP-CHECKPOINT.md:
-    - **Resume** → same load + jump as the fast path above.
-    - **Restart** → archive the old checkpoint + clean the orphan worktree, then continue PHASE 0
-      fresh below.
-    - **Inspect** → print checkpoint + worktree status, re-ask.
+- **Open checkpoint found** (`status != "complete"`) → follow `SHIP-RESUME.md`'s logic (pipeline
+  check redirects a `"dev"`/`"design"` checkpoint; fast path or Resume/Restart/Inspect, then the
+  On-"Resume" jump to the recorded phase — game phase map: `PHASE 3` → `phase-3-playtest.md § Resume
+entry`; `PHASE 0 · plan gate` → Step 4b, restoring `plan.featureDraft`; a workflow phase → its
+  On-"Resume" step 4 relaunch). A **Restart** choice continues fresh below.
 - **No open checkpoint** → run the **preflight checks** (dirty working tree, colliding
-  `worktree-{feature}` from a prior aborted run without a checkpoint), surface any notice, then
-  continue to Step 1.
+  `worktree-{feature}` from a prior aborted run without a checkpoint; per `SHIP-CHECKPOINT.md
+§ Preflight`), surface any notice, then continue to Step 1.
 
 On a fresh run, capture the rollback anchor now: `baselineSha = git rev-parse HEAD`. It is written
 to the checkpoint in Step 5.

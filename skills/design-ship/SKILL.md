@@ -93,9 +93,10 @@ the phase pointer, the full PHASE 0 objects (direction incl. token decisions + l
 brief, checkScope, composition, inline spec), and agent results. **Only the main chat writes it**
 (subagents never touch it — contract rule 1). Unlike dev/game there is no light plan-gate checkpoint:
 the first write lands **post-gate** at Step 9 — the PHASE 0 selections are irreproducible user
-choices. Resume detection, the fast-path direct-resume, write points 0–5, orphan-cleanup, and the
-board's **parked** row are fully specified in `shared/SHIP-CHECKPOINT.md` — this skill follows it; the
-per-phase field patches below are the only checkpoint detail restated here.
+choices. The checkpoint schema, write points 0–5, and the board's **parked** row are specified in
+`shared/SHIP-CHECKPOINT.md`; resume detection, the fast-path direct-resume, and orphan-cleanup live in
+`shared/SHIP-RESUME.md` (the cheap resume path). This skill follows both; the per-phase field patches
+below are the only checkpoint detail restated here.
 
 1. PHASE 0: Target + Direction + Brief
 2. PHASE 1: Build (AGENT 1)
@@ -109,10 +110,18 @@ per-phase field patches below are the only checkpoint detail restated here.
 > **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred
 > and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above).
 > Mark PHASE 0 → `in_progress` via `TaskUpdate`.
-> Read `.claude/skills/design-ship/references/phase-0-direction-brief.md` and follow it — its
-> **Step 0** runs checkpoint-resume detection + preflight (per `shared/SHIP-CHECKPOINT.md`) **before**
-> resolving the target. On a Resume, jump to the checkpoint's recorded phase instead of running
-> PHASE 0 fresh.
+> **Then route in two steps** (the resume path skips the fresh-run PHASE 0 file):
+>
+> 1. **Resume check first.** If `/design-ship` was called with an **explicit** `{target}` arg and
+>    `test -f .project/session/ship-{target}.json` succeeds → Read
+>    `.claude/skills/shared/SHIP-RESUME.md` and follow it. The fast path jumps straight to the
+>    recorded phase (no prompt when explicit arg + matching pipeline + running + ≤ 24h) — so a parked
+>    resume lands in the PHASE 4 review **without** loading `phase-0-direction-brief.md`. (Only
+>    "Restart fresh" falls through to step 2.)
+> 2. **Fresh / no-arg / no checkpoint** → Read
+>    `.claude/skills/design-ship/references/phase-0-direction-brief.md` and follow it from Step 0 (it
+>    resolves the target, delegates resume detection to `SHIP-RESUME.md`, then runs preflight +
+>    direction/brief for a fresh run).
 
 Resolves the target (arg → board `shipping` pickup → candidates), gates the spec, composes 2-3
 design directions and presents them **visually** (browser preview + modal), derives + confirms the

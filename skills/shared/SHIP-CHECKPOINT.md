@@ -154,106 +154,13 @@ Write the checkpoint at the **same boundaries** where the skill already rewrites
 
 ---
 
-## Resume detection (run at the start of PHASE 0, before resolving the feature)
+## Resume detection & resume/restart flows → `SHIP-RESUME.md`
 
-```bash
-test -f .project/session/ship-{name}.json && echo EXISTS
-```
-
-If a checkpoint exists with `status != "complete"`, an earlier run was interrupted. **First check
-`pipeline`** — if it names another pipeline, do not resume here: stop and point the user to the
-matching skill (`pipeline: "dev"` → `/dev-ship {name}`, `pipeline: "design"` → `/design-ship
-{name}`, `pipeline: "game"` → `/game-ship {name}`).
-
-### Direct resume (fast path)
-
-When **all four** hold, skip the Resume/Restart/Inspect question entirely and resume in place — the
-common case (a fresh chat re-invoking to continue exactly where the last one stopped):
-
-1. the skill was invoked with an **explicit** feature/target arg (not a bare `/{pipeline}-ship`),
-2. the checkpoint's `pipeline` matches this skill,
-3. `status == "running"` (not `"failed"`),
-4. `updatedAt` is **≤ 24h** old.
-
-Print a one-line notice (`Resuming {name} at {phase} — checkpoint {age} old`) and execute the
-**§On "Resume"** steps below directly. The fast path applies to **any** recorded `phase`: workflow
-phases relaunch per On-Resume step 4's existing bullets; an interactive phase re-enters per its
-bullet there; `"PHASE 0 · plan gate"` jumps to the plan gate.
-
-Fall through to the `AskUserQuestion` below **only** when a fast-path condition fails: no explicit
-arg, `status: "failed"`, or `updatedAt` > 24h (staleness). Otherwise, do **not** silently continue
-and do **not** blindly restart — ask:
-
-- Compute staleness: if `updatedAt` is **older than 24h**, prefix the resume option with a
-  staleness notice (the worktree/`.project` may have drifted).
-- Present via `AskUserQuestion` (single-select; first option recommended):
-
-```yaml
-header: "Ship resume"
-question: "An interrupted ship run for {name} was found (stopped at {phase}). Resume it?"
-options:
-  - label: "Resume from {phase} (Recommended)"
-    description:
-      "Reload the PHASE 0 selections + completed-phase results from disk and continue.
-      Nothing already done is rebuilt. {staleness notice if >24h}"
-  - label: "Restart fresh"
-    description: "Archive this checkpoint, clean the old worktree, and run the pipeline from PHASE 0."
-  - label: "Inspect first"
-    description: "Print the checkpoint + worktree git status, then ask again."
-```
-
-### On "Resume"
-
-1. Run **orphan/leak cleanup** (below) to reconcile stray worktrees/processes/signals.
-2. Load `plan` + `results` from the checkpoint into memory (these replace the in-context
-   `SHIP_PLAN` / results; the worktree path + branch live in `results.build`). **Re-derive
-   `SHIP_CONTEXT`** fresh from disk per the skill's PHASE 0 context-load step — it is not stored.
-3. Re-seed the skill's `TaskCreate` phase list with every phase in `completedPhases` marked
-   `completed` and the rest `pending`; set the checkpoint's `phase` to `in_progress`.
-4. Jump to the recorded `phase`. When relaunching a workflow, `args.resume` carries **only the
-   green/completed results** from the checkpoint (`status: "green"`; refactor: `applied`/`clean`) —
-   the scripts also enforce this, so a resumed failed result re-runs its agent instead of replaying
-   the failure:
-   - **If `activeWorkflow` + `workflowRunId` are set** (a workflow was in flight) and this is the
-     **same session** → stop the in-flight run first (`TaskStop` — `resumeFromRunId` requires the
-     prior run stopped), then relaunch with `resumeFromRunId: "{workflowRunId}"` and the same
-     `args` (add `args.resume` too, as a cross-session fallback). Cached agent calls return
-     instantly.
-   - **Otherwise (cross-session / no runId)** → relaunch the phase's workflow with the stored
-     `prompts` **paths** as the prompt-path args. The pointer + slice files persist on disk, so this
-     needs no reassembly; only if a file is missing (e.g. `.project/session/` was cleaned) rewrite
-     it from `plan` + disk per the phase's `agent-*.md` § Spawn. Add `args.resume` as above. The
-     workflow short-circuits the already-completed agents
-     (`const build = resumedBuild ?? await agent(...)`) and only runs what remains. The worktree +
-     `.project/` on disk supply the rest.
-   - **If the recorded phase is an interactive main-chat phase** (dev/game PHASE 3 manual
-     tests/playtest, design PHASE 4 review) → **first physically re-enter the run**, then restart the
-     walkthrough from the stored `results`. For dev/game this is not only crash recovery — it is the
-     **normal** route into PHASE 3 when manual items remain, because the green branch deliberately
-     hands off here (parks the run, ends the turn) so this phase runs on a fresh session. The re-entry steps live in the pipeline's own
-     interactive-phase file, not here (this spec stays pipeline-generic): dev/game run that file's
-     worktree-entry step (via `shared/WORKTREE.md`) + app/game-launch step before presenting the
-     checklist (dev: `phase-3-manual-finalize.md § Resume entry`; game: `phase-3-playtest.md`); design
-     re-enters its PHASE 4 review. Then the walkthrough replays from `results.verify.remainingManualItems`
-     (dev/game) / the stored check results (design). **PHASE 4 with `results.refactor` already present**
-     → skip the workflow relaunch and resume at the finalize step (the refactor ran; only the
-     merge/cleanup remains).
-   - **If the recorded phase is `"PHASE 0 · plan gate"`** (dev/game light checkpoint) → jump straight
-     to the pipeline's Step 4b plan-approval gate, restoring the in-memory draft from
-     `plan.featureDraft` (the durable pre-accept home — `feature.json` is not written until accept).
-     Re-write the plan-file appendix from it and present the gate; no interview re-run. (Step 3
-     patches its `verificationProfile`/`playtestProfile` into `plan.featureDraft` after write point 0,
-     so by the time the gate is reachable the stored draft already carries it — no re-derive needed.)
-
-### On "Restart fresh"
-
-Archive the old checkpoint (`mv .project/session/ship-{name}.json .project/archive/ship-{name}-{ISO}.json`,
-`mkdir -p .project/archive` first), run orphan/leak cleanup, then proceed with a normal fresh PHASE 0.
-
-### On "Inspect first"
-
-Print the checkpoint JSON and `git worktree list` + `git -C {results.build.worktreePath} status --short`
-(if the worktree exists), then re-present the resume question.
+Resume detection (the `test -f` + pipeline check), the **direct-resume fast path**, the
+Resume/Restart/Inspect question, the **On "Resume"** / **On "Restart fresh"** / **On "Inspect
+first"** flows, and **orphan/leak cleanup** live in `shared/SHIP-RESUME.md` — the resume path reads
+only that file, not this whole spec. This file stays the source of truth for the checkpoint
+**schema**, the **write points** (above), fresh-run **preflight** (below), and **rollback** (below).
 
 ---
 
@@ -267,29 +174,10 @@ Report each as a one-line notice; only block when genuinely unsafe.
 - **Colliding worktree/branch** — `git worktree list` or `git branch --list worktree-{name}` shows
   a leftover from a prior aborted run **without** a checkpoint (an orphan). Offer to reuse or remove
   it via `AskUserQuestion` before AGENT 1 tries to create the worktree.
-- **Stale checkpoint** — handled by resume detection above (the >24h notice).
+- **Stale checkpoint** — handled by resume detection (the >24h notice — see `SHIP-RESUME.md`).
 
----
-
-## Orphan / leak cleanup (run on Resume and on Restart)
-
-A backstop for state the normal exit paths would have cleaned but a hard crash bypassed. **Scope it
-to truly orphaned state** — another ship run may be legitimately live in a parallel session, so
-"not the run being resumed" is NOT sufficient reason to remove something. Treat state for a name
-`{other}` as orphaned only when it has **no open checkpoint** (`ship-{other}.json` with
-`status != "complete"`) **and** its live-signal (`active-{other}.json`) is absent or older than the
-24h staleness window:
-
-- **Orphan worktrees** — `git worktree prune`, then `git worktree list`; remove a leftover
-  `worktree-{other}` (`git worktree remove --force <path>` + `git branch -D worktree-{other}`)
-  only when orphaned per the rule above — never the worktree of the run being resumed, never one
-  with an open checkpoint or a fresh live-signal.
-- **Leaked dev servers** — the contract says the subagent kills its own PID file
-  (`.project/session/*-devserver.pid`); as a backstop, for a PID file belonging to the resumed run
-  or orphaned per the rule above: if the PID is still alive (`kill -0 <pid>`), kill it and remove
-  the PID file. Leave PID files of live parallel runs alone.
-- **Stale live-signals** — remove `active-{other}.json` files only when orphaned per the rule
-  above. The resumed run's own `active-{name}.json` is rewritten by the next phase anyway.
+> **Orphan / leak cleanup** (run on Resume and on Restart) lives in `shared/SHIP-RESUME.md` — the
+> resume flows are its only callers.
 
 ---
 
