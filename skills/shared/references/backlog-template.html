@@ -1304,27 +1304,33 @@
               render();
             }
           });
-        } else if (!live) {
+        } else if (!live || isParked) {
           copyBtn = row.querySelector(".row-copy-btn");
           copyBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             const cmd = copyBtn.dataset.cmd;
             if (!cmd) return;
             navigator.clipboard.writeText(cmd).then(() => {
-              const found = findItem(f.name);
-              if (found) {
-                // Ship-commando's (dev-ship/design-ship) doorlopen de hele
-                // pipeline → "shipping"; granulaire stappen → status-label.
-                const isShip =
-                  cmd.startsWith("/dev-ship") || cmd.startsWith("/design-ship");
-                const tlabels = isDesignTrackType(f.type)
-                  ? TRANSITION_LABELS_DESIGN
-                  : TRANSITION_LABELS_DEV;
-                found.item.transition = isShip
-                  ? "shipping"
-                  : tlabels[f.status] || "active";
-                syncJSON();
-                render();
+              // Een parked item wordt gedreven door het ship-checkpoint, niet
+              // door transition — bij hervatten re-armt de skill zelf de
+              // live-signal. Alleen kopiëren + toast, geen queue-mutatie.
+              if (!isParked) {
+                const found = findItem(f.name);
+                if (found) {
+                  // Ship-commando's (dev-ship/design-ship) doorlopen de hele
+                  // pipeline → "shipping"; granulaire stappen → status-label.
+                  const isShip =
+                    cmd.startsWith("/dev-ship") ||
+                    cmd.startsWith("/design-ship");
+                  const tlabels = isDesignTrackType(f.type)
+                    ? TRANSITION_LABELS_DESIGN
+                    : TRANSITION_LABELS_DEV;
+                  found.item.transition = isShip
+                    ? "shipping"
+                    : tlabels[f.status] || "active";
+                  syncJSON();
+                  render();
+                }
               }
               toast("Copied: " + cmd);
             });
