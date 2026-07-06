@@ -417,13 +417,18 @@ http
         var lastDashMtime = 0;
         var lastSessionMtime = 0;
 
-        // Dir mtime alone misses in-place rewrites of active-*.json
-        // (skills update the same file per phase) — include file mtimes.
+        // Dir mtime alone misses in-place rewrites of active-*.json / ship-*.json
+        // (skills update the same file per phase) — include file mtimes. ship-*.json
+        // are the parked-checkpoint signals; their writes/removals must push a session event too.
         function sessionMtime() {
           if (!fs.existsSync(sessionDir)) return 0;
           var m = fs.statSync(sessionDir).mtimeMs;
           fs.readdirSync(sessionDir).forEach(function (f) {
-            if (!f.startsWith("active-") || !f.endsWith(".json")) return;
+            if (
+              !(f.startsWith("active-") || f.startsWith("ship-")) ||
+              !f.endsWith(".json")
+            )
+              return;
             try {
               var fm = fs.statSync(path.join(sessionDir, f)).mtimeMs;
               if (fm > m) m = fm;
@@ -483,6 +488,7 @@ http
         try {
           if (fs.existsSync(sessionDir)) {
             var now = Date.now();
+            var liveFeatures = {};
             fs.readdirSync(sessionDir).forEach(function (f) {
               if (!f.startsWith("active-") || !f.endsWith(".json")) return;
               try {
@@ -496,6 +502,29 @@ http
                 )
                   return;
                 active.push(entry);
+                if (entry.feature) liveFeatures[entry.feature] = true;
+              } catch {}
+            });
+            // Parked checkpoints: ship-*.json with status != complete and no live
+            // signal for that feature. These survive session death (no 2h drop) so a
+            // fresh chat can resume — the board shows them as a parked row.
+            fs.readdirSync(sessionDir).forEach(function (f) {
+              if (!f.startsWith("ship-") || !f.endsWith(".json")) return;
+              try {
+                var cp = JSON.parse(
+                  fs.readFileSync(path.join(sessionDir, f), "utf8"),
+                );
+                if (!cp.feature || cp.status === "complete") return;
+                if (liveFeatures[cp.feature]) return; // live/waiting wins over parked
+                active.push({
+                  feature: cp.feature,
+                  parked: true,
+                  pipeline: cp.pipeline,
+                  phase: cp.phase,
+                  status: cp.status,
+                  startedAt: cp.startedAt,
+                  updatedAt: cp.updatedAt,
+                });
               } catch {}
             });
           }
@@ -925,8 +954,8 @@ http
         }
 
         // Read feature.json (optional — Path A design cards may not have it).
-        // Live path first; fall back to archive (dev-refactor moves shipped features
-        // to .project/features/archive/{shippedAt-date}-{name}/feature.json).
+        // Live path first; fall back to archive (dev-ship's refactor phase moves shipped
+        // features to .project/features/archive/{shippedAt-date}-{name}/feature.json).
         const featuresDir = path.join(projectPath, ".project/features");
         let featureJson = path.join(featuresDir, featureName, "feature.json");
         if (!fs.existsSync(featureJson)) {
@@ -1083,7 +1112,7 @@ http
               );
               return;
             }
-            // reviewNotes is user-owned and additive — design-create merges
+            // reviewNotes is user-owned and additive — design-convert merges
             // never touch it, so writing here is safe.
             target.reviewNotes = reviewNotes;
             fs.writeFileSync(dashFile, JSON.stringify(proj, null, 2), "utf8");

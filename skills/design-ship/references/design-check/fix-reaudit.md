@@ -18,7 +18,7 @@ Implement fixes in priority order, grouped by audit category.
 10. **A11Y runtime** (focus-trap, aria-snapshot, axe, console warnings): focus management → ARIA states → keyboard traps → live regions
 11. **Motion** (M006/M007): missing reduced-motion fallbacks
 
-_Note: generation-time bans (token literals, dark/responsive coverage, static A11Y patterns) are enforced during `/design-create` Convert — not fixed here._
+_Note: generation-time bans (token literals, dark/responsive coverage, static A11Y patterns) are enforced during `/design-convert` Convert — not fixed here._
 
 ### Context7 Research
 
@@ -133,7 +133,7 @@ Next steps:
   2. Monitor CWV in production (web-vitals library)
   3. Submit sitemap to Google Search Console
   4. Test AI visibility: search your content on Perplexity/ChatGPT
-  5. Re-test flows after every major refactor (/design-check scope Flow)
+  5. Re-test flows after every major refactor (re-run the Flow scope check)
 
 ═════════════════════════════════════════════════════════════
 ```

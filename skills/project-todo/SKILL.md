@@ -18,7 +18,7 @@ metadata:
 
 # Todo
 
-Capture new backlog items, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have an idea" and a backlog item ready for `/dev-define` (web) or `/game-define` (game).
+Capture new backlog items, optionally flesh them out through 1-2 quick thinking rounds, and add them to the backlog. The bridge between "I have an idea" and a backlog item ready for `/dev-ship (define phase)` (web) or `/game-ship (define phase)` (game).
 
 **Trigger**: `/project-todo` or `/project-todo [description]`
 
@@ -101,8 +101,8 @@ Check whether `.project/project.json` exists.
    - No match or no project.json → **WEB MODE**
 3. Show detected mode:
    ```
-   STACK: web    (→ /dev-define pipeline)
-   STACK: game   (→ /game-define pipeline)
+   STACK: web    (→ /dev-ship pipeline)
+   STACK: game   (→ /game-ship pipeline)
    ```
 
 ### PHASE 0: Input + Backlog Check
@@ -335,7 +335,7 @@ multiSelect: false
    }
    ```
 
-   **`description` norm:** apply `shared/BACKLOG.md § Description quality` — self-contained, concrete behavior + scope boundary, thinking-round answers (PHASE 1a) folded in, 1–3 sentences. The card text is the only context `/dev-define` / `/game-define` gets when it is picked up later; never write a bare restatement of the name.
+   **`description` norm:** apply `shared/BACKLOG.md § Description quality` — self-contained, concrete behavior + scope boundary, thinking-round answers (PHASE 1a) folded in, 1–3 sentences. The card text is the only context `/dev-ship` (define phase) / `/game-ship` (define phase) gets when it is picked up later; never write a bare restatement of the name.
 
    **`transition` rule:** only include `"transition": "designing"` when `type === "PAGE"` or `type === "COMPONENT"`. Omit the field entirely for all other types (FEATURE, API, THEME, etc.).
 
@@ -466,19 +466,19 @@ TODO ADDED
   - /project-brainstorm {name} - Deepen the idea with variations
   - /project-critique {name} - Test the idea critically
   [If type is FEATURE, CHANGE, BUG, or API:]
-  - /dev-define {name} - Start with requirements and building
+  - /dev-ship {name} - Start with requirements and building
   - /team-outsource {name} - Outsource to a teammate via GitHub/Jira/Linear
   [If type is PAGE or COMPONENT:]
-  - /design-create {name} - Build the page/component
-  - /design-create - Define multiple pages at once
+  - /design-convert {name} - Build the page/component
+  - /design-convert - Define multiple pages at once
   [If type is THEME:]
   - /design-tokens - Set up design tokens (color, typography, spacing)
   [If type is A11Y:]
-  - /design-check --scope=a11y {name} - Run accessibility audit
+  - /design-ship {name} - Ship the page (build + runtime check: a11y/perf/SEO)
   [If type is PERF:]
-  - /design-check {name} - Run performance and SEO audit
+  - /design-ship {name} - Ship the page; its check phase runs the performance and SEO audit
   [If type is PAGE-GAP:]
-  - /dev-define {name} - Define the missing functionality
+  - /dev-ship {name} - Define the missing functionality
 ```
 
 **[GAME MODE]:**
@@ -495,7 +495,7 @@ FEATURE ADDED
   Next steps:
   - /project-brainstorm {name} - Deepen the idea with variations
   - /project-critique {name} - Test the idea critically
-  - /game-define {name} - Start with requirements and architecture
+  - /game-ship {name} - Start with requirements and architecture
 ```
 
 ## Restrictions

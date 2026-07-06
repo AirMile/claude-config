@@ -135,13 +135,10 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 
 ### Skills that write architecture
 
-| Skill             | What it writes                                                                                 | When                      |
-| ----------------- | ---------------------------------------------------------------------------------------------- | ------------------------- |
-| `/dev-define`     | Initial `layers` + `components` (status planned, no src/test) + `dataFlow`                     | During feature definition |
-| `/dev-build`      | Update `components`: status → done, fill `src`, `test`, `connects_to`, `endpoints`, `entities` | After build               |
-| `/dev-verify`     | Update `components`: confirm status done, add test files                                       | After test                |
-| `/core-pull`      | Sync full `architecture` section on pull                                                       | On context sync           |
-| `/project-retire` | Remove retired components, strip dangling `connects_to` edges, refresh `dataFlow`/`routes`     | On feature retirement     |
+| Skill        | What it writes                                                                                                                                                                | When            |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `/dev-ship`  | Initial `layers` + `components` + `dataFlow` (define phase), then `components` status → done with `src`, `test`, `connects_to`, `endpoints`, `entities` (build/verify phases) | During ship run |
+| `/core-pull` | Sync full `architecture` section on pull                                                                                                                                      | On context sync |
 
 **Write strategy:**
 
@@ -171,7 +168,7 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 | `auth`    | enum   | no       | `"public"` \| `"user"` \| `"admin"` (default `"public"`) |
 | `feature` | string | no       | Feature that introduced the route (kebab-case)           |
 
-Written by `/dev-define` (initial) and `/dev-build` (confirmed after implementation). Merge on `path` — update existing record instead of duplicating.
+Written by `/dev-ship` (define phase initial, build phase confirmed after implementation). Merge on `path` — update existing record instead of duplicating.
 
 ## context
 
@@ -229,17 +226,19 @@ Skills write to `context` after each build/refactor. CLAUDE.md refers to `projec
     "type": "pattern",
     "source": "synced",
     "author": "Alice",
-    "summary": "Stripe webhooks via idempotency keys per request"
+    "summary": "Stripe webhooks via idempotency keys per request",
+    "tags": ["api", "security"]
   }
 ]
 ```
 
 `type` values: `pattern` (architectural choice), `pitfall` (bug/gotcha), `observation` (cross-feature insight).
+`tags` = optional 0–3 domain tags (kebab-case) from `LEARNING-EXTRACTION.md § Tag Vocabulary`. They drive relevance search (`scripts/learnings-search.js`) so an old entry resurfaces by topic; not part of the dedup key; absent on pre-tag entries (keyword fallback still matches).
 `source` values: `extracted` (direct observation from code output or test result) | `inferred` (cross-feature pattern recognition or LLM inference) | `synced` (extracted from teammate code or mature codebase via core-pull / core-setup --mode=mature) | `consolidated` (merge of multiple archived entries — written only by the core-pull consolidation pass, see `LEARNING-EXTRACTION.md § Consolidation`).
 `date` = extraction date. `feature` = source feature (kebab-case). For `synced` learnings without a structured feature: use primary directory (`auth`, `payments`). `summary` = max 200 chars.
 `author` = optional, only for `source === "synced"`. Mirrors `features[].author`.
 
-**Source mapping** (own work, in dev-verify / game-verify / dev-refactor / game-refactor):
+**Source mapping** (own work, in dev-ship / game-ship):
 
 | Source in feature.json                        | learning.type | learning.source |
 | --------------------------------------------- | ------------- | --------------- |
@@ -263,9 +262,9 @@ Skills write to `context` after each build/refactor. CLAUDE.md refers to `projec
 
 See [skills/shared/LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) for heuristics and filters.
 
-Append-only at write time. Skills that complete features extract learnings automatically (see dev-verify PHASE 6, dev-refactor PHASE 5). `core-pull` (incremental) and `core-setup --mode=mature` (one-time) extract learnings from teammate/legacy code. `source` is required on new writes.
+Append-only at write time. Skills that complete features extract learnings automatically (see dev-ship's verify + refactor phases). `core-pull` (incremental) and `core-setup --mode=mature` (one-time) extract learnings from teammate/legacy code. `source` is required on new writes.
 
-**Size lifecycle**: above 60 entries, `/core-pull` consolidates the list (merge per-feature clusters, archive originals to `.project/archive/learnings-{YYYY-MM}.json`, target ≤ 40 active) — see `LEARNING-EXTRACTION.md § Consolidation`. Readers always load via the `LEARNINGS-LOAD.md` extraction script (filtered, O(shown) context cost), never the full array inline.
+**Size lifecycle**: above 60 entries, `/core-pull` consolidates the list (merge per-feature clusters, archive originals to `.project/archive/learnings-{YYYY-MM}.json`, target ≤ 40 active) — see `LEARNING-EXTRACTION.md § Consolidation`. Readers load via `scripts/learnings-search.js` (`LEARNINGS-LOAD.md`), which **scores by relevance** (tag → feature → keyword, recency only as tiebreak) rather than by pure recency, and treats the archive as a damped on-demand tier — so consolidated-out entries stay reachable by topic instead of being lost. Filtered, O(shown) context cost; never the full array inline. Free-text interrogation across all stores runs through `/project-memory`.
 
 **This replaces the dynamic CLAUDE.md sections** (`## Project structure`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md now only contains a reference to `project.json` for this context.
 
@@ -275,17 +274,17 @@ Thinking-skills (`/project-research`, `/project-brainstorm`, `/project-critique`
 
 Seed-scope thinking-output (`/project-seed`, `/project-brainstorm` concept, `/project-critique` concept, `/project-research` concept) integrates directly into `project-seed.md` — no history log in `project.json`.
 
-Skills that consume thinking-output (such as `/dev-define`) read directly via Grep on `.project/thinking/*.md` for name matching.
+Skills that consume thinking-output (such as `/dev-ship`, define phase) read directly via Grep on `.project/thinking/*.md` for name matching.
 
 ## Which skills write what
 
 ### project-context.json sections
 
-| Section        | Written by                                                                                                                                                  | When                                                                                                        |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `architecture` | `/dev-define`, `/dev-build`, `/game-define`, `/game-build`, `/project-retire`                                                                               | On architecture definition / after build / on retirement                                                    |
-| `context`      | `/core-setup`, `/dev-build`, `/dev-refactor`, `/game-build`, `/game-refactor`                                                                               | On build/refactor (structure, routing, patterns)                                                            |
-| `learnings`    | `/dev-build`, `/dev-verify`, `/dev-refactor`, `/game-build`, `/game-verify`, `/game-refactor`, `/core-pull`, `/core-setup --mode=mature`, `/project-retire` | Feature completion (extracted/inferred), teammate/legacy code (synced), or retirement (archive + tombstone) |
+| Section        | Written by                                                           | When                                                                   |
+| -------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `architecture` | `/dev-ship`, `/game-ship`                                            | On architecture definition / after build                               |
+| `context`      | `/core-setup`, `/dev-ship`, `/game-ship`                             | On build/refactor (structure, routing, patterns)                       |
+| `learnings`    | `/dev-ship`, `/game-ship`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred), teammate/legacy code (synced) |
 
 Handoff namespace for `learnings` is `project-context.learnings` — matches the `reads:`/`writes:` declarations in skill frontmatter (see `shared/DEVINFO.md`).
 

@@ -2,7 +2,7 @@
 
 Shared protocol for extracting fields from `.project/features/{name}/feature.json` without loading the full file into context. Skills reference this for PHASE 0 read-only context loading only.
 
-> **Schema**: `feature.json` velden — zie [dev-define/references/feature-json-schema.md](../dev-define/references/feature-json-schema.md) voor volledige schema.
+> **Schema**: `feature.json` velden — zie [feature-json-schema.md](feature-json-schema.md) voor volledige schema.
 
 **Prerequisites** (must be set before running any snippet):
 
@@ -17,9 +17,9 @@ Skills load feature context during their **PHASE 0 context-load phase** for read
 
 **This protocol is NOT for:**
 
-- `dev-verify/references/completion-sync.md` — uses full Read → mutate-in-memory → Write for `tests.finalStatus`, `status`, `suggestionsLog[]`. Round-trip contract requires all fields.
-- `dev-define/references/update-mode.md` — full Read required to preserve `architecture`, `apiContract`, `design`, `testStrategy`, `durableDecisions`, `research` during update.
-- `dev-build/references/context-loading.md` file-recovery block — uses `require()` directly on the path for worktree restoration. Does not use this protocol.
+- `dev-ship/references/dev-verify/references/completion-sync.md` — uses full Read → mutate-in-memory → Write for `tests.finalStatus`, `status`, `suggestionsLog[]`. Round-trip contract requires all fields.
+- `dev-ship/references/dev-define/references/update-mode.md` — full Read required to preserve `architecture`, `apiContract`, `design`, `testStrategy`, `durableDecisions`, `research` during update.
+- `dev-ship/references/dev-build/references/context-loading.md` file-recovery block — uses `require()` directly on the path for worktree restoration. Does not use this protocol.
 
 ---
 
@@ -27,7 +27,7 @@ Skills load feature context during their **PHASE 0 context-load phase** for read
 
 ### Profile: `build`
 
-For dev-build PHASE 0 step "Load feature" — extracts all fields needed for PHASE 1 implementation planning and TDD cycle.
+For dev-ship's build phase PHASE 0 step "Load feature" — extracts all fields needed for PHASE 1 implementation planning and TDD cycle.
 
 ```bash
 node -e "
@@ -62,7 +62,7 @@ node -e "
 
 ### Profile: `verify`
 
-For dev-verify PHASE 0 steps that build the Explore-agent prompt (step 7 input) — extracts checklist, requirements with acceptance, and test-execution metadata.
+For dev-ship's verify phase PHASE 0 steps that build the Explore-agent prompt (step 7 input) — extracts checklist, requirements with acceptance, and test-execution metadata.
 
 ```bash
 node -e "
@@ -94,7 +94,7 @@ node -e "
 
 ## Output format
 
-Both profiles return a compact JSON object. `FEATURE_JSON: not present` → file absent; skill should exit: "Run `/dev-define` first."
+Both profiles return a compact JSON object. `FEATURE_JSON: not present` → file absent; skill should exit: "Run `/dev-ship` first."
 
 ---
 
@@ -121,4 +121,4 @@ Feature load (via shared/FEATURE-LOAD.md):
 
 ## Implementation note
 
-This is a **read-only** protocol for PHASE 0 context loading. Mutations to `feature.json` (status updates, `tests.finalStatus`, `suggestionsLog[]`, `audit{}` writes) remain the responsibility of writer-paths per `dev-verify/references/completion-sync.md` and `dev-define/references/update-mode.md`.
+This is a **read-only** protocol for PHASE 0 context loading. Mutations to `feature.json` (status updates, `tests.finalStatus`, `suggestionsLog[]`, `audit{}` writes) remain the responsibility of writer-paths per `dev-ship/references/dev-verify/references/completion-sync.md` and `dev-ship/references/dev-define/references/update-mode.md`.

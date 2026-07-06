@@ -27,13 +27,13 @@ Always read fresh per invoke — never cache across phases or skill-runs. The ba
 
 ### Mode-agnostic (no read needed)
 
-dev-build, dev-define, dev-debug, dev-learn, dev-security, core-commit (reads `commitConvention`, not `mode`), core-audit, core-rewrite, core-write, core-update, core-bootstrap.
+dev-ship, dev-debug, dev-learn, dev-security, core-commit (reads `commitConvention`, not `mode`), core-audit, content-rewrite, content-write, core-update, core-bootstrap.
 
 ### Mode-aware (branches on TEAM_MODE)
 
-- **PHASE Finalize (inline auto-dispatch, no modal):** dev-verify, game-verify
-- **PHASE Finalize (3-way modal via FINALIZE.md):** dev-refactor, game-refactor, design-check
-- **PHASE 0 entry-guard (team-mode batch guard, see below):** dev-refactor, game-refactor, design-check
+- **PHASE Finalize (inline auto-dispatch, no modal):** dev-ship (verify phase), game-ship (verify phase)
+- **PHASE Finalize (3-way modal via FINALIZE.md):** dev-ship (refactor phase), game-ship (refactor phase), design-ship
+- **PHASE 0 entry-guard (team-mode batch guard, see below):** dev-ship (refactor phase), game-ship (refactor phase), design-ship
 - **Other:** core-finalize, core-pull (info hint), shared/FINALIZE.md, shared/PR.md
 
 ### Team-only (warn-gate when solo)
@@ -57,7 +57,7 @@ multiSelect: false
 
 Cancel → exit. Continue → proceed with step 1.
 
-### Team-mode batch guard (for dev-refactor, game-refactor, design-check)
+### Team-mode batch guard (for dev-ship (refactor phase), game-ship (refactor phase), design-ship)
 
 Fire when `TEAM_MODE == "team"` AND the skill is about to enter batch/codebase mode (queue > 1 or
 no-arg). Single-feature invoke → guard does NOT fire.

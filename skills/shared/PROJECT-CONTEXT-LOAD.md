@@ -23,7 +23,7 @@ Skills load project context during their **PHASE 0 context-load phase** — read
 
 ### Profile: `build`
 
-For `dev-build`. Extracts fields needed to prevent duplicate routes, avoid schema conflicts, apply tokens, and follow code patterns.
+For dev-ship's build phase. Extracts fields needed to prevent duplicate routes, avoid schema conflicts, apply tokens, and follow code patterns.
 
 ```bash
 node -e "
@@ -51,7 +51,7 @@ node -e "
 
 ### Profile: `define`
 
-For `dev-define`. Extracts fields needed for the interview context, reuse-discovery, architecture decisions, and duplicate-prevention.
+For dev-ship's define phase. Extracts fields needed for the interview context, reuse-discovery, architecture decisions, and duplicate-prevention.
 
 Requires `$FEAT` to be set to the current feature name.
 
@@ -94,7 +94,7 @@ node -e "
 
 ### Profile: `verify`
 
-For `dev-verify`. Extracts fields needed to compose the STACK_CONTEXT block passed to the Explore agent in step 7.
+For dev-ship's verify phase. Extracts fields needed to compose the STACK_CONTEXT block passed to the Explore agent in step 7.
 
 ```bash
 node -e "
@@ -187,6 +187,6 @@ The skill's PHASE 0 then reads the relevant profile block above and runs the mat
 
 ## Implementation note
 
-This is a **read-only** protocol. No mutations to `project.json` or `project-context.json` — those remain the responsibility of writer-skills (`dev-define`, `dev-build`, `dev-verify`, `core-setup --mode=mature`).
+This is a **read-only** protocol. No mutations to `project.json` or `project-context.json` — those remain the responsibility of writer-skills (`dev-ship`, `core-setup --mode=mature`).
 
 Skills that spawn agents pass the extracted JSON as a `PROJECT_CONTEXT` block — see `shared/SKILL-PATTERNS.md § Agent Context Block`. Do not pass full file contents to agents.

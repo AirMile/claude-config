@@ -132,14 +132,14 @@ Per selected issue: analyze body inline for split signals.
 
 **Type mapping per fragment:**
 
-| Signal                             | Suggested type    | Track    |
-| ---------------------------------- | ----------------- | -------- |
+| Signal                             | Suggested type    | Track  |
+| ---------------------------------- | ----------------- | ------ |
 | Frontend / UI / page / component   | PAGE or COMPONENT | Design |
-| Backend / API / endpoint / service | API or FEATURE    | Dev      |
-| Database / migration / schema      | FEATURE           | Dev      |
-| Tests / test coverage              | FEATURE           | Dev      |
-| Bug fix                            | BUG               | Dev      |
-| Unknown / mixed                    | FEATURE           | Dev      |
+| Backend / API / endpoint / service | API or FEATURE    | Dev    |
+| Database / migration / schema      | FEATURE           | Dev    |
+| Tests / test coverage              | FEATURE           | Dev    |
+| Bug fix                            | BUG               | Dev    |
+| Unknown / mixed                    | FEATURE           | Dev    |
 
 **ASCII diagram:** generate a visual split tree for the user so they can see at a glance what is proposed:
 
@@ -306,9 +306,9 @@ IMPORTED
   Backlog: .project/backlog.json
 
   Next steps:
-  - /dev-define oauth-callback     (start dev pipeline)
-  - /dev-define signup-validation  (start dev pipeline)
-  - /design-create oauth-login   (start design pipeline)
+  - /dev-ship oauth-callback     (start dev pipeline)
+  - /dev-ship signup-validation  (start dev pipeline)
+  - /design-convert oauth-login   (start design pipeline)
 ```
 
 > **Todo**: mark PHASE 7 → `completed`.

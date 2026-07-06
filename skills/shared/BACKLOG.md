@@ -13,7 +13,7 @@ The backlog is a plain JSON data store. The kanban board UI is rendered by the s
 
 `serve-backlog.js` injects one server-computed field into the JSON payload on every `GET /{project}/backlog` request:
 
-- **`data.seedDrift[]`** — deferred seed-drift entries, written when a skill detects seed divergence without rewriting the seed inline (the user chose "Skip — leave seed as-is" at the Seed Alignment Check, or the skill records drift silently like `/project-todo`). Each entry: `{ category, seedSays, featureDecides, source, ref, detectedAt }` (see `shared/SEED.md § Alignment Check § Drift entry schema`). `category` ∈ `{ "contradiction", "new-direction", "scope-expansion" }`. `source` identifies the writing skill (`/project-plan`, `/project-todo`, `/project-retire`). Consumed by `/project-seed § Sync`, `/project-brainstorm`, and `/project-critique` on concept-scope save — first successful seed rewrite removes the processed entries. Optional; absent on backlogs that never deferred drift. Strip before saving if accidentally included in a payload.
+- **`data.seedDrift[]`** — deferred seed-drift entries, written when a skill detects seed divergence without rewriting the seed inline (the user chose "Skip — leave seed as-is" at the Seed Alignment Check, or the skill records drift silently like `/project-todo`). Each entry: `{ category, seedSays, featureDecides, source, ref, detectedAt }` (see `shared/SEED.md § Alignment Check § Drift entry schema`). `category` ∈ `{ "contradiction", "new-direction", "scope-expansion" }`. `source` identifies the writing skill (`/project-plan`, `/project-todo`). Consumed by `/project-seed § Sync`, `/project-brainstorm`, and `/project-critique` on concept-scope save — first successful seed rewrite removes the processed entries. Optional; absent on backlogs that never deferred drift. Strip before saving if accidentally included in a payload.
 
 ## Reading the backlog
 
@@ -70,11 +70,11 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
 }
 ```
 
-The `audit` field is **design-track-specific** (type `PAGE` or `COMPONENT`). `buildScreenshot`/`buildSmokeStatus`/`buildSmokeError` are written by `/design-create` Build (smoke-render). `lastRun`/`scopes`/`findings` are written by `/design-check` PHASE 4.3. No field is required; consumers check for presence. PASS status can be derived from `findings.critical === 0` — no separate boolean needed.
+The `audit` field is **design-track-specific** (type `PAGE` or `COMPONENT`). `buildScreenshot`/`buildSmokeStatus`/`buildSmokeError` are written by `/design-convert` Build (smoke-render). `lastRun`/`scopes`/`findings` are written by `/design-ship`'s check phase. No field is required; consumers check for presence. PASS status can be derived from `findings.critical === 0` — no separate boolean needed.
 
 ## Description quality
 
-The `description` field is the only planning context that survives until `/dev-define` / `/game-define` picks the card up — the define interview anchors its questions on it, and the conversation in which the feature was extracted is long gone by then. Every writer (`/project-plan`, `/project-todo`, `/team-issues`, discovery flows) applies the same norm:
+The `description` field is the only planning context that survives until `/dev-ship` (define phase) / `/game-ship` (define phase) picks the card up — the define interview anchors its questions on it, and the conversation in which the feature was extracted is long gone by then. Every writer (`/project-plan`, `/project-todo`, `/team-issues`, discovery flows) applies the same norm:
 
 - **Self-contained**: readable weeks later by a user who forgot the planning conversation. The card is the memory.
 - **Concrete behavior**: what the user/player can observably do or see when this ships — never a noun phrase that restates the title. `user-dashboard` → not "Dashboard for users" but "Logged-in user sees an overview of their own listings with status and can archive from there."
@@ -102,7 +102,7 @@ For small mutations (status flip, one field) prefer the Edit tool on the JSON fi
 
 ## Source field convention
 
-The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/dev-define"`, `"/design-create"`.
+The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/project-plan"`, `"/design-convert"`.
 
 **Independent rule:** A feature is INDEPENDENT (never overwritten by `/project-plan` during rebuild) when `source` is set to anything other than `"/project-plan"`. Features without a `source` field, or with `"/project-plan"`, are concept-derived and managed by `/project-plan`.
 
@@ -130,7 +130,7 @@ The **externalRef field** links a backlog item to an external issue/ticket. One 
 ```
 
 - `/team-issues` writes it on intake
-- `/dev-define` and `/design-create` copy to `feature.json`
+- `/dev-ship` (define phase) and `/design-convert` copy to `feature.json`
 - `/core-commit` reads to prefix commit messages
 
 ## Parallel sync
@@ -165,33 +165,33 @@ TODO (To design) → DEFINED (To convert) → DOING (Building) → DONE (Shipped
                         ↑ Path B only              ↑ Path A skips DEFINED
 ```
 
-| Status      | Label      | Set by                                                                                                       |
-| ----------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| `TODO`      | To design  | `/design-create` Capture, `/project-todo`, `/project-plan`, reuse-discovery                               |
-| `DEFINED`   | To convert | `/design-create` Brief (Path B — offline handoff)                                                            |
-| `DOING`     | Building   | `/design-create` Build (Path A) or `/design-create` Convert route (Path B)                                   |
-| `DONE`      | Shipped    | `/design-check` (PAGE PASS) — both build and convert pages                                                   |
-| `CANCELLED` | Archived   | Manually via UI (○ button), `/project-plan` update mode (cancel-proposal), `/project-retire` — restorable |
+| Status      | Label      | Set by                                                                                 |
+| ----------- | ---------- | -------------------------------------------------------------------------------------- |
+| `TODO`      | To design  | `/design-convert` Capture, `/project-todo`, `/project-plan`, reuse-discovery           |
+| `DEFINED`   | To convert | `/design-convert` Brief (Path B — offline handoff)                                     |
+| `DOING`     | Building   | `/design-convert` Build (Path A) or `/design-convert` Convert route (Path B)           |
+| `DONE`      | Shipped    | `/design-ship` (PAGE PASS at PHASE 4) — both build and convert pages                   |
+| `CANCELLED` | Archived   | Manually via UI (○ button), `/project-plan` update mode (cancel-proposal) — restorable |
 
 **Path A** (Build with Claude Code): TODO → DOING → DONE — DEFINED is skipped.
 
 **Path B** (Brief for external design): TODO → DEFINED → DOING → DONE.
 
-`/design-check` (batch mode or targeted) runs at end of release cycle across DOING features — not per-component inline. Sets `lastCheckedSha`; for PAGE scope on PASS: sets `f.shipped = true` and `status: "DONE"`. A COMPONENT is never auto-`DONE` — it ships with the page/feature that consumes it.
+`/design-ship` runs the runtime audit as its check phase and finalizes on PASS at PHASE 4: sets `lastCheckedSha`; for PAGE scope: sets `f.shipped = true` and `status: "DONE"`. A COMPONENT is never auto-`DONE` — it ships with the page/feature that consumes it. (The former release-cycle **batch** audit across all DOING features — the standalone `/design-check` — no longer exists; pages are checked per ship run.)
 
-`/core-finalize` (and any PHASE Finalize via `shared/FINALIZE.md`) is a merge/cleanup step — it **never promotes `DOING` → `DONE`**. It only stamps `shipped`/`shippedSha` on a PAGE that is **already `DONE`**; a `DOING` PAGE stays at TO CHECK until `/design-check` ships it, and a COMPONENT is left untouched. This mirrors dev-track, where `/dev-verify` finalize never writes `shipped` — `/dev-refactor` does.
+`/core-finalize` (and any PHASE Finalize via `shared/FINALIZE.md`) is a merge/cleanup step — it **never promotes `DOING` → `DONE`**. It only stamps `shipped`/`shippedSha` on a PAGE that is **already `DONE`**; a `DOING` PAGE stays at TO CHECK until `/design-ship` ships it, and a COMPONENT is left untouched. This mirrors dev-track, where `/dev-ship`'s verify phase never writes `shipped` — its refactor phase does.
 
 ### When to use which skill for PAGE/COMPONENT
 
-| Situation                                               | Skill                                                                   |
-| ------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Quick "just thought of something" addition              | `/project-todo`                                                         |
-| Full design (screenshot, Figma, brief)                  | `/design-create` Capture                                                |
-| Bulk-init from concept or brainstorm output             | `/project-plan`                                                      |
-| Pattern detection during build (cross-page reuse)       | `/project-plan` reuse-discovery                                      |
-| Convert existing card from sketch/wireframe/Figma/Canva | `/design-create` (paste sketch/URL, or board ⋯ → "Convert from sketch") |
+| Situation                                               | Skill                                                                    |
+| ------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Quick "just thought of something" addition              | `/project-todo`                                                          |
+| Full design (screenshot, Figma, brief)                  | `/design-convert` Capture                                                |
+| Bulk-init from concept or brainstorm output             | `/project-plan`                                                          |
+| Pattern detection during build (cross-page reuse)       | `/project-plan` reuse-discovery                                          |
+| Convert existing card from sketch/wireframe/Figma/Canva | `/design-convert` (paste sketch/URL, or board ⋯ → "Convert from sketch") |
 
-All routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. All routes **except `/project-plan` bulk-init** also set **`transition: "designing"`**, which enables `/design-create` to auto-detect these items without a manual dashboard click. `/project-plan` omits `transition` at creation — the dashboard sets it when the user clicks copy-prompt (see `project-plan/references/generate-backlog.md` transition field rule). `/design-create` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/design-create` Build fills them in later.
+All routes write the same JSON structure to `data.features[]` with `type=PAGE` or `COMPONENT` and `status=TODO`. All routes **except `/project-plan` bulk-init** also set **`transition: "designing"`**, which enables `/design-convert` to auto-detect these items without a manual dashboard click. `/project-plan` omits `transition` at creation — the dashboard sets it when the user clicks copy-prompt (see `project-plan/references/generate-backlog.md` transition field rule). `/design-convert` Capture adds extra spec fields (mock paths, brief, audit). Other routes leave those fields empty — `/design-convert` Build fills them in later.
 
 ### Dev track (FEATURE/API/UI/REFACTOR/BUG/etc.)
 
@@ -201,26 +201,26 @@ TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refac
                                                               CANCELLED (Archived)
 ```
 
-| Status      | Label       | Set by                                                                                                       |
-| ----------- | ----------- | ------------------------------------------------------------------------------------------------------------ |
-| `TODO`      | To define   | `/project-todo`, `/project-plan`                                                                          |
-| `DEFINED`   | To build    | `/dev-define` (completion)                                                                                   |
-| `DOING`     | To verify   | `/dev-build` (completion)                                                                                    |
-| `DONE`      | To refactor | `/dev-verify` (completion)                                                                                   |
-| `CANCELLED` | Archived    | Manually via UI (○ button), `/project-plan` update mode (cancel-proposal), `/project-retire` — restorable |
+| Status      | Label       | Set by                                                                                 |
+| ----------- | ----------- | -------------------------------------------------------------------------------------- |
+| `TODO`      | To define   | `/project-todo`, `/project-plan`                                                       |
+| `DEFINED`   | To build    | `/dev-ship` (define phase — advanced internally)                                       |
+| `DOING`     | To verify   | `/dev-ship` (build phase — advanced internally)                                        |
+| `DONE`      | To refactor | `/dev-ship` (verify phase — advanced internally)                                       |
+| `CANCELLED` | Archived    | Manually via UI (○ button), `/project-plan` update mode (cancel-proposal) — restorable |
 
-**Optional fields on CANCELLED items**: `cancelledReason` (one-line why, set by skill-driven cancellations) and `cancelledAt` (`YYYY-MM-DD`, set by `/project-retire`). UI cancellations omit both. Archived features (see § Archiving) can also carry `status: "CANCELLED"` after a `/project-retire` run — history stays, flagged.
+**Optional fields on CANCELLED items**: `cancelledReason` (one-line why, set by skill-driven cancellations) and `cancelledAt` (`YYYY-MM-DD`, set by the dev/game Impact-Check cancellation flows). UI cancellations omit both. Archived features (see § Archiving) can also carry `status: "CANCELLED"` — history stays, flagged.
 
-`/dev-refactor` is the **promotion trigger** for dev-cards: after CLEAN or REFACTORED it sets `f.shipped = true` + `f.shippedAt` + `f.shippedSha`, then **moves the feature object to the archive** (see § Archiving). Shipped items leave the backlog data and appear on the Dashboard via the archive.
+`/dev-ship`'s refactor phase is the **promotion trigger** for dev-cards: after CLEAN or REFACTORED it sets `f.shipped = true` + `f.shippedAt` + `f.shippedSha`, then **moves the feature object to the archive** (see § Archiving). Shipped items leave the backlog data and appear on the Dashboard via the archive.
 
 ## Archiving (shipped dev-track features)
 
 At scale, shipped features become dead weight for every backlog load (measured: 54% of the data on a 150-feature project). Dev-track features therefore move out of `backlog.json` when they ship:
 
 - **File:** `.project/archive/backlog-archive.json` — `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`
-- **Writer:** `/dev-refactor` and `/game-refactor` completion — in the same sync that sets `shipped: true`, remove the feature object from `backlog.json#features[]` and append it to `archived[]` (create the file with the scaffold above if absent). Mirrors the existing `.project/features/archive/` dir convention.
+- **Writer:** `/dev-ship` (refactor phase) and `/game-ship` (refactor phase) — in the same sync that sets `shipped: true`, remove the feature object from `backlog.json#features[]` and append it to `archived[]` (create the file with the scaffold above if absent). Mirrors the existing `.project/features/archive/` dir convention.
 - **Readers:** the dashboard shipped-showcase (server merges `archived[]` into the served features view, in-memory) and humans. Pipeline skills never need archived features — that is the point.
-- **Design-track exception:** PAGE/COMPONENT features shipped by `/design-check` **stay in `backlog.json`** — the batch filter `lastCheckedSha !== shippedSha` re-audits them when the page changes after shipping. Only dev-track (non-PAGE/COMPONENT) features archive.
+- **Design-track exception:** PAGE/COMPONENT features shipped by `/design-ship` **stay in `backlog.json`** — the `lastCheckedSha`/`shippedSha` fields let a later re-ship detect that the page changed after shipping. Only dev-track (non-PAGE/COMPONENT) features archive.
 - **Restore:** move the object back to `features[]` manually (or via board UI in a future iteration); idempotent in both directions.
 
 **`f.shipped` field:**
@@ -232,26 +232,19 @@ At scale, shipped features become dead weight for every backlog load (measured: 
 
 ### UI: dual-track swimlanes
 
-The backlog board shows two top-level swimlanes with their own status sections and verb labels. Track pills (`All | Design | Dev`) at the top of the board filter by track. Within each track, features are grouped by phase (P1/P2/P3/P4).
+The backlog board is **ship-only**: `/dev-ship`, `/design-ship`, and `/game-ship` run the whole pipeline in one flow, so there are no intermediate resting columns. All ship-skills set `transition: "shipping"` on the feature and keep the card in the **In progress** section for the entire run; on completion they set `shipped: true`, which removes it from the board. Track pills (`All | Design | Dev`) at the top filter by track. Within each section, features are grouped by phase (P1/P2/P3/P4).
 
 ```
-═══ DESIGN ════════════════════════════════════════
-  ▾ To design    (PAGE/COMPONENT TODO)
-  ▾ To convert   (PAGE/COMPONENT DEFINED — Path B)
-  ▾ Building     (PAGE/COMPONENT DOING)
-
-═══ DEV ══════════════════════════════════════════════
-  ▾ To define    (other TODO)
-  ▾ To build     (other DEFINED)
-  ▾ To verify    (other DOING)
-  ▾ To refactor  (other DONE)
+  ▾ To do        (all TODO — both tracks)
+  ▾ In progress  (transition: "shipping" or a live skill signal, either track)
+  ▾ Archived     (CANCELLED — shared, collapsed)
 ```
 
-DONE+`shipped: true` (both tracks) move to the Dashboard. CANCELLED is one shared archived section at the bottom.
+The former resting columns — dev's **To build** (DEFINED) / **To verify** (DOING) / **To refactor** (DONE), and design's **To convert** (DEFINED) / **To check** (DOING) — no longer render: those statuses are transient internal states a ship-run passes through while the card sits in **In progress**. The underlying status field still moves TODO → DEFINED → DOING → DONE (see the status table above); only the board columns collapsed. DONE+`shipped: true` (both tracks) move to the Dashboard.
 
-## Refactor-badges ("To refactor" section)
+## Refactor-badges
 
-Items with `status === "DONE"` are shown in the **"To refactor"** section of the backlog. They show a badge reflecting `/dev-refactor`'s outcome:
+Items with `status === "DONE"` that have not yet shipped render in the **In progress** section (a ship-run holds them there via `transition: "shipping"`); once shipped they appear in the Dashboard showcase. In both places they show a badge reflecting the refactor outcome:
 
 | `f.refactor` value | Badge  | Meaning                                                                       |
 | ------------------ | ------ | ----------------------------------------------------------------------------- |
@@ -259,9 +252,9 @@ Items with `status === "DONE"` are shown in the **"To refactor"** section of the
 | `"REFACTORED"`     | ✓      | Refactor completed (CLEAN analysis and REFACTORED both counted here)          |
 | `"ROLLED_BACK"`    | ⚠      | Refactor attempted, rolled back (see `feature.json.refactor.failureAnalysis`) |
 
-`/dev-refactor` writes this field on both `feature.json` and the backlog feature in the same sync. On CLEAN or REFACTORED, `f.shipped = true` also follows and the item moves to the Dashboard.
+`/dev-ship`'s refactor phase writes this field on both `feature.json` and the backlog feature in the same sync. On CLEAN or REFACTORED, `f.shipped = true` also follows and the item moves to the Dashboard.
 
-> **Invariant:** `f.refactor === "REFACTORED"` implies `f.shipped === true` + feature absent from `backlog.json#features[]` + feature present in `backlog-archive.json#archived[]` + feature-dir under `features/archive/`. A `refactor`-without-`shipped` state is invalid — `/dev-refactor` must detect and self-heal this before printing `REFACTOR COMPLETE` (see `completion-batch.md § Step 3b`).
+> **Invariant:** `f.refactor === "REFACTORED"` implies `f.shipped === true` + feature absent from `backlog.json#features[]` + feature present in `backlog-archive.json#archived[]` + feature-dir under `features/archive/`. A `refactor`-without-`shipped` state is invalid — `/dev-ship`'s refactor phase must detect and self-heal this before completing (see `dev-ship/references/dev-refactor/workflow.md`).
 
 ## COMPONENT as first-class type
 
@@ -271,7 +264,7 @@ Items with `status === "DONE"` are shown in the **"To refactor"** section of the
 
 COMPONENT todos are created by:
 
-- `/design-create` Component-route (explicit user input)
+- `/design-convert` Component-route (explicit user input)
 - Dev-skills as reuse-discovery (suggestion, user-accept-only) — see below
 
 Schema when creating:
@@ -284,19 +277,19 @@ Schema when creating:
   "transition": "designing",
   "phase": "P3",
   "description": "Primary action trigger with primary/ghost/destructive variants",
-  "source": "/design-create",
+  "source": "/design-convert",
   "scope": "atomic",
   "dependencies": []
 }
 ```
 
-**`pageHint` field** (optional, on any FEATURE/API/etc. type): list of PAGE names this feature surfaces on. Set by `/dev-define` during requirements sparring. Read by `/design-create` Build to pre-populate the page-composition selection menu.
+**`pageHint` field** (optional, on any FEATURE/API/etc. type): list of PAGE names this feature surfaces on. Set by `/dev-ship` (define phase) during requirements sparring. Read by `/design-convert` Build to pre-populate the page-composition selection menu.
 
 ```json
 { "name": "cart-total", "type": "FEATURE", "pageHint": ["checkout", "cart"] }
 ```
 
-**Bidirectional link convention:** PAGE task `dependencies[]` ↔ FEATURE `pageHint[]`. When `/design-create` Build composes a PAGE, it writes the selected feature names into `page.dependencies[]`. When `/dev-define` spars on page placement, it writes the page name(s) into `feature.pageHint[]`.
+**Bidirectional link convention:** PAGE task `dependencies[]` ↔ FEATURE `pageHint[]`. When `/design-convert` Build composes a PAGE, it writes the selected feature names into `page.dependencies[]`. When `/dev-ship` (define phase) spars on page placement, it writes the page name(s) into `feature.pageHint[]`.
 
 **scope field on backlog item** (mirrors `design.components[].scope`):
 
@@ -313,13 +306,13 @@ TODO (To design) → DOING (Building) → DONE (Shipped)       ← Path A
 TODO (To design) → DEFINED (To convert) → DOING → DONE     ← Path B
 ```
 
-| Step    | Skill            | Output                                                  |
-| ------- | ---------------- | ------------------------------------------------------- |
-| Design  | `/design-create` | code (Build) or brief (Brief) + demo-page for COMPONENT |
-| Convert | `/design-create` | code from visual input — Convert route (Path B)         |
-| Audit   | `/design-check`  | A11Y + tokens + responsive — terminal, sets `shipped`   |
+| Step    | Skill             | Output                                                             |
+| ------- | ----------------- | ------------------------------------------------------------------ |
+| Design  | `/design-convert` | code (Build) or brief (Brief) + demo-page for COMPONENT            |
+| Convert | `/design-convert` | code from visual input — Convert route (Path B)                    |
+| Audit   | `/design-ship`    | check phase: A11Y + tokens + responsive — terminal, sets `shipped` |
 
-**`/design-check` PASS is terminal** — no refactor step. Item ships directly to Dashboard.
+**`/design-ship`'s check PASS is terminal** — no refactor step. Item ships directly to Dashboard.
 
 ### Discovery by dev-skills
 
@@ -372,31 +365,39 @@ Skills do **not** write to the backlog at start — saves a read+write roundtrip
 
 `feature.transition` — optional string, set by the dashboard, consumed by skills:
 
-| Value           | Dashboard sets when user copies prompt for                                                            | Consumed by                                      |
-| --------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `"defining"`    | THEME setup or FEATURE definition prompt                                                              | `design-tokens` (THEME) / `dev-define` (FEATURE) |
-| `"building"`    | Build prompt for a DEFINED feature                                                                    | `dev-build`                                      |
-| `"verifying"`   | Verify prompt for a DOING feature                                                                     | `dev-verify`                                     |
-| `"refactoring"` | Refactor prompt for a DONE+!shipped feature                                                           | `dev-refactor`                                   |
-| `"designing"`   | Design/build prompt for a TODO PAGE or COMPONENT                                                      | `design-create`                                  |
-| `"converting"`  | Convert prompt for a DEFINED PAGE or COMPONENT                                                        | `design-create`                                  |
-| `"contenting"`  | Fill-content prompt for a built (DOING) PAGE/COMPONENT                                                | `design-content`                                 |
-| `"shipping"`    | ⚡ Ship (auto) menu item on a TODO feature — dev-track → `/dev-ship`, PAGE/COMPONENT → `/design-ship` | `dev-ship` / `design-ship`                       |
+| Value          | Dashboard sets when user copies prompt for                                                                                       | Consumed by                              |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `"defining"`   | THEME setup prompt                                                                                                               | `design-tokens` (THEME)                  |
+| `"designing"`  | Design/build prompt for a TODO PAGE or COMPONENT                                                                                 | `design-convert`                         |
+| `"converting"` | Convert prompt for a DEFINED PAGE or COMPONENT                                                                                   | `design-convert`                         |
+| `"contenting"` | Fill-content prompt for a built (DOING) PAGE/COMPONENT                                                                           | `design-content`                         |
+| `"shipping"`   | ⚡ Ship (auto) menu item on a TODO feature — dev-track → `/dev-ship`, game-track → `/game-ship`, PAGE/COMPONENT → `/design-ship` | `dev-ship` / `game-ship` / `design-ship` |
 
 On successful completion the skill removes the `transition` field. **Exception**: `"shipping"` is
-a whole-run marker — the ship sub-phase syncs (the copies under `dev-ship/references/` and
-`design-ship/references/`) preserve it; only the ship skill's own completion (dev-ship: refactor's
-completion-batch or PHASE 5 cleanup; design-ship: PHASE 4 completion or PHASE 5 cleanup) removes
-it. No-arg pickup is disambiguated by type: `dev-ship` picks `"shipping"` on non-design types
-(+ PAGE-GAP), `design-ship` on PAGE/COMPONENT.
+a whole-run marker — the ship sub-phase syncs (the copies under `dev-ship/references/`,
+`game-ship/references/`, and `design-ship/references/`) preserve it; only the ship skill's own
+completion (dev-ship: refactor's completion-batch or PHASE 5 cleanup; game-ship: PHASE 5 cleanup;
+design-ship: PHASE 4 completion or PHASE 5 cleanup) removes it. No-arg pickup is disambiguated by
+type: `design-ship` picks `"shipping"` on PAGE/COMPONENT, while a non-design (FEATURE) type routes to
+`dev-ship` in a dev project and `game-ship` in a game project (dev-ship vs game-ship is disambiguated
+by project type — a project is one or the other).
 
-**Board rendering (three progress states).** The dashboard shows a `transition` without a live
+**Board rendering (four progress states).** The dashboard shows a `transition` without a live
 skill signal as **queued** (dim, "⧉ {transition} · queued"), a feature with a
 `.project/session/active-{name}.json` signal as **live** (pulsing "{skill}ing" badge), and a live
 signal with the optional `waiting` field as **waiting for input** (amber, static
-"⏸ {label} · input needed" — sorted to the top; written by dev-verify's manual walkthrough,
-game-verify's playtest wait, and design-ship's PHASE 4 review). All three group in the IN PROGRESS
-section at the top of the board. See `DEVINFO.md § Active Feature Signal`.
+"⏸ {label} · input needed" — sorted to the top; written by dev-ship's manual walkthrough (PHASE 3),
+game-ship's playtest wait (PHASE 3), and design-ship's PHASE 4 review). The fourth state is
+**parked**: a ship checkpoint (`.project/session/ship-{name}.json` — see `SHIP-CHECKPOINT.md`) with
+`status != "complete"` and **no** live signal for that feature. Because the checkpoint survives a full
+session end (unlike `active-*.json`), it renders across sessions as an amber, static
+"⏸ {label} · parked" row (`plan approval pending` at the plan gate, `manual tests pending` /
+`playtest pending` / `review pending` at the interactive phase, `interrupted at {phase}` otherwise,
+`failed at {phase}` on a failed run). Its action is a **copy button carrying the
+`/{pipeline}-ship {name}` resume command** (one-click resume), not a live dot. Live/waiting wins over
+parked for the same feature; the parked row disappears when the run resumes (a live signal returns)
+or completes (the checkpoint is removed). All four group in the IN PROGRESS section at the top of the
+board. See `DEVINFO.md § Active Feature Signal`.
 
 ### Read (PHASE 0)
 
@@ -425,22 +426,84 @@ No backlog write — `transition` remains as set by the dashboard, user can re-c
 
 ### Skill filter & status transition table
 
-The DEV pipeline uses `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`. The DESIGN pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab. There is no `"auditing"` transition — `design-check` runs in batch mode at release end, not per item.
+The GAME pipeline's standalone skills use `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`; `/game-ship` runs the whole game flow end-to-end via `"shipping"` (dev-track features likewise run through `/dev-ship` via `"shipping"`). The DESIGN pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab. There is no `"auditing"` transition — the runtime audit runs as the check phase inside `/design-ship`, not as a separate per-item skill.
 
 | Skill            | Filter                                                                                     | New status on success                           |
 | ---------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
 | `design-tokens`  | `type === "THEME" && transition === "defining"`                                            | `"DONE"`                                        |
-| `dev-define`     | `type === "FEATURE" && transition === "defining"`                                          | `"DEFINED"`                                     |
-| `dev-build`      | `type === "FEATURE" && transition === "building"`                                          | `"DOING"`                                       |
-| `dev-verify`     | `type === "FEATURE" && transition === "verifying"`                                         | `"DONE"`                                        |
-| `dev-refactor`   | `transition === "refactoring"`                                                             | keep status, set `shipped: true`                |
 | `dev-ship`       | `transition === "shipping" && type !== PAGE/COMPONENT` (no-arg pickup)                     | full pipeline → `shipped: true` via refactor    |
-| `design-create`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`                | `"DOING"` (Path A — DEFINED is skipped)         |
-| `design-create`  | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"`               | `"DOING"`                                       |
+| `design-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`                | `"DOING"` (Path A — DEFINED is skipped)         |
+| `design-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"`               | `"DOING"`                                       |
 | `design-content` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "contenting"`               | keep `"DOING"`, sets `contentStatus: "filled"`  |
-| `design-check`   | batch: `status === "DOING"` or `lastCheckedSha !== shippedSha`                             | sets `lastCheckedSha`; PAGE PASS → `"DONE"`     |
 | `design-ship`    | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "shipping"` (no-arg pickup) | full pipeline → PAGE `"DONE"` + `shipped: true` |
-| `game-define`    | `type === "FEATURE" && transition === "defining"`                                          | `"DEFINED"`                                     |
-| `game-build`     | `type === "FEATURE" && transition === "building"`                                          | `"DOING"`                                       |
-| `game-verify`    | `type === "FEATURE" && transition === "verifying"`                                         | `"DONE"`                                        |
-| `game-refactor`  | `transition === "refactoring"`                                                             | keep status, set `shipped: true`                |
+| `game-ship`      | `transition === "shipping" && type !== PAGE/COMPONENT` (game project; no-arg pickup)       | full pipeline → `shipped: true` via refactor    |
+
+---
+
+## Impact Check (consumer protocol)
+
+The backlog is living state: crystallizing one feature's scope can absorb or invalidate other open items — a REQ that already ships what another card asks for, or a design choice that removes a card's reason to exist. This check catches that drift at the moment it is created, instead of months later during a board cleanup. It mirrors `shared/SEED.md § Alignment Check` (seed drift ↔ backlog drift).
+
+### Skip condition
+
+`BACKLOG_NOT_PRESENT` or `BACKLOG_NO_OPEN_ITEMS` from the `open-items` load ([BACKLOG-LOAD.md § open-items](BACKLOG-LOAD.md)) → log nothing, continue.
+
+### Impact scan
+
+Compare this feature's crystallized scope — REQ descriptions + `acceptance[]` + `clarifications[]` + `durableDecisions[]` — against each open item from the `open-items` list. Classify only high-confidence semantic matches:
+
+- **covered** — this feature's requirements fully implement the item's described behavior (item `dark-mode-toggle` while REQ-004 already ships a theme switcher)
+- **partial** — concrete overlap; the item's remaining scope shrinks (this feature does part of it, the item keeps the rest)
+- **obsolete** — a decision made here removes the item's reason to exist (clarification chose hosted auth → item `build-own-auth` is dead)
+
+Skip thematic adjacency ("both touch settings") — flag only when a concrete REQ or decision maps onto the item's described behavior. Items with status `DOING`/`DONE`/shipped and design-track items (PAGE/COMPONENT/THEME) are never flagged — the `open-items` profile already excludes them.
+
+### Reporting
+
+**No impact:** log `Backlog: ✓ open items unaffected` (one line inline), continue.
+
+**Impact detected:** log `Backlog: ⚠ impact — N item(s)` inline. Write the impact table to the plan file (or inline in chat if the skill is not in plan mode):
+
+| #   | Item             | Verdict  | Because                                             |
+| --- | ---------------- | -------- | --------------------------------------------------- |
+| 1   | dark-mode-toggle | covered  | REQ-004 ships the theme switcher this card asks for |
+| 2   | build-own-auth   | obsolete | clarification chose hosted auth (Clerk)             |
+| 3   | user-settings    | partial  | REQ-002 covers profile edit; notifications remain   |
+
+### Resolution prompt
+
+```yaml
+header: "Backlog impact"
+question: "This feature affects {N} open backlog item(s) — apply the proposed updates?"
+options:
+  - label: "Yes, apply all (Recommended)", description: "Covered/obsolete items → CANCELLED (restorable); partial items → description rescoped"
+  - label: "Select per item", description: "Choose which verdicts to apply"
+  - label: "No, leave backlog as-is", description: "No mutations — verdicts are dropped"
+multiSelect: false
+```
+
+**Select per item** → follow-up `AskUserQuestion` (multiSelect, ≤4 items per question) listing each flagged item with its verdict; only selected items carry forward.
+
+### Mutations (applied in the consumer skill's sync phase — never inside plan mode)
+
+Approved verdicts travel to the sync phase as `backlogImpact[]` (`{ name, verdict, because, ref }`) and are applied in the same backlog write-batch as the skill's own status flip:
+
+| Verdict                | Mutation                                                                                                                                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `covered` / `obsolete` | `status: "CANCELLED"`, `cancelledReason: "superseded by {feature}: {REQ-ids or decision}"`, `cancelledAt: <YYYY-MM-DD>`, remove `transition` — restorable via the board's archived section      |
+| `partial`              | Rewrite `description` per § Description quality — state only the remaining scope and name the boundary ("remaining after {feature}: …"); add `{feature}` to the item's `dependencies[]` (dedup) |
+
+Guard rails:
+
+- **`externalRef` items are report-only** — the external tracker owns them. Surface the finding ("close/rescope via the tracker or `/team-outsource`") but never mutate the item.
+- A cancelled `DEFINED` item already has `.project/features/{name}/feature.json` — leave the folder in place (history), mention it in the log line.
+- Log line after sync: `Backlog: ✓ impact applied — {N} cancelled, {M} rescoped` (append ` · {K} external — report-only` when applicable).
+
+### Designated impact points
+
+| Skill        | Impact point                                                                               | Plan mode? |
+| ------------ | ------------------------------------------------------------------------------------------ | ---------- |
+| `/dev-ship`  | Define phase — end of PHASE 2 Architecture, directly after the Seed Alignment Check        | Yes        |
+| `/game-ship` | Define phase — end of PHASE 3 Architecture Design, directly after the Seed Alignment Check | Yes        |
+
+`/design-ship` inherits the check via its copied define workflow — no separate integration.

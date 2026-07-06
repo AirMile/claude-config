@@ -53,6 +53,10 @@ UNDECLARED_WRITER_ALLOWLIST = {
     "core-setup",
     # Board-server: serveert/leest backlog.html, schrijft geen pipeline-state.
     "project-viewer",
+    # State-sync: verplaatst hele .project/-bestanden naar/van de claude/state
+    # branch (restore/collect), geen pipeline-field handoff — per-key declareren
+    # voegt niets toe. Zie skills/shared/STATE-SYNC.md.
+    "project-sync",
 }
 
 

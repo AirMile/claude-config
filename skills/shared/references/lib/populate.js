@@ -86,6 +86,27 @@ function populateFromProject(projectDir, dashData) {
     } catch {}
   }
 
+  // ── Archived learnings: consolidation cold-storage, still browsable ──
+  // .project/archive/learnings-{YYYY-MM}.json — excluded from the active list but
+  // shown collapsed in the Knowledge tab so nothing is truly invisible.
+  const archiveDir = path.join(projectPath, ".project/archive");
+  if (fs.existsSync(archiveDir)) {
+    const archived = [];
+    try {
+      for (const f of fs.readdirSync(archiveDir)) {
+        if (!/^learnings-.*\.json$/.test(f)) continue;
+        try {
+          const data = JSON.parse(
+            fs.readFileSync(path.join(archiveDir, f), "utf8"),
+          );
+          for (const e of data.archived || [])
+            archived.push({ ...e, archivedIn: f });
+        } catch {}
+      }
+    } catch {}
+    if (archived.length) dashData.learningsArchive = archived;
+  }
+
   // ── Stack fallback: detect from project files if still empty ──
   const stackStillEmpty =
     !dashData.stack || (!dashData.stack.framework && !dashData.stack.language);

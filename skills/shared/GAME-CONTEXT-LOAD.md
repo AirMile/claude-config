@@ -15,7 +15,7 @@ Shared protocol for extracting fields from `.project/project.json` and `.project
 
 Game-pipeline skills load project context during their **PHASE 0 context-load phase** — read-only, before any generation or writes.
 
-**This protocol is NOT for** mutations to `project.json` or `project-context.json`. Those remain the responsibility of writer-paths: `game-define/references/phase5-sync.md`, `game-build` PHASE 4b sync, `game-verify/references/completion-finalize.md`.
+**This protocol is NOT for** mutations to `project.json` or `project-context.json`. Those remain the responsibility of writer-paths: `game-ship/references/game-define/references/phase5-sync.md`, `game-ship` build phase (PHASE 4b sync), `game-ship/references/game-verify/references/completion-finalize.md`.
 
 ---
 
@@ -23,7 +23,7 @@ Game-pipeline skills load project context during their **PHASE 0 context-load ph
 
 ### Profile: `define`
 
-For game-define PHASE 0 step 5 (project context load).
+For game-ship's define phase PHASE 0 step 5 (project context load).
 
 Requires `$FEAT` to be set to the current feature name.
 
@@ -63,7 +63,7 @@ node -e "
 
 ### Profile: `build`
 
-For game-build PHASE 0 step 3 (project context) and game-debug PHASE 0.
+For game-ship's build phase PHASE 0 step 3 (project context) and game-debug PHASE 0.
 
 ```bash
 node -e "
@@ -88,7 +88,7 @@ node -e "
 
 ### Profile: `verify`
 
-For game-verify PHASE 0 and game-debug PHASE 0 when verifying output.
+For game-ship's verify phase PHASE 0 and game-debug PHASE 0 when verifying output.
 
 ```bash
 node -e "
@@ -149,6 +149,6 @@ Project context load (via shared/GAME-CONTEXT-LOAD.md):
 
 ## Implementation note
 
-This is a **read-only** protocol. Crucially, `architecture` is returned as the **full object** (not truncated to a count as in the dev-pipeline helper) because game-build and game-debug require the full scene graph and signal list for technique mapping.
+This is a **read-only** protocol. Crucially, `architecture` is returned as the **full object** (not truncated to a count as in the dev-pipeline helper) because game-ship's build phase and game-debug require the full scene graph and signal list for technique mapping.
 
 Dev-pipeline equivalent: [PROJECT-CONTEXT-LOAD.md](PROJECT-CONTEXT-LOAD.md) (dev `build` profile truncates `architecture` to `componentsCount`; game profiles pass the full `architecture` object).

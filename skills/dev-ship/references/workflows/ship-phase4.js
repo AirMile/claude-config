@@ -3,11 +3,12 @@ export const meta = {
   description:
     "dev-ship PHASE 4: single-feature refactor (sonnet/medium) in parallel with targeted OWASP scanners (sonnet/medium), then one opus triage pass over the findings",
   whenToUse:
-    "Launched by the dev-ship skill after PHASE 3 finalize — not intended for standalone use.",
+    "Launched by the dev-ship skill after PHASE 3 manual tests — finalize runs after this workflow returns — not intended for standalone use.",
   phases: [
     {
       title: "Refactor",
-      detail: "AGENT 3 — dev-refactor on main, test-guarded",
+      detail:
+        "AGENT 3 — dev-refactor in the worktree (pre-merge), test-guarded",
       model: "sonnet",
     },
     {
@@ -20,12 +21,14 @@ export const meta = {
 
 // args: {
 //   feature: string,
-//   refactorPrompt: string | null,           — null when SHIP_PLAN.refactorPolicy == skip
-//   scanners: [{ code: string, prompt: string }],  — one per SHIP_PLAN.securityDeep code (e.g. "A05"); [] when none
-//   triagePromptTemplate: string,            — per agent-security.md § Triage; findings JSON is appended here
+//   refactorPromptPath: string | null,       — path to the refactor-prompt file; null when the --no-refactor escape hatch was set
+//   scanners: [{ code: string, promptPath: string }],  — one per SHIP_PLAN.securityDeep code (e.g. "A05"); [] when none
+//   triagePromptPath: string,                — path to the triage-prompt file (agent-security.md § Triage); findings JSON appended at call time
 //   resume?: { refactor?, triage? },         — checkpoint results on a Resume; only a COMPLETED
 //                                               result short-circuits (a resumed failed refactor re-runs)
 // }
+// Prompts are passed by file path, not inline — the spawned agent reads the file (large inline
+// args can arrive undefined in the script; the sandbox can't read files but agents can).
 // Model/effort matrix rationale: see dev-ship SKILL.md § Design.
 // Resume: a completed refactor/triage in the checkpoint (shared/SHIP-CHECKPOINT.md) is reused
 // rather than re-run; if triage is already done the scanners are skipped too. In that case
@@ -134,40 +137,56 @@ const TRIAGE_SCHEMA = {
   required: ["confirmed", "dismissed", "summary"],
 };
 
+// Defensive: some runtimes deliver the `args` global as a JSON STRING, not an object —
+// property access on a string yields undefined (agents then get "the file at undefined").
+// Normalize once; the rest of the script reads from `A`. (See SKILL.md § Design.)
+const A = typeof args === "string" ? JSON.parse(args) : (args ?? {});
+if (!A.refactorPromptPath && !A.scanners?.length) {
+  log(
+    `args-delivery: no refactor prompt and no scanners after normalize — refactorPromptPath=${A.refactorPromptPath}, scanners=${A.scanners?.length ?? 0}`,
+  );
+}
+
 // Refactor and scanners are independent (scanners are read-only, no .project/ writes) → run in
 // parallel. The barrier before triage is justified: triage needs ALL scanner findings at once.
 // If triage was already resumed from the checkpoint, the scanners don't need to re-run.
-const scanners = args.resume?.triage ? [] : (args.scanners ?? []);
+const scanners = A.resume?.triage ? [] : (A.scanners ?? []);
 // Only a completed resume result short-circuits — a resumed FAILED refactor must re-run.
 const resumedRefactor = ["applied", "clean"].includes(
-  args.resume?.refactor?.status,
+  A.resume?.refactor?.status,
 )
-  ? args.resume.refactor
+  ? A.resume.refactor
   : null;
 const thunks = [
   () =>
     resumedRefactor
       ? Promise.resolve(resumedRefactor)
-      : args.refactorPrompt
-        ? agent(args.refactorPrompt, {
-            label: "AGENT 3: refactor",
-            agentType: "general-purpose",
-            model: "sonnet",
-            effort: "medium",
-            phase: "Refactor",
-            schema: REFACTOR_SCHEMA,
-          })
+      : A.refactorPromptPath
+        ? agent(
+            `Read and execute the full instructions in the file at ${A.refactorPromptPath}.`,
+            {
+              label: "AGENT 3: refactor",
+              agentType: "general-purpose",
+              model: "sonnet",
+              effort: "medium",
+              phase: "Refactor",
+              schema: REFACTOR_SCHEMA,
+            },
+          )
         : Promise.resolve(null),
   ...scanners.map(
     (s) => () =>
-      agent(s.prompt, {
-        label: `scan:${s.code}`,
-        agentType: `owasp-${s.code.toLowerCase()}-scanner`,
-        model: "sonnet",
-        effort: "medium",
-        phase: "Security",
-        schema: SCAN_SCHEMA,
-      }).then((r) => (r ? { code: s.code.toUpperCase(), ...r } : null)),
+      agent(
+        `Read and execute the full instructions in the file at ${s.promptPath}.`,
+        {
+          label: `scan:${s.code}`,
+          agentType: `owasp-${s.code.toLowerCase()}-scanner`,
+          model: "sonnet",
+          effort: "medium",
+          phase: "Security",
+          schema: SCAN_SCHEMA,
+        },
+      ).then((r) => (r ? { code: s.code.toUpperCase(), ...r } : null)),
   ),
 ];
 
@@ -186,10 +205,10 @@ if (scanners.length) {
 
 phase("Security");
 const triage =
-  args.resume?.triage ??
+  A.resume?.triage ??
   (findings.length
     ? await agent(
-        `${args.triagePromptTemplate}\n\nFINDINGS (JSON):\n${JSON.stringify(findings, null, 2)}`,
+        `Read the triage instructions in the file at ${A.triagePromptPath}, then triage these findings:\n\nFINDINGS (JSON):\n${JSON.stringify(findings, null, 2)}`,
         {
           label: "security triage",
           model: "opus",
@@ -202,10 +221,10 @@ const triage =
 return {
   refactor:
     refactor ??
-    (args.refactorPrompt
+    (A.refactorPromptPath
       ? {
           status: "failed",
-          feature: args.feature,
+          feature: A.feature,
           notes: "agent died (null return)",
         }
       : null),

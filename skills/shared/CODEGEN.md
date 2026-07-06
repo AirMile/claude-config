@@ -1,6 +1,6 @@
 # CODEGEN — Shared Code Generation Patterns
 
-Shared patterns for `design-create` (Build route and Convert route PHASE 2.1/2.2). Each route contains route-specific logic inline; this file covers only shared, stack-agnostic patterns.
+Shared patterns for `design-convert` (Build route and Convert route PHASE 2.1/2.2). Each route contains route-specific logic inline; this file covers only shared, stack-agnostic patterns.
 
 ---
 
@@ -57,7 +57,7 @@ Available token categories:
 - Forbidden: `style={{ backgroundColor: "#..." }}` inline
 - Allowed: `bg-primary`, `text-foreground`, `border-border`, `bg-[var(--color-…)]`
 
-The Build route validates this after write via a regex post-pass (see `design-create` Build Step 8 — Token post-pass).
+The Build route validates this after write via a regex post-pass (see `design-convert` Build Step 8 — Token post-pass).
 
 **Dark mode:**
 
@@ -215,7 +215,7 @@ Use **only** the project's own placeholder asset. External CDN URLs hallucinate 
 | Hero image        | `/placeholder.svg?w=1200&h=600` |
 | Product thumbnail | `/placeholder.svg?w=200&h=200`  |
 
-The Build route validates external URLs after write via a regex post-pass (see `design-create` Build Step 8 — Token post-pass).
+The Build route validates external URLs after write via a regex post-pass (see `design-convert` Build Step 8 — Token post-pass).
 
 ---
 

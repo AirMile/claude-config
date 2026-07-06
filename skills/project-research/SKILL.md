@@ -6,7 +6,7 @@ writes: [concept.seed, project.thinking]
 metadata:
   author: claude-config
   version: 1.3.0
-  category: thinking
+  category: project
 ---
 
 ## Overview
@@ -316,7 +316,7 @@ Include Competitive Landscape table and/or Technical Feasibility assessment wher
 Auto-save without extra questions:
 
 1. Write report to `.project/thinking/{concept-name}-research.md` (full report as user archive)
-2. Add `## Research Findings` section to `.project/project-seed.md` (this is what project-plan/dev-define see as context)
+2. Add `## Research Findings` section to `.project/project-seed.md` (this is what project-plan/dev-ship's define phase see as context)
 3. Confirm:
 
 ```
@@ -337,7 +337,7 @@ Next steps:
 1. Write to scope path (`.project/features/{name}/research.md` or `.project/thinking/{topic}-research.md`)
 2. Optionally ask if key findings should also be added to `project-seed.md`
 
-The markdown is the source of truth — no `project.json` `thinking[]` append. Skills that want to consume research (like `/dev-define`) read directly from `.project/thinking/*.md` or `.project/features/{name}/research.md`.
+The markdown is the source of truth — no `project.json` `thinking[]` append. Skills that want to consume research (like `/dev-ship` (define phase)) read directly from `.project/thinking/*.md` or `.project/features/{name}/research.md`.
 
 **Scope = standalone idea:**
 

@@ -149,7 +149,7 @@ options:
   - label: "Solo (Recommended)"
     description: "Only you commit here. Enables local-only flow — no PR offers, no team-* skill gating."
   - label: "Team"
-    description: "Multiple contributors. Enables /team-* skills, automatic PR offer after /dev-verify and /dev-refactor, and team settings in backlog/dashboard."
+    description: "Multiple contributors. Enables /team-* skills, automatic PR offer after dev-ship's verify and refactor phases, and team settings in backlog/dashboard."
 multiSelect: false
 ```
 
@@ -307,7 +307,7 @@ Install dependencies and run build to verify setup compiles. Non-blocking: conti
 
 Update `## User Preferences` with language and explanation level from Phase 1.
 
-Generate CLAUDE.md following the **canonical structure** from `references/claude-md-sections.md`. This is the single source of truth — all pipeline skills (dev-build auto-sync) expect these section names.
+Generate CLAUDE.md following the **canonical structure** from `references/claude-md-sections.md`. This is the single source of truth — all pipeline skills (dev-ship's build-phase auto-sync) expect these section names.
 
 **Section rules:**
 

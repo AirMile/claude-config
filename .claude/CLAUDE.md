@@ -28,10 +28,10 @@ Cross-platform: **macOS** and **Windows**.
 ## Structure
 
 ```
-skills/           48 skills in 9 categories
+skills/           40 skills in 8 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (each with SKILL.md)
-agents/           21 sub-agent definitions (.md with YAML frontmatter)
+agents/           23 sub-agent definitions (.md with YAML frontmatter)
 hooks/            format-on-save.cjs, prompt-timer.cjs, security-reminder.py
 local/            Portable configs for ~/.claude/ (templates, not linked)
 CLAUDE.base.md    Template for per-project CLAUDE.md generation
@@ -39,7 +39,7 @@ CLAUDE.base.md    Template for per-project CLAUDE.md generation
 
 ## Skill Conventions
 
-- **Naming**: `{category}-{verb}` — lowercase, hyphen. Categories: core, dev, design, game, marketing, project, team
+- **Naming**: `{category}-{verb}` — lowercase, hyphen. Categories: core, content, dev, design, game, marketing, project, team
 - **Directory**: each skill = folder with `SKILL.md`, optionally `references/`, `scripts/`, `techniques/`
 - **Frontmatter**: metadata with author/version/category — use `disable-model-invocation: true` only if the skill must never be invokable via the Skill tool (also blocks user-triggered `/skill-name`)
 - **Description**: one short sentence — `<Verb-phrase>. Use with /<skill-name>.` (target 40-80 chars). Descriptions count against `skillListingBudgetFraction` (~1% context budget) and get truncated if too long, breaking auto-routing. Only use a richer description when the skill genuinely auto-triggers from context (e.g. `design-tokens` on THEME backlog status).
@@ -65,20 +65,21 @@ Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 ## Pipelines
 
-**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere)
-**Game**: `project-seed` → `project-plan` → `define` → `build` → `verify` → [`refactor`] (+ `debug` everywhere, Godot 4.x / GUT)
-**Design**: `design-create` (design/build/convert — incl. sketch/wireframe/Figma/Canva → high-fi code) → `design-content` (fill copy) → `design-check` — or all-in-one via `design-ship` (auto-mode: build→content→check, Build lane / web only; dev-track counterpart: `dev-ship`)
+**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (runs define→build→verify→refactor as one auto-mode flow) (+ `dev-debug` everywhere)
+**Game**: `project-seed` → `project-plan` → `game-ship` (runs define→build→GUT-verify→playtest→refactor as one auto-mode flow) (+ `game-debug` everywhere, Godot 4.x / GUT)
+**Design**: `design-convert` (spec management, visual→code convert — sketch/wireframe/Figma/Canva/URL → high-fi code — and game `.tscn` codegen) & `design-content` (fill copy) feed `design-ship` — auto-mode build→content→check as one flow (Build lane / web); `design-tokens` for tokens/motion packs; dev-track counterpart: `dev-ship`
 **Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`
 
 State handoff between skills via `.project/session/devinfo.json` (schema: `shared/DEVINFO.md`).
 
 ## Key Patterns
 
-- **`.project/`**: all runtime artifacts (gitignored) — wireframes, config, session, screenshots, previews (`.project/previews/` = auto-opening HTML previews from dev-define/design-tokens/design-create via `shared/HTML-PRESENT.md`)
+- **`.project/`**: all runtime artifacts (gitignored) — wireframes, config, session, screenshots, previews (`.project/previews/` = auto-opening HTML previews from dev-ship's define phase/design-tokens/design-convert via `shared/HTML-PRESENT.md`)
 - **`.project/project.json`**: central project dashboard (seed, design, theme, stack, endpoints, entities — `schemaVersion: 2`). Runtime context (architecture, context, learnings) lives in `project-context.json`; features in `backlog.json`. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md references this for runtime context.
 - **Format-on-save**: hook runs Prettier (web) or gdformat (GDScript) after every Write/Edit
 - **Backlog**: `.project/backlog.json` (data store; board UI rendered by the server) with status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped (archived to `.project/archive/backlog-archive.json`)
 - **Build skills**: auto-commit, auto-sync `project.json` context after completion
+- **State branch**: the durable `.project/` subset (backlog, dashboard, seed, learnings, archive, feature dossiers) syncs across your own devices via the orphan branch `claude/state` (`shared/STATE-SYNC.md`, skill `/project-sync`) — working branches never track `.project/`. Auto-pushes after ship/finalize; pull-check in `/core-pull`; restored on `/project-add` clone.
 - **Global vs local**: `~/.claude/{agents,hooks,skills,scripts}/` are whole-directory symlinks to the claude-config repo. Claude Code merges this global set with `<project>/.claude/`, where global is always visible. Per-project filtering of skills/agents therefore doesn't work — that's why there are no profiles; everything is always available.
 
 ## Bootstrap + .gitignore Philosophy
@@ -106,6 +107,6 @@ Idempotent — skip if file already exists. No junction needed: `~/.claude/CLAUD
 - Don't modify shared files without considering the impact on all skills
 - New skills: copy frontmatter structure from an existing skill in the same category
 - Test by actually running the skill
-- Dev/game pipeline sync: for structural changes to dev-pipeline skills (dev-define, dev-build, dev-verify, dev-debug, dev-refactor), check whether the game-pipeline counterpart (game-\*) needs the same change. Domain-specific content (Godot vs web, GUT vs browser) does not need to be synced.
+- Dev/game pipeline sync: for structural changes to `dev-ship` (its define/build/verify/refactor phases) or `dev-debug`, check whether the game-pipeline counterpart (`game-ship`, `game-debug`) needs the same change. Domain-specific content (Godot vs web, GUT vs browser) does not need to be synced.
 - Before tagging a release: run `python3 scripts/check-handoff.py`, `python3 scripts/check-dashboard-writers.py`, `python3 scripts/check-no-project-commit.py`, and `bash scripts/tests/run.sh` — all must exit 0. (`run.sh` is bash; on Windows run via WSL.)
 - New skills forecasted >500 lines: apply lazy-reference-loading before committing — see `skills/shared/SKILL-PATTERNS.md § Lazy Reference Loading`.

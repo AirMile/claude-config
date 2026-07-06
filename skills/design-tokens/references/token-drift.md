@@ -36,7 +36,7 @@ break their visual design.
 header: "Token Drift"
 question: "Changing a token used in built pages. What do you want to do?"
 options:
-  - label: "Change anyway (Recommended)", description: "Update token — re-check pages later via /design-check"
+  - label: "Change anyway (Recommended)", description: "Update token — re-check pages later via /design-ship"
   - label: "Update pages first", description: "Stop — update impacted pages before changing token"
   - label: "Cancel", description: "Abandon the token change"
 multiSelect: false

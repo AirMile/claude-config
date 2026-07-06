@@ -123,15 +123,15 @@ Pre-migration projects may still carry these keys in `project.json` — they are
 
 ## Merge strategy per section
 
-| Section             | Strategy            | Notes                                                                            |
-| ------------------- | ------------------- | -------------------------------------------------------------------------------- |
-| `seed`              | **OVERWRITE**       | `name`+`pitch`+`content` overwritten, `thinking` is APPEND                       |
-| `design`            | **MERGE on `name`** | Pages/flows/principles/components/canvases merged on name, never auto-delete     |
+| Section             | Strategy            | Notes                                                                          |
+| ------------------- | ------------------- | ------------------------------------------------------------------------------ |
+| `seed`              | **OVERWRITE**       | `name`+`pitch`+`content` overwritten, `thinking` is APPEND                     |
+| `design`            | **MERGE on `name`** | Pages/flows/principles/components/canvases merged on name, never auto-delete   |
 | `theme`             | **OVERWRITE**       | All fields owned and written by `/design-tokens` (tokens + motion pack routes) |
-| `stack`             | **MERGE**           | Add packages, do not overwrite existing ones                                     |
-| `data`              | **MERGE**           | Add entities/fields/relations per entity                                         |
-| `endpoints`         | **MERGE**           | Add or update status, do not delete                                              |
-| `optimization_runs` | **APPEND**          | Append-only log, dedup on `run_id`. Never delete.                                |
+| `stack`             | **MERGE**           | Add packages, do not overwrite existing ones                                   |
+| `data`              | **MERGE**           | Add entities/fields/relations per entity                                       |
+| `endpoints`         | **MERGE**           | Add or update status, do not delete                                            |
+| `optimization_runs` | **APPEND**          | Append-only log, dedup on `run_id`. Never delete.                              |
 
 (`architecture`/`context` merge strategies: see [DASHBOARD-CONTEXT.md](DASHBOARD-CONTEXT.md). Feature status mutations: see [BACKLOG.md](BACKLOG.md) Lifecycle Protocol.)
 
@@ -228,11 +228,11 @@ Pre-migration projects may still carry these keys in `project.json` — they are
 
 **usedIn:** auto-maintained by Build/convert post-pass — list of pages that import this component. Never overwrite manually.
 
-**gaps:** auto-maintained by `design-create` Capture/Build/Convert — list of handler-props without a linked FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only for user; update via gap-discovery flow.
+**gaps:** auto-maintained by `design-convert` Capture/Build/Convert — list of handler-props without a linked FEATURE. Schema per item: `{ prop, context, status: "pending"|"linked"|"created"|"skipped", featureRef?, at }`. Read-only for user; update via gap-discovery flow.
 
 ### Features
 
-Feature data is **not stored in project.json**. The single feature list lives in `.project/backlog.json` (mutations per [BACKLOG.md](BACKLOG.md) Lifecycle Protocol); shipped dev-track features move to `.project/archive/backlog-archive.json` on `/dev-refactor` completion. The dashboard server derives its features view (incl. the shipped showcase) from those two stores in-memory.
+Feature data is **not stored in project.json**. The single feature list lives in `.project/backlog.json` (mutations per [BACKLOG.md](BACKLOG.md) Lifecycle Protocol); shipped dev-track features move to `.project/archive/backlog-archive.json` on `/dev-ship` refactor-phase completion. The dashboard server derives its features view (incl. the shipped showcase) from those two stores in-memory.
 
 ## Section schemas
 
@@ -252,7 +252,7 @@ Feature data is **not stored in project.json**. The single feature list lives in
 `seedFile` = reference to `.project/project-seed.md` (preferred format for new projects). Legacy alias: `conceptFile` (deprecated).
 `content` = legacy inline seed content. For new projects empty — full content lives in `project-seed.md`.
 
-The seed is a **living document**. Thinking-skills (`/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-research`) integrate their concept-scope output directly into `project-seed.md` — there is no history log in `project.json`. `/project-plan` and `/dev-define` only read the current state of `project-seed.md` as seed context.
+The seed is a **living document**. Thinking-skills (`/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-research`) integrate their concept-scope output directly into `project-seed.md` — there is no history log in `project.json`. `/project-plan` and `/dev-ship` (define phase) only read the current state of `project-seed.md` as seed context.
 
 ### Single source of truth
 
@@ -291,7 +291,7 @@ Dashboard server's `populateFromProject()` handles both formats — existing leg
 
 ### data
 
-**Optional — only for data-heavy projects.** In practice, simple projects (static sites, utilities, games, UI-only components) leave this empty. Skills that write (`/dev-define`, `/dev-verify`, `/dev-refactor`, `/game-define`, `/team-verify`) skip this update if the domain introduces no explicit entities — log `Skipped data.entities: no entities`.
+**Optional — only for data-heavy projects.** In practice, simple projects (static sites, utilities, games, UI-only components) leave this empty. Skills that write (`/dev-ship`, `/game-ship`, `/team-verify`) skip this update if the domain introduces no explicit entities — log `Skipped data.entities: no entities`.
 
 ```json
 {
@@ -349,7 +349,7 @@ See § Features under "Merge strategy per section": canonical data lives in `.pr
 
 ### recentChanges
 
-Small shipped items (type CHANGE/BUG/PAGE/COMPONENT/etc) that did not go through the full feature pipeline. Promoted via `/dev-refactor --small-items` after a lightweight convention check.
+Small shipped items (type CHANGE/BUG/PAGE/COMPONENT/etc) that did not go through the full feature pipeline. Promoted via `/dev-ship`'s refactor phase (small-items path) after a lightweight convention check.
 
 ```json
 [
@@ -423,15 +423,15 @@ No deletion, no update — append only. For live status of a running run: see `.
 
 ### project.json sections
 
-| Section             | Written by                                                                         | When                                     |
-| ------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------- |
-| `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-plan`    | On seed creation/iteration/plan          |
-| `design`            | `/design-create`, `/design-tokens`                                             | On design spec/page build/theme creation |
-| `theme`             | `/design-tokens`                                                                 | After theme create/update                |
-| `stack`             | `/core-setup`, `/project-plan`, `/dev-define`, `/dev-build`, `/design-create` | On detection/new deps                    |
-| `data`              | `/dev-define`, `/game-define`                                                      | On entity definition                     |
-| `endpoints`         | `/dev-define`, `/dev-build`                                                        | On API definition / after build          |
-| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                                  | On run completion (PHASE 6)              |
+| Section             | Written by                                                                   | When                                     |
+| ------------------- | ---------------------------------------------------------------------------- | ---------------------------------------- |
+| `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-plan` | On seed creation/iteration/plan          |
+| `design`            | `/design-convert`, `/design-tokens`                                           | On design spec/page build/theme creation |
+| `theme`             | `/design-tokens`                                                             | After theme create/update                |
+| `stack`             | `/core-setup`, `/project-plan`, `/dev-ship`, `/design-convert`                | On detection/new deps                    |
+| `data`              | `/dev-ship`, `/game-ship`                                                    | On entity definition                     |
+| `endpoints`         | `/dev-ship`                                                                  | On API definition / after build          |
+| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                            | On run completion (PHASE 6)              |
 
 Feature status changes go to `.project/backlog.json` (see [BACKLOG.md](BACKLOG.md)) — not to project.json.
 
@@ -439,24 +439,19 @@ For the `project-context.json` writer table see [DASHBOARD-CONTEXT.md](DASHBOARD
 
 ### Skill sync overview
 
-| Skill                       | project.json                                   | project-context.json                                              | When                     |
-| --------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- | ------------------------ |
-| `/core-setup`               | `stack` (full)                                 | `context` (initial)                                               | After project generation |
-| `/dev-define`               | `data.entities`, `endpoints`, `stack.packages` | `architecture` (write), `learnings` (read)                        | PHASE 6                  |
-| `/dev-build`                | `endpoints`, `stack.packages`                  | `context`, `architecture`, `learnings` (write)                    | PHASE 4C                 |
-| `/dev-verify`               | `stack.packages`, `endpoints`, `data.entities` | `architecture`, `learnings` (write)                               | PHASE 6 completion       |
-| `/dev-refactor`             | `stack.packages`, `endpoints`, `data.entities` | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
-| `/design-create`          | `design` (pages, flows, principles)            | —                                                                 | On each run              |
-| `/design-create`          | `stack.packages`, `design.pages`               | —                                                                 | After completion sync    |
-| `/design-tokens`          | `design.principles`                            | —                                                                 | After completion         |
-| `/game-define`              | `data.entities`, `stack.packages`              | `architecture` (write)                                            | PHASE 6                  |
-| `/game-build`               | —                                              | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
-| `/team-verify`              | `stack.packages`, `endpoints`, `data.entities` | `architecture` (write)                                            | PHASE 7 completion       |
-| `/game-refactor`            | —                                              | `context`, `architecture`, `learnings` (write)                    | PHASE 5 completion       |
-| `/dev-optimize`             | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion       |
-| `/game-optimize`            | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion       |
-| `/core-pull`                | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                 |
-| `/core-setup --mode=mature` | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | One-time on join         |
+| Skill                       | project.json                                   | project-context.json                                              | When                              |
+| --------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- | --------------------------------- |
+| `/core-setup`               | `stack` (full)                                 | `context` (initial)                                               | After project generation          |
+| `/dev-ship`                 | `data.entities`, `endpoints`, `stack.packages` | `context`, `architecture`, `learnings` (write)                    | Ship run (define→refactor phases) |
+| `/design-convert`            | `design` (pages, flows, principles)            | —                                                                 | On each run                       |
+| `/design-convert`            | `stack.packages`, `design.pages`               | —                                                                 | After completion sync             |
+| `/design-tokens`            | `design.principles`                            | —                                                                 | After completion                  |
+| `/game-ship`                | `data.entities`, `stack.packages`              | `context`, `architecture`, `learnings` (write)                    | Ship run (define→refactor phases) |
+| `/team-verify`              | `stack.packages`, `endpoints`, `data.entities` | `architecture` (write)                                            | PHASE 7 completion                |
+| `/dev-optimize`             | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion                |
+| `/game-optimize`            | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion                |
+| `/core-pull`                | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                          |
+| `/core-setup --mode=mature` | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | One-time on join                  |
 
 ## Server
 
@@ -480,7 +475,7 @@ curl -s http://localhost:9876/ > /dev/null 2>&1 || nohup node --watch {skills_pa
 
 ## Design Section
 
-The `design` key in `project.json` is managed exclusively by the `design-create` skill. Other skills must not mutate it. Schema:
+The `design` key in `project.json` is managed exclusively by the `design-convert` skill. Other skills must not mutate it. Schema:
 
 ```json
 {
@@ -550,7 +545,7 @@ The `design` key in `project.json` is managed exclusively by the `design-create`
 
 **`pages[].uses[]`** — auto-maintained by Build/convert post-pass. List of component names imported by this page. Do not edit manually.
 
-**`{pages|components}[].reviewNotes?[]`** — **user-owned**, optional. Open questions and review decisions captured in the visual review route (`/{project}/review/{entity}`, served by `serve-backlog.js`). `design-create` merges never write or delete this field — it survives spec re-merges untouched. Schema per item: `{ question, answer, status: "open"|"resolved", at }` (`at` = ISO timestamp). The review route POSTs the full array to `/{project}/review/{entity}/save`.
+**`{pages|components}[].reviewNotes?[]`** — **user-owned**, optional. Open questions and review decisions captured in the visual review route (`/{project}/review/{entity}`, served by `serve-backlog.js`). `design-convert` merges never write or delete this field — it survives spec re-merges untouched. Schema per item: `{ question, answer, status: "open"|"resolved", at }` (`at` = ISO timestamp). The review route POSTs the full array to `/{project}/review/{entity}/save`.
 
 **`components[].usedIn[]`** — auto-maintained by Build/convert post-pass. List of page names that import this component. Do not edit manually.
 
@@ -570,6 +565,6 @@ The `design` key in `project.json` is managed exclusively by the `design-create`
 
 ---
 
-**`features[].lastCheckedSha?: string`** — Set by `design-check` after a successful runtime-scan of this feature. Used by batch-mode to skip features where `lastCheckedSha === shippedSha` (no code changes since last check).
+**`features[].lastCheckedSha?: string`** — Set by `/design-ship`'s check phase after a successful runtime-scan of this feature. A later re-ship compares it against `shippedSha` to detect whether the page changed since the last check.
 
 **Merge strategy:** `MERGE on name` — pages/flows/principles/components merge on name, update fields, never auto-delete. `components[].motion{}` and `pages[].transitions{}` use key-level merge (never auto-delete keys, only add/update).

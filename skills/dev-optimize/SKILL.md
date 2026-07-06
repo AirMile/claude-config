@@ -463,7 +463,7 @@ Next steps:
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /dev-verify {feature} → re-verify after optimizations.
+> Recommended command: /dev-ship {feature} → re-verify after optimizations.
 
 > **Todo**: mark PHASE 6 → `completed`. All 7 phases must now be `completed`.
 

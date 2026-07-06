@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Self-contained wireframe preview (dev-define skill).
+  Self-contained wireframe preview (dev-ship skill).
   The skill replaces the contents of <script id="preview-data"> with:
     { "feature": "...", "wireframe": "<ascii sketch>", "requirements": [{ "id": "REQ-1", "text": "..." }], "notes": "..." }
   then opens this file via file:// (see shared/HTML-PRESENT.md).
@@ -136,7 +136,7 @@
           document.getElementById("title").textContent =
             "Wireframe · " + data.feature;
         document.getElementById("subtitle").textContent =
-          "dev-define design sketch";
+          "dev-ship design sketch";
 
         var html = "";
         if (data.wireframe) {

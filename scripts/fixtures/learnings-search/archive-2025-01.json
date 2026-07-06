@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 2,
+  "archived": [
+    {
+      "date": "2025-01-10",
+      "feature": "auth-oauth",
+      "type": "pitfall",
+      "source": "synced",
+      "author": "Alice",
+      "summary": "OAuth state param must be validated on callback to prevent CSRF login",
+      "tags": ["auth", "security"]
+    }
+  ]
+}

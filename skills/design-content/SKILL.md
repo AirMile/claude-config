@@ -20,13 +20,13 @@ metadata:
 
 # Content
 
-Fill built pages and components with real, on-brand copy. Runs after `design-create` build/convert
-and before `design-check`. Upgrades contextual placeholders to reviewed, seed-grounded text via an
+Fill built pages and components with real, on-brand copy. Runs after `design-convert` build/convert
+and before the runtime check. Upgrades contextual placeholders to reviewed, seed-grounded text via an
 intentional pipeline: archetype → brief → scan → generate → review → apply.
 
-**Pipeline position:** `design-tokens → design-create → design-content → design-check`
+**Pipeline position:** `design-tokens → design-convert → design-content → /design-ship` (check + ship)
 
-**Related skills:** `/design-create` · `/design-check` · `/marketing-research`
+**Related skills:** `/design-convert` · `/design-ship` · `/marketing-research`
 
 ## References
 
@@ -85,7 +85,7 @@ Candidates = features where:
 0 candidates  →  show:
   "design-content: Nothing to fill.
    All built PAGE/COMPONENT items already have contentStatus: filled,
-   or no built items exist yet. Run /design-create first."
+   or no built items exist yet. Run /design-convert first."
   Stop.
 
 ≤ 3 candidates  →  $TARGETS = all candidates, log "Queue: auto-selected {names}"
@@ -130,17 +130,10 @@ node -e "
   }, null, 2));
 " 2>/dev/null || echo "{}"
 
-node -e "
-  const c = require('.project/project-context.json');
-  console.log(JSON.stringify({
-    learnings: (c.learnings || [])
-      .filter(l => l.type === 'pitfall' || l.scope === 'architectural')
-      .slice(0, 10)
-  }, null, 2));
-" 2>/dev/null || echo "{}"
+node ~/.claude/scripts/learnings-search.js "." load --scopes architectural --pitfall-prefix true
 ```
 
-Store `$ENTITIES`, `$GLOSSARY`, `$LEARNINGS`. If files absent → treat all as empty.
+Store `$ENTITIES`, `$GLOSSARY`, and the loader's `LEARNINGS CONTEXT` block as `$LEARNINGS` (project-wide pitfalls + architectural patterns, relevance-scored — see `../shared/LEARNINGS-LOAD.md`). If files absent → the loader prints nothing; treat all as empty.
 
 ### 0.4 Bestanden + feature-context vinden
 
@@ -212,7 +205,7 @@ If all targets return 0 placeholders:
 
 ```
 Scan:    No placeholders found — pages/components may already have real copy.
-         Check via git diff or run /design-check to audit.
+         Check via git diff or run /design-ship to audit.
 ```
 
 Stop (no backlog write, no transition clear — standalone runs only; backlog items keep transition for retry).

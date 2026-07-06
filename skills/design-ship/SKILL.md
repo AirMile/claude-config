@@ -24,7 +24,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 0.2.0
+  version: 0.4.1
   category: design
 ---
 
@@ -33,14 +33,16 @@ metadata:
 Runs the design pipeline — **build → content → check** — in one chat for a single PAGE or
 COMPONENT. Heavy work runs in isolated inline agents (context stays clean); human interaction is
 front-loaded (PHASE 0: spec, design direction, content brief) plus one **visual review against the
-live page** at the end (PHASE 4). Does **not** replace the classic 3-skill pipeline — it
-orchestrates the existing skills via copies. `/design-create`→`/design-content`→`/design-check`
-stay untouched.
+live page** at the end (PHASE 4). `design-ship` is **standalone**: it carries its own vendored
+copies of the build/content/check phase logic under `references/design-{create,content,check}/` and
+drives them internally — it no longer reads any standalone skill in place. Interactive/visual work
+stays outside it: sketch/Figma/URL→code and design-spec management live in `/design-convert`,
+content-fill in `/design-content`.
 
 **Trigger**: `/design-ship` or `/design-ship {page-or-component-name}`
 
 **Scope**: Build lane only (spec → code), **web only**. Visual input (sketch/Figma/screenshot) is
-inherently interactive → `/design-create` Convert. THEME → `/design-tokens`. Dev-track features →
+inherently interactive → `/design-convert` Convert. THEME → `/design-tokens`. Dev-track features →
 `/dev-ship`.
 
 ## Design
@@ -61,8 +63,16 @@ inherently interactive → `/design-create` Convert. THEME → `/design-tokens`.
 - **`.project/` is shared on disk between agents; context is isolated.** The flow is sequential →
   one writer at a time → no write-races. Re-read `.project/` from disk after every agent return.
 - **Agents run via the Workflow tool** (one run: PHASE 1–3) with a per-agent model + effort matrix
-  and schema-validated structured results. The Agent-tool spawn path in each `agent-*.md` is the
-  **fallback** when the Workflow tool is unavailable.
+  and schema-validated structured results. **Prompts are passed by pointer, never inline** — the
+  static agent instruction bodies live in `references/prompts/{build,content,check}.md` and the
+  spawned agent reads them itself (plus `non-interactive-contract.md`, which it also reads). The
+  main chat writes only a small **pointer + dynamic SHIP_CONTEXT slice** file to
+  `.project/session/ship-prompts/` and passes the path in `args` — it does **not** read the
+  `prompts/*` bodies or the contract. Some runtimes deliver the `args` global to the script as a
+  **JSON string** rather than an object (then every `args.x` is `undefined`), so the workflow script
+  **normalizes `args` at the top** (`typeof args === "string" ? JSON.parse(args) : args`) — the
+  primary Workflow path is reliable. The Agent-tool spawn path in each `agent-*.md` is the
+  **fallback**, used only when the Workflow tool is unavailable.
 
   | Agent           | Model    | Effort   | Why                                                             |
   | --------------- | -------- | -------- | --------------------------------------------------------------- |
@@ -77,13 +87,16 @@ inherently interactive → `/design-create` Convert. THEME → `/design-tokens`.
 `completed` at the end. During context compaction the task list remains visible.
 
 **Durable checkpoint (pause/resume across sessions)** — the `TaskCreate` list survives compaction
-but **not** a crash or credits-exhaustion that ends the session. So the orchestrator also mirrors
-the run to an on-disk checkpoint (`.project/session/ship-{target}.json`) at every phase boundary,
-per `shared/SHIP-CHECKPOINT.md`. It records the phase pointer, the full PHASE 0 objects (direction
-incl. token decisions + layout, archetype, brief, checkScope, composition, inline spec), and each
-agent's structured result — the state that otherwise lives only in this context. Any interruption becomes a resumable pause: re-invoking `/design-ship {target}`
-detects the checkpoint (PHASE 0) and offers Resume/Restart/Inspect. Only the main chat writes it
-(subagents never touch it — contract rule 1).
+but not a crash/credits-exhaustion. So the orchestrator also mirrors the run to
+`.project/session/ship-{target}.json` at every phase boundary via `ship-checkpoint.js`, recording
+the phase pointer, the full PHASE 0 objects (direction incl. token decisions + layout, archetype,
+brief, checkScope, composition, inline spec), and agent results. **Only the main chat writes it**
+(subagents never touch it — contract rule 1). Unlike dev/game there is no light plan-gate checkpoint:
+the first write lands **post-gate** at Step 9 — the PHASE 0 selections are irreproducible user
+choices. The checkpoint schema, write points 0–5, and the board's **parked** row are specified in
+`shared/SHIP-CHECKPOINT.md`; resume detection, the fast-path direct-resume, and orphan-cleanup live in
+`shared/SHIP-RESUME.md` (the cheap resume path). This skill follows both; the per-phase field patches
+below are the only checkpoint detail restated here.
 
 1. PHASE 0: Target + Direction + Brief
 2. PHASE 1: Build (AGENT 1)
@@ -97,34 +110,44 @@ detects the checkpoint (PHASE 0) and offers Resume/Restart/Inspect. Only the mai
 > **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred
 > and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above).
 > Mark PHASE 0 → `in_progress` via `TaskUpdate`.
-> Read `.claude/skills/design-ship/references/phase-0-direction-brief.md` and follow it — its
-> **Step 0** runs checkpoint-resume detection + preflight (per `shared/SHIP-CHECKPOINT.md`) **before**
-> resolving the target. On a Resume, jump to the checkpoint's recorded phase instead of running
-> PHASE 0 fresh.
+> **Then route in two steps** (the resume path skips the fresh-run PHASE 0 file):
+>
+> 1. **Resume check first.** If `/design-ship` was called with an **explicit** `{target}` arg and
+>    `test -f .project/session/ship-{target}.json` succeeds → Read
+>    `.claude/skills/shared/SHIP-RESUME.md` and follow it. The fast path jumps straight to the
+>    recorded phase (no prompt when explicit arg + matching pipeline + running + ≤ 24h) — so a parked
+>    resume lands in the PHASE 4 review **without** loading `phase-0-direction-brief.md`. (Only
+>    "Restart fresh" falls through to step 2.)
+> 2. **Fresh / no-arg / no checkpoint** → Read
+>    `.claude/skills/design-ship/references/phase-0-direction-brief.md` and follow it from Step 0 (it
+>    resolves the target, delegates resume detection to `SHIP-RESUME.md`, then runs preflight +
+>    direction/brief for a fresh run).
 
 Resolves the target (arg → board `shipping` pickup → candidates), gates the spec, composes 2-3
 design directions and presents them **visually** (browser preview + modal), derives + confirms the
 content brief, auto-derives the check scope, sets the board state (`transition: "shipping"` + live
-signal), and assembles **`SHIP_CONTEXT`** with per-agent slices.
+signal), and assembles **`SHIP_CONTEXT`** with per-agent slices. Each `agent-*.md` § Spawn documents
+the pointer-file template that carries its slice into the agent.
 
 ### PHASE 1–3: Build → Content → Check — one Workflow
 
 > **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`; update the checkpoint
 > (`shared/SHIP-CHECKPOINT.md` atomic write) `phase: "PHASE 1"`, `completedPhases: ["PHASE 0"]`. Read
 > `.claude/skills/design-ship/references/agent-build.md`,
-> `.claude/skills/design-ship/references/agent-content.md`,
-> `.claude/skills/design-ship/references/agent-check.md` and
-> `.claude/skills/design-ship/references/non-interactive-contract.md`. Assemble **all three**
-> prompts from their templates (contract inlined, SHIP_CONTEXT slice pasted per agent; keep the
-> literal `{worktreePath}` placeholder in the content + check prompts — the script fills it).
-> Then launch:
-> `Workflow({scriptPath: ".claude/skills/design-ship/references/workflows/ship-design-phase123.js", args: {feature, buildPrompt, contentPromptTemplate, checkPromptTemplate, resume}})`
-> — `resume` = `null` on a fresh run, or the **green** results `{build, content, check}` from the
-> checkpoint on a Resume (the script short-circuits green results and re-runs anything failed or
-> degraded). **Immediately after launch** write the returned `runId` + `activeWorkflow: "design123"`
+> `.claude/skills/design-ship/references/agent-content.md` and
+> `.claude/skills/design-ship/references/agent-check.md` (their **§ Spawn → Pointer file** templates
+> only — do **not** read `non-interactive-contract.md` or the `references/prompts/*` bodies; the
+> agents read those themselves). **Write each pointer + SHIP_CONTEXT-slice file** under
+> `.project/session/ship-prompts/` — keeping the literal `{worktreePath}` placeholder in the content
 >
-> - the assembled prompt args as `prompts` to the checkpoint (so a mid-workflow crash is resumable
->   via `resumeFromRunId`, with the exact original prompts).
+> - check files (the agent substitutes it) — and pass the **paths** (never inline). Then launch:
+>   `Workflow({scriptPath: ".claude/skills/design-ship/references/workflows/ship-design-phase123.js", args: {feature, buildPromptPath, contentPromptPath, checkPromptPath, resume}})`
+>   — `resume` = `null` on a fresh run, or the **green** results `{build, content, check}` from the
+>   checkpoint on a Resume (the script short-circuits green results and re-runs anything failed or
+>   degraded). **Immediately after launch** write the returned `runId` + `activeWorkflow: "design123"`
+>
+> * the prompt-file **paths** as `prompts` to the checkpoint (so a mid-workflow crash is resumable
+>   via `resumeFromRunId`; the prompt files persist for reassembly).
 
 The workflow runs the three agents sequentially in isolated contexts with the model/effort matrix
 (§ Design) and returns one structured object — no result-block parsing. Each agent rewrites the
@@ -137,16 +160,21 @@ On the workflow return, first **update the checkpoint** (clear
 `activeWorkflow`/`workflowRunId`/`prompts`, merge the returned `build`/`content`/`check` objects
 into `results`), then branch:
 
+**Empty-input safety net** (rare, check first): the script normalizes `args` (§ Design), so the
+string-delivery failure is handled at the source. If an agent _still_ reports no/`undefined` input
+(empty message, no files, no worktree created), retry once via the Agent-tool fallback below before
+routing anywhere. Only a genuine build/check failure follows the branches below.
+
 - `status: green` → mark PHASE 1, 2 **and** 3 `completed` (note content degradation on PHASE 2 if
   any); checkpoint `phase: "PHASE 4"`, `completedPhases += ["PHASE 1", "PHASE 2", "PHASE 3"]`.
   **Re-read `.project/` from disk.** Continue to PHASE 4.
 - `failedPhase: "build"` → leave PHASE 1 `in_progress`; checkpoint `status: "failed"`, skip to
   PHASE 5: "Build failed at `{build.failedAt}`, worktree intact at `{build.worktreePath}` — inspect
-  it or run `/design-create {target}` to patch, or re-run `/design-ship {target}` to resume."
+  it or run `/design-convert {target}` to patch, or re-run `/design-ship {target}` to resume."
 - `failedPhase: "check"` → mark PHASE 1+2 `completed`, leave PHASE 3 `in_progress`; checkpoint
   `status: "failed"`, `completedPhases += ["PHASE 1", "PHASE 2"]`, skip to PHASE 5: "Check failed at
   `{check.failedAt}` (app does not build/serve), worktree intact — fix the build error, then
-  `/design-check {target}`, or re-run `/design-ship {target}` to resume." Do not finalize.
+  re-run `/design-ship {target}` to resume." Do not finalize.
 
 **Fallback** (Workflow tool unavailable): spawn AGENT 1 → 2 → 3 sequentially via the Agent tool
 per the Spawn sections in the three `agent-*.md` files (models per the § Design matrix, effort not
@@ -199,8 +227,8 @@ their domain learnings/glossary during their phases. Cross-phase signals only ex
 a small set (0-2) to `project-context.json#learnings[]` via `shared/LEARNING-EXTRACTION.md`
 (`source: "extracted"`, same dedup): a recurring `autoDecisions` pattern, a direction axis the
 user consistently overrides, or copy the user regenerated repeatedly (signals a brief gap). Only
-write genuinely reusable signals — skip if none. Then run the consolidation gate (active list ≤40
-per `shared/LEARNING-EXTRACTION.md § consolidation`).
+write genuinely reusable signals — skip if none. Then run the consolidation gate per
+`shared/LEARNING-EXTRACTION.md § Consolidation Gate` (trigger `> 60` → merge, archive, target ≤40).
 
 > **Todo**: mark PHASE 5 → `completed`.
 

@@ -7,7 +7,7 @@ sees it without copy-pasting a path.
 **Target** is either:
 
 - a **`file://` path** to a self-contained HTML file the skill just generated (no server), or
-- an **`http://` URL** to an already-running dev server (e.g. design-create's smoke target).
+- an **`http://` URL** to an already-running dev server (e.g. design-convert's smoke target).
 
 The open command is identical for both.
 
@@ -18,11 +18,11 @@ The open command is identical for both.
 A skill reaches a completion/report point AND has a visual artifact to show:
 
 - **design-tokens** → token-pack gallery + motion preview (always — a theme is always visual).
-- **dev-define** → wireframe preview (only when the feature has a design sketch).
-- **dev-ship** → adaptive feature-spec preview after PHASE 0 define (always — requirements +
-  acceptance + wireframe/API-contract/build-sequence when present; visually replaces the removed
-  plan-approval gate).
-- **design-create** → the live dev-server URL (only when the smoke check actually rendered).
+- **dev-ship / game-ship** → adaptive feature-spec preview after PHASE 0 define, but **only when the
+  feature has visual UI to show** (a `design`/wireframe or `sceneLayout`) — a pure-logic/API feature
+  renders no preview. It is a **visual aid** on top of the PHASE 0 plan-approval gate (Step 4b), not a
+  replacement: the gate is the review surface.
+- **design-convert** → the live dev-server URL (only when the smoke check actually rendered).
 
 The textual report stays — this is the interactive layer on top, exactly like
 `NEXT-STEP-OFFER.md` sits on top of the `Next steps:` block.
@@ -106,9 +106,10 @@ For the **file://** case the marker also names the template + data to render fir
 ## Rules
 
 - **One open per completion** — never open multiple tabs in a single run.
-- **Conditional skills stay conditional** — dev-define/design-create only present when their
-  visual artifact actually exists (sketch present / smoke rendered). No artifact → no preview,
-  no error.
+- **Conditional skills stay conditional** — design-convert only presents when its
+  visual artifact actually exists (smoke rendered); dev-ship/game-ship's define-phase preview (see
+  above) only renders when the feature has visual UI (a `design`/wireframe or `sceneLayout`).
+  No artifact → no preview, no error.
 - **Never block on it** — a failed launch is a printed path, never a halt.
 - **Resolve `{slug}`** from the artifact's name (feature/theme/page), kebab-cased.
 - The marker does NOT replace the textual report — it runs after it.

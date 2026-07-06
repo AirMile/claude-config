@@ -190,6 +190,41 @@ Behavior of `learning-extractor` agent differs per skill:
 
 ---
 
+## Tag Vocabulary
+
+Controlled vocabulary for the optional `tags[]` field on learning entries (see § Writer Append Protocol). Rules: 0–3 tags, kebab-case, prefer these names; at most one free tag when nothing here fits; never force a tag. Tags describe the _domain_ of the learning so relevance search can resurface an old entry by topic instead of by date.
+
+The tag NAMES below are the single source of truth — `scripts/learnings-search.js --print-vocab` must match this list exactly (enforced by `scripts/tests/run.sh`). The aliases are illustrative matching hints only; they live in the script's reverse index and may evolve freely.
+
+| tag             | when to use                                  | example aliases                     |
+| --------------- | -------------------------------------------- | ----------------------------------- |
+| `auth`          | authn/authz, sessions, tokens, login         | jwt, oauth, session, cookie, login  |
+| `api`           | endpoints, request/response, REST/GraphQL    | endpoint, rest, graphql, http       |
+| `db`            | database, ORM, queries, migrations           | postgres, prisma, sql, migration    |
+| `state`         | client/server state management               | redux, zustand, store, reducer      |
+| `routing`       | navigation, routes, redirects, middleware    | router, navigation, redirect, route |
+| `ui`            | components, rendering, DOM, accessibility    | component, render, modal, widget    |
+| `styling`       | CSS, theming, layout, responsive             | css, tailwind, theme, grid          |
+| `forms`         | form input, submit, field handling           | form, input, field, submit          |
+| `validation`    | input validation, schemas, constraints       | validate, zod, yup, constraint      |
+| `errors`        | error handling, exceptions, crashes          | error, exception, throw, catch      |
+| `async`         | concurrency, promises, races, queues         | race, promise, await, concurrency   |
+| `perf`          | performance, optimization, memoization       | optimize, memo, lazy, latency       |
+| `security`      | XSS/CSRF/injection, secrets, encryption      | xss, csrf, injection, encrypt       |
+| `testing`       | tests, mocks, fixtures, coverage             | jest, vitest, mock, coverage        |
+| `build-tooling` | bundlers, transpilers, linters, compile      | vite, webpack, esbuild, tsconfig    |
+| `deploy`        | deployment, CI/CD, containers, releases      | docker, vercel, pipeline, release   |
+| `config`        | environment, settings, feature flags         | env, dotenv, setting, flag          |
+| `caching`       | caches, memoization, invalidation, TTL       | redis, memoize, invalidate, ttl     |
+| `data-model`    | entities, relations, domain modelling        | entity, model, relation, domain     |
+| `logging`       | logging, tracing, monitoring, telemetry      | logger, trace, monitor, metric      |
+| `godot`         | Godot engine specifics                       | engine, autoload                    |
+| `gdscript`      | GDScript language patterns                   | gdextension, onready                |
+| `scene`         | scene tree, nodes, signals, instancing       | tscn, node2d, signal, instance      |
+| `game-loop`     | physics, input, animation, per-frame process | physics, input, animation, delta    |
+
+---
+
 ## Dedup Tokenizer
 
 Tokenization algorithm. Used for:
@@ -237,11 +272,14 @@ Single canon for every skill that appends to `project-context.json#learnings[]` 
   "type": "pattern|pitfall|observation",
   "source": "extracted|inferred|synced|consolidated",
   "author": "(only when source === \"synced\")",
-  "summary": "max 200 chars"
+  "summary": "max 200 chars",
+  "tags": ["auth", "async"]
 }
 ```
 
 **Filter**: only items relevant beyond the current feature — skip feature-specific implementation details.
+
+**Tags**: assign 0–3 domain tags from § Tag Vocabulary describing what the learning is _about_ (kebab-case; at most one free tag when nothing fits; omit rather than force). Tags let relevance search resurface an old entry by topic — a stale `auth` pitfall stays reachable when a new auth feature is built. Optional and backwards-compatible: entries without `tags` still match on feature name + summary keywords. **Tags are NOT part of the dedup key.**
 
 **Dedup (two stages, in order):**
 
@@ -250,7 +288,7 @@ Single canon for every skill that appends to `project-context.json#learnings[]` 
 
 Passes both stages → append. No candidates → skip the step silently.
 
-**Single writer for build decisions**: `dev-build` PHASE 3A owns the `build.decisions[] → learnings` mapping (type `pattern`, source `extracted`). Downstream skills must not re-map decisions — `dev-verify` maps only `tests.fixSync[]` → `pitfall` and `observations[]` → `observation`.
+**Single writer for build decisions**: `dev-ship (build phase)` PHASE 3A owns the `build.decisions[] → learnings` mapping (type `pattern`, source `extracted`). Downstream skills must not re-map decisions — `dev-ship (verify phase)` maps only `tests.fixSync[]` → `pitfall` and `observations[]` → `observation`.
 
 ---
 
@@ -286,7 +324,7 @@ When in doubt → do not emit. Append-only contract makes cleanup expensive.
 
 **Trigger**: after the dedup-and-sync step, `learnings.length > 60`.
 
-**Archive file**: `.project/archive/learnings-{YYYY-MM}.json` — shape `{ "schemaVersion": 2, "archived": [ <original learning objects> ] }`. Append; create dir/scaffold if absent. Archived entries are never loaded as context (LEARNINGS-LOAD ignores the archive) — they exist for human reference and provenance.
+**Archive file**: `.project/archive/learnings-{YYYY-MM}.json` — shape `{ "schemaVersion": 2, "archived": [ <original learning objects> ] }`. Append; create dir/scaffold if absent. Archived entries are excluded from the default recency loads, but they remain **reachable by relevance search** — `scripts/learnings-search.js` scans the archive as a damped on-demand tier (`--archive`), so a strongly-matching old entry still surfaces for a related feature (it just never surfaces on recency alone). This is why consolidation is lossy-summary but not memory-loss.
 
 **Procedure** (target: active list ≤ 40 after the pass):
 
@@ -294,7 +332,24 @@ When in doubt → do not emit. Append-only contract makes cleanup expensive.
 2. **Group by `feature`**: for every feature group with ≥ 4 remaining entries, merge each type-cluster (patterns together, pitfalls together) into max 1 consolidated entry per type:
    - `summary`: one merged summary (≤ 200 chars) that preserves each distinct point — drop only true repetition, never distinct pitfalls.
    - `type`: kept; `source: "consolidated"`; `date`: newest of the group; `feature`: kept; `author`: kept if identical across group, else `null`.
+   - `tags`: union of the group's tags, keeping the 3 most frequent (ties → first by vocabulary order); omit if the group had none.
    - Originals → archive.
 3. **Still > 40?** Repeat step 2 for groups with ≥ 3 entries. Never consolidate entries newer than 3 months — recent learnings keep full resolution.
 
 **Guarantees**: idempotent (a consolidated list under the threshold never triggers another pass); lossless in provenance (originals live in the archive); pitfalls are never silently dropped — only merged or archived with a consolidated successor in place.
+
+---
+
+## Consolidation Gate (caller protocol)
+
+**Single source of truth for _when_ to run § Consolidation.** Every flow that appends to `learnings[]` runs this gate **once, after its append(s)** — batched at the end of the flow, never per entry.
+
+1. Read `project-context.json#learnings[]`.
+2. If `learnings.length > 60` → run the § Consolidation procedure above (age-out observations, merge per-feature clusters into `source:"consolidated"`, archive originals to `.project/archive/learnings-{YYYY-MM}.json`, target ≤ 40). Mutate `learnings[]` and the archive in memory, then write both once.
+3. Else → skip silently (no output).
+
+When it ran, emit one report line: `Learnings consolidated: {N} merged, {M} archived ({before} → {after})`.
+
+Properties: idempotent (a list already ≤ 60 is a no-op check); `.project/`-only writes (the consolidation is never part of a code commit — `.project/` is gitignored / state-branch). **Callers reference this section — do not restate the trigger or the procedure inline.**
+
+**Who runs it** (every terminal append point): `/core-pull` (after its dedup-and-sync), the ship orchestrators `dev-ship` / `game-ship` / `design-ship` (PHASE 5, after ship-level extraction), `dev-ship` / `game-ship` are covered at the orchestrator level so their build/verify/refactor domain phases do **not** each run it, `dev-debug` / `game-debug` (PHASE 10, after the per-bug pitfall append), and `core-setup --mode=mature` (after the onboard write-back).

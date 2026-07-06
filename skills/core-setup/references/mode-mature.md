@@ -341,6 +341,8 @@ Log: `Reconciled N package versions: {list of name@old → name@new}`.
 - `project-context.json`: update `context.structure`, `context.routing`, `context.patterns`, `architecture.components`, append `learnings[]`
 - `context.updated` → today
 
+After the `learnings[]` append, run the consolidation gate per [shared/LEARNING-EXTRACTION.md § Consolidation Gate](../../shared/LEARNING-EXTRACTION.md) — onboarding can add up to 50 learnings at once, so a project that already had entries can cross `> 60`; the gate merges/archives down to ≤40 in the same write. No-op when under threshold.
+
 Skip-worktree recovery as in `core-pull` PHASE 0.
 
 **5c) Save sync state**

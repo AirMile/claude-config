@@ -21,11 +21,11 @@ Skills load backlog context during their **PHASE 0 context-load phase** for read
 
 ---
 
-## Two profiles
+## Three profiles
 
 ### Profile: `read-feature`
 
-For dev-build and dev-define PHASE 0 — extracts the record for the current feature only.
+For dev-ship's build and define phases (PHASE 0) — extracts the record for the current feature only.
 
 Requires `$FEAT` to be set to the current feature name.
 
@@ -60,7 +60,7 @@ node -e "
 
 ### Profile: `ready-queue`
 
-For dev-build PHASE 0 — lists DEFINED features to compose the "Ready to build" / "Blocked" queue display.
+For dev-ship's build phase (PHASE 0) — lists DEFINED features to compose the "Ready to build" / "Blocked" queue display.
 
 ```bash
 node -e "
@@ -94,6 +94,41 @@ node -e "
 ```
 
 **Use for**: feature selection display (ready ✓ / blocked ✗ indicators). Dependency-status is computed inline — no separate lookup needed.
+
+### Profile: `open-items`
+
+For the Backlog Impact Check ([BACKLOG.md § Impact Check](BACKLOG.md#impact-check-consumer-protocol)) — lists all **other** open dev-track items so a define-phase can detect which ones this feature covers or obsoletes. Works for both dev and game projects (same store).
+
+Requires `$FEAT` to be set to the current feature name (excluded from the result).
+
+```bash
+node -e "
+  const fs = require('fs');
+  let data = null;
+  try { data = JSON.parse(fs.readFileSync('$REPO/.project/backlog.json', 'utf8')); }
+  catch { try {
+    const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
+    const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
+    if (m) data = JSON.parse(m[1]);
+  } catch {} }
+  if (!data) { console.log('BACKLOG_NOT_PRESENT'); process.exit(0); }
+  const items = (data.features || [])
+    .filter(f => f.name !== '$FEAT'
+      && (f.status === 'TODO' || f.status === 'DEFINED')
+      && f.type !== 'PAGE' && f.type !== 'COMPONENT' && f.type !== 'THEME')
+    .map(f => ({
+      name: f.name,
+      type: f.type,
+      status: f.status,
+      description: f.description || null,
+      dependencies: f.dependencies || [],
+      externalRef: f.externalRef ? f.externalRef.type + '#' + f.externalRef.id : null
+    }));
+  console.log(items.length ? JSON.stringify(items, null, 2) : 'BACKLOG_NO_OPEN_ITEMS');
+" 2>/dev/null || echo "BACKLOG_NOT_PRESENT"
+```
+
+**Use for**: the Backlog Impact Check only. `BACKLOG_NO_OPEN_ITEMS` → the check skips silently. Design-track items (PAGE/COMPONENT/THEME) are excluded — their lifecycle is owned by the design pipeline (`pageHint`/`dependencies` linking).
 
 ---
 

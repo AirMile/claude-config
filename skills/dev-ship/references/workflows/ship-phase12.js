@@ -20,8 +20,10 @@ export const meta = {
 
 // args: {
 //   feature: string,
-//   buildPrompt: string,           — fully assembled per agent-build.md (contract + build-slice inlined)
-//   verifyPromptTemplate: string,  — per agent-verify.md, containing the literal placeholder {worktreePath}
+//   buildPromptPath: string,       — path to a file holding the assembled build prompt (agent-build.md);
+//                                     passed by path, NOT inline (large inline args can arrive undefined)
+//   verifyPromptPath: string,      — path to a file holding the verify prompt (agent-verify.md); the file
+//                                     contains the literal placeholder {worktreePath} for the agent to substitute
 //   resume?: { build?, verify? },  — green checkpoint results on a Resume; only a GREEN result
 //                                     short-circuits its agent (a resumed failed result re-runs)
 // }
@@ -108,17 +110,27 @@ const VERIFY_SCHEMA = {
   ],
 };
 
+// Defensive: some runtimes deliver the `args` global as a JSON STRING, not an object —
+// property access on a string yields undefined (agents then get "the file at undefined").
+// Normalize once; the rest of the script reads from `A`. (See SKILL.md § Design.)
+const A = typeof args === "string" ? JSON.parse(args) : (args ?? {});
+if (!A.buildPromptPath || !A.verifyPromptPath) {
+  log(
+    `args-delivery: missing prompt path(s) after normalize — buildPromptPath=${A.buildPromptPath}, verifyPromptPath=${A.verifyPromptPath}`,
+  );
+}
+
 // Only a green resume result short-circuits — passing a resumed FAILED result through would
 // return the same failure forever instead of retrying the agent.
 const resumedBuild =
-  args.resume?.build?.status === "green" ? args.resume.build : null;
+  A.resume?.build?.status === "green" ? A.resume.build : null;
 const resumedVerify =
-  args.resume?.verify?.status === "green" ? args.resume.verify : null;
+  A.resume?.verify?.status === "green" ? A.resume.verify : null;
 
 phase("Build");
 const build =
   resumedBuild ??
-  (await agent(args.buildPrompt, {
+  (await agent(`Read the file at ${A.buildPromptPath} and execute its full instructions as your task.`, {
     label: "AGENT 1: build",
     agentType: "general-purpose",
     model: "sonnet",
@@ -135,7 +147,7 @@ if (!build || build.status !== "green") {
     failedPhase: "build",
     build: build ?? {
       status: "failed",
-      feature: args.feature,
+      feature: A.feature,
       failedAt: "agent died (null return)",
     },
     verify: null,
@@ -149,7 +161,7 @@ phase("Verify");
 const verify =
   resumedVerify ??
   (await agent(
-    args.verifyPromptTemplate.split("{worktreePath}").join(build.worktreePath),
+    `Read the file at ${A.verifyPromptPath}; it is your full instruction set. Replace every literal "{worktreePath}" in it with ${build.worktreePath}, then execute it as your task.`,
     {
       label: "AGENT 2: verify",
       agentType: "general-purpose",
@@ -166,7 +178,7 @@ if (!verify || verify.status !== "green") {
     build,
     verify: verify ?? {
       status: "failed",
-      feature: args.feature,
+      feature: A.feature,
       failedAt: "agent died (null return)",
     },
   };

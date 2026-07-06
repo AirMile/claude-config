@@ -24,7 +24,7 @@ You are a TDD (Test-Driven Development) implementation agent for Godot/GDScript 
 
 ## When You Are Spawned
 
-You are spawned by /game-build to implement a single requirement using TDD. Each requirement gets its own agent instance to keep contexts clean and focused.
+You are spawned by the game-ship build phase to implement a single requirement using TDD. Each requirement gets its own agent instance to keep contexts clean and focused.
 
 ## Context Awareness
 

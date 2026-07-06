@@ -25,7 +25,7 @@ Game-pipeline skills load backlog context during their **PHASE 0 context-load ph
 
 ### Profile: `read-feature`
 
-For single-feature lookup — extracts the record for `$FEAT` only. Used by game-define (backlog check), game-build (dependency-status check per dep), game-verify (feature metadata).
+For single-feature lookup — extracts the record for `$FEAT` only. Used by game-ship's define phase (backlog check), build phase (dependency-status check per dep), and verify phase (feature metadata).
 
 ```bash
 node -e "
@@ -59,7 +59,7 @@ node -e "
 
 ### Profile: `queue`
 
-For feature-selection display — lists features filtered by status and optionally by transition. Used by game-build, game-verify, game-refactor, game-debug.
+For feature-selection display — lists features filtered by status and optionally by transition. Used by game-ship's build / verify / refactor phases and game-debug.
 
 **Required variables** (caller must set before running snippet):
 
@@ -104,14 +104,14 @@ node -e "
 
 **Caller configuration** — specify in skill SKILL.md or references file:
 
-| Skill / Use case                           | `$STATUS` | `$TRANSITION` |
-| ------------------------------------------ | --------- | ------------- |
-| game-build feature selection (auto-pickup) | `DEFINED` | `building`    |
-| game-build feature selection (fallback)    | `DEFINED` | _(empty)_     |
-| game-verify feature selection              | `DOING`   | `verifying`   |
-| game-verify fallback (stage: built)        | `DOING`   | _(empty)_     |
-| game-refactor queue                        | `DONE`    | `refactoring` |
-| game-debug active feature                  | `DOING`   | _(empty)_     |
+| Skill / Use case                              | `$STATUS` | `$TRANSITION` |
+| --------------------------------------------- | --------- | ------------- |
+| game-ship build phase selection (auto-pickup) | `DEFINED` | `building`    |
+| game-ship build phase selection (fallback)    | `DEFINED` | _(empty)_     |
+| game-ship verify phase selection              | `DOING`   | `verifying`   |
+| game-ship verify fallback (stage: built)      | `DOING`   | _(empty)_     |
+| game-ship refactor phase queue                | `DONE`    | `refactoring` |
+| game-debug active feature                     | `DOING`   | _(empty)_     |
 
 **`ready` / `blocking` fields**: only computed when `$STATUS === "DEFINED"` (meaningful for build-selection). For DOING/DONE queues these fields are `null`.
 

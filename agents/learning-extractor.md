@@ -66,12 +66,14 @@ JSON array, one entry per learning. No markdown, no explanation, JSON only.
   {
     "type": "pattern",
     "summary": "API responses use { ok: bool, data?: T, error?: string } envelope",
-    "evidence": "src/api/users.ts:42, src/api/products.ts:38, src/api/orders.ts:51"
+    "evidence": "src/api/users.ts:42, src/api/products.ts:38, src/api/orders.ts:51",
+    "tags": ["api"]
   },
   {
     "type": "pitfall",
     "summary": "Promise.all in TokenRefresh fails on first rejection — use allSettled",
-    "evidence": "src/auth/token.ts:123 (FIXME comment)"
+    "evidence": "src/auth/token.ts:123 (FIXME comment)",
+    "tags": ["auth", "async"]
   }
 ]
 ```
@@ -81,6 +83,7 @@ JSON array, one entry per learning. No markdown, no explanation, JSON only.
 - `type`: `"pattern"` | `"pitfall"` | `"observation"`
 - `summary`: max 200 chars, atomic, no jargon without explanation
 - `evidence`: comma-separated file:line references that prove the pattern (min 2 for patterns, 1 for pitfalls)
+- `tags`: 0–3 domain tags from `LEARNING-EXTRACTION.md § Tag Vocabulary` describing what the learning is about (e.g. `auth`, `db`, `async`). Omit or leave `[]` when nothing in the vocabulary clearly fits — never force a tag.
 
 ## Filters Applied
 

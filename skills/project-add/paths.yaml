@@ -14,10 +14,10 @@ paths:
     # Location of the claude-config repository
     config_repo: "$HOME/claude-config"
 
-    # Godot editor executable (used by /game-build, /game-verify)
+    # Godot editor executable (used by /game-ship, /game-debug)
     godot_executable: "/Applications/Godot.app/Contents/MacOS/Godot"
 
-    # Extra paths for /project-switch (bookmarks alongside git repos in projects_root)
+    # Extra bookmarked paths alongside git repos in projects_root
     # Override in paths.local.yaml with your own notes/scratch/etc.
     # extra_paths:
     #   - { name: "notes", path: "$HOME/Documents/Notes", type: "dir" }
@@ -35,10 +35,10 @@ paths:
     # Location of the claude-config repository
     config_repo: "C:\\Projects\\claude-config"
 
-    # Godot editor executable (used by /game-build, /game-verify)
+    # Godot editor executable (used by /game-ship, /game-debug)
     godot_executable: "C:\\Godot\\Godot_v4.4.1-stable_win64.exe"
 
-    # Extra paths for /project-switch
+    # Extra bookmarked paths
     # extra_paths:
     #   - { name: "notes", path: "$env:USERPROFILE\\Documents\\Notes", type: "dir" }
     extra_paths: []
@@ -57,7 +57,7 @@ paths:
     # Godot editor executable
     godot_executable: "/usr/bin/godot4"
 
-    # Extra paths for /project-switch
+    # Extra bookmarked paths
     extra_paths: []
 
     # Written by /core-bootstrap — not a default, per-machine only.

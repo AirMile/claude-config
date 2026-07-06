@@ -12,7 +12,9 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
    Follow the workflow's phases in order and track progress in prose. Ignore every "call TaskCreate"
    / "mark PHASE X → …" instruction and every phase-seed block.
 2. **Plan mode** — **never** call `EnterPlanMode`/`ExitPlanMode`. You are already a subagent; run all
-   analytical/design phases directly. Ignore "plan mode must be active before …" constraints.
+   analytical/design phases directly. Ignore "plan mode must be active before …" constraints. (This is
+   subagent-scoped. The one plan-mode surface in the whole pipeline is the main-chat PHASE 0 Step 4b
+   plan-approval gate — the orchestrator owns it; no spawned agent ever runs it.)
 3. **No user interaction** — **never** call `AskUserQuestion`. Wherever the workflow would ask,
    choose the **first / `(Recommended)`** option (repo convention lists it first) and record the
    choice in `autoDecisions[]` (returned in your result block). Only if a decision is genuinely
@@ -29,9 +31,9 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
    `context-aggregator`). Keep the task-specific analysis such a spawn also does (e.g. verify's
    `httpContractTested` / `acceptanceTests` probing) — run it inline if you cannot spawn (rule 9).
 7. **Worktree — role-bound.** Build-agent: create the worktree, commit, **never merge**.
-   Verify/refactor-agent: use the existing worktree / main; **never** finalize/merge/`ExitWorktree`/
-   `git worktree remove`. The main chat owns finalize (PHASE 3). Ignore the workflow's
-   Finalize / `FINALIZE.md` / `ExitWorktree` phase entirely.
+   Verify/refactor-agent: use the existing worktree; **never** finalize/merge/`ExitWorktree`/
+   `git worktree remove`. The main chat owns finalize (PHASE 4, after refactor). Ignore the
+   workflow's Finalize / `FINALIZE.md` / `ExitWorktree` phase entirely.
 8. **No browser side-effects** — skip HTML-preview generation + `HTML-PRESENT.md` (dev-define visual
    preview). No browser in a subagent.
 9. **Nested analysis agents** — spawning your own analysis sub-agents (dev-refactor lens agents;
@@ -52,9 +54,10 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
 
 ## Git boundary (recap of rule 7)
 
-The only git integration is the main chat's PHASE 3 finalize. Build commits in the worktree; verify
-commits fixes in the worktree; refactor commits on main (post-merge). No agent runs `git merge`,
-`git branch -d/-D`, `git worktree remove`, or switches to `main`.
+The only git integration is the main chat's PHASE 4 finalize (after refactor). Build commits in the
+worktree; verify commits fixes in the worktree; refactor commits in the worktree on the feature
+branch (pre-merge). No agent runs `git merge`, `git branch -d/-D`, `git worktree remove`, or switches
+to `main`.
 
 ## On failure
 

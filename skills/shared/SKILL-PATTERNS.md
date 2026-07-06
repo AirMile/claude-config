@@ -18,13 +18,13 @@ Generate an ASCII [diagram type] showing [what to visualize].
 
 **Diagram types by use case:**
 
-| Use case              | Diagram type         | Example skills              |
-| --------------------- | -------------------- | --------------------------- |
-| Architecture/layers   | Component diagram    | dev-define, design-create |
-| Multi-step workflow   | Flowchart            | dev-build, dev-verify       |
-| Feature decomposition | Tree                 | project-plan             |
-| State transitions     | State machine        | game-define                 |
-| Parallel processes    | Architecture diagram | team-review                 |
+| Use case              | Diagram type         | Example skills                                  |
+| --------------------- | -------------------- | ----------------------------------------------- |
+| Architecture/layers   | Component diagram    | dev-ship (define phase), design-convert         |
+| Multi-step workflow   | Flowchart            | dev-ship (build phase), dev-ship (verify phase) |
+| Feature decomposition | Tree                 | project-plan                                    |
+| State transitions     | State machine        | game-ship                                       |
+| Parallel processes    | Architecture diagram | team-review                                     |
 
 **Placement:** After the phase where the relevant information is gathered, before execution continues.
 
@@ -198,7 +198,7 @@ Rules:
 
 **Rules:**
 
-- Skills that MAY create `.project/` without a check: `project-plan`, `project-todo`, `design-create`, `core-setup`
+- Skills that MAY create `.project/` without a check: `project-plan`, `project-todo`, `design-convert`, `core-setup`
 - All other skills: if `.project/` does not exist or is empty, show suggestion and stop
 - Do not silently `mkdir -p` the entire `.project/` structure — that is `core-setup`'s responsibility
 - `mkdir -p .project/features/{name}` and `mkdir -p .project/session` within an existing `.project/` is fine
@@ -253,7 +253,7 @@ visible — no risk of forgetting phases.
 
 **Skip for:** short CLI utilities (<5 phases), interactive thinking skills, backlog/CRUD skills.
 
-**Reference:** `dev-build/SKILL.md` (line 33+) has the full pattern.
+**Reference:** `dev-ship/references/dev-build/workflow.md` has the full pattern.
 
 ---
 
@@ -289,9 +289,27 @@ For conditional branches (read only when condition is met):
 
 **Read failure:** If the Read of a reference file fails (missing/renamed file), stop and report the missing path to the user — do not improvise the phase from memory. The reference is the source of truth; a reconstructed version silently diverges from it.
 
-**Examples:** `dev-verify/references/completion-sync.md` (end-of-flow sync, 237 lines) and `dev-build/techniques/tdd.md` (mutually-exclusive workflow, loaded on demand in PHASE 2).
+**Examples:** `dev-ship/references/dev-verify/references/completion-sync.md` (end-of-flow sync, 237 lines) and `dev-ship/references/dev-build/techniques/tdd.md` (mutually-exclusive workflow, loaded on demand in PHASE 2).
 
 **Skip for:** Short inline phases (<30 lines), blocks that always run AND are always needed (no conditional savings), skills with fewer than 5 phases.
+
+---
+
+## Token Efficiency
+
+**When:** Auditing or authoring any skill. These techniques govern a skill's cost-per-run — both the context it loads (input tokens) and the output it is forced to emit. Lazy Reference Loading (above) is one technique; this is the full checklist.
+
+**Hot path vs cold path.** SKILL.md loads in full on every invocation (hot path). A reference file loads only when its Read directive fires (cold path). Keep the hot path — SKILL.md plus any file read unconditionally near the top — as small as the workflow allows. Estimate tokens as `wc -c ÷ 4`.
+
+**Checklist:**
+
+1. **Eager-read trap ("fake lazy loading").** A reference file that is Read unconditionally at the top of the flow saves nothing — it is hot-path cost wearing a cold-path costume. Extraction only pays off when the Read is conditional on a branch or lands late in the flow. Flag any `references/` file whose Read directive always fires early.
+2. **Lazy Reference Loading.** Apply the `§ Lazy Reference Loading` criteria (≥30 lines, conditional / static template / end-of-flow).
+3. **Cite, don't duplicate.** Content that lives in `shared/` (rules, schemas, patterns) is referenced by section, never restated in the skill. Restated shared content is dead weight that also drifts.
+4. **Scoped reads.** Prescribe reading the needed section, not the whole file, where a file is large and the target is local. Never re-read a file already in context.
+5. **Output-token cost.** Verbose mandatory templates (large ASCII tables, echoed summaries, repeated recaps) cost output tokens on every run. Prescribe a rigid format only where the format is load-bearing; otherwise trust Claude to format.
+6. **Script offload.** Deterministic work — validation, counting, path existence, schema checks — belongs in `scripts/`, not in model tokens. A `python3 scripts/x.py` call is cheaper and more reliable than asking the model to compute it.
+7. **Agent cost.** For skills that spawn sub-agents: `§ Pass Paths, Not Content` (never file contents in prompts), `§ Agent Context Block` (build context once), `§ Agent Model Selection` (tier matched to task). Inverse check too — agents spawned where an inline step would do (project CLAUDE.md § Agent Conventions) burn a full context for no isolation benefit.
 
 ---
 
@@ -366,7 +384,7 @@ PROJECT_CONTEXT_END
 - Skip sections that do not exist (show "not available")
 - Only pass learnings if relevant to the agent's task
 - Skills may add extra skill-specific sections AFTER the standard block
-- Existing skills (dev-debug, dev-verify, dev-security) do not need to migrate immediately — this is opt-in for new skills and future refactors
+- Existing skills (dev-debug, dev-ship's verify phase, dev-security) do not need to migrate immediately — this is opt-in for new skills and future refactors
 
 **Context load helpers** — use these shared protocols instead of inline reads (single source of truth per file type):
 
@@ -390,19 +408,24 @@ PROJECT_CONTEXT_END
 
 Guard script: `node scripts/check-context-load.js` — validates all 21 profiles (dev + game) against fixtures in `scripts/fixtures/`. Run alongside `check-handoff.py` before releases.
 
-### Context Aggregation Agent (exception)
+### Context Aggregation / Scout Agents (exception)
 
 The "Read source files in PHASE 0 — not per agent" rule covers files the skill itself reasons over (project.json, feature.json, source code).
 
-**Exception** — spawn a `context-aggregator` (sonnet) when:
+**Exception** — spawn a read-only aggregator/scout that returns a compact delimited digest when:
 
-- Aggregation source count ≥ 5 files AND
+- Source count ≥ 5 files (or unbounded similar-pattern/library exploration) AND
 - Output needs filtering/ranking (not raw read) AND
-- Result fits in ≤ 30 lines compact text
+- Result fits in a small delimited block (≤ 30–40 lines compact text)
 
-**Not for:** single field extraction (use inline `node -e`), full source-code reads (still PHASE 0 inline), per-REQ context (use Agent Context Block above), or learnings filtering (use `shared/LEARNINGS-LOAD.md`).
+Two sanctioned agents:
 
-**Contract:** agent MUST return delimited blocks (e.g. `PRIOR_DECISIONS_START/END`) so caller parses without re-reading.
+- `context-aggregator` (sonnet) — prior feature decisions + thinking files → `PRIOR_DECISIONS_START/END` (≤ 30 lines). Used by dev-ship's define phase (PHASE 0).
+- `define-scout` (sonnet) — similar-pattern **source exploration** + library/API research during define PHASE 2 → `DEFINE_SCOUT_START/END` (≤ 40 lines). This is the sanctioned way to keep the design-time codebase reads and Context7/WebSearch out of the main context; the build agent reads the real files later (pass-paths-not-content).
+
+**Not for:** single field extraction (use inline `node -e`), per-REQ context (use Agent Context Block above), or learnings filtering (use `shared/LEARNINGS-LOAD.md`). Raw full-source reads the skill must reason over line-by-line still stay inline — the scout returns signatures + notes, not file bodies.
+
+**Contract:** agent MUST return delimited blocks (e.g. `PRIOR_DECISIONS_START/END`, `DEFINE_SCOUT_START/END`) so the caller parses without re-reading.
 
 ---
 
@@ -560,7 +583,7 @@ If no gaps/candidates found: skip this step entirely (no prompt).
 
 **Goal:** Detect stub handlers and action verbs in generated frontend code that have no linked FEATURE in the backlog.
 
-**Skills:** `design-create` (Triggers A/B/C — Build and Convert routes).
+**Skills:** `design-convert` (Triggers A/B/C — Build and Convert routes).
 
 #### Triggers
 
@@ -604,12 +627,12 @@ multiSelect: false
 
 **Goal:** Detect reusable UI patterns during dev work and drop them as COMPONENT todos in the backlog.
 
-**Skills:** `dev-define` (keyword-scan requirements), `dev-build` (repeating JSX pattern).
+**Skills:** `dev-ship` (define phase — keyword-scan requirements), `dev-ship` (build phase — repeating JSX pattern).
 
 #### Triggers (per skill)
 
-- **dev-define:** keyword-scan on UI element names in requirements (Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton). Also apply project-specific name prefixes.
-- **dev-build:** repeating JSX block after code-gen — ≥2x in the same file or ≥1x across multiple files of the same feature.
+- **dev-ship (define phase):** keyword-scan on UI element names in requirements (Modal, Dialog, Drawer, Tooltip, Dropdown, Select, DatePicker, TimePicker, RichTextEditor, FileUpload, Avatar, Badge, Toast, Alert, Banner, Stepper, Wizard, Table, DataGrid, Carousel, Accordion, Tab, Breadcrumb, FormField, InputGroup, ColorPicker, Rating, Slider, Progress, Skeleton). Also apply project-specific name prefixes.
+- **dev-ship (build phase):** repeating JSX block after code-gen — ≥2x in the same file or ≥1x across multiple files of the same feature.
 
 #### Resolution (batch)
 
@@ -657,25 +680,25 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected). "Skip" → log all 
 
 **Goal:** Detect new page routes during dev work and drop them as standalone PAGE todos in the backlog so they go through the design → convert → check pipeline.
 
-**Skills:** `dev-define` (sole writer — post-architecture seed), `design-create completion-sync` (sole writer — user-driven page creation), `dev-build` (warning-only safety net + COMPONENT→route suggestions — does NOT write to backlog).
+**Skills:** `dev-ship` (define phase — sole writer — post-architecture seed), `design-convert completion-sync` (sole writer — user-driven page creation), `dev-ship` (build phase — warning-only safety net + COMPONENT→route suggestions — does NOT write to backlog).
 
-> **Doctrine:** `/dev-define` and `/design-create completion-sync` are the only skills that create PAGE entries in `backlog.json`. `/dev-build` only logs a warning when it detects route patterns not yet in the backlog.
+> **Doctrine:** `/dev-ship` (define phase) and `/design-convert completion-sync` are the only skills that create PAGE entries in `backlog.json`. `/dev-ship` (build phase) only logs a warning when it detects route patterns not yet in the backlog.
 
 #### Triggers (per skill)
 
-- **dev-define:** scan `feature.json#architecture.routes[]` for stack-specific page patterns (`app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`); scan `feature.json#files[]` for suffixes `Page`, `Screen`, `View`.
-- **dev-build (safety net):** identical patterns as dev-define. Skip candidates already seeded by dev-define: `data.features.find(f => f.source === "/dev-define" && f.parentFeature === current)`. **Warning-only — no write.**
-- **dev-build (COMPONENT→route):** scan `<Link href="...">` and `router.push(...)` in generated component files. Candidate if route does not appear in `project.json#design.pages[]` or `backlog.json`.
+- **dev-ship (define phase):** scan `feature.json#architecture.routes[]` for stack-specific page patterns (`app/**/page.tsx`, `src/routes/**`, `pages/**/*.{tsx,vue}`, `routes/**/*.svelte`); scan `feature.json#files[]` for suffixes `Page`, `Screen`, `View`.
+- **dev-ship (build phase, safety net):** identical patterns as the define phase. Skip candidates already seeded during the define phase: `data.features.find(f => f.source === "/dev-ship" && f.parentFeature === current)`. **Warning-only — no write.**
+- **dev-ship (build phase, COMPONENT→route):** scan `<Link href="...">` and `router.push(...)` in generated component files. Candidate if route does not appear in `project.json#design.pages[]` or `backlog.json`.
 
 #### Resolution
 
 AskUserQuestion (wording per skill — see skill files for exact options):
 
-- **dev-define:** batch — "Add a PAGE todo per page?" — options: "Yes, all" / "Selection" / "No".
-- **dev-build (safety net):** log warning only — `⚠ Detected new route patterns: {list}. Run /dev-define or /design-create <name>.` No AskUserQuestion. No write.
-- **dev-build (COMPONENT→route):** per route — "PAGE todo for {route}?" — "Yes" / "Skip".
+- **dev-ship (define phase):** batch — "Add a PAGE todo per page?" — options: "Yes, all" / "Selection" / "No".
+- **dev-ship (build phase, safety net):** log warning only — `⚠ Detected new route patterns: {list}. Run /dev-ship or /design-convert <name>.` No AskUserQuestion. No write.
+- **dev-ship (build phase, COMPONENT→route):** per route — "PAGE todo for {route}?" — "Yes" / "Skip".
 
-**Persist per accepted page** (dev-define and design-create only):
+**Persist per accepted page** (dev-ship's define phase and design-convert only):
 
 1. Run dedup order (see above — name check; type PAGE skips inventory check; suggestionsLog check on rejected status).
 2. Push to `data.features[]`:
@@ -704,16 +727,16 @@ Per rejected proposal: log in `suggestionsLog[]` (rejected).
 
 **Goal:** During PAGE composition or feature definition, allow skills to discover and create new backlog items (COMPONENT or FEATURE) inline — without leaving the current flow.
 
-**Skills:** `design-create` (Build — page-compose step), `dev-define` (pageHint sparring — new PAGE).
+**Skills:** `design-convert` (Build — page-compose step), `dev-ship` (define phase — pageHint sparring — new PAGE).
 
 #### Trigger
 
-- **design-create Build (PAGE):** user selects `"+ new component"` or `"+ new feature"` in the page-composition selection menu.
-- **dev-define:** user answers `"+ new PAGE"` in the pageHint sparring question (no existing PAGE matches the feature's target route).
+- **design-convert Build (PAGE):** user selects `"+ new component"` or `"+ new feature"` in the page-composition selection menu.
+- **dev-ship (define phase):** user answers `"+ new PAGE"` in the pageHint sparring question (no existing PAGE matches the feature's target route).
 
 #### Resolution
 
-**For "+ new component" (from design-create):**
+**For "+ new component" (from design-convert):**
 
 ```yaml
 header: "New component"
@@ -735,7 +758,7 @@ Ask name + description (free text). Then:
      "transition": "designing",
      "phase": "P2",
      "description": "{user description}",
-     "source": "/design-create",
+     "source": "/design-convert",
      "scope": "atomic",
      "dependencies": ["{current-page-name}"]
    }
@@ -743,7 +766,7 @@ Ask name + description (free text). Then:
 3. Add to `project.json#design.components[]`: `{ name, purpose: description, status: "IDEA", scope: "atomic" }`.
 4. Return the new component name to the composition selection so it appears in the current list.
 
-**For "+ new feature" (from design-create):**
+**For "+ new feature" (from design-convert):**
 
 ```yaml
 header: "New feature"
@@ -762,13 +785,13 @@ multiSelect: false
      "status": "TODO",
      "phase": "P2",
      "description": "{user description}",
-     "source": "/design-create",
+     "source": "/design-convert",
      "pageHint": ["{current-page-name}"]
    }
    ```
 3. Return the new feature name to the composition selection.
 
-**For "+ new PAGE" (from dev-define pageHint sparring):**
+**For "+ new PAGE" (from dev-ship's define phase pageHint sparring):**
 
 1. Run dedup order.
 2. Push to `backlog.json#data.features[]`:
@@ -780,7 +803,7 @@ multiSelect: false
      "transition": "designing",
      "phase": "P2",
      "description": "Page for feature {current-feature}. Route: {route-hint}",
-     "source": "/dev-define",
+     "source": "/dev-ship",
      "dependencies": ["{current-feature}"],
      "parentFeature": "{current-feature}",
      "auto": true
@@ -833,7 +856,7 @@ gitignored `personal/` directory that sits inside the repo root but is never com
 personal/
   CLAUDE.md.overlay          ← appended to ~/.claude/CLAUDE.md after base
   settings.overlay.json      ← deep-merged into ~/.claude/settings.json (your values win)
-  styles/                    ← writing styles for core-write / core-rewrite
+  styles/                    ← writing styles for content-write / content-rewrite
 ```
 
 `/core-bootstrap` auto-detects `personal/` and applies overlays. Safe across `git pull`.

@@ -46,7 +46,7 @@
             if (verb) {
               var cmd = "/" + prefix + "-" + verb + " " + f.name;
               navigator.clipboard.writeText(cmd).then(function () {
-                showCopied("Gekopieerd: " + cmd);
+                showCopied("Copied: " + cmd);
               });
             }
           });
@@ -104,12 +104,18 @@
         b.innerHTML = "✎ Edit";
         b.title = "Edit";
       }
-      if (b.id === "detail-delete" || b.textContent.match(/verwijder|delete/i)) {
+      if (
+        b.id === "detail-delete" ||
+        b.textContent.match(/verwijder|delete/i)
+      ) {
         b.innerHTML = "✕ Delete";
         b.title = "Delete";
         b.className = "btn-danger";
       }
-      if (b.classList.contains("btn-cancel") || b.textContent.match(/sluit|close/i))
+      if (
+        b.classList.contains("btn-cancel") ||
+        b.textContent.match(/sluit|close/i)
+      )
         b.remove();
     });
   }
@@ -124,7 +130,7 @@
       var cmd = copyBtn.dataset.cmd;
       if (cmd)
         navigator.clipboard.writeText(cmd).then(function () {
-          toast("Gekopieerd: " + cmd);
+          toast("Copied: " + cmd);
         });
     });
   }
@@ -146,7 +152,7 @@
       if (typeof generateTaskBrief === "function") {
         generateTaskBrief(found.item).then(function (brief) {
           navigator.clipboard.writeText(brief).then(function () {
-            if (typeof toast === "function") toast("Brief gekopieerd");
+            if (typeof toast === "function") toast("Brief copied");
           });
         });
       }

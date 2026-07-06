@@ -82,7 +82,7 @@ Re-read .project/backlog.json
 Find feature where name === {target}
 Set:    feature.contentStatus = "filled"
 Remove: feature.transition       (clear the "contenting" marker)
-Status: keep "DOING"             (design-check is the gate to DONE)
+Status: keep "DOING"             (/design-ship's check is the gate to DONE)
 Set:    data.updated = today (ISO date)
 Write back
 ```
@@ -117,13 +117,12 @@ If `$BACKLOG_FOUND[target] = false` → skip silently (standalone run).
 **Next steps** (PAGE targets only — COMPONENT ships with its consuming PAGE):
 
 ```
-Next:  /design-check {target(s)} — runtime audit, moves PAGE to DONE on PASS
-       (or /design-check without arg to batch-audit all built pages)
+Next:  /design-ship {target(s)} — runtime check, moves PAGE to DONE on PASS
 ```
 
-For COMPONENT-only runs: omit Next line — design-check promotes the consuming PAGE, not the
+For COMPONENT-only runs: omit Next line — /design-ship promotes the consuming PAGE, not the
 component directly.
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /design-check {target} → runtime audit before shipping.
+> Recommended command: /design-ship {target} → runtime check before shipping.

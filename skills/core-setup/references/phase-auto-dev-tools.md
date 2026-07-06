@@ -12,11 +12,11 @@ The caller's transition marker supplies:
 
 ## Variant differences
 
-| Aspect            | `greenfield-auto`                                       | `mature-ask`                                        |
-| ----------------- | ------------------------------------------------------- | --------------------------------------------------- |
-| Gate              | None — auto-install on match, silent skip on mismatch   | AskUserQuestion per tool                            |
-| Already-installed | Not probed (fresh project)                              | File probes decide whether to offer at all          |
-| Dev server note   | Skip "Restart dev server" steps (no server running yet) | Follow setup-guide fully                            |
+| Aspect            | `greenfield-auto`                                       | `mature-ask`                               |
+| ----------------- | ------------------------------------------------------- | ------------------------------------------ |
+| Gate              | None — auto-install on match, silent skip on mismatch   | AskUserQuestion per tool                   |
+| Already-installed | Not probed (fresh project)                              | File probes decide whether to offer at all |
+| Dev server note   | Skip "Restart dev server" steps (no server running yet) | Follow setup-guide fully                   |
 
 ---
 
@@ -70,7 +70,7 @@ Read("references/modules/inspect-overlay/setup-guide.md")
 
 Game / CLI / backend-only / mobile / desktop: skip — no output.
 
-Skills such as `/design-create Build` and `/design-check` need `playwright-cli` (daemon) and `@axe-core/playwright` (a11y) for smoke checks.
+Skills such as `/design-convert Build` and `/design-ship`'s check phase need `playwright-cli` (daemon) and `@axe-core/playwright` (a11y) for smoke checks.
 
 **Gate** (`mature-ask` only):
 
@@ -81,7 +81,7 @@ options:
   - label: "Install (Recommended)"
     description: "playwright-cli (global) + @playwright/test + @axe-core/playwright (devDeps)"
   - label: "Skip"
-    description: "Do not install — smoke checks in design-create will report failure"
+    description: "Do not install — smoke checks in design-convert will report failure"
 multiSelect: false
 ```
 

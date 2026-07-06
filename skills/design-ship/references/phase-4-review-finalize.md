@@ -64,7 +64,7 @@ multiSelect: false
 
 - **Ship it** → Step 5.
 - **Copy bijstellen** → one follow-up `AskUserQuestion` (tone options per
-  `design-content/references/review-gate.md` §4.5: conciser / formeler / vriendelijker / andere
+  `.claude/skills/design-ship/references/design-content/references/review-gate.md` §4.5: conciser / formeler / vriendelijker / andere
   taal, plus Other for free-form), update `$BRIEF`, rewrite the live signal to
   `{"skill":"content"}` (no `waiting` — work resumes), re-spawn AGENT 2 per
   `agent-content.md § Regenerate loop`, **re-read `.project/`**, refresh the browser preview, then

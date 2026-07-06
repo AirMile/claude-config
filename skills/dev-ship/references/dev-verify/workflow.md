@@ -81,7 +81,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    **COMPONENT detection** (after feature.json load): check whether `feature.type === "COMPONENT"` or backlog-item type is COMPONENT. If yes: set `IS_COMPONENT_VERIFY = true`. Resolve render context in this order:
    1. Grep `app/**/page.tsx` for an import matching `{PascalName}` — first match → navigate to that route.
    2. Demo-page fallback: check whether `app/_dev/components/{name}/page.tsx` exists → navigate to `/_dev/components/{name}`.
-   3. Neither found → exit: `"No render context for {name}. Options: (a) run /dev-build {feature} to generate a demo-page, or (b) run /design-create {pageHint} to design a page that uses this component."`
+   3. Neither found → exit: `"No render context for {name}. Options: (a) run /dev-build {feature} to generate a demo-page, or (b) run /design-convert {pageHint} to design a page that uses this component."`
 
 4. **Worktree switch** — execute the procedure in `shared/WORKTREE.md` with `feature-name` and `feature.status` (from Step 1). Switches automatically to `worktree-{feature-name}` if it exists. Includes staleness check (Step 4.6): worktree N commits behind main → offer rebase before proceeding. If no worktree exists but `feature.status === "DOING"`: WARN + AskUserQuestion (see WORKTREE.md → Step 4a: DOING-without-worktree warning). On FAIL (in a different worktree than the feature): stop with the message from WORKTREE.md.
 

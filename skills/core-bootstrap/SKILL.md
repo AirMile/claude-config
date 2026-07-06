@@ -204,7 +204,7 @@ else
   # Ask the user via AskUserQuestion (open text input — no default, no fallback):
   #   header: "Projects root"
   #   question: "What is the absolute path to your projects root? This is where
-  #              /project-add creates new projects and /project-switch navigates.
+  #              /project-add creates new projects.
   #              Example: /Users/you/projects or /Users/you/Documents/Projects"
   # Validate: the path must exist as a directory. If not, re-ask.
   # Store input in PROJECTS_ROOT (no fallback — the user must answer).

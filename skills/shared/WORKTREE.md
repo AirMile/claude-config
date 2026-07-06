@@ -240,7 +240,7 @@ Then `EnterWorktree(path: "$WT_PATH")` — enters the already-created worktree. 
 After `EnterWorktree` (or Destroy→recreate), run symlink setup + integrity check + gate + session file in **a single Bash block** (combine `## Shared .project/ via symlink`, `### Verify symlink integrity`, and the skill's gate/session-file commands to minimise round-trips):
 
 ```bash
-# Example for dev-build — adapt session payload per skill
+# Example for dev-ship's build phase — adapt session payload per skill
 WT="{main_root}/.claude/worktrees/{feature-name}"
 MP="{main_root}/.project"
 
@@ -339,13 +339,19 @@ fi
 
 ### Verify symlink integrity
 
-After Step 3 completes (and on every silent-reuse path), verify all expected symlinks resolve. Idempotent — re-running repairs broken links.
+After Step 3 completes (and on every silent-reuse path), verify the **required** symlinks resolve. Idempotent — re-running repairs broken links.
+
+Only 4 links gate the worktree; the other 3 may dangle safely and must **not** fail the gate:
 
 ```bash
 WT="{main_root}/.claude/worktrees/{feature-name}"
-EXPECTED=("backlog.json" "features" "wireframes" "screenshots" "thinking" "project.json" "project-context.json")
+# Required — a broken one means .project/ writes from the worktree won't reach main.
+REQUIRED=("backlog.json" "features" "project.json" "project-context.json")
+# Optional (wireframes/screenshots/thinking): their source dirs don't always exist in main
+# (a fresh project has none yet), so their links legitimately dangle. `ln -sfn` still created
+# the link, and it resolves itself once the first write makes the target — never fail on these.
 FAILED=()
-for name in "${EXPECTED[@]}"; do
+for name in "${REQUIRED[@]}"; do
   link="$WT/.project/$name"
   if [ ! -L "$link" ] || [ ! -e "$link" ]; then
     FAILED+=("$name")
@@ -356,7 +362,7 @@ if [ ${#FAILED[@]} -gt 0 ]; then
   echo "Re-run ## Shared .project/ via symlink. If failure persists, check permissions on $WT/.project/"
   exit 1
 fi
-echo "SYMLINKS: ok (7/7)"
+echo "SYMLINKS: ok (4/4 required; wireframes/screenshots/thinking optional — dangling is safe)"
 ```
 
 ---
@@ -367,7 +373,7 @@ Used in PHASE 0 of pipeline skills that operate on a single feature (verify, deb
 
 ### Why
 
-Pipeline skills run in separate chats. When `dev-build` (or `game-build`) creates a worktree, follow-up skills start in main-checkout — not in the worktree where the code lives. This boilerplate detects an existing worktree for the active feature and switches into it automatically.
+Pipeline skills run in separate chats. When dev-ship's build phase (or `game-ship`'s build phase) creates a worktree, follow-up skills start in main-checkout — not in the worktree where the code lives. This boilerplate detects an existing worktree for the active feature and switches into it automatically.
 
 The worktree path is predictable: `{repo-root}/.claude/worktrees/{feature-name}`. The branch name is `worktree-{feature-name}` (auto-prefixed by `EnterWorktree`).
 
@@ -492,13 +498,13 @@ git -C "{worktree_path}" rebase "$COMPARE_REF" 2>&1
 
 Triggers when: caller passed `feature.status === "DOING"`, `current_root == main_root`, no `worktree-{feature-name}` branch exists.
 
-Interpretation: the feature was built without isolation — `/dev-build` likely silently fell back to main (worktree step skipped or bypassed). Build commits live on the current branch, not on an isolated `worktree-{feature-name}` branch. Recoverable, but worth flagging.
+Interpretation: the feature was built without isolation — `/dev-ship (build phase)` likely silently fell back to main (worktree step skipped or bypassed). Build commits live on the current branch, not on an isolated `worktree-{feature-name}` branch. Recoverable, but worth flagging.
 
 Print:
 
 ```
 ⚠ ANOMALY: feature "{feature-name}" is DOING but has no worktree branch.
-  /dev-build likely skipped the isolation step.
+  /dev-ship (build phase) likely skipped the isolation step.
   Build commits are on current branch ({current-branch-name}), not isolated.
 ```
 
@@ -516,7 +522,7 @@ multiSelect: false
 ```
 
 - **Continue** → proceed to Step 5
-- **Stop** → exit skill. Print: `Hint: ask Claude to retroactively stage a worktree for "{feature-name}", then restart /dev-verify.`
+- **Stop** → exit skill. Print: `Hint: ask Claude to retroactively stage a worktree for "{feature-name}", then restart /dev-ship (verify phase).`
 
 #### Step 5: Continue with skill PHASE 0
 
@@ -565,7 +571,7 @@ If any `worktree-*` branches appear → **AskUserQuestion**:
 
 ```yaml
 header: "Open worktrees"
-question: "Open worktrees found: {list}. Normally /dev-verify or /game-verify closes these — these are leftovers (verify skipped, or 'Keep open' chosen). Batch refactor on main may cause merge conflicts when they're integrated later. What do you want to do?"
+question: "Open worktrees found: {list}. Normally /dev-ship (verify phase) or /game-ship (verify phase) closes these — these are leftovers (verify skipped, or 'Keep open' chosen). Batch refactor on main may cause merge conflicts when they're integrated later. What do you want to do?"
 options:
   - label: "Stop — finalize open worktrees first (Recommended)"
     description: "Run /core-finalize for each leftover worktree, then re-run the skill"

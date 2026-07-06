@@ -1,6 +1,6 @@
 # Project Code Conventions
 
-Per-project code conventions (company/team/personal style guide) in `.project/conventions.md`. Single source of truth for the file format, the three-state lifecycle, elicitation, and load rules. Consumers: core-setup (writer), dev-refactor (fallback write + read), dev-build, dev-verify, game-refactor, game-build (read).
+Per-project code conventions (company/team/personal style guide) in `.project/conventions.md`. Single source of truth for the file format, the three-state lifecycle, elicitation, and load rules. Consumers: core-setup (writer), dev-ship's refactor phase (fallback write + read), dev-ship's build phase, dev-ship's verify phase, game-ship's refactor phase, game-ship's build phase (read).
 
 ---
 
@@ -62,11 +62,11 @@ CONV_STATUS=$(head -1 .project/conventions.md 2>/dev/null | sed -n 's/.*conventi
 # "" = absent (never asked) | "none" | "set"
 ```
 
-| State           | Representation                      | Consumer behavior                                                                  |
-| --------------- | ----------------------------------- | ---------------------------------------------------------------------------------- |
-| Never asked     | File **absent** (`CONV_STATUS=""`)  | dev-refactor PHASE 0: one-time lightweight fallback ask; all others: skip silently |
-| Explicitly none | `<!-- conventions-status: none -->` | All skills skip silently — **never re-ask**                                        |
-| Conventions set | `<!-- conventions-status: set -->`  | Load per § Load Rules                                                              |
+| State           | Representation                      | Consumer behavior                                                                               |
+| --------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Never asked     | File **absent** (`CONV_STATUS=""`)  | dev-ship's refactor phase PHASE 0: one-time lightweight fallback ask; all others: skip silently |
+| Explicitly none | `<!-- conventions-status: none -->` | All skills skip silently — **never re-ask**                                                     |
+| Conventions set | `<!-- conventions-status: set -->`  | Load per § Load Rules                                                                           |
 
 ## Discovery Sources
 
@@ -84,7 +84,7 @@ Scanned during full elicitation (core-setup mature) to distill candidate rules. 
 3. One anchored open question per [QUESTIONING.md](QUESTIONING.md): house-style rules the configs don't capture
 4. Write `.project/conventions.md` (`set`, or sentinel)
 
-**Lightweight fallback** (dev-refactor PHASE 0 only, when file is absent): single AskUserQuestion —
+**Lightweight fallback** (dev-ship's refactor phase PHASE 0 only, when file is absent): single AskUserQuestion —
 
 - "No project conventions (Recommended)" → write the sentinel (never asked again)
 - "Set up conventions now" → paste/point to a style guide, distill ≤120 lines, write `set`
@@ -93,9 +93,9 @@ No other skill elicits. Build/verify skills with an absent file proceed silently
 
 ## Load Rules
 
-| Consumer type                                                      | Rule                                                                                                                                      |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Agent-dispatching skills (dev-refactor, game-refactor, dev-verify) | Pass the **path** in the agent prompt ("Read `.project/conventions.md` before scanning") — agent reads it in its own context, token-cheap |
-| Main-context skills (dev-build, game-build)                        | `Read` the file once in PHASE 0 — the main session writes the code itself                                                                 |
+| Consumer type                                                                                             | Rule                                                                                                                                      |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Agent-dispatching skills (dev-ship's refactor phase, game-ship's refactor phase, dev-ship's verify phase) | Pass the **path** in the agent prompt ("Read `.project/conventions.md` before scanning") — agent reads it in its own context, token-cheap |
+| Main-context skills (dev-ship's build phase, game-ship's build phase)                                     | `Read` the file once in PHASE 0 — the main session writes the code itself                                                                 |
 
 Log one line on load: `CONVENTIONS: loaded | none | not set up`.

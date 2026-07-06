@@ -4,27 +4,44 @@ PHASE 1 of the dev workflow: define → build → test.
 
 **Trigger**: `/dev-define` or `/dev-define [feature-name]`
 
+> **Vendored & pre-adapted for dev-ship** — run **inline in the main chat** by dev-ship PHASE 0
+> (Step 2c of `phase-0-define-classify.md`), not as a standalone skill. This copy is already adapted:
+> there is **no plan-mode machinery** and **no own phase tracking** (dev-ship's task list drives).
+> **dev-ship runs PHASE 0→2 of this file entirely inside plan mode** (it calls `EnterPlanMode` before
+> reading this file), so under an `opusplan`-style router the interview + architecture reason on the
+> planning model. Practically that means: reads, read-only Bash, `WebSearch`/Context7, `AskUserQuestion`,
+> and the read-only `context-aggregator`/`define-scout` subagents all work here; only `.project/`/source
+> writes are blocked — and every write below is already deferred to accept. Run **PHASE 0→2** (interview
+>
+> - architecture + the complete feature.json draft) and **hold the draft in memory** — no `feature.json`
+>   and no plan file is written here. **PHASE 3+4 run at dev-ship's gate-accept** (Step 4b): the draft
+>   becomes the plan-file appendix and `feature-from-plan.js` writes `feature.json` on accept. Do not
+>   blind-sync this file from the standalone define skill — the adaptations are load-bearing.
+>
+> **Confirmations are hoisted to the gate.** dev-ship presents the whole plan for review at its Step 4b
+> gate (an `ExitPlanMode` approval), and reject loops back here to revise. So the pure-confirmation
+> `AskUserQuestion`s below are **removed** — the interview summary-confirm (PHASE 1a), the ">6 REQs
+> scope confirm" (PHASE 1b), the design-sketch confirm (PHASE 2), and the Seed/Backlog-Impact prompts
+> (PHASE 2) — their content becomes review sections of the gate plan file. Only genuine **decision**
+> `AskUserQuestion`s stay: feature resolution (PHASE 0), design-choice forks (PHASE 1b), and the split
+> proposal (PHASE 1c).
+
 ## Constraints (apply to every phase)
 
 - **No implementation code anywhere.** Plan file and feature.json contain only type signatures, structure, decisions. Function bodies, `(set, get) => ({...})` blocks, JSX, hook internals → `/dev-build`. Detail: see PHASE 2 "Strict boundary."
 - **No requirements skipping** — every feature gets PHASE 1 extraction with acceptance criteria.
-- **No phase-jump without checkpoint** — user confirms scope (PHASE 1) before architecture; user approves plan (PHASE 2) before feature.json write.
-- **Plan mode active before any analytical step** — `EnterPlanMode` MUST be called immediately after TaskCreate + setup writes (mkdir, session file) and BEFORE the context load (PHASE 0 step 5) and every later `Read`, `Glob`, `Grep`, or `AskUserQuestion`. Exempt: feature-name resolution and the existence check (PHASE 0 steps 1-2) — those need backlog/file reads and possibly an AskUserQuestion before plan mode can be entered. The interview (PHASE 1a) must run inside plan mode so model routers (e.g. `opusplan`) route it through the planning model. `ExitPlanMode` at end of PHASE 2; PHASE 3+4 run after approval.
+- **No phase-jump without checkpoint** — user confirms scope (PHASE 1) before architecture; the plan-approval gate (dev-ship Step 4b) is the review surface before feature.json is written.
 
 ## Workflow
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 3 items
-(status `pending`), then use `TaskUpdate` to set each phase to `in_progress` at the
-start and `completed` at the end. During context compaction the task list remains
-visible — no risk of forgetting phases.
+**Phase tracking** — **none of its own.** dev-ship's 6-phase task list is already active; track
+define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it would clobber dev-ship's list).
 
-1. PHASE 0+1a+1b: Setup, Plan Mode, Context, Interview & Requirements
+1. PHASE 0+1a+1b: Setup, Context, Interview & Requirements
 2. PHASE 2: Architecture
-3. PHASE 3+4: feature.json + Sync
+3. PHASE 3+4: feature.json + Sync (run at dev-ship gate-accept)
 
-### PHASE 0: Setup, Feature Name & Plan Mode
-
-> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 3 phase items (see above). Mark PHASE 0+1a+1b → `in_progress` via `TaskUpdate`.
+### PHASE 0: Setup & Feature Name
 
 1. **Determine feature name.**
 
@@ -42,17 +59,16 @@ visible — no risk of forgetting phases.
    - **Not found** → continue to step 3 (normal flow).
    - **Found** → go to PHASE 0b (update-mode).
 
-3. **Initial setup writes** (only writes allowed before plan mode):
-   - `mkdir -p .project/features/{feature-name}`
-   - `mkdir -p .project/session && echo '{"feature":"{feature-name}","skill":"define","startedAt":"<new Date().toISOString()>"}' > .project/session/active-{feature-name}.json`
+3. **Initial setup writes** — **skip in the dev-ship context**: dev-ship's Step 2a already did the
+   `mkdir -p .project/features/{feature-name}` + the `active-{feature-name}.json` live-signal write
+   **before** entering plan mode (writes are blocked once inside). Do not repeat them here. (The
+   standalone form would run `mkdir` + `echo '{...}' > active-{feature-name}.json` itself.)
 
-4. **Enter Plan Mode** — call `EnterPlanMode` NOW, before any further `Read`, `Glob`, `Grep`, or `AskUserQuestion` (steps 1-2 above are the only pre-plan-mode reads). Follow [shared/PLAN-MODE.md](.claude/skills/shared/PLAN-MODE.md) Entry protocol. PHASE 0 step 5 onwards + PHASE 1a + 1b + 2 all run in plan mode.
-   - **Note on user consent**: `EnterPlanMode` may prompt the user for plan-mode confirmation in some Claude Code UIs. This is intentional — model routers (e.g. `opusplan`) use plan mode as the trigger for upgrading to Opus. Do not skip the call to avoid the prompt.
-   - **Skip-check**: if plan mode is already active (existing system-reminder), skip the call and read the plan-file path from the active reminder.
-   - **If `feature.json` already exists** (update-mode trigger from step 2): EnterPlanMode still fires here — update-mode body in PHASE 0b runs inside plan mode.
-   - All `.project/{backlog,project,project-context}.json` writes wait until after `ExitPlanMode` in PHASE 4.
+   All `.project/{backlog,project,project-context}.json` writes are **deferred to dev-ship's
+   gate-accept** (Step 4b) — PHASE 0→2 only read and author the in-memory draft, and plan mode blocks
+   them anyway.
 
-5. **Context load** (inside plan mode — reads only, parallelize):
+4. **Context load** (reads only, parallelize):
    - Glob + Grep for existing code that imports the feature name. ≥1 match: briefly mention files.
    - Project context load (via [shared/PROJECT-CONTEXT-LOAD.md](.claude/skills/shared/PROJECT-CONTEXT-LOAD.md)):
      ```
@@ -68,8 +84,9 @@ visible — no risk of forgetting phases.
      feature-name: {feature-name}
      ```
      Keep `risk`, `dependencies`, `externalRef`, and `description` in memory for PHASE 1 and PHASE 3 — `description` feeds the PHASE 1a context echo and coverage check. Mutations (status, date, `auto` flag) happen in PHASE 4. `BACKLOG_FEATURE_NOT_FOUND` or `BACKLOG_HTML: not present` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
+   - **Open-items load** (same batch — feeds the PHASE 2 Backlog Impact Check): run the `open-items` profile from [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md) (`$FEAT` already set) and keep the compact list in memory. `BACKLOG_NOT_PRESENT` / `BACKLOG_NO_OPEN_ITEMS` → the Impact Check will skip silently.
 
-6. **Optional context** (skip each item if results would be empty):
+5. **Optional context** (skip each item if results would be empty):
    - **Thinking files**: Grep `.project/thinking/*.md` for feature name. Read matches as PHASE 1 input.
    - **Past decisions** (only if `.project/features/` has any prior `feature.json`):
 
@@ -94,15 +111,13 @@ visible — no risk of forgetting phases.
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 
-> **Todo**: if feature.json exists → Read `.claude/skills/dev-ship/references/dev-define/references/update-mode.md` and follow that flow, then continue to PHASE 1a. (Plan mode is already active from PHASE 0 step 4.)
+> **Todo**: if feature.json exists → Read `.claude/skills/dev-ship/references/dev-define/references/update-mode.md` and follow that flow, then continue to PHASE 1a.
 
 ---
 
 ### PHASE 1a: Interview
 
 > **Todo**: Read `.claude/skills/dev-ship/references/dev-define/references/phase1a-interview.md` for the full interview protocol — dimension checklist, tone rules, one-question-at-a-time flow, and adaptive stop condition.
-
-> **Precondition check**: plan mode MUST be active before the first interview question (set in PHASE 0 step 4). If not active, call `EnterPlanMode` now and only then start the interview.
 
 **Risk-check (only if `feature.risk >= 4`):** show one line before opening the interview — `⚠ HIGH RISK ({risk}/5): consider splitting this feature, verify dependencies, clarify scope before defining.`
 
@@ -114,7 +129,7 @@ Conduct the open interview per the reference — one anchored open question at a
 
 ### PHASE 1b: Requirements Synthesis
 
-**Design choices** (only for architecture-changing branches — storage strategy, route shape, auth model, data model boundary, external service contract): if the interview revealed a fork with concrete A vs B vs C options, resolve these now via AskUserQuestion before extracting requirements. **Baseline gate (run first):** for each candidate fork, check the `stack-baseline.md` content loaded in PHASE 0 §5 — if the baseline already standardizes the answer (e.g. "use @react-navigation/stack"), do NOT raise the modal; record it directly as a `clarification` (and a `durableDecision` if architecture-wide) citing the baseline, and show `Baseline: ✓ resolved fork — {pattern-name}`. Only forks the baseline leaves open reach the user. Each remaining sub-question must be a **design choice**. Include "Not relevant to scope" if applicable. Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` (written to `feature.json#clarifications` if ≥1 entry). Edge cases (validation rules, input notation, format defaults) → add directly as acceptance criteria, no AskUserQuestion.
+**Design choices** (only for architecture-changing branches — storage strategy, route shape, auth model, data model boundary, external service contract): if the interview revealed a fork with concrete A vs B vs C options, resolve these now via AskUserQuestion before extracting requirements. **Baseline gate (run first):** for each candidate fork, check the `stack-baseline.md` content loaded in PHASE 0 §4 — if the baseline already standardizes the answer (e.g. "use @react-navigation/stack"), do NOT raise the modal; record it directly as a `clarification` (and a `durableDecision` if architecture-wide) citing the baseline, and show `Baseline: ✓ resolved fork — {pattern-name}`. Only forks the baseline leaves open reach the user. Each remaining sub-question must be a **design choice**. Include "Not relevant to scope" if applicable. Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` (written to `feature.json#clarifications` if ≥1 entry). Edge cases (validation rules, input notation, format defaults) → add directly as acceptance criteria, no AskUserQuestion.
 
 **>4 open forks** → handle the remainder inline during requirement extraction as edge cases.
 
@@ -155,8 +170,8 @@ REQ-002 — {1-line description}
 ...
 ```
 
-- **≤6 REQs**: append `Scope: {N} requirements — SINGLE feature, continuing.` and proceed directly to PHASE 2. No AskUserQuestion, skip PHASE 1c.
-- **>6 REQs**: confirm via AskUserQuestion "Is this scope correct?" — "Yes, continue (Recommended)" / "Adjust". Then proceed to PHASE 1c.
+- **≤6 REQs**: append `Scope: {N} requirements — SINGLE feature, continuing.` and proceed directly to PHASE 2. Skip PHASE 1c.
+- **>6 REQs**: append `Scope: {N} requirements — checking for a split.` and proceed **directly** to PHASE 1c (cluster analysis). **No scope-confirm AskUserQuestion** — the numbered REQ list above is a passive progress view, and scope is reviewed at the gate; only a genuine split proposal (PHASE 1c) still asks.
 
 **Mid-flow scope expansion**: if the user introduces new scope after requirement extraction but before PHASE 2, treat it as an additional AskUserQuestion round and re-run the completeness self-check. New REQs are regular requirements (numbered sequentially), not clarifications.
 
@@ -185,8 +200,11 @@ The full requirements table with acceptance criteria and the feature overview ta
 1. Show proposal with clusters, build order, cross-dependencies
 2. AskUserQuestion: "Agree with split?" — Agree / Adjust / Keep as one feature
 3. On split:
-   - Write `.project/features/{feature-name}/00-split.md` with: split decision, sub-feature table (requirements + focus), build order
-   - Create sub-feature folders: `mkdir -p .project/features/{feature-name}-{sub}`
+   - **Record the split in the draft** as a `## Feature split` gate section (split decision,
+     sub-feature table with requirements + focus, build order). The disk writes below are **deferred
+     to gate-accept** (Step 4b) — plan mode blocks them now:
+     - at accept, write `.project/features/{feature-name}/00-split.md` with that content, and
+       `mkdir -p .project/features/{feature-name}-{sub}` per sub-feature.
    - Re-number requirements per sub-feature (REQ-001, REQ-002, etc.)
    - Run PHASE 2-4 per sub-feature in build order
    - In backlog: sync each sub-feature individually
@@ -195,51 +213,74 @@ The full requirements table with acceptance criteria and the feature overview ta
 
 > **Todo**: mark PHASE 0+1a+1b → `completed`, PHASE 2 → `in_progress`.
 
-**Output rule for this entire phase**: write design **directly to the plan file** (Write/Edit, path from the plan-mode system-reminder received at PHASE 0 step 4). **Do not show design output inline in chat** — only a short progress marker (e.g. `Architecture designed: N files, K build steps. Plan file updated.`). **Exception**: for visual features the ASCII wireframe may appear inline in an AskUserQuestion description (see "Design sketch" in step 3).
+**Output rule for this entire phase**: hold the design in the **in-memory draft** — do **not** write a plan file here (dev-ship's Step 4b gate writes it from the draft). **Do not show design output inline in chat** — only a short progress marker (e.g. `Architecture designed: N files, K build steps.`). **Exception**: for visual features the ASCII wireframe may appear inline in an AskUserQuestion description (see "Design sketch" in step 3).
 
 **Strict boundary — design vs implementation**:
 
 - **Allowed in plan file**: type signatures (`interface X { ... }`, `type Y = ...`, function signatures `(input: X) => Y`), file/module structure, feature flow as `→` chain, dependency graph, build sequence, test strategy table, durable decisions.
 - **Forbidden in plan file**: function bodies, `(set, get) => ({...})` blocks, `set({...})` calls, helper implementations, JSX, hook internals — even as "skeleton" or "pseudo-code." That work belongs to `/dev-build`. If a code fence contains anything beyond type declarations: stop and rewrite as an English description.
 
-**Plan file vs feature.json — role split**: full table in [references/feature-json-schema.md § Role split](references/feature-json-schema.md#role-split). Short rule: plan file = review-artefact (context, REQ-list, durable decisions 1-liners, flow, verification) + machine-contract appendix (drafted here, skipped in review). feature.json = canonical contract (acceptance criteria, build sequence, test strategy, type signatures, AI-navigability).
+**Draft vs feature.json — role split**: full table in [shared/feature-json-schema.md § Role split](../../../shared/feature-json-schema.md#role-split). Short rule: the gate plan file (written at Step 4b) = review surface (context, REQ-list, durable decisions 1-liners, flow, verification) + a `## Appendix — machine contract` holding the **complete feature.json draft** as a ```json block (authored here in memory, skipped in review). Gate-accept extracts that block into feature.json mechanically — the appendix IS the canonical contract, written once.
 
 Design in three steps:
 
 1. **Baseline check** (internally):
-   - Reuse the `stack-baseline.md` section(s) loaded in PHASE 0 §5 (re-read only if not yet in memory); match patterns relevant to this feature.
-   - **Pattern found** → use as basis, skip research. Show: `Baseline: ✓ pattern hit — {pattern-name}`. In PHASE 3: omit the `research` field in feature.json entirely (baseline hit is not research).
-   - **Pattern not found** → inline research via Context7 (`resolve-library-id` + `query-docs`) + WebSearch for external APIs. Show: `Baseline: ⚙ research via Context7 — {topic}`. After research: collect new patterns in memory as `pendingBaselineAppends` — plan mode blocks the `stack-baseline.md` write; PHASE 4 appends them during sync. In PHASE 3: write `research: { sources[], findings[] }` to feature.json — only for actually executed lookups.
-   - **No baseline file** → always execute research. Show: `Baseline: ⓘ missing — inline research`. Do NOT create baseline (that is /core-setup). PHASE 3 gets `research` as described above.
+   - Reuse the `stack-baseline.md` section(s) loaded in PHASE 0 §4 (re-read only if not yet in memory); match patterns relevant to this feature.
+   - **Pattern found** → use as basis, no research topic. Show: `Baseline: ✓ pattern hit — {pattern-name}`. In PHASE 3: omit the `research` field in feature.json entirely (baseline hit is not research).
+   - **Pattern not found / no baseline file** → do **not** research inline. Collect the open question as a `researchTopics[]` entry (topic + why) for the scout in step 2. Show: `Baseline: ⚙ research queued — {topic}`. Do NOT create a baseline file (that is /core-setup).
 
-2. **Existing code** (internally): Glob + Read the most relevant files with similar patterns.
+2. **Scout: existing code + research** (delegated — keeps the file reads and library lookups out of the main context):
 
-3. **Design** → write to plan file:
+   > **Todo**: unless this is a greenfield area (no prior `feature.json` under `.project/features/` **and** the PHASE 0 §4 import scan found no matches), spawn the `define-scout` agent via the `Task` tool with:
+   >
+   > - `featureName`, `reqSummaries` (1-line per REQ), `stackSummary` (from project.json stack),
+   > - `researchTopics` = the entries collected in step 1 (empty when the baseline covered everything),
+   > - `hintPaths` = the import-scan matches from PHASE 0 §4, `repoRoot` = repo root.
+   >
+   > Parse the `DEFINE_SCOUT_START/END` digest: `PATTERNS`/`INTEGRATION` feed step 3's design; `RESEARCH` → `feature.json#research` in PHASE 3 (only when non-empty); `PENDING_BASELINE` → `pendingBaselineAppends` for the PHASE 4 sync (`stack-baseline.md` append).
+   >
+   > **Fallback** (greenfield gate hit, empty digest, or scout unavailable): inline `Glob + Read` at most 3 closest-match files and, for any `researchTopics`, one Context7/WebSearch lookup each — same outputs, just in-context. Never design without either the digest or this fallback.
+
+3. **Design** → into the in-memory draft:
    - **Feature flow**: compact `→` chain. Conditional paths in `[brackets]`, parallel with `+`.
    - **File structure**: create/modify table (path, action, purpose, requirements).
    - **Routes registration** (frontend projects with `stack.framework` only): only `page`/`route` files with `action: CREATE` get an entry in `feature.architecture.routes[]` with `{ path, file, action, requirements[] }`. MODIFY-only route files: skip — `project-context.json#context.routing` leaves existing routes unchanged in PHASE 4. **Skip entirely** if no CREATE route/page files — omit the `routes[]` field from feature.json.
-   - **Design sketch**: visual features only — ASCII wireframe + states (loading/empty/error). Confirm inline via AskUserQuestion: "Is this visual design correct?" — "Yes (Recommended)" / "Adjust". **Wait for user confirmation before continuing; no implicit 'Yes'.** Use token names (`bg-primary`, `text-foreground`), no hex. See `shared/TOKENS.md`.
+   - **Design sketch**: visual features only — author the ASCII wireframe + states (loading/empty/error) into the draft. **No inline confirm** — the wireframe becomes a **required section of the gate review surface** (Step 4b), where the user reviews the visual design alongside everything else and reject-feedback adjusts it. Use token names (`bg-primary`, `text-foreground`), no hex. See `shared/TOKENS.md`.
    - **Durable decisions** (1-line each for plan-file review): full rationale and canonical form go to feature.json in PHASE 3.
-   - **Machine contract appendix** — design type signatures, build sequence, and test strategy NOW (inside plan mode, so the planning model authors them) and write them to the plan file under a `## Appendix — machine contract (skip review)` heading. The appendix is not part of the review surface — the heading tells the reviewer to skip it. PHASE 3 transcribes these sections into feature.json. Dependency analysis stays implicit — derived from `buildSequence[].dependsOn`, no separate section.
+   - **Machine contract appendix** — author the **complete feature.json draft** NOW (held in memory; dev-ship's gate materializes it as the plan-file appendix at Step 4b) as a single ```json fenced block under a `## Appendix — machine contract (skip review)` heading. Include every define-owned field per [shared/feature-json-schema.md](../../../shared/feature-json-schema.md): `name`, `status` (`"DEFINED"`), `created`, `depends`, `summary`, `requirements` (with full `acceptance[]`), `files`, `architecture` (incl. `interfaces[].definition` — type declarations only, per the Strict boundary above), `buildSequence`, `testStrategy`, plus the conditional fields (`design`, `apiContract`, `clarifications`, `durableDecisions`, `research`, `externalRef`, `pageHint`, `seedDrift`). The appendix is not part of the review surface — the heading tells the reviewer to skip it; the review sections above (context, REQ 1-liners, file table, flow, verification, durable-decision 1-liners) are the human review surface. Gate-accept extracts this block mechanically into feature.json — no re-authoring. Dependency analysis stays implicit — derived from `buildSequence[].dependsOn`, no separate section.
    - **AI-navigability** (skip if ≤6 files AND no new registry): when applicable, identify new registries and record them in `architecture.registries[]` (written to feature.json in PHASE 3). Omit module-export lists, colocation notes, and import constraints — covered by project conventions.
 
-**Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision was recorded; below that skip silently, trivial features yield only drift-noise):
+**Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision OR ≥1 clarification was recorded; below that skip silently, trivial features yield only drift-noise):
 
-Follow [shared/SEED.md](.claude/skills/shared/SEED.md) § Alignment Check. Inputs: REQ descriptions + `acceptance[].then` + `durableDecisions[]`. Drift table and proposed rewrite go into the plan file (plan mode is active). On "Yes" → carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4 (seed and backlog-overview always co-update — same project description in two places). On "Skip" → carry `seedDrift[]` to PHASE 3 (written to `feature.json#seedDrift`). `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
+Follow [shared/SEED.md](.claude/skills/shared/SEED.md) § Alignment Check — but **run only the detection**, not its `AskUserQuestion`. When drift is found, record the drift table + proposed rewrite in the draft as a `## Proposed seed update` gate section (default action: apply on accept). Carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4 (seed + backlog-overview co-update — same description in two places) so accept applies it; the user can reject just that section at the gate, in which case carry `seedDrift[]` to PHASE 3 instead (written to `feature.json#seedDrift`). No drift detected → no section, no carry. `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
 
-**End of thinking phase**: follow [shared/PLAN-MODE.md](.claude/skills/shared/PLAN-MODE.md) Exit protocol — write the full architecture design to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 3 (writing feature.json).
+**Backlog Impact Check** (last step in PHASE 2, directly after the Seed Alignment Check — no size threshold; a two-REQ feature can still obsolete a card):
+
+Follow [shared/BACKLOG.md](.claude/skills/shared/BACKLOG.md) § Impact Check — but **run only the detection**, not its `AskUserQuestion`. When ≥1 card is impacted, record the impact table in the draft as a `## Backlog impact` gate section (default action: apply the proposed verdicts on accept). Carry those verdicts to PHASE 4 as `backlogImpact[]`; the mutations happen in the accept sync batch, and the user can reject just that section at the gate. No impact → no section, no carry.
+
+**End of PHASE 2**: the complete in-memory draft (incl. the machine-contract appendix) is ready — **return to dev-ship Step 3** (`phase-0-define-classify.md`). dev-ship's Step 4b gate presents the draft for approval and, on accept, runs PHASE 3+4 below.
+
+### PHASE 3+4 — run at dev-ship gate-accept (Step 4b)
+
+> These two phases are **not** run inline during PHASE 0→2. dev-ship's Step 4b executes them on
+> **Accept**: PHASE 3 extracts the draft into feature.json, PHASE 4 syncs the JSON files. Track their
+> phases in prose (no `TaskCreate`).
 
 ### PHASE 3: Write feature.json
 
-> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/dev-ship/references/dev-define/references/feature-json-schema.md` for the full field table, deltaOp rules, durableDecisions categories, and buildSequence structure.
+**Extract, don't re-author**: the complete feature.json draft was authored in PHASE 2 (held in memory, materialized as the gate plan-file appendix at Step 4b — the `## Appendix — machine contract` block). Run:
 
-Write `.project/features/{feature-name}/feature.json` (see `shared/FEATURE.md` for full schema). Field conditions, deltaOp rules, durableDecisions categories, and buildSequence structure: see `references/feature-json-schema.md`.
+```
+node ~/.claude/scripts/feature-from-plan.js <plan-file> .project/features/{feature-name}/feature.json
+```
 
-**Transcribe, don't re-design**: `architecture.interfaces` (type signatures), `buildSequence`, and `testStrategy` come from the plan file's `## Appendix — machine contract` section, authored in PHASE 2 under plan mode. Copy them 1:1 into feature.json, adjusting only JSON formatting. Fallback: appendix missing (legacy plan file, post-compaction loss) → generate these sections now as before.
+where `<plan-file>` is dev-ship's gate plan file (Step 4b). The script extracts the ```json appendix, validates it, and — in update-mode — merges over the existing file (preserving `build`/`tests`/`refactor`/etc. that the draft does not own). Check the exit status: exit 0 = written, done.
+
+**Fallback** (non-zero exit — appendix missing or invalid JSON in a legacy/post-compaction plan file): author `.project/features/{feature-name}/feature.json` by hand now, using `shared/feature-json-schema.md` for the full field table, deltaOp rules, durableDecisions categories, and buildSequence structure, and `shared/FEATURE.md` for the full schema.
 
 ### PHASE 4: Sync
 
-> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/dev-ship/references/dev-define/references/phase4-sync.md` for mutation details per file.
+> **Todo**: Read `.claude/skills/dev-ship/references/dev-define/references/phase4-sync.md` for mutation details per file.
 
 Follow `shared/SYNC.md` 3-File Sync Pattern. Mutation details for backlog.json, project.json, and project-context.json: see `references/phase4-sync.md`.
 
@@ -255,7 +296,7 @@ Apply the mutations from `references/phase4-sync.md` in memory, then batch-write
 
 Follow [Discovery — Page-Discovery](.claude/skills/shared/SKILL-PATTERNS.md#page-discovery) for the canonical protocol.
 
-**Trigger:** scan `feature.json#architecture.routes[]` and `feature.json#files[]`. Resolution: batch AskUserQuestion "Yes, all" / "Selection" / "No".
+**Trigger:** scan `feature.json#architecture.routes[]` and `feature.json#files[]`. **Resolution is at the gate, not a separate prompt:** the candidate pages were surfaced as the `## Pages to seed` section of the gate plan file (authored from the draft's `routes[]`/`pageHint[]` in PHASE 2). Accept → seed **all** listed candidates here; a gate reject that edited/dropped the section already pruned the list. No `AskUserQuestion` in this sync.
 
 **Source:** `"/dev-define"` · **Direction:** `"dev→frontend"` · **Type:** `PAGE`
 
@@ -275,34 +316,10 @@ All writes in this block run in parallel with the existing back-writes (`backlog
 
 **Auto-build marking** (after sync):
 
-Combine the auto flag with the status write above — no separate second write. The backlog mutation in one script: `status: "DEFINED"`, `definedAt: <ISO>`, `auto: true` together. No user prompt — always mark auto so the card gets an AUTO badge and the clipboard has the correct `/dev-build` command.
+Combine the auto flag with the status write above — no separate second write. The backlog mutation in one script: `status: "DEFINED"`, `definedAt: <ISO>`, `auto: true` together. No user prompt — always mark auto so the card gets an AUTO badge.
 
-Clean up: `rm -f .project/session/active-{feature-name}.json`
-
-**Completion output — print this block, then execute the Next-Step Clipboard Offer directly below. Both are required to close PHASE 4.**
-
-> **Note**: PHASE 4 is only `completed` after the clipboard offer below is executed — the DEFINE COMPLETE block is not the endpoint.
-
-**Output:**
-
-```
-DEFINE COMPLETE: {feature-name}
-
-Requirements: {N} (with acceptance criteria)
-Architecture: {component count} components
-Files: feature.json + backlog + project.json + project-context.json
-
-Next: /dev-build {feature-name}
-     /team-outsource {feature-name}   ← if you want to delegate to a teammate
-```
-
-**Visual features only** — if a design sketch was produced in PHASE 2 step 3 (ASCII wireframe), present it as an auto-opening preview; non-visual features skip this silently:
-
-> **Todo**: if an ASCII wireframe exists for this feature (PHASE 2 step 3 "Design sketch"): render `.claude/skills/shared/references/preview-wireframe.html` to `.project/previews/dev-define-{feature-name}.html` — fill the `preview-data` JSON block with `{ feature, wireframe: <the ASCII sketch>, requirements: [{id, text}] from the REQ list, notes }` — then present that `file://` path via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser). No wireframe → skip, no error.
-
-Omit the `Next` line **and the clipboard offer below** if the feature was not a backlog item and no concept is present — briefly note the absence of a backlog instead, then mark PHASE 4 → `completed`.
-
-> **Todo (closing action — do not skip)**: mark PHASE 4 → `completed`, then apply the
-> Next-Step Clipboard Offer (binary Ja/Nee) as the final step of the skill —
-> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /dev-build {feature-name} → builds the defined feature (main pipeline step).
+**Terminal handoff — none.** dev-ship drives the pipeline: **no** DEFINE COMPLETE block, **no**
+`Next:`/clipboard offer, **no** wireframe preview (the ASCII wireframe is reviewed inline in the Step
+4b gate), and **no** `active-{feature}.json` cleanup (dev-ship owns the live signal —
+Step 2a armed it, Step 4b rewrites it without `waiting`). After the sync writes, return control to
+dev-ship Step 4b, which continues to Step 5 → build.

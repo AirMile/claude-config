@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 2,
+  "learnings": [
+    {
+      "date": "2024-02-01",
+      "feature": "auth-login",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "JWT refresh race condition on parallel requests corrupts the active session",
+      "tags": ["auth", "async"]
+    },
+    {
+      "date": "2026-06-01",
+      "feature": "checkout",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Stripe webhook retries need idempotency keys per order"
+    },
+    {
+      "date": "2026-06-02",
+      "feature": "ui-cards",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Card grid overflow on small mobile screens breaks layout"
+    },
+    {
+      "date": "2026-06-03",
+      "feature": "ui-nav",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Navigation bar flicker on client-side transition"
+    },
+    {
+      "date": "2026-06-04",
+      "feature": "perf-list",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Long list re-render thrash without memoization"
+    },
+    {
+      "date": "2026-06-05",
+      "feature": "forms-signup",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Signup form double submit on a slow network connection"
+    },
+    {
+      "date": "2026-05-01",
+      "feature": "core",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Repository pattern in src/repositories isolates data access",
+      "tags": ["db", "data-model"]
+    },
+    {
+      "date": "2026-05-02",
+      "feature": "core",
+      "type": "pattern",
+      "source": "inferred",
+      "summary": "Inferred cross-feature guess that architectural scope must exclude"
+    },
+    {
+      "date": "2026-05-03",
+      "feature": "payments",
+      "type": "pattern",
+      "source": "synced",
+      "author": "Alice",
+      "summary": "Stripe idempotency keys stored per webhook event",
+      "tags": ["api"]
+    }
+  ]
+}

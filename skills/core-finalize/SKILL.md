@@ -4,7 +4,7 @@ description: Merge or clean up a feature worktree. Use with /core-finalize.
 argument-hint: "[feature-name]"
 metadata:
   author: claude-config
-  version: 1.0.0
+  version: 1.1.0
   category: core
 ---
 

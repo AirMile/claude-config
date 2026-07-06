@@ -132,6 +132,8 @@ If nothing available → continue without context (backwards compatible).
 
 Outcome: confirmed problem summary (type + symptom + context + details) — input for PHASE 2 investigation. Do not start investigating before the user confirms the summary.
 
+**Ladder gate (before the full pipeline).** Read `shared/DEBUG-LADDER.md` and apply its entry rule to the confirmed summary. When the signals point to **tier 1** (a MEASURABLE feel/value tweak — "animation too fast", "hitbox 4px too big" — cause visible, ≤1-2 files) offer a quick path — `AskUserQuestion`: "Quick fix now (Recommended)" (adjust the value + live re-check via GUT/scene, skip the investigation/plan/repro machinery) | "Full debug pipeline". Tier 2/3 signals (cause unclear, cross-scene, intermittent, or a prior attempt already failed) → continue the pipeline as normal. This keeps the 11-phase flow for real bugs and spares a feel-tweak from it.
+
 ---
 
 ## PHASE 2: Codebase Investigation (Explore agent)
@@ -271,11 +273,13 @@ For Performance Issue / Scene-Signal Issue, AskUserQuestion:
 - question: "Is this bug testable in an automated GUT test?"
 - options:
   - "Yes, write reproduction test (Recommended)" — Standard path for assertable bugs
+  - "No, skip — direct fix + live re-check" — MEASURABLE feel/timing/value tweak: adjust and confirm live, no test
   - "No, skip — Visual / Rendering" — No assertion on game output possible
-  - "No, skip — Performance without FPS threshold" — No concrete measurement definable
   - "No, skip — Production-only state" — Not reproducible in test environment
 
-"Skip" chosen → note `reproductionTest: { skipped: true, reason: "{reason}" }` and go to PHASE 8.
+(A MEASURABLE feel/timing/value tweak takes the "direct fix + live re-check" path — per `shared/DEBUG-LADDER.md` tier 1, no GUT test for "the animation is a touch too slow". GUT stays the test route for assertable bugs; there is no DOM-assertion path in Godot. "Skip — Performance without FPS threshold" also remains valid.)
+
+"Skip" chosen → note `reproductionTest: { skipped: true, reason: "{reason}" }` and go to PHASE 8. For a MEASURABLE feel/timing skip, apply the direct fix and confirm live (per `shared/DEBUG-LADDER.md` tier 1).
 
 ### Step 2: Write failing GUT test
 
@@ -370,13 +374,20 @@ Per resolved bug, evaluate whether root cause + fix has cross-feature value. Fil
   "feature": "{active feature from PHASE 0, or directory primary segment of fix location}",
   "type": "pitfall",
   "source": "extracted",
-  "summary": "{root cause + where the fix was, max 200 chars}"
+  "summary": "{root cause + where the fix was, max 200 chars}",
+  "tags": [
+    "{0-3 domain tags from LEARNING-EXTRACTION.md § Tag Vocabulary, e.g. scene, game-loop; omit if none fit}"
+  ]
 }
 ```
 
-**Dedup** (per `shared/LEARNING-EXTRACTION.md`): tokenize summary → check against existing `learnings[]` with same `(type, normalize(summary), author)` tuple. Match → skip.
+**Dedup** (per `shared/LEARNING-EXTRACTION.md`): tokenize summary → check against existing `learnings[]` with same `(type, normalize(summary), author)` tuple. Match → skip. `tags` are not part of the dedup key.
 
 No relevant pitfall → skip step without warning.
+
+### Step 1b: Consolidation gate
+
+After the append (skip if no pitfall was written), run the consolidation gate per [shared/LEARNING-EXTRACTION.md § Consolidation Gate](../shared/LEARNING-EXTRACTION.md) — `> 60` active learnings → merge/archive down to ≤40, else a no-op. This keeps debug-heavy sessions from growing `learnings[]` unbounded between pulls/ships. `.project/`-only write; not part of the Step 2 code commit.
 
 ### Step 2: Scoped Commit
 
@@ -400,12 +411,11 @@ Regression: {N tests, X PASS, Y FAIL}
 Learning: {pitfall summary added, or "no extraction"}
 
 Next steps:
-  1. /game-verify {feature} → re-verify if feature is active
-  2. /game-build {feature} → if rebuild is needed
+  1. /game-ship {feature} → re-verify or rebuild as needed
 ```
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /game-verify {feature} → re-verification after fixing the issue.
+> Recommended command: /game-ship {feature} → re-verification after fixing the issue.
 
 > **Todo**: mark PHASE 10 → `completed`.

@@ -15,7 +15,7 @@ git status --porcelain | sort > .project/session/{baseline-file}.txt
 
 `{baseline-file}` is per skill (e.g. `pre-skill-status`, `pre-debug-status`). Capture **after** any worktree switch so the baseline describes the tree the skill mutates.
 
-Alternative form — **SHA baseline** (skills that commit mid-run, e.g. dev-build): store `git rev-parse HEAD` in `pre-skill-sha.txt`; at commit time derive changed files via `git diff --name-only $(cat pre-skill-sha.txt)` (+ `git ls-files --others --exclude-standard` for new files).
+Alternative form — **SHA baseline** (skills that commit mid-run, e.g. dev-ship's build phase): store `git rev-parse HEAD` in `pre-skill-sha.txt`; at commit time derive changed files via `git diff --name-only $(cat pre-skill-sha.txt)` (+ `git ls-files --others --exclude-standard` for new files).
 
 ## 2. Categorize (at commit time)
 
@@ -32,7 +32,7 @@ Compare `git status --porcelain | sort` with the baseline:
 - **interactive** (default — build/verify/refactor/team flows): AskUserQuestion "These files had pre-existing uncommitted changes and were also modified by this skill: {list}. Include in commit?" → "Include (Recommended)" / "Skip".
 - **auto-include** (debug flows — the fix is the point): stage without asking.
 
-**`.project/` is local-only**: `.project/` paths (feature.json, backlog.json, session files) are gitignored developer-local state — **never stage or commit them**. Stage only codebase files: source, tests, acceptance test files, repo config. Non-`.project/` paths: plain `git add`.
+**`.project/` is local-only**: `.project/` paths (feature.json, backlog.json, session files) are gitignored developer-local state — **never stage or commit them**. Stage only codebase files: source, tests, acceptance test files, repo config. Non-`.project/` paths: plain `git add`. A durable text subset may travel across your own devices via the orphan branch `claude/state` (`shared/STATE-SYNC.md`, `/project-sync`) — never via a working-branch commit.
 
 **Fallback when baseline file is missing** (skill picks one): `git add -A` (default — safe because gitignored dirs stay out; setup skills guarantee `.gitignore` covers these) · stage only known codebase skill-output files · ask the user which files belong to the change.
 

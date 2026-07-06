@@ -6,23 +6,24 @@ review.
 
 ## Step 0 — Checkpoint-resume detection + preflight
 
-Before resolving the target, Read `.claude/skills/shared/SHIP-CHECKPOINT.md` and run its resume
+Before resolving the target, Read `.claude/skills/shared/SHIP-RESUME.md` and run its resume
 detection against `.project/session/ship-{target}.json` (use the resolved arg for `{target}`; if
 `/design-ship` was called with no arg, first resolve the name via Step 1, then run this check). This
-is read-only, so it is fine before plan mode:
+is read-only, so it is fine before plan mode. Normally an explicit arg + open checkpoint never
+reaches this file — `SKILL.md` PHASE 0 routes it straight to `SHIP-RESUME.md`; the cases that land
+here are **no arg**, a fast-path miss, or **no open checkpoint**.
 
-- **Open checkpoint found** (`status != "complete"`) → present the Resume / Restart / Inspect
-  `AskUserQuestion` from SHIP-CHECKPOINT.md.
-  - **Resume** → run orphan/leak cleanup, load `plan` (→ `SHIP_PLAN` + the full PHASE 0 objects) +
-    `results` from the checkpoint (worktree path/branch live in `results.build`), re-derive
-    `SHIP_CONTEXT` fresh (Step 10), re-seed the 6-phase `TaskCreate` list (completed phases →
-    `completed`), and **jump to the recorded `phase`** (skip the rest of PHASE 0). This is the
-    credits-op / crash recovery path.
-  - **Restart** → archive the old checkpoint + clean the orphan worktree, then continue PHASE 0 fresh.
-  - **Inspect** → print checkpoint + worktree status, re-ask.
+- **Open checkpoint found** (`status != "complete"`) → follow `SHIP-RESUME.md`'s logic (fast path or
+  Resume/Restart/Inspect, then the On-"Resume" jump to the recorded phase). Design phase map: the
+  interactive **PHASE 4 review** re-enters per `SHIP-RESUME.md § On "Resume"` step 4; a workflow phase
+  relaunches per the same section; re-derive `SHIP_CONTEXT` fresh (Step 10) before a workflow phase.
+  Design has **no** `"PHASE 0 · define"` minimal checkpoint — its PHASE 0 selections are
+  irreproducible user choices (direction, archetype, brief) written only at Step 9, post-plan-exit,
+  so the first checkpoint write already lands after the gate. This asymmetry with dev/game is
+  deliberate. A **Restart** choice continues fresh below.
 - **No open checkpoint** → run the **preflight checks** (dirty working tree, colliding
-  `worktree-{target}` from a prior aborted run without a checkpoint), surface any notice, then
-  continue to Step 1.
+  `worktree-{target}` from a prior aborted run without a checkpoint; per `SHIP-CHECKPOINT.md
+§ Preflight`), surface any notice, then continue to Step 1.
 
 On a fresh run, capture the rollback anchor now: `baselineSha = git rev-parse HEAD` (read-only). It
 is written to the checkpoint in Step 9.
@@ -38,7 +39,7 @@ Resolve `{target}` in this order:
 3. **Still nothing** → merge the Build-route candidate sources (`design.pages[]/components[]`
    with `status: "DEF"`; backlog PAGE/COMPONENT with `transition: "designing"` or
    `status: "TODO"`) and present an `AskUserQuestion` (max 4, rest via Other). Zero candidates →
-   stop: `"design-ship: no PAGE/COMPONENT candidates. Run /project-plan or /design-create
+   stop: `"design-ship: no PAGE/COMPONENT candidates. Run /project-plan or /design-convert
 first."`
 
 Set `$TARGET_TYPE` (PAGE | COMPONENT) from the backlog/spec entry.
@@ -46,15 +47,15 @@ Set `$TARGET_TYPE` (PAGE | COMPONENT) from the backlog/spec entry.
 **Guards** (check in order, stop with the message on hit):
 
 - `$DOMAIN !== "web"` (resolve per `shared/DOMAIN.md`) → `"design-ship is web-only — use
-/design-create for the {domain} spec flow."`
+/design-convert for the {domain} spec flow."`
 - `type === "THEME"` → `"THEME items go through /design-tokens."`
 - `type === "PAGE-GAP"` or a dev-track type (FEATURE etc.) → `"That is a dev-track item — use
 /dev-ship {target}."`
-- Feature already `shipped: true` → `"Already shipped. Use /design-create {target} for a
+- Feature already `shipped: true` → `"Already shipped. Use /design-convert {target} for a
 rework."`
 - Visual reference material exists (`.project/wireframes/{target}*` or spec `.screenshots[]`) →
   `"This target has visual input — the Convert route is interactive by design. Run
-/design-create {target}."` (design-ship covers the Build lane only.)
+/design-convert {target}."` (design-ship covers the Build lane only.)
 
 ## Step 2 — Enter plan mode
 
@@ -70,15 +71,14 @@ Run the copied Build route's Step 2.5 (read it in
 `feature.json` → `design.*` → inline questions; show the SPEC block; gate with
 Build it / Edit spec / Cancel). Deviation from stock: the "Save spec only — don't build" option
 becomes **"Cancel ship"** — design-ship without a build is pointless; point the user to
-`/design-create` for spec-only work. Store `$SPEC` (and `$INLINE_SPEC` when captured fresh — its
+`/design-convert` for spec-only work. Store `$SPEC` (and `$INLINE_SPEC` when captured fresh — its
 deferred write happens in the build agent's completion sync 10f).
 
 ## Step 4 — Build context
 
 Follow the copied Build route's Step 4 + 4b **in the main chat**: seed context (`shared/SEED.md`
 reader → `SEED_CONTEXT`), design-levers pre-flight (→ `$DESIGN_LEVERS`, warn-only), and — PAGE
-only — page composition per the **original** `
-.claude/skills/design-create/references/page-compose.md` (→ `$COMPOSITION`,
+only — page composition per design-ship's vendored `.claude/skills/design-ship/references/design-create/references/page-compose.md` (→ `$COMPOSITION`,
 `$PENDING_DESIGN_WRITES` travel to the build agent via the build-slice for sync 10f).
 
 ## Step 5 — Design directions (visualized)
@@ -101,7 +101,7 @@ modal — the browser preview and the modal show the same options; the modal is 
 
 ## Step 6 — Content brief
 
-Run the **original** `.claude/skills/design-content/references/scope-intent.md` §1.1–1.3 in the
+Run design-ship's vendored `.claude/skills/design-ship/references/design-content/references/scope-intent.md` §1.1–1.3 in the
 main chat: archetype classification (→ `$ARCHETYPE`), marketing-research hook (marketing
 archetype only — offer `/marketing-research` stop as stock), brief inference + the confirm modal
 (→ `$BRIEF`). Skip §1.4's separate CHECKPOINT — the §1.3 confirm is the checkpoint here (one

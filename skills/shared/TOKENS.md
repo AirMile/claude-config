@@ -6,7 +6,7 @@ Skills that generate UI code MUST use token names — never hardcoded color valu
 Token names are the stable contract. Values are supplied later by `/design-tokens`.
 
 > **Producer:** `/design-tokens` (writes `project.json#theme`)
-> **Consumers:** `dev-build`, `dev-verify`, `dev-refactor`, `dev-define`, `project-plan`, `design-create`, `design-check`
+> **Consumers:** `dev-ship`, `project-plan`, `design-convert`, `design-ship`
 
 ---
 
@@ -273,7 +273,7 @@ Detect and reject these patterns in generated and reviewed UI code:
 | T105 | `oklch(`, `hsl(`, `rgb(` literals in JSX                                                     | HIGH     | `var(--color-{nearest-token})`                                                               |
 | T106 | Hardcoded `transition: 300ms` / `duration: 200ms` literals in JSX/CSS                        | MEDIUM   | `var(--duration-{token})` or spring token                                                    |
 | T107 | Hardcoded `cubic-bezier(...)` literal in JSX/CSS                                             | MEDIUM   | `var(--ease-{token})` or `var(--spring-{token}-bezier)`                                      |
-| T108 | `backdrop-filter` used when `theme.surfaces.glass.enabled !== true`                          | HIGH     | Enable via `/design-tokens` or remove                                                      |
+| T108 | `backdrop-filter` used when `theme.surfaces.glass.enabled !== true`                          | HIGH     | Enable via `/design-tokens` or remove                                                        |
 | T109 | `text-\[\d+(px\|rem)\]`, `leading-\[\d+(px\|rem)\]`, `tracking-\[`, `font-\[\d+\]` arbitrary | MEDIUM   | `text-{size}` / `leading-{size}` / `tracking-{size}` / `font-{weight}` preset or theme token |
 | T110 | `rounded-\[\d+(px\|rem)\]` arbitrary radius                                                  | MEDIUM   | `rounded-{sm,md,lg,xl,2xl,3xl,full}` Tailwind preset                                         |
 | T111 | `shadow-\[[^\]]+\]` arbitrary shadow                                                         | MEDIUM   | `shadow-{sm,md,lg,xl,2xl}` Tailwind preset                                                   |
@@ -321,23 +321,23 @@ When replacing hardcoded values, map to nearest token by visual role (not exact 
 
 ## Fallback Policy Matrix
 
-| Situation                                      | Theme state | Behavior                                                                     |
-| ---------------------------------------------- | ----------- | ---------------------------------------------------------------------------- |
-| `dev-build` generates UI/component             | Empty       | Use fallback CSS vars above, write token names                               |
-| `dev-build` generates UI/component             | Full        | Read `theme.cssVars`, write token names                                      |
-| `dev-build` generates API/logic only           | Any         | No token check needed                                                        |
-| `dev-verify` `hasUI` or `isComponent`          | Any         | Run T101–T103 grep; violations = FAIL item                                   |
-| `dev-refactor` Quality-lens                    | Any         | Flag T101–T111 violations, suggest token names                               |
-| `design-create` Convert (inspiration/sketch) | Empty       | **Abort** — run `/design-tokens` first                                     |
-| `design-create` Convert (1:1 copy)           | Empty       | Allow hardcoded, warn                                                        |
-| `design-create` brief mode                   | Empty       | Note "Tailwind defaults", suggest tokens                                     |
-| `design-check` audit                         | Empty       | Audit T101-T111 against fallback tokens; skip TA001 (requires project theme) |
+| Situation                                        | Theme state | Behavior                                                                     |
+| ------------------------------------------------ | ----------- | ---------------------------------------------------------------------------- |
+| dev-ship (build phase) generates UI/component    | Empty       | Use fallback CSS vars above, write token names                               |
+| dev-ship (build phase) generates UI/component    | Full        | Read `theme.cssVars`, write token names                                      |
+| dev-ship (build phase) generates API/logic only  | Any         | No token check needed                                                        |
+| dev-ship (verify phase) `hasUI` or `isComponent` | Any         | Run T101–T103 grep; violations = FAIL item                                   |
+| dev-ship (refactor phase) Quality-lens           | Any         | Flag T101–T111 violations, suggest token names                               |
+| `design-convert` Convert (inspiration/sketch)     | Empty       | **Abort** — run `/design-tokens` first                                       |
+| `design-convert` Convert (1:1 copy)               | Empty       | Allow hardcoded, warn                                                        |
+| `design-convert` brief mode                       | Empty       | Note "Tailwind defaults", suggest tokens                                     |
+| `design-ship` audit                             | Empty       | Audit T101-T111 against fallback tokens; skip TA001 (requires project theme) |
 
 ---
 
 ## Bootstrap Procedure
 
-Canonical steps for installing fallback token files into a target project. Referenced by `dev-build` PHASE 0 and `core-setup` Phase 3 — do not duplicate the steps in those skills.
+Canonical steps for installing fallback token files into a target project. Referenced by dev-ship's build phase PHASE 0 and `core-setup` Phase 3 — do not duplicate the steps in those skills.
 
 **Guards (run first, skip silently if any guard fails):**
 
@@ -362,4 +362,4 @@ Canonical steps for installing fallback token files into a target project. Refer
 - **Audit** (TA001 + T101-T111): supported on both v3 and v4. All violation patterns are CSS-syntax-agnostic; TA001 explicitly matches `:root` and `@theme {}` (see § CSS Architecture Violations).
 - **Bootstrap** (creating `src/styles/tokens.css` + patching `tailwind.config.*`): v3-only. Detect via `package.json` (`"tailwindcss": "^4"`). If found during bootstrap → log `"Tailwind v4 bootstrap on roadmap — audit still works, manual token setup required"` and skip the bootstrap steps only. Do not abort the audit path.
 
-> **Callers:** `dev-build/SKILL.md` PHASE 0, `core-setup/references/mode-greenfield.md` Phase 3.
+> **Callers:** `dev-ship`'s build phase (`dev-ship/references/dev-build/workflow.md` PHASE 0), `core-setup/references/mode-greenfield.md` Phase 3.

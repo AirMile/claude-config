@@ -6,7 +6,9 @@ Loaded from PHASE 2b when ≥1 FAIL (SPEC or TESTABLE) was found. These phases w
 
 > **Todo**: mark PHASE 2b → `completed`, PHASE 3 → `in_progress`.
 
-Per FAIL: pick exactly one category.
+Per FAIL: pick exactly one category. Category semantics + the SUBJECTIVE-clarify rule are the shared
+definition — see `shared/FEEDBACK-CATEGORIZATION.md` (this fix-loop uses all four, including the
+dev-verify-specific **SPEC** = acceptance-criterion miss):
 
 | Category   | Trigger                                                         | Examples                                     |
 | ---------- | --------------------------------------------------------------- | -------------------------------------------- |
@@ -15,7 +17,7 @@ Per FAIL: pick exactly one category.
 | MEASURABLE | Failure has a numeric/visual threshold (timing, CSS, layout)    | Slow render, wrong color, layout-shift       |
 | SUBJECTIVE | Criterion is vague ("feels fast", "looks good") — ask user      | UX impressions, taste-level disagreements    |
 
-SUBJECTIVE → AskUserQuestion for clarification, then re-categorize as one of the other three.
+SUBJECTIVE → AskUserQuestion for clarification, then re-categorize as one of the other three (per the shared file).
 
 Technique mapping:
 
@@ -102,7 +104,7 @@ All pass → PHASE 5c.
 Items still failing → AskUserQuestion: More details (Recommended) | Different approach | Accept | Fix yourself.
 Loop back to PHASE 3. AUTO items → re-run in PHASE 5A. MANUAL items → re-test in PHASE 5B.
 
-**Max 3 fix attempts per item.** After the 3rd failed re-test of the same item, stop looping for that item and AskUserQuestion: "Accept anyway" | "Escalate to manual root-cause analysis (/dev-debug)". This prevents an unbounded PHASE 3 → 5 → 5b cycle.
+**Max 3 fix attempts per item.** Each failed re-test escalates one tier per `shared/DEBUG-LADDER.md` (don't retry the same tier with the same information). After the 3rd failed re-test of the same item, stop looping for that item and AskUserQuestion: "Accept anyway" | "Escalate to manual root-cause analysis (/dev-debug)". This prevents an unbounded PHASE 3 → 5 → 5b cycle.
 
 ---
 

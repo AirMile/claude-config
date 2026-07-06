@@ -123,6 +123,8 @@ multiSelect: false
 
 **If theme section is EMPTY or project.json does not exist:**
 
+**Fast-path (skip the question):** if PREFLIGHT picked up a THEME task via a backlog `defining` transition, the route is already determined — go straight to Route: Create. Only ask the question below on a manual `/design-tokens` run with no route-determining transition.
+
 **AskUserQuestion:**
 
 ```yaml

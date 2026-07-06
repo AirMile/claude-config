@@ -1,16 +1,11 @@
 ---
 name: design-tokens
-description: >-
-  Design token + motion pack management — color, typography, spacing, motion
-  packs (Apple/Material/Fluent/Carbon), spring physics, choreography, glass
-  surfaces. Emits CSS (web) or a Godot Theme .tres (game) per project domain.
-  Use with /design-tokens, or whenever a backlog task with type THEME and
-  transition "defining" is detected.
+description: Design tokens + motion packs — color, type, spacing, animation; emits CSS or a Godot Theme. Use with /design-tokens or a THEME backlog task.
 reads: [backlog.status, project.theme, project.stack]
 writes: [project.theme, backlog.status, devinfo.tokenDrift]
 metadata:
   author: claude-config
-  version: 4.3.0
+  version: 4.5.0
   category: design
 ---
 
@@ -20,7 +15,7 @@ Manages the full design system: vocabulary tokens (colors, typography, spacing, 
 
 **Keywords:** animation, motion, pack, spring, iOS, Apple, Material, Fluent, Carbon, glass, vibrancy, choreography, micro-interactions, easing, playful, transitions, hover, press, entrance, delight, styleguide, PDF, brand intake
 
-**Related skills:** `/design-create` · `/design-check`
+**Related skills:** `/design-convert` · `/design-ship`
 
 ## References — Tokens
 
@@ -28,6 +23,8 @@ Manages the full design system: vocabulary tokens (colors, typography, spacing, 
 - `../shared/DOMAIN.md` — Domain resolution (web / game / native) — which renderer to emit
 - `references/emit-godot.md` — Game-domain emitter: tokens → Godot Theme `.tres` (loaded when `$DOMAIN === "game"`)
 - `references/phase-1-action-select.md` — Action selection menus (Tokens + Motion routes)
+- `references/route-research.md` — Optional colour-landscape research (Create route § Step 1) — spawns `references/workflows/token-research.js`
+- `references/token-explorer.html` — Interactive token explorer (Create route Steps 1/2/3/6) — tabs: colour · type · spacing · motion; theme-driven, dark/light
 - `../shared/DASHBOARD.md` — project.json full schema
 - `../shared/DESIGN.md` — Color advice, typography, motion anti-patterns, glass surface rules
 - `../shared/BACKLOG.md` — Backlog lifecycle protocol
@@ -260,17 +257,16 @@ Location: .project/project.json (theme section)
 {Backlog: ✓ Task "{taskName}" → DONE}
 
 Next steps:
-  1. /design-create {page} → build a page with these tokens
-  2. /design-create → convert a sketch or design with these tokens
+  1. /design-convert {page} → build a page with these tokens
+  2. /design-convert → convert a sketch or design with these tokens
   3. /design-tokens → motion pack → set spring physics, choreography, glass (if not yet done)
   4. /design-tokens → Extract from styleguide (if you have a brand PDF or URL with remaining tokens)
-  5. /design-check → check performance and SEO
-  6. /design-check --scope=a11y → accessibility audit
+  5. /design-ship → build + runtime check (performance, SEO, accessibility)
 ```
 
 After the report, present a visual token gallery (web domain only — game tokens render as a Godot `Theme`, not in a browser):
 
-> **Todo**: if `$DOMAIN === "web"` (from PREFLIGHT): render `.claude/skills/shared/references/preview-tokens.html` to `.project/previews/design-tokens-{themeName-or-"theme"}.html` — fill the `preview-data` JSON block with the full `theme` object from `project.json` — then present that `file://` path via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser). Otherwise skip.
+> **Todo**: if `$DOMAIN === "web"` (from PREFLIGHT) **and** no equivalent token preview was already presented this session (e.g. the Step 1 colour explorer covering the same theme): render `.claude/skills/shared/references/preview-tokens.html` to `.project/previews/design-tokens-{themeName-or-"theme"}.html` — fill the `preview-data` JSON block with the full `theme` object from `project.json` — then present that `file://` path via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser). Otherwise skip.
 
 ---
 

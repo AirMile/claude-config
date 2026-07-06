@@ -2,27 +2,23 @@
 
 > **design-ship copy** — executed by AGENT 3 (check) under the non-interactive contract, inside
 > the build worktree. Always **targeted mode** with `targetType = "feature"` and `featureName`
-> from your prompt — the batch-mode branches in this file never fire; skip every `$BATCH_MODE`
-> block. Auto-scope per the §0.2 table (feature with/without routes) — do not present scope
+> from your prompt. Auto-scope per the §0.2 table (feature with/without routes) — do not present scope
 > modals. **You choose the fixes yourself**: fix scope = All CRITICAL + HIGH (log it in
 > `autoDecisions`). The dev server runs against the worktree; `.project/` paths resolve to the
-> main repo. Scan procedure files (`scan-*.md`) are read from the original
-> `.claude/skills/design-check/references/` in place.
+> main repo. Scan procedure files (`scan-*.md`) are read from design-ship's own vendored
+> `references/design-check/references/` copies.
 
-Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout, darkmode pixel diff, error states, smoke, and user flows. Generation-time static checks (token literals, dark/responsive coverage, A11Y static patterns, motion literals) are now enforced during `/design-create` Convert via `design.principles[].forbid` and `design.banPacks` — they are not repeated here.
+Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout, darkmode pixel diff, error states, smoke, and user flows. Generation-time static checks (token literals, dark/responsive coverage, A11Y static patterns, motion literals) are now enforced during `/design-convert` Convert via `design.principles[].forbid` and `design.banPacks` — they are not repeated here.
 
-**Two modes:**
+**Mode:** targeted — a single feature or URL, all runtime scopes. (design-ship's check always runs targeted, feature mode.)
 
-- **Batch-mode** (no argument): iterate over all features in backlog where `status === "DOING"` (and not already checked at HEAD) or `lastCheckedSha !== shippedSha`. Runs at end of release cycle.
-- **Targeted mode** (`/design-check <feature-name|url|path>`): single feature or URL, all runtime scopes.
-
-**Related skills:** `/design-create` · `/design-tokens` · `/core-setup`
+**Related skills:** `/design-convert` · `/design-tokens` · `/core-setup`
 
 ## References
 
 - `.claude/skills/shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
 - `.claude/skills/shared/DOMAIN.md` — Domain resolution (web / game / native) — selects the audit path
-- `references/scan-godot.md` — Game-domain static audit + `/game-verify` delegation (loaded when `$DOMAIN === "game"`)
+- `references/scan-godot.md` — Game-domain static audit; runtime/playtest deferred to a human (loaded when `$DOMAIN === "game"`)
 - `.claude/skills/shared/CODING-RULES.md` — General (R009)
 - `.claude/skills/shared/FRONTEND-RULES.md` — P-series (performance), A-series (accessibility), H-series (responsive/HTML), E-series, F-series
 - `.claude/skills/shared/DESIGN.md` — Anti-patterns (AI design tells), motion timing, interaction states
@@ -47,26 +43,6 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
 > **Todo**: call `TaskCreate` with the 5 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
 ### 0.1 Target Selection
-
-**Batch-mode** — if `$1` is empty:
-
-1. Read `.project/backlog.json` → parse features.
-2. Collect candidates (HEAD = current commit SHA):
-   - `status === "DOING"` AND `lastCheckedSha !== HEAD` — in progress, not yet checked at this commit; OR
-   - `status === "DONE"` AND (`!lastCheckedSha` OR `lastCheckedSha !== shippedSha`) — shipped but changed since last check.
-
-   A COMPONENT stays `DOING` until its consuming page ships, but once checked at HEAD it leaves the queue until code changes — so it is not re-audited every run.
-
-3. If no candidates: show `"No features pending runtime audit."` and stop.
-4. Set `$BATCH_MODE = true`, `$BATCH_TARGETS = [candidate list]`. Queue presentation + confirmation are owned by `batch.md §0` (auto-proceed ≤3, else confirm) — do not pre-print a queue block here. The full batch flow — queue confirmation, sequential scan + triage, ONE combined report, ONE fix-scope approval, per-feature fix with rollback, single batch completion — is driven entirely by the batch reference. Do NOT run the per-feature single-target loop or per-feature approval prompts.
-
-   **Team-mode batch guard:** If `TEAM_MODE == "team"` → follow `shared/PROJECT-MODE.md § Team-mode batch guard` before proceeding to the batch reference. (Each PAGE ships via its own PR in team mode — batch check produces a combined pass without per-feature finalize.)
-
-> **Todo**: Read '.claude/skills/design-check/references/batch.md'
-
-Batch-mode skips PHASE 0.2 scope selection (scope is auto-derived per feature from the §0.2 table inside the batch flow).
-
----
 
 Detect input type via fixed order:
 
@@ -119,7 +95,7 @@ multiSelect: false
 
 **Auditing a COMPONENT** — pick the mount in this order:
 
-1. **Through its consuming page** — if a page that renders it has a route (built/DONE, or also a candidate in this batch), audit the component via that route. Real context, best coverage, no harness. Find the page via the component's `pageHint[]`, or a page whose `dependencies[]` lists it.
+1. **Through its consuming page** — if a page that renders it has a route (built/DONE), audit the component via that route. Real context, best coverage, no harness. Find the page via the component's `pageHint[]`, or a page whose `dependencies[]` lists it.
 2. **Temporary harness route** — component is the audit target and no page renders it yet: mount it on a throwaway route (realistic props, all variants), run A11Y + Smoke, then remove the route + harness file before completion.
 3. **Defer** — incidental and unrendered: record `lastCheckedSha`, note it ships with its page.
 
@@ -172,7 +148,7 @@ If scope contains **Flow**:
 
 - Read `.project/project.json → design.flows`
 - If flows is missing or empty → stop with message:
-  > "No flows defined in `design.flows[]`. Run `/design-create` first to add flows, then re-run `/design-check scope Flow`."
+  > "No flows defined in `design.flows[]`. Run `/design-convert` first to add flows, then re-run the check's Flow scope."
 - If flows is non-empty → continue.
 
 ### 0.3 Domain & Project Detection
@@ -182,9 +158,10 @@ If scope contains **Flow**:
 
 - **game** → this is the **static** audit path. Skip the web scope menu (0.2), the Build & Serve
   health gate (0.3.5), and the entire Playwright PHASE 1 (1.1–1.x). Instead run the static
-  Theme-consistency checks and delegate the runtime/playtest to `/game-verify`. PHASE 2 (report),
-  PHASE 3 (fix), and PHASE 4 (completion) run unchanged on the static findings.
-  > **Todo**: Read '.claude/skills/design-check/references/scan-godot.md' and run G1–G5; then jump to PHASE 2.
+  Theme-consistency checks and defer the runtime/playtest to a human (the interactive playtest lives
+  in `/game-ship` PHASE 3). PHASE 2 (report), PHASE 3 (fix), and PHASE 4 (completion) run unchanged
+  on the static findings.
+  > **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-godot.md' and run G1–G5; then jump to PHASE 2.
 - **native** → no renderer/runtime yet: print the `shared/DOMAIN.md` native fallback line, run only
   G3 design-principle adherence statically if a spec exists, and stop (no code audit).
 - **web** → continue below (the historical runtime path).
@@ -205,7 +182,7 @@ Audits:     [Performance, SEO, AEO, Responsive]
 
 ### 0.3.5 Build & Serve Health Gate
 
-Runtime scans need a compiling app on a reachable dev server — gate before PHASE 1 (in batch mode, once before the sequential scan):
+Runtime scans need a compiling app on a reachable dev server — gate before PHASE 1:
 
 1. Probe the dev-server URL (`project.json#localUrl`/`devServer`, else framework default). If unreachable, start it in the background (`npm run dev`/`start`) and wait until it responds.
 2. Confirm the app compiles — watch the dev-server/build log for compile errors, or run the typecheck/build once.
@@ -264,31 +241,31 @@ Auth state is reused for all subsequent checks. **Cleanup** `.project/auth-state
 
 ### 1.1 Performance Scan
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-performance.md'
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-performance.md'
 
 ### 1.2 SEO Scan + 1.3 AEO Scan
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-seo-aeo.md'
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-seo-aeo.md'
 
 ### 1.4 A11Y Scan (Accessibility — WCAG 2.1 AA)
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-a11y.md'
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-a11y.md'
 
 ### 1.5 Responsive Scan + 1.6 Darkmode Scan
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-visual.md' (Responsive + Darkmode + Motion — run only the in-scope subsections)
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-visual.md' (Responsive + Darkmode + Motion — run only the in-scope subsections)
 
 ### 1.7 Error States Scan
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-error-states.md'
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-error-states.md'
 
 ### 1.8 Smoke Scan + 1.9 Flow Scan
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-smoke-flow.md'
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-smoke-flow.md'
 
 ### 1.10 Motion Runtime Scan (M006/M007)
 
-> **Todo**: Read '.claude/skills/design-check/references/scan-visual.md' (Motion subsection — already loaded if Responsive/Darkmode were in scope)
+> **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-visual.md' (Motion subsection — already loaded if Responsive/Darkmode were in scope)
 
 ---
 
@@ -311,8 +288,6 @@ Fix:      [suggestion]
 ## PHASE 2: Report
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
-
-> **Batch mode** (`$BATCH_MODE`): emit the single combined cross-feature report and the single fix-scope approval from `references/batch.md § §2` instead of the per-feature single-target report + Scope Selection below. Skip the rest of this PHASE 2 single-target block.
 
 Combined report across all audit axes:
 
@@ -413,8 +388,6 @@ multiSelect: false
 ## PHASE 3: Fix
 
 > **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
-
-> **Batch mode** (`$BATCH_MODE`): fix + re-audit + completion are driven by `references/batch.md § §3` and `§ §5` (per-feature fix with snapshot rollback, then a single batch completion). It reuses `fix-reaudit.md`'s Fix Order, Per Fix format, and 4.1 Re-scan. Single-target mode continues with `fix-reaudit.md` directly below.
 
 > **Todo**: Read '.claude/skills/design-ship/references/design-check/fix-reaudit.md'
 

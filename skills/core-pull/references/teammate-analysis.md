@@ -173,7 +173,7 @@ On trigger: call `learning-extractor` agent via Agent tool:
 - `subagent_type: "learning-extractor"`
 - prompt contains: `mode: "pull-signal"`, `files: [<triggered paths>]`, `existing_learnings: <current learnings[]>`, `cap: 5`
 
-Parse JSON output. For each entry: set `source: "synced"`, `author: null` (codebase-wide), `feature: <triggered dir>`. Append to extraction results.
+Parse JSON output. For each entry: set `source: "synced"`, `author: null` (codebase-wide), `feature: <triggered dir>`, and keep the agent's `tags` (0–3 from `LEARNING-EXTRACTION.md § Tag Vocabulary`; default `[]`). Append to extraction results.
 
 **4j.6) Dedup and sync**
 
@@ -190,6 +190,16 @@ Track counts for PHASE 5 report: `{ patterns: P, pitfalls: Q, observations: R, b
 
 **4j.7) Consolidation (only when `learnings.length > 60` after sync)**
 
-Run the consolidation pass per `shared/LEARNING-EXTRACTION.md § Consolidation`: age-out old observations, merge per-feature clusters into `source: "consolidated"` entries, move originals to `.project/archive/learnings-{YYYY-MM}.json`, target ≤ 40 active entries. Mutate `learnings[]` and the archive in memory first, then write both files once. Add to the PHASE 5 report: `Learnings consolidated: {N} merged, {M} archived ({before} → {after})`. Skip silently when under the threshold.
+Run the consolidation gate per `shared/LEARNING-EXTRACTION.md § Consolidation Gate` (trigger `> 60`, merge per-feature clusters, archive originals, target ≤ 40, one report line). Fold its write into the same `learnings[]`/archive write as 4j.6/4j.8. Skip silently when under the threshold.
+
+**4j.8) Opportunistic tag backfill**
+
+Older projects predate the `tags[]` field. When any active entry lacks `tags`, run:
+
+```bash
+node ~/.claude/scripts/learnings-search.js "$REPO" suggest-tags
+```
+
+It emits JSON `[{index, date, feature, summary, suggested: [...]}]` (read-only — no writes). Review each suggestion, drop wrong ones (the aliases are heuristic), and merge the accepted tags into those `learnings[]` entries in the **same single write** as 4j.6/4j.7 (do not re-read/re-write the file separately). Suggestions are best-effort: leave an entry untagged rather than attach a wrong tag. Add to the PHASE 5 report: `Tags backfilled: {K} entries`. Skip silently when every entry is already tagged or `suggest-tags` returns `[]`.
 
 When done: return to the skill's PHASE 5 (Report).

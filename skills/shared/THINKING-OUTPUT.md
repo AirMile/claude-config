@@ -28,7 +28,7 @@ File: {output-path}
 Scope: {feature:{name} | page:{topic}}
 ```
 
-**Thinking log** (`shared/DASHBOARD-CONTEXT.md § thinking-output`): also write the full markdown to `.project/thinking/{today}-{kind}-{slug}.md` so name-matching consumers (e.g. `/dev-define`) can discover it via Grep. No `project.json` write — the `.md` files are the only source of truth.
+**Thinking log** (`shared/DASHBOARD-CONTEXT.md § thinking-output`): also write the full markdown to `.project/thinking/{today}-{kind}-{slug}.md` so name-matching consumers (e.g. `/dev-ship (define phase)`) can discover it via Grep. No `project.json` write — the `.md` files are the only source of truth.
 
 Then optionally ask:
 
