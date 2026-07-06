@@ -546,6 +546,13 @@ http
       ) {
         const data = readBacklogData(projectPath);
         if (data) {
+          // Merge shipped dev-track features back from the archive so live
+          // SSE refreshes resolve dependencies the same way the full page
+          // load does (see the /backlog route below) — otherwise a "blocked
+          // by X" tag only clears on a hard reload, never live.
+          if (Array.isArray(data.features)) {
+            data.features = mergeArchivedFeatures(projectPath, data.features);
+          }
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify(data, null, 2));
         } else {
