@@ -99,10 +99,21 @@ input, blind fix, several rounds, still wrong). Categorize each failed item firs
   answer as TESTABLE or MEASURABLE, then route below. Never hand a SUBJECTIVE item to a fix agent
   un-clarified.
 - **Default → fix in the main chat** (both MEASURABLE and TESTABLE — the running app is right here):
-  Read `.claude/skills/shared/DEBUG-LADDER.md` and fix by evidence, not guess-and-check. Apply the
-  change in the worktree, hot-reload, and let the user confirm live. For TESTABLE, also write a
-  reproduction test where feasible and get the affected tests green. These loop until the item is
-  right (they do **not** consume the background-agent round guard below), then re-check the rest.
+  Read `.claude/skills/shared/DEBUG-LADDER.md` and fix by evidence, not guess-and-check.
+  **Plan-mode gate (OpusPlan-aware) — conditional, after gathering evidence:** once you have the
+  evidence but **before** editing, enter plan mode when the fix warrants design thinking — mirror the
+  verify fix-loop conditions (`dev-verify/references/fix-loop.md § Plan-mode gate`):
+  - **Enter** (`EnterPlanMode` → write the fix plan to the plan file: problem → root cause → proposed
+    fix → verification → `ExitPlanMode` for approval; rejected plan → re-investigate) when the root
+    cause is still **unclear** after DEBUG-LADDER evidence, **or** the fix spans **>1–2 files/modules**
+    (likely shared root cause). Show `PLAN MODE: {item} needs design — entering plan mode (OpusPlan-aware).`
+  - **Skip plan mode silently** for a MEASURABLE tweak (styling/timing/copy) or a single-file TESTABLE
+    fix with an obvious root cause — the common case; no extra approval prompt.
+
+  Then apply the change in the worktree, hot-reload, and let the user confirm live. For TESTABLE, also
+  write a reproduction test where feasible and get the affected tests green. These loop until the item
+  is right (they do **not** consume the background-agent round guard below), then re-check the rest.
+
 - **Background fix agent → opt-in** (offer via `AskUserQuestion`, **not** the default), for a TESTABLE
   fail that is **pure logic/data with no live surface to watch**, or when the fix spans many files and
   the user prefers not to watch it happen. Write a **rich** failure descriptor (each failed item:
@@ -148,11 +159,12 @@ a design/behaviour change, not a failed acceptance criterion. That is a first-cl
 walkthrough offers **Tweak** alongside Fail/Skip/Defer), distinct from a FAIL and from net-new scope:
 
 - **Tweak = adjust existing scope** (move it, restyle it, change the wording/timing/interaction of
-  something already built). Run an **open iterate loop in the main chat**: the user describes the
-  change → (one clarifying question only if vague) → apply it in the worktree → reload → the user
-  judges → next. **No round cap** — the max-2-rounds guard governs failed re-tests, not design
-  iteration; iterate until the user is satisfied. Commit each accepted tweak (or a small batch)
-  scoped to the worktree.
+  something already built). Run an **open iterate loop in the main chat** — **no plan mode** (these are
+  quick live adjustments, not root-cause fixes; the conditional plan-gate above governs FAIL fixes,
+  not tweaks): the user describes the change → (one clarifying question only if vague) → apply it in
+  the worktree → reload → the user judges → next. **No round cap** — the max-2-rounds guard governs
+  failed re-tests, not design iteration; iterate until the user is satisfied. Commit each accepted
+  tweak (or a small batch) scoped to the worktree.
 - **Net-new = a new capability** not in `remainingManualItems`. Keep it out of the iterate loop:
   either (a) one bounded, test-guarded fix-agent round via the background mechanism above if it is
   small and in-theme (it does not consume the failed-re-test guard), or (b) if sizeable or

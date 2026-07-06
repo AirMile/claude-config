@@ -29,7 +29,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.3.0
+  version: 0.5.0
   category: game
 ---
 
@@ -78,17 +78,14 @@ pipeline: it carries its own vendored copies of the four phase workflows under
 (status `pending`), then use `TaskUpdate` to set each phase to `in_progress` at the start and
 `completed` at the end. During context compaction the task list remains visible.
 
-**Durable checkpoint (pause/resume across sessions)** — the `TaskCreate` list survives compaction
-but not a crash/credits-exhaustion. So the orchestrator also mirrors the run to
-`.project/session/ship-{feature}.json` at every phase boundary via `ship-checkpoint.js` (use
-`pipeline: "game"` in the checkpoint), recording the phase pointer, PHASE 0 selections (`SHIP_PLAN`),
-and agent results. **Only the main chat writes it** (subagents never touch it — contract rule 1). The
-first write is the light checkpoint at the plan gate, so even a define-then-crash resumes; the PHASE
-2→3 boundary is a **deliberate handoff stop** (park + fresh-session resume into the playtest — see the
-green branch). The checkpoint schema, write points 0–5, and the board's **parked** row are specified
-in `shared/SHIP-CHECKPOINT.md`; resume detection, the fast-path direct-resume, and orphan-cleanup live
-in `shared/SHIP-RESUME.md` (the cheap resume path). This skill follows both; the per-phase field
-patches below are the only checkpoint detail restated here.
+**Durable checkpoint (pause/resume across sessions)** — beyond the compaction-safe `TaskCreate` list,
+the orchestrator mirrors the run to `.project/session/ship-{feature}.json` at every phase boundary via
+`ship-checkpoint.js` (use `pipeline: "game"`; **only the main chat writes it** — subagents never touch
+it, contract rule 1). Schema, write points 0–5, and the board's **parked** row:
+`shared/SHIP-CHECKPOINT.md`; resume detection, fast-path direct-resume, and orphan-cleanup:
+`shared/SHIP-RESUME.md`. This skill follows both — the per-phase field patches below are the only
+checkpoint detail restated here. Note the PHASE 2→3 boundary is a **deliberate handoff stop** (park +
+fresh-session resume into the playtest — see the green branch).
 
 1. PHASE 0: Define + Classify + Auto-derive technique plan
 2. PHASE 1: Build (AGENT 1)
@@ -120,12 +117,22 @@ DEFINED, then computes the advisory **playtest classification** (COVERED=GUT vs 
 **auto-derives** the technique plan (refactor lenses) from the feature's signals — **no technique
 menu, no policy prompt**. define is the only up-front human touchpoint; the derived `refactorLenses`
 become parameters for AGENT 3 and are stored in memory for the later phases. PHASE 0 also resolves
-`{godot_executable}` and injects it into every agent slice. PHASE 0 ends with the **plan-approval
-gate** (Step 4b of the reference): the full plan is presented in plan mode as a plan file whose
-appendix holds the complete feature.json draft, and the user accepts it — on **accept** the draft is
-extracted to `feature.json` (it is not written before this) and build starts; **reject** returns to
-the define interview to revise. A re-invoked feature that is already `DEFINED` means a prior run
-already accepted the gate, so it skips the gate and flows straight to build (the resume-recovery path).
+`{godot_executable}` and injects it into every agent slice.
+
+**OpusPlan-optimized.** The entire define thinking-block (interview → requirements → architecture →
+classify → technique-derivation) runs **inside plan mode** — bookkeeping is hoisted before it, all
+durable writes after it (gate-accept). Under `/model opusplan` the thinking runs on the planning model
+(Opus) and execution (build/verify/refactor) on the execution model (Sonnet); on a single fixed model
+it just adds structure. Confirmations are **not** asked twice — the interview keeps only genuine
+decision prompts (feature pick, scene-layout forks, split), and everything else (scope, scene layout,
+seed/backlog impact) is reviewed **once** at the gate, where reject loops back to revise.
+
+PHASE 0 ends with the **plan-approval gate** (Step 4b of the reference): define is **already** in plan
+mode, so the gate just writes the plan file (its appendix holds the complete feature.json draft) and
+`ExitPlanMode` presents it — on **accept** the draft is extracted to `feature.json` (it is not written
+before this) and the sync runs; **reject** stays in plan mode and loops back
+to revise. A re-invoked feature that is already `DEFINED` means a prior run already accepted the gate,
+so it skips define, plan mode, and the gate, flowing straight to build (the resume-recovery path).
 
 It also assembles **`SHIP_CONTEXT`** (Step 6 of the reference) — one project-context block built
 here from the external `shared/GAME-CONTEXT-LOAD.md` (build profile) + `shared/LEARNINGS-LOAD.md`
@@ -154,15 +161,12 @@ this slice.
 > prompt-file **paths** as `prompts` to the checkpoint (so a mid-workflow crash is resumable via
 > `resumeFromRunId`; the prompt files persist for reassembly).
 
-The workflow runs both agents sequentially in isolated contexts with the model/effort matrix
-(§ Design) and returns one structured object — no result-block parsing. AGENT 1 runs `game-build`
-non-interactively: creates the worktree, builds test-first (RED-GREEN), runs the PHASE 3a full GUT
-regression gate + PHASE 3b integration scene + `playtest_scene.tscn`, commits — but **never merges**.
-AGENT 2 runs `game-verify` for the AUTO/COVERED GUT items only, in a **fresh context**
-(unbiased/adversarial), reusing the build's worktree (warm `.godot` import cache) — and **stops
-before the playtest and before Finalize** (never merges). Its prompt instructs it to refresh mutable
-context (learnings/architecture) from `.project/` itself — the main chat is not in the loop between
-build and verify. The script skips verify when build fails.
+The workflow runs both agents sequentially in isolated contexts (model/effort matrix in § Design) and
+returns one structured object — no result-block parsing. AGENT 1 creates the worktree, builds
+test-first (RED-GREEN) with the GUT regression gate + `playtest_scene.tscn`, and commits but **never
+merges**; AGENT 2 verifies the COVERED GUT items in a **fresh context** (adversarial), reusing the
+build worktree (warm `.godot` cache), stops **before the playtest and finalize**, and never merges.
+The script **skips verify when build fails**. Full agent behaviour: `agent-build.md` / `agent-verify.md`.
 
 On the workflow return, first **update the checkpoint** (clear
 `activeWorkflow`/`workflowRunId`/`prompts`, merge the returned `build`/`verify` objects into
@@ -235,16 +239,13 @@ Signal` worktree caveat), else the board reads the wrong (worktree-local) copy.
 > write). If empty → execute Step 1 (enter worktree) then Step 3 (Completion — the completion-sync
 > DONE write only); skip only Step 2 (the playtest walkthrough).
 
-The playtest runs in the main chat (you), so `AskUserQuestion` and the interactive game window reach
-the real user — the whole MANUAL checklist is presented once against a single live game window (via
-`mcp__godot-mcp__run_project` on `playtest_scene.tscn`, DebugListener capturing `debug_*` signals)
-and judged in one batched round (see `references/playtest-batch-walkthrough.md`). On all-green (or
-empty), complete the feature (DONE write) and **stay in the worktree** — finalize/merge runs at the
-end of PHASE 4 so refactor commits land on the feature branch. On a playtest FAIL, feedback is
-categorized TESTABLE / MEASURABLE / SUBJECTIVE → bounded fix loops (max 2-3 rounds), then the
-reference's routing question decides: an isolated background fix agent (re-test), interactive
-`/game-debug`, or stop — no refactor/finalize until the failed items pass. After fixes, re-run the
-GUT regression suite before completion.
+The playtest runs in the main chat so `AskUserQuestion` and the live game window (via
+`mcp__godot-mcp__run_project` on `playtest_scene.tscn`) reach the real user. The reference owns the
+full routing — batched walkthrough, FAIL categorization (TESTABLE / MEASURABLE / SUBJECTIVE) + bounded
+fix loops, background-fix-agent vs `/game-debug` routing, and the GUT regression re-run after fixes.
+On all-green (or empty) complete the feature (DONE write) and **stay in the worktree**; finalize/merge
+runs at the end of PHASE 4 so refactor commits land on the feature branch. **No refactor/finalize
+until failed items pass.**
 
 ### PHASE 4: Refactor (AGENT 3) + Finalize/merge — Workflow 2
 
@@ -275,18 +276,10 @@ GUT regression suite before completion.
 > clear `activeWorkflow`/`workflowRunId`/`prompts`, merge `refactor` into `results`. If
 > `refactor.status: failed` → revert the branch (`git -C {worktreePath} reset --hard {preRefactorSha}`,
 > non-fatal, record for the report). **Then finalize** — run completion-finalize's **PHASE Finalize**
-> block (solo → merge to main + worktree cleanup via `shared/FINALIZE.md`; open PR / team → halt with
-> the printed message and leave the worktree — refactor commits are already on the branch/PR). **On the
-> `merge` route, post-merge reconcile the archive** (the pre-merge agent wrote its completion batch in
-> the worktree and could not see the merge, so enforce the archive postcondition here): verify the
-> feature is **absent** from `backlog.json#features[]` **and present** in
-> `.project/archive/backlog-archive.json#archived[]` with `shipped: true`. **Self-heal a half-run** —
-> if the entry was removed from `features[]` but never archived, reconstruct the archive entry from
-> `feature.json`; if it is still in `features[]`, move it into the archive now — so a green completion
-> always ends archive-only. **Re-stamp `shippedSha`** in the archive entry to the merge sha
-> (`git -C {main_root} rev-parse HEAD`), not the pre-merge refactor commit the agent recorded. Only
-> after finalize (or halt): checkpoint `phase: "PHASE 5"`, `completedPhases += ["PHASE 4"]`, **re-read
-> `.project/` from disk**.
+> block (solo → merge + worktree cleanup; open PR / team → halt and leave the worktree). It also owns
+> the **merge-route postconditions**: post-merge archive reconcile + self-heal, `shippedSha` re-stamp,
+> and state auto-push (its § Post-merge reconcile). Only after finalize (or halt): checkpoint
+> `phase: "PHASE 5"`, `completedPhases += ["PHASE 4"]`, **re-read `.project/` from disk**.
 
 The workflow runs AGENT 3 (pre-merge, inside `worktree-{feature}` on the feature branch) running
 `game-refactor` on this single feature with the **auto-derived lenses**, applying only high-confidence
@@ -341,10 +334,11 @@ human), or a refactor improvement the GUT test-guard **reverted** (signals a fra
 Only write genuinely reusable signals — skip if none.
 
 **Memory consolidation** (so future `game-ship` runs have insight). This step then runs the
-consolidation gate: read `project-context.json#learnings[]`; if `length > 60`, archive the
-oldest entries to `.project/archive/learnings-{YYYY-MM}.json` and keep the active list ≤40 (per
-`shared/LEARNING-EXTRACTION.md` § consolidation). This closes the loop: the next `game-ship` run's
-PHASE 0 `SHIP_CONTEXT` preloads these learnings via `shared/LEARNINGS-LOAD.md`.
+consolidation gate per `shared/LEARNING-EXTRACTION.md § Consolidation Gate` (trigger `> 60` →
+merge per-feature clusters, archive originals, target ≤40). Archived entries stay **searchable by
+relevance** (the loader scans the archive as a damped tier), so consolidation shrinks the active
+list without losing recall. This closes the loop: the next `game-ship` run's PHASE 0 `SHIP_CONTEXT`
+preloads the relevant learnings via `shared/LEARNINGS-LOAD.md`.
 
 > **Todo**: mark PHASE 5 → `completed`.
 

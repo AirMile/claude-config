@@ -48,23 +48,6 @@ This write runs in parallel with the existing back-writes.
 
 ## Auto-build marking (after sync)
 
-Read backlog again, find feature, set `"auto": true`, write back via Edit. No user prompt — always mark auto so the card gets an AUTO-badge and the clipboard gets the correct `/game-build` command.
+Read backlog again, find feature, set `"auto": true`, write back via Edit. No user prompt — always mark auto so the card gets an AUTO-badge.
 
-Clean up: `rm -f .project/session/active-{feature-name}.json`
-
-## Output
-
-```
-DASHBOARD SYNCED
-
-Data: {N} entities ({new} new)
-Stack: {N} packages ({new} new)
-
-Next steps:
-  1. /project-plan → generate backlog from concept (if no backlog yet)
-  2. /game-build {feature-name} → start implementation (if backlog already exists)
-```
-
-> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /game-build {feature} → builds the defined game feature (main pipeline step).
+**Terminal handoff — none.** game-ship drives the pipeline: **no** DASHBOARD SYNCED block, **no** `Next:`/clipboard offer, and **no** `active-{feature}.json` cleanup (game-ship owns the live signal — Step 2a armed it, Step 4b rewrites it without `waiting`). After the sync writes, return control to game-ship Step 4b, which continues to Step 5 → build.

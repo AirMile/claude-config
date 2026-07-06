@@ -32,17 +32,26 @@ The skill gathers requirements through targeted questions, optionally researches
 
 **Trigger**: `/game-define` or `/game-define [feature-name]`
 
-> **Copied & pre-adapted for game-ship.** This tree is run **inline in the main chat** by game-ship
-> PHASE 0 (Step 2 of `phase-0-define-classify.md`), not as a standalone skill. Per that file's
-> **deviations**, the **plan-mode machinery below is overridden**: never call
-> `EnterPlanMode`/`ExitPlanMode` here, and run every analytical/interview step directly. Run only
-> **PHASE 0→3** (interview + architecture + authoring the complete feature.json draft) and **hold the
-> draft in memory** — do not write `feature.json`. PHASE 4 (write) and PHASE 5 (sync) are **hoisted to
-> game-ship's gate-accept** (Step 4b): the draft becomes the plan-file appendix there, and
-> `feature-from-plan.js` writes `feature.json` on accept. Wherever a step says "in plan mode" / "write
-> to the plan file", treat it as "run directly / hold in memory (the gate writes the plan file)". The
-> `AskUserQuestion` checkpoints (scene layout, seed alignment, backlog impact) still run. Do not
-> blind-sync this file.
+> **Vendored & pre-adapted for game-ship** — run **inline in the main chat** by game-ship PHASE 0
+> (Step 2c of `phase-0-define-classify.md`), not as a standalone skill. This copy is already adapted:
+> there is **no plan-mode machinery** and **no own phase tracking** (game-ship's task list drives).
+> **game-ship runs PHASE 0→3 of this file entirely inside plan mode** (it calls `EnterPlanMode` before
+> reading this file), so under an `opusplan`-style router the interview + architecture reason on the
+> planning model. Practically: reads, read-only Bash, `WebSearch`/Context7, `AskUserQuestion`, and
+> read-only research subagents all work here; only `.project/`/source writes are blocked — and every
+> write below is already deferred to accept. Run **PHASE 0→3** (interview + architecture + the complete
+> feature.json draft) and **hold the draft in memory** — no `feature.json` and no plan file is written
+> here. **PHASE 4+5 run at game-ship's gate-accept** (Step 4b): the draft becomes the plan-file appendix
+> and `feature-from-plan.js` writes `feature.json` on accept. Do not blind-sync this file from the
+> standalone define skill — the adaptations are load-bearing.
+>
+> **Confirmations are hoisted to the gate.** game-ship presents the whole plan for review at its Step 4b
+> gate (an `ExitPlanMode` approval), and reject loops back here to revise. So the pure-confirmation
+> `AskUserQuestion`s below are **removed** — the interview summary-confirm (PHASE 1a), the ">6 REQs
+> scope confirm" (PHASE 1b), the scene-layout confirm (PHASE 2b), and the Seed/Backlog-Impact prompts
+> (PHASE 3) — their content becomes review sections of the gate plan file. Only genuine **decision**
+> `AskUserQuestion`s stay: feature resolution (PHASE 0), design-choice forks (PHASE 1b), and the split
+> proposal (PHASE 1c).
 
 ## When to Use
 
@@ -59,15 +68,14 @@ The skill gathers requirements through targeted questions, optionally researches
 
 ## Workflow
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 3 items (status `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end. During context compaction the task list remains visible — no risk of forgotten phases.
+**Phase tracking** — **none of its own.** game-ship's 6-phase task list is already active; track
+define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it would clobber game-ship's list).
 
 1. PHASE 0+1a+1b: Setup, Context, Interview & Requirements
 2. PHASE 2+3: Architecture Check & Design
-3. PHASE 4+5: feature.json + Sync
+3. PHASE 4+5: feature.json + Sync (run at game-ship gate-accept)
 
 ### PHASE 0: Feature Name + Context
-
-> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 3 phase items (see above). Mark PHASE 0+1a+1b → `in_progress` via `TaskUpdate`.
 
 1. **If name provided** (`/game-define abilities`):
    - Use provided name as feature name
@@ -137,21 +145,15 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 - **Not found** → continue to step 3 (normal flow).
 - **Found** → go to PHASE 0b (update-mode).
 
-3. **Create project folder + signal active feature:**
+3. **Create project folder + signal active feature** — **skip in the game-ship context**: game-ship's
+   Step 2a already did the `mkdir -p .project/features/{feature-name}` + the `active-{feature-name}.json`
+   live-signal write **before** entering plan mode (writes are blocked once inside). Do not repeat them.
+   (The standalone form would run `mkdir` + `echo '{...}' > active-{feature-name}.json` itself.)
 
-   ```bash
-   mkdir -p .project/features/{feature-name}
-   mkdir -p .project/session
-   echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
-   ```
+   All `.project/` and `architecture-baseline.md` writes are **deferred to game-ship's gate-accept**
+   (Step 4b) — PHASE 0→3 only read and author the in-memory draft, and plan mode blocks them anyway.
 
-4. **Enter Plan Mode** — call `EnterPlanMode` NOW, before the context loads (steps 5-6) and any further `Read`, `Glob`, `Grep`, or `AskUserQuestion`. Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol. Steps 5-6 + PHASE 1a/1b/1c + PHASE 2/2b/3 all run in plan mode — the interview (PHASE 1a) must run inside plan mode so model routers (e.g. `opusplan`) route it through the planning model. Exempt (before plan mode): feature-name resolution, the backlog stage-tag, the existence check, and the setup writes (steps 1-3).
-   - **Note on user consent**: `EnterPlanMode` may prompt the user for plan-mode confirmation in some Claude Code UIs. This is intentional — do not skip the call to avoid the prompt.
-   - **Skip-check**: if plan mode is already active (existing system-reminder), skip the call and read the plan-file path from the active reminder.
-   - **If `feature.json` already exists** (update-mode trigger from step 2b): EnterPlanMode still fires here — the update-mode body in PHASE 0b runs inside plan mode.
-   - All `.project/` and `architecture-baseline.md` writes wait until after `ExitPlanMode` at the end of PHASE 3 (PHASE 4+5).
-
-5. **Load architecture-baseline as context:**
+4. **Load architecture-baseline as context:**
 
    ```
    Read(".claude/research/architecture-baseline.md")
@@ -170,7 +172,7 @@ Check: `.project/features/{feature-name}/feature.json` exists?
    ⚠ Architecture baseline not found — run /core-setup to generate.
    ```
 
-6. **Load project context** (parallelize with step 5):
+5. **Load project context** (parallelize with step 4):
    - Glob + Grep for existing code that imports the feature name
    - Project context load (via [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)):
 
@@ -207,7 +209,7 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 
-> **Todo**: Read `.claude/skills/game-ship/references/game-define/references/update-mode.md` for the full update-mode flow. (Plan mode is already active from PHASE 0 step 4.)
+> **Todo**: Read `.claude/skills/game-ship/references/game-define/references/update-mode.md` for the full update-mode flow.
 
 ---
 
@@ -233,7 +235,13 @@ Conduct an open interview — one anchored open question at a time. **AskUserQue
 
 **If the user cannot answer a dimension**: follow the escape-hatch protocol in `references/phase1a-interview.md § Handling "I Don't Know" Responses`.
 
-**End of interview**: when all relevant dimensions are covered, close with an explicit summary + confirmation: "I understood that {brief summary of gameplay goal, player experience, key mechanics, and scope boundaries} — is this correct, or am I missing something?" Proceed to PHASE 1b only after the user confirms.
+**End of interview**: **no blocking summary-confirm** — the whole plan is reviewed at the gate
+(game-ship Step 4b `ExitPlanMode`), and reject loops back to revise, so the old "is this correct?"
+ceremony is redundant. Close lightly: show a short recap (gameplay goal, player experience, key
+mechanics, scope boundaries) as a **statement**, then **one optional final open question** ("anything
+else before I write up the plan?") **only when genuinely useful** (an unresolved thread or a
+best-guess dimension); if the interview landed cleanly, skip it. Then proceed to PHASE 1b — anything
+still fuzzy is surfaced in the gate plan file, not re-litigated here.
 
 ---
 
@@ -302,26 +310,21 @@ Tuning levers are stored in `feature.json` per requirement as `tuningLevers[]`.
 - Skip if REQ has no plausible error path — omit field from that REQ
 - Stored in `feature.json` per requirement as `errorScenarios[]`
 
-**Confirm with user:**
+**Scope note (no confirm):**
 
-- **≤6 REQs**: show requirements table, append `Scope: {N} requirements — SINGLE feature, continuing.` and proceed to PHASE 2. No AskUserQuestion.
-- **>6 REQs**: confirm via AskUserQuestion:
-  - header: "Requirements"
-  - question: "Agree with these requirements?"
-  - options:
-    - label: "Agree (Recommended)", description: "Requirements are complete and correct"
-    - label: "Edit", description: "I want to change or add requirements"
-    - label: "Start over", description: "Discard everything — restart PHASE 1a interview"
-  - multiSelect: false
-
-  **If "Edit"** → ask what to change, update requirements table, re-confirm.
-  **If "Start over"** → restart PHASE 1a interview.
+- **≤6 REQs**: show requirements table, append `Scope: {N} requirements — SINGLE feature, continuing.` and proceed to PHASE 2. Skip PHASE 1c.
+- **>6 REQs**: show the table, append `Scope: {N} requirements — checking for a split.` and proceed **directly** to PHASE 1c (scope analysis). **No requirements-confirm AskUserQuestion** — the table above is a passive progress view, scope is reviewed at the gate, and only a genuine split proposal (PHASE 1c) still asks. (To adjust requirements, the user rejects at the gate.)
 
 ### PHASE 1c: Scope Analysis & Feature Splitting
 
 **Condition:** Only run if requirement count exceeds 6 or there are clear independent clusters.
 
 > **Todo**: Read `.claude/skills/game-ship/references/game-define/references/feature-splitting.md` for full scope analysis logic and split execution steps.
+
+**Plan-mode note:** the split **proposal** `AskUserQuestion` stays (a genuine structural decision), but
+its **disk writes** (`00-split.md` + sub-feature `mkdir`s) are **deferred to gate-accept** (Step 4b) —
+plan mode blocks them now. Record the split in the draft as a `## Feature split` gate section; the
+writes happen at accept alongside the sync.
 
 ### PHASE 2: Architecture Check (Automatic)
 
@@ -404,7 +407,7 @@ Tuning levers are stored in `feature.json` per requirement as `tuningLevers[]`.
    ")
    ```
 
-   - **Collect baseline updates in memory** as `pendingBaselineAppends` (new Feature Pattern Index row, new signal patterns, new resource patterns) — plan mode blocks the `architecture-baseline.md` write; PHASE 5 appends them during sync (see `references/phase5-sync.md`).
+   - **Collect baseline updates in memory** as `pendingBaselineAppends` (new Feature Pattern Index row, new signal patterns, new resource patterns) — the `architecture-baseline.md` write is deferred to gate-accept; PHASE 5 appends them during sync (see `references/phase5-sync.md`).
 
 5. **Baseline not found fallback:**
 
@@ -462,20 +465,15 @@ PHASE 2b: N/A — non-visual feature
    - Note key interactive elements (collision areas, raycasts, timers)
    - Identify state-dependent visual changes (animations, visibility, modulate)
 
-4. **Confirm with user:**
-   Use **AskUserQuestion**:
-   - header: "Scene Layout"
-   - question: "Does this visual design and gameplay flow look correct?"
-   - options:
-     - label: "Yes (Recommended)", description: "Layout and flow are correct, continue"
-     - label: "Edit", description: "I want to change the design"
-   - multiSelect: false
+4. **No inline confirm** — the ASCII scene layout + gameplay state flow are authored into the draft
+   and become a **required section of the gate review surface** (Step 4b), where the user reviews the
+   visual design alongside everything else and reject-feedback adjusts it.
 
 ### PHASE 3: Architecture Design
 
 > **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
 
-**Output rule for this phase**: write the design **directly to the plan file** (Write/Edit, path from the plan-mode system-reminder received at PHASE 0 step 4) — scene tree, scripts, signals, resources, test strategy, dependency analysis/implementation order. In chat show only a short progress marker (e.g. `Architecture designed: {N} scripts, {K} signals. Plan file updated.`). **Exception**: the PHASE 2b ASCII scene layout may appear inline in the AskUserQuestion description.
+**Output rule for this phase**: hold the design in the **in-memory draft** — do **not** write a plan file here (game-ship's Step 4b gate writes it from the draft) — scene tree, scripts, signals, resources, test strategy, dependency analysis/implementation order. In chat show only a short progress marker (e.g. `Architecture designed: {N} scripts, {K} signals.`). **Exception**: the PHASE 2b ASCII scene layout may appear inline in the AskUserQuestion description.
 
 Design based on requirements (and research if done). Generate an ASCII state machine of the core gameplay loop (states + transitions + triggers) alongside the scene tree:
 
@@ -538,44 +536,51 @@ IMPLEMENTATION ORDER:
 3. REQ-003 (after REQ-002)
 ```
 
-**Seed Alignment Check** (penultimate step in PHASE 3, before ExitPlanMode):
+**Seed Alignment Check** (penultimate step in PHASE 3):
 
-Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: REQ
-descriptions + `acceptance[].then` + `clarifications[]` + `durableDecisions[]`
-from PHASE 1 and PHASE 3 — clarifications are the PHASE 1 fork resolutions
-(scene ownership, resource schema, signal boundary) and the most common source
-of seed divergence; never scan without them.
-This skill is in plan mode — drift table and proposed rewrite go into the plan
-file alongside the architecture design. On "Yes" → carry `seedUpdateApproved: true`
-to PHASE 5. On "Skip" → carry `seedDrift[]` to PHASE 4 (written to
-`feature.json#seedDrift`). `source: "/game-define"`, `ref: "REQ-NNN"` where
-applicable.
+Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check — but **run only the
+detection**, not its `AskUserQuestion`. Inputs: REQ descriptions +
+`acceptance[].then` + `clarifications[]` + `durableDecisions[]` from PHASE 1 and
+PHASE 3 — clarifications are the PHASE 1 fork resolutions (scene ownership,
+resource schema, signal boundary) and the most common source of seed divergence;
+never scan without them. When drift is found, record the drift table + proposed
+rewrite in the draft as a `## Proposed seed update` gate section (default action:
+apply on accept). Carry `seedUpdateApproved: true` to PHASE 5 so accept applies it;
+a gate reject that drops that section carries `seedDrift[]` to PHASE 4 instead
+(written to `feature.json#seedDrift`). No drift → no section, no carry.
+`source: "/game-define"`, `ref: "REQ-NNN"` where applicable.
 
 **Backlog Impact Check** (last step in PHASE 3, directly after the Seed
 Alignment Check — no size threshold; a two-REQ feature can still obsolete a card):
 
-Follow [shared/BACKLOG.md](../shared/BACKLOG.md) § Impact Check. Inputs: the
-`open-items` list from PHASE 0 step 6 + this feature's REQ descriptions,
-`acceptance[]`, `clarifications[]`, and `durableDecisions[]`. Impact table goes
-into the plan file; resolution via the protocol's AskUserQuestion (allowed in
-plan mode). Approved verdicts carry to PHASE 5 as `backlogImpact[]` — mutations
-happen only in the sync batch, never here.
+Follow [shared/BACKLOG.md](../shared/BACKLOG.md) § Impact Check — but **run only the
+detection**, not its `AskUserQuestion`. Inputs: the `open-items` list from PHASE 0
+step 5 + this feature's REQ descriptions, `acceptance[]`, `clarifications[]`, and
+`durableDecisions[]`. When ≥1 card is impacted, record the impact table in the draft
+as a `## Backlog impact` gate section (default action: apply the proposed verdicts on
+accept). Carry those verdicts to PHASE 5 as `backlogImpact[]`; the mutations happen in
+the accept sync batch, and the user can reject just that section at the gate. No
+impact → no section, no carry.
 
-**Machine contract appendix**: before exiting plan mode, author the **complete feature.json draft** as a single ```json fenced block under a `## Appendix — machine contract (skip review)` heading in the plan file. Include every define-owned field per the PHASE 4 field table below (name/status/created/depends/summary, requirements with full `acceptance[]` + game fields `tuningLevers`/`errorScenarios`, files, architecture, buildSequence, testStrategy, and the conditional fields). `interfaces[].definition` holds signal/resource/script declarations only — no method bodies. The heading marks it non-review; the design narrative above it (scene tree, flow, verification) is the review surface. PHASE 4 extracts this block mechanically — no re-authoring.
+**Machine contract appendix**: author the **complete feature.json draft** NOW (held in memory; game-ship's gate materializes it as the plan-file appendix at Step 4b) as a single ```json fenced block under a `## Appendix — machine contract (skip review)` heading. Include every define-owned field per the PHASE 4 field table below (name/status/created/depends/summary, requirements with full `acceptance[]` + game fields `tuningLevers`/`errorScenarios`, files, architecture, buildSequence, testStrategy, and the conditional fields). `interfaces[].definition` holds signal/resource/script declarations only — no method bodies. The heading marks it non-review; the design narrative above it (scene tree, flow, verification) is the review surface. Gate-accept extracts this block mechanically — no re-authoring.
 
-**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the full architecture design + machine-contract appendix to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 4 (writing feature.json).
+**End of PHASE 3**: the complete in-memory draft (incl. the machine-contract appendix) is ready — **return to game-ship Step 3** (`phase-0-define-classify.md`). game-ship's Step 4b gate presents the draft for approval and, on accept, runs PHASE 4+5 below.
+
+### PHASE 4+5 — run at game-ship gate-accept (Step 4b)
+
+> These two phases are **not** run inline during PHASE 0→3. game-ship's Step 4b executes them on
+> **Accept**: PHASE 4 extracts the draft into feature.json, PHASE 5 syncs the JSON files. Track their
+> phases in prose (no `TaskCreate`).
 
 ### PHASE 4: Write feature.json
 
-> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
-
-**Extract, don't re-author**: the complete feature.json draft was authored in the PHASE 3 machine-contract appendix under plan mode. Run:
+**Extract, don't re-author**: the complete feature.json draft was authored in PHASE 3 (held in memory, materialized as the gate plan-file appendix at Step 4b — the `## Appendix — machine contract` block). Run:
 
 ```
 node ~/.claude/scripts/feature-from-plan.js <plan-file> .project/features/{feature-name}/feature.json
 ```
 
-where `<plan-file>` is the plan-mode path from PHASE 0 step 4. The script extracts the ```json appendix, validates it, and — in update-mode — merges over the existing file (preserving `build`/`tests`/`refactor`/etc. that the draft does not own). Exit 0 = written, done.
+where `<plan-file>` is game-ship's gate plan file (Step 4b). The script extracts the ```json appendix, validates it, and — in update-mode — merges over the existing file (preserving `build`/`tests`/`refactor`/etc. that the draft does not own). Exit 0 = written, done.
 
 **Fallback** (non-zero exit — appendix missing or invalid JSON in a legacy/post-compaction plan file): author `.project/features/{feature-name}/feature.json` by hand now, using the field table below and `shared/FEATURE.md` for the full schema.
 
@@ -608,9 +613,7 @@ The field table governs the appendix draft (and this fallback):
 
 Follow `shared/SYNC.md` 3-File Sync Pattern.
 
-> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`. Read `.claude/skills/game-ship/references/game-define/references/phase5-sync.md` for Godot-specific backlog/dashboard/seed mutations.
-
-> **Todo**: mark PHASE 5 → `completed`.
+> **Todo**: Read `.claude/skills/game-ship/references/game-define/references/phase5-sync.md` for Godot-specific backlog/dashboard/seed mutations.
 
 ## Best Practices
 

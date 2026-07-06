@@ -17,7 +17,7 @@
 
 ## Mutations on `.claude/research/stack-baseline.md`
 
-- Only when PHASE 2 collected `pendingBaselineAppends` (research ran inside plan mode — the baseline write was deferred): append the new patterns to `stack-baseline.md` now, parallel with the other back-writes. Empty or absent → skip silently.
+- Only when PHASE 2 collected `pendingBaselineAppends` (the baseline write was deferred): append the new patterns to `stack-baseline.md` now, parallel with the other back-writes. Empty or absent → skip silently.
 
 ## Mutations on `project-context.json` (see `shared/DASHBOARD.md`)
 

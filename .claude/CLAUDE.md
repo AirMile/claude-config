@@ -28,7 +28,7 @@ Cross-platform: **macOS** and **Windows**.
 ## Structure
 
 ```
-skills/           38 skills in 8 categories
+skills/           40 skills in 8 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (each with SKILL.md)
 agents/           23 sub-agent definitions (.md with YAML frontmatter)
@@ -79,6 +79,7 @@ State handoff between skills via `.project/session/devinfo.json` (schema: `share
 - **Format-on-save**: hook runs Prettier (web) or gdformat (GDScript) after every Write/Edit
 - **Backlog**: `.project/backlog.json` (data store; board UI rendered by the server) with status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped (archived to `.project/archive/backlog-archive.json`)
 - **Build skills**: auto-commit, auto-sync `project.json` context after completion
+- **State branch**: the durable `.project/` subset (backlog, dashboard, seed, learnings, archive, feature dossiers) syncs across your own devices via the orphan branch `claude/state` (`shared/STATE-SYNC.md`, skill `/project-sync`) — working branches never track `.project/`. Auto-pushes after ship/finalize; pull-check in `/core-pull`; restored on `/project-add` clone.
 - **Global vs local**: `~/.claude/{agents,hooks,skills,scripts}/` are whole-directory symlinks to the claude-config repo. Claude Code merges this global set with `<project>/.claude/`, where global is always visible. Per-project filtering of skills/agents therefore doesn't work — that's why there are no profiles; everything is always available.
 
 ## Bootstrap + .gitignore Philosophy

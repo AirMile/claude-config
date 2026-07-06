@@ -226,12 +226,14 @@ Skills write to `context` after each build/refactor. CLAUDE.md refers to `projec
     "type": "pattern",
     "source": "synced",
     "author": "Alice",
-    "summary": "Stripe webhooks via idempotency keys per request"
+    "summary": "Stripe webhooks via idempotency keys per request",
+    "tags": ["api", "security"]
   }
 ]
 ```
 
 `type` values: `pattern` (architectural choice), `pitfall` (bug/gotcha), `observation` (cross-feature insight).
+`tags` = optional 0–3 domain tags (kebab-case) from `LEARNING-EXTRACTION.md § Tag Vocabulary`. They drive relevance search (`scripts/learnings-search.js`) so an old entry resurfaces by topic; not part of the dedup key; absent on pre-tag entries (keyword fallback still matches).
 `source` values: `extracted` (direct observation from code output or test result) | `inferred` (cross-feature pattern recognition or LLM inference) | `synced` (extracted from teammate code or mature codebase via core-pull / core-setup --mode=mature) | `consolidated` (merge of multiple archived entries — written only by the core-pull consolidation pass, see `LEARNING-EXTRACTION.md § Consolidation`).
 `date` = extraction date. `feature` = source feature (kebab-case). For `synced` learnings without a structured feature: use primary directory (`auth`, `payments`). `summary` = max 200 chars.
 `author` = optional, only for `source === "synced"`. Mirrors `features[].author`.
@@ -262,7 +264,7 @@ See [skills/shared/LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) for heuristic
 
 Append-only at write time. Skills that complete features extract learnings automatically (see dev-ship's verify + refactor phases). `core-pull` (incremental) and `core-setup --mode=mature` (one-time) extract learnings from teammate/legacy code. `source` is required on new writes.
 
-**Size lifecycle**: above 60 entries, `/core-pull` consolidates the list (merge per-feature clusters, archive originals to `.project/archive/learnings-{YYYY-MM}.json`, target ≤ 40 active) — see `LEARNING-EXTRACTION.md § Consolidation`. Readers always load via the `LEARNINGS-LOAD.md` extraction script (filtered, O(shown) context cost), never the full array inline.
+**Size lifecycle**: above 60 entries, `/core-pull` consolidates the list (merge per-feature clusters, archive originals to `.project/archive/learnings-{YYYY-MM}.json`, target ≤ 40 active) — see `LEARNING-EXTRACTION.md § Consolidation`. Readers load via `scripts/learnings-search.js` (`LEARNINGS-LOAD.md`), which **scores by relevance** (tag → feature → keyword, recency only as tiebreak) rather than by pure recency, and treats the archive as a damped on-demand tier — so consolidated-out entries stay reachable by topic instead of being lost. Filtered, O(shown) context cost; never the full array inline. Free-text interrogation across all stores runs through `/project-memory`.
 
 **This replaces the dynamic CLAUDE.md sections** (`## Project structure`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md now only contains a reference to `project.json` for this context.
 

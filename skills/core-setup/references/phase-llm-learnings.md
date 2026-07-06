@@ -27,13 +27,14 @@ Via Agent tool:
   cap: 50
   ```
 
-Subagent runs on Sonnet (see `agents/learning-extractor.md`), output JSON `[{type, summary, evidence}]`.
+Subagent runs on Sonnet (see `agents/learning-extractor.md`), output JSON `[{type, summary, evidence, tags}]`.
 
 **4c) Parse and enrich**
 
 For each entry from subagent output:
 
 - Set `source: "synced"`, `author: null` (codebase-wide), `date: <today>`, `feature: <first-segment-from-evidence>`
+- Keep the agent's `tags` (0–3 from `LEARNING-EXTRACTION.md § Tag Vocabulary`; default `[]`)
 - Append to extraction results
 
 On subagent failure (timeout, no JSON) → log warning, continue without LLM learnings.

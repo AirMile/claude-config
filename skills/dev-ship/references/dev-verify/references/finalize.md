@@ -35,3 +35,23 @@ PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
    ```
 
 3. Skip both steps when cleanup doesn't fire (no worktree removal needed).
+
+## Post-merge reconcile + state-push (merge route only)
+
+After a successful merge (the `solo`/`MERGED` rows above — **not** the halt rows), the main chat must
+finish two postconditions the pre-merge agent could not:
+
+1. **Reconcile the archive.** The pre-merge refactor agent wrote its completion batch in the worktree
+   and could not see the merge, so enforce the archive postcondition here: verify the feature is
+   **absent** from `backlog.json#features[]` **and present** in
+   `.project/archive/backlog-archive.json#archived[]` with `shipped: true` — the same re-read invariant
+   `dev-refactor/references/completion-batch.md` already requires. **Self-heal a half-run**: if the
+   entry was removed from `features[]` but never archived, reconstruct the archive entry from
+   `feature.json`; if it is still in `features[]`, move it into the archive now — a green completion
+   always ends archive-only.
+2. **Re-stamp `shippedSha`** in the archive entry to the merge sha (`git -C {main_root} rev-parse HEAD`),
+   not the pre-merge refactor commit the agent recorded.
+3. **State auto-push** — follow `shared/STATE-SYNC.md § 8` (Auto-push; non-fatal — on failure print
+   the hint line and continue).
+
+On the halt rows, skip this section entirely — nothing merged, so the worktree/PR still owns the state.

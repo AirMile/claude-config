@@ -10,58 +10,38 @@ Shared protocol for loading learnings as context in architectural skills. Skills
 
 Skills load learnings during their **context-load phase** (typically PHASE 0 or an early PHASE where architecture context is being built).
 
-**Why a script and not an inline read:** `learnings[]` is append-only and grows with the project — at 500 entries a full inline read costs ~43k tokens per skill run while at most 10–15 entries are ever shown. The extraction script below filters in-process and prints only the matching entries, so context cost scales with what is _shown_, not with what is _stored_.
+**Why a script and not an inline read:** `learnings[]` is append-only and grows with the project — at 500 entries a full inline read costs ~43k tokens per skill run while at most 10–15 entries are ever shown. `scripts/learnings-search.js` scores and filters in-process and prints only the matching entries, so context cost scales with what is _shown_, not with what is _stored_. It selects by **relevance** (tag → feature → keyword overlap), with recency only as a tiebreak — so an old-but-relevant entry is no longer buried by newer noise, and the consolidation archive stays reachable (see § Relevance model).
 
 ## Three scopes
 
-Each skill specifies one or more scopes. No wildcards — choose explicitly.
+Each skill specifies one or more scopes. No wildcards — choose explicitly. The scope maps 1:1 to a `--scope` in `learnings-search.js`.
 
-- **`component`** — learnings matching the current feature/component name. Two-step: substring match on the `feature` field (bidirectional), then summary-keyword fallback on feature tokens (split kebab-case, tokens ≥ 3 chars, max 5 keyword matches). Combined, sorted desc by date, capped at 10. _Used by_: `dev-ship`, `design-convert`; `project-brainstorm` / `project-critique` (feature/page scope, via `INPUT-PARSING.md § Project Memory Load`).
-- **`architectural`** — `type === "pattern"` with source `synced`, `extracted`, or `consolidated` (exclude `inferred` — too broad for architecture choices). Sorted desc by date, capped at 15. _Used by_: `project-plan`; `project-seed` / `project-brainstorm` / `project-critique` (via `INPUT-PARSING.md § Project Memory Load`).
-- **`pitfall-prefix`** — last 5 pitfalls regardless of feature. Default-on prefix for every skill that uses this loader; disable with `pitfall-prefix: false`.
+- **`component`** — learnings relevant to the current feature/component: scored on feature-name match, shared tags, and summary-keyword overlap; **includes the archive** as a damped tier so a strongly-matching old entry resurfaces. Capped at 10. _Used by_: `dev-ship`, `design-convert`; `project-brainstorm` / `project-critique` (feature/page scope, via `INPUT-PARSING.md § Project Memory Load`).
+- **`architectural`** — `type === "pattern"` with source `synced`, `extracted`, or `consolidated` (exclude `inferred` — too broad for architecture choices). Active list only. With feature/query context relevant patterns float up; otherwise date-ordered. Capped at 15. _Used by_: `project-plan`; `project-seed` / `project-brainstorm` / `project-critique` (via `INPUT-PARSING.md § Project Memory Load`).
+- **`pitfall-prefix`** — pitfalls scored against the current feature (archive included); with no feature context or no relevant hit it falls back to the **last 5 pitfalls** by date. Default-on prefix for every skill that uses this loader; disable with `pitfall-prefix: false`.
 
-## Extraction script
+## Load command
 
-**Prerequisites**: `$REPO` (project root), `$FEAT` (kebab-case feature name, or empty for non-feature skills), `$SCOPES` (comma-separated: `component,architectural`).
+**Prerequisites**: `$REPO` (project root — the **main** worktree, see edge cases below), `$FEAT` (kebab-case feature name, or empty for non-feature skills), `$SCOPES` (comma-separated: `component,architectural`).
 
 ```bash
-node -e "
-  const c = require('$REPO/.project/project-context.json');
-  const L = c.learnings || [];
-  if (!L.length) process.exit(0);
-  const feat = '$FEAT'.toLowerCase();
-  const scopes = '$SCOPES'.split(',').map(s => s.trim()).filter(Boolean);
-  const byDate = (a, b) => (b.date || '').localeCompare(a.date || '');
-  const line = l => '  [' + (l.date || '?') + '] ' + (l.feature || l.type) + ' — ' + l.summary;
-  const out = [];
-
-  const pitfalls = L.filter(l => l.type === 'pitfall').sort(byDate).slice(0, 5);
-  if (pitfalls.length) out.push('Project pitfalls (last 5):', ...pitfalls.map(line), '');
-
-  if (scopes.includes('component') && feat) {
-    const sub = L.filter(l => {
-      const f = (l.feature || '').toLowerCase();
-      return f && (f.includes(feat) || feat.includes(f));
-    });
-    const tokens = feat.split(/[-\s]/).filter(t => t.length >= 3);
-    const kw = L.filter(l => !sub.includes(l))
-      .filter(l => tokens.some(t => (l.summary || '').toLowerCase().includes(t)))
-      .slice(0, 5);
-    const m = [...sub, ...kw].sort(byDate).slice(0, 10);
-    if (m.length) out.push('Component-scoped (' + feat + '):', ...m.map(line), '');
-  }
-
-  if (scopes.includes('architectural')) {
-    const m = L.filter(l => l.type === 'pattern' && ['synced','extracted','consolidated'].includes(l.source))
-      .sort(byDate).slice(0, 15);
-    if (m.length) out.push('Architectural patterns (project-wide):', ...m.map(line), '');
-  }
-
-  if (out.length) console.log(['LEARNINGS CONTEXT', '', ...out].join('\n').trimEnd());
-" 2>/dev/null || true
+node ~/.claude/scripts/learnings-search.js "$REPO" load \
+  --feature "$FEAT" --scopes "$SCOPES" --pitfall-prefix true
 ```
 
-Pass `pitfall-prefix: false` → remove the pitfalls block from the script invocation (delete those three lines, or post-filter). Empty output = no matches; show nothing (no "0 entries" lines).
+One process runs the pitfall-prefix, `component`, and `architectural` scopes in the order above and prints the whole `LEARNINGS CONTEXT` block (or nothing when there are no matches). Pass `--pitfall-prefix false` to drop the pitfall block. Empty output = no matches; show nothing (no "0 entries" lines). The script never writes and exits 0 even when `project-context.json` is absent.
+
+## Relevance model
+
+`scoreEntry()` in `learnings-search.js` is the single relevance function:
+
+- **+4** per shared tag (entry `tags[]` ∩ tags implied by the feature/query — see `LEARNING-EXTRACTION.md § Tag Vocabulary`)
+- **+2** feature-name match (bidirectional substring)
+- **+1** per summary keyword overlap (same tokenizer as dedup), capped at 5
+- **recency**: a sub-point tiebreak (`< 1`), so relevance always outranks date
+- **archive entries**: score damped ×0.7 and gated — they surface only on a tag match or a strong textual score, never on recency alone
+
+Entries without `tags[]` still score on feature + keyword overlap, so the loader is fully backwards-compatible with pre-tag projects.
 
 ## Output format
 
@@ -70,18 +50,18 @@ The script prints the ASCII block directly — include it verbatim in the skill'
 ```
 LEARNINGS CONTEXT
 
-Project pitfalls (last 5):
-  [2026-04-20] auth-login — JWT refresh race condition bij parallel requests
-  ...
+Project pitfalls (relevant / recent):
+  [2026-04-20] auth-login — JWT refresh race condition bij parallel requests  #auth #async
+  [2025-01-10] auth-oauth — OAuth state param must be validated on callback  #auth #security (archived)
 
 Component-scoped (auth):
-  [2026-04-15] auth — JWT via httpOnly cookie rotation
+  [2026-04-15] auth — JWT via httpOnly cookie rotation  #auth
 
 Architectural patterns (project-wide):
-  [2026-04-20] core — Repository pattern in src/repositories/ (12 files)
+  [2026-04-20] core — Repository pattern in src/repositories/ (12 files)  #data-model
 ```
 
-Empty sections (no matches) are omitted by the script.
+Each line is `  [date] feature — summary  #tags (archived)`; `#tags` appears only when the entry has them and `(archived)` only for consolidation-archive hits. Empty sections (no matches) are omitted by the script.
 
 ---
 
@@ -102,11 +82,11 @@ Load learnings via shared/LEARNINGS-LOAD.md:
 
 ## Edge cases
 
-- **No `project-context.json`**: script exits silently (the `|| true` guard) — no output, skip all scopes.
-- **Empty `learnings[]`**: script exits silently.
-- **No `current-feature` specified**: `component` scope produces nothing; other scopes remain.
-- **Worktree-aware**: point `$REPO` at the main worktree (per [SYNC.md](SYNC.md) Worktree-aware Path Resolution).
-- **Archived learnings** (`.project/archive/learnings-*.json`, see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation): never loaded — archive is for human reference and dedup checks only.
+- **No `project-context.json`**: script exits 0 silently — no output, skip all scopes.
+- **Empty `learnings[]`**: script exits 0 silently.
+- **No `current-feature` specified**: `component` scope produces nothing; the pitfall-prefix falls back to the last 5 by date; `architectural` falls back to date order.
+- **Worktree-aware**: point `$REPO` at the main worktree (per [SYNC.md](SYNC.md) Worktree-aware Path Resolution) — the archive lives there, not in the feature worktree.
+- **Archived learnings** (`.project/archive/learnings-*.json`, see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation): loaded as a **damped on-demand tier** by the `component` and `pitfall` scopes — a strongly-relevant or tag-matching old entry resurfaces, but archive never surfaces on recency alone. `architectural` never reads the archive (the consolidated successor is already in the active list).
 
 ---
 
@@ -115,3 +95,5 @@ Load learnings via shared/LEARNINGS-LOAD.md:
 This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-ship (verify phase)`, `dev-ship (refactor phase)` (PHASE 5), `core-pull`, `core-setup --mode=mature`). Consolidation/archiving of the learnings list itself happens in `core-pull` — see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation.
 
 Skills that pass learnings to an agent: run the script first and embed the filtered block in the agent prompt (never the full list).
+
+For free-text interrogation across the whole memory (learnings + architecture + backlog + thinking), skills and users go through `/project-memory`, which calls `learnings-search.js search --json` under the hood.

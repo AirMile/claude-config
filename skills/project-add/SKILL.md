@@ -12,7 +12,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 1.2.0
+  version: 1.3.0
   category: project
 ---
 
@@ -376,7 +376,15 @@ git add .gitignore
 
 #### Clone mode:
 
-→ Skip (repo is already initialized by `gh repo clone`)
+Git init is skipped (repo is already initialized by `gh repo clone`). Instead, **restore durable `.project/` state** if this project was synced from another device:
+
+```bash
+cd {projects_root}/[name]
+git ls-remote --heads origin "claude/state*"
+```
+
+- **A `claude/state*` branch matches** → follow `shared/STATE-SYNC.md § 9` (Clone restore): discover the branch (§ 2 precedence), add a detached temp worktree at its tip, run `state-files.py restore`, write `.project/session/state-sync.json`, remove the worktree. Script path: `{config_repo}/skills/project-sync/scripts/state-files.py`. Show: `State restored: {N} files from {branch} ({shortsha})`.
+- **No match** → skip silently (scaffold-only clone, unchanged behavior).
 
 ### PHASE 7: Project Configuration
 
@@ -387,7 +395,7 @@ Write a setup marker so a later `/core-setup` run starts in the right mode. Do N
 - New mode → `setup_mode = "greenfield"`
 - Clone mode → `setup_mode = "mature"` (cloned repo may already have source code)
 
-**Write marker (always — no prompt):**
+**Write marker (always — no prompt):** set `stateRestored` to `true` only when PHASE 6 clone-mode restored state from a `claude/state*` branch, else `false`. A later `/core-setup --mode=mature` reads it: restored learnings/backlog already exist, so the mature scan runs additively (learnings dedup, `team.mode` skip-if-set) and its "pre-existing learnings" modal defaults to Continue.
 
 ```bash
 mkdir -p .project/session
@@ -395,6 +403,7 @@ cat > ".project/session/setup-pending.json" << ENDJSON
 {
   "source": "project-add",
   "mode": "{setup_mode}",
+  "stateRestored": {state_restored},
   "createdAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 ENDJSON

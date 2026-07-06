@@ -9,7 +9,7 @@
     <script src="/lib/themes.js"></script>
     <script src="/lib/settings-modal.js"></script>
     <script src="/lib/collapse-store.js"></script>
-    <link rel="stylesheet" href="/css/dashboard.css?v=15" />
+    <link rel="stylesheet" href="/css/dashboard.css?v=16" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
@@ -2749,8 +2749,52 @@
           <div class="feat-list">${rowsHtml}</div>`;
       }
 
+      function learningRow(l, archived) {
+        const title = l.title || l.summary || "—";
+        const detail = l.detail || "";
+        const hasDetail = !!detail;
+        const tags = Array.isArray(l.tags) ? l.tags : [];
+        const tagChips = tags
+          .map((t) => `<span class="learnings-tag-chip">#${esc(t)}</span>`)
+          .join("");
+        const dataTags = tags.map((t) => esc(t)).join(" ");
+        return `<div class="learnings-row${hasDetail ? " learnings-row--expandable" : ""}${archived ? " learnings-row--archived" : ""}" data-ltype="${esc(l.type || "")}" data-ltags="${dataTags}"${hasDetail ? ` onclick="this.classList.toggle('is-open')"` : ""}>
+          <div class="learnings-row-head">
+            <span class="learnings-date">${esc(l.date || "")}</span>
+            <span class="learnings-title">${esc(title)}${tagChips ? ` <span class="learnings-tags">${tagChips}</span>` : ""}${archived ? ` <span class="learnings-archived-badge">archived</span>` : ""}</span>
+            ${l.feature ? `<span class="learnings-feature-tag">${esc(l.feature)}</span>` : ""}
+            ${hasDetail ? `<span class="learnings-caret">›</span>` : ""}
+          </div>
+          ${hasDetail ? `<div class="learnings-detail">${esc(detail)}</div>` : ""}
+        </div>`;
+      }
+
+      function filterLearnings(el, kind, value) {
+        const bar = el.closest(".learnings-filterbar");
+        bar
+          .querySelectorAll(`[data-filter-kind="${kind}"]`)
+          .forEach((b) => b.classList.remove("is-active"));
+        el.classList.add("is-active");
+        window._lf = window._lf || { type: "all", tag: "all" };
+        window._lf[kind] = value;
+        const f = window._lf;
+        document
+          .querySelectorAll("#learnings .learnings-row[data-ltype]")
+          .forEach((row) => {
+            const typeOk = f.type === "all" || row.dataset.ltype === f.type;
+            const tagOk =
+              f.tag === "all" ||
+              (" " + row.dataset.ltags + " ").includes(" " + f.tag + " ");
+            row.style.display = typeOk && tagOk ? "" : "none";
+          });
+      }
+
       function renderLearnings() {
+        window._lf = { type: "all", tag: "all" };
         const all = (data.learnings || [])
+          .slice()
+          .sort((a, b) => (a.date < b.date ? 1 : -1));
+        const archivedAll = (data.learningsArchive || [])
           .slice()
           .sort((a, b) => (a.date < b.date ? 1 : -1));
         const groups = [
@@ -2767,32 +2811,63 @@
           },
         ];
 
-        const learningsSections = groups
-          .map((g) => {
-            const items = all.filter((l) => l.type === g.type);
-            if (!items.length) return "";
-            const rows = items
-              .map((l) => {
-                const title = l.title || l.summary || "—";
-                const detail = l.detail || "";
-                const hasDetail = !!detail;
-                return `<div class="learnings-row${hasDetail ? " learnings-row--expandable" : ""}"${hasDetail ? ` onclick="this.classList.toggle('is-open')"` : ""}>
-                  <div class="learnings-row-head">
-                    <span class="learnings-date">${esc(l.date || "")}</span>
-                    <span class="learnings-title">${esc(title)}</span>
-                    ${l.feature ? `<span class="learnings-feature-tag">${esc(l.feature)}</span>` : ""}
-                    ${hasDetail ? `<span class="learnings-caret">›</span>` : ""}
-                  </div>
-                  ${hasDetail ? `<div class="learnings-detail">${esc(detail)}</div>` : ""}
-                </div>`;
-              })
-              .join("");
-            return `<div class="learnings-group learnings-group--${g.type}" data-collapse-key="learnings:${esc(g.label)}">
+        // Filter bar: type toggles + every tag present across active + archive.
+        const allTags = Array.from(
+          new Set(
+            [...all, ...archivedAll].flatMap((l) =>
+              Array.isArray(l.tags) ? l.tags : [],
+            ),
+          ),
+        ).sort();
+        const filterBar =
+          all.length || archivedAll.length
+            ? `<div class="learnings-filterbar">
+                <button class="learnings-filter-btn is-active" data-filter-kind="type" onclick="filterLearnings(this,'type','all')">All types</button>
+                ${groups
+                  .filter((g) =>
+                    [...all, ...archivedAll].some((l) => l.type === g.type),
+                  )
+                  .map(
+                    (g) =>
+                      `<button class="learnings-filter-btn" data-filter-kind="type" onclick="filterLearnings(this,'type','${g.type}')">${g.label}</button>`,
+                  )
+                  .join("")}
+                ${
+                  allTags.length
+                    ? `<span class="learnings-filter-sep"></span>
+                       <button class="learnings-filter-btn is-active" data-filter-kind="tag" onclick="filterLearnings(this,'tag','all')">All tags</button>` +
+                      allTags
+                        .map(
+                          (t) =>
+                            `<button class="learnings-filter-btn" data-filter-kind="tag" onclick="filterLearnings(this,'tag','${esc(t)}')">#${esc(t)}</button>`,
+                        )
+                        .join("")
+                    : ""
+                }
+              </div>`
+            : "";
+
+        const learningsSections =
+          filterBar +
+          groups
+            .map((g) => {
+              const items = all.filter((l) => l.type === g.type);
+              if (!items.length) return "";
+              const rows = items.map((l) => learningRow(l, false)).join("");
+              return `<div class="learnings-group learnings-group--${g.type}" data-collapse-key="learnings:${esc(g.label)}">
               <h3>${g.label} <span class="learnings-group-desc">${g.desc}</span></h3>
               ${rows}
             </div>`;
-          })
-          .join("");
+            })
+            .join("");
+
+        // Archived learnings: consolidation cold-storage, browsable but collapsed.
+        const archivedSection = archivedAll.length
+          ? `<div class="learnings-group learnings-group--archived" data-collapse-key="learnings:Archived">
+              <h3>Archived <span class="learnings-group-desc">Consolidated out — searchable via /project-memory</span></h3>
+              ${archivedAll.map((l) => learningRow(l, true)).join("")}
+            </div>`
+          : "";
 
         // Principles vanuit data.design
         const d = data.design || {};
@@ -2813,7 +2888,7 @@
             </div>`
           : "";
 
-        const hasContent = learningsSections || principlesSection;
+        const hasContent = all.length || archivedSection || principlesSection;
 
         return `
           <div class="section-header">
@@ -2821,7 +2896,7 @@
           </div>
           ${
             hasContent
-              ? `${learningsSections}${principlesSection}`
+              ? `${learningsSections}${archivedSection}${principlesSection}`
               : `<div class="empty-state"><p>No knowledge captured yet.</p><p style="color:var(--text-dim)">Automatically filled by <code>/dev-ship</code> or <code>/game-ship</code></p></div>`
           }
         `;
@@ -3277,13 +3352,15 @@
           );
         });
 
-        // Learnings groups (default open)
+        // Learnings groups (default open; Archived defaults collapsed)
         document
           .querySelectorAll("[data-collapse-key^='learnings:']")
           .forEach((el) => {
+            const defaultCollapsed =
+              el.dataset.collapseKey === "learnings:Archived";
             el.classList.toggle(
               "collapsed",
-              isCollapsed(el.dataset.collapseKey, false),
+              isCollapsed(el.dataset.collapseKey, defaultCollapsed),
             );
           });
 

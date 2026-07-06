@@ -35,7 +35,8 @@ common case (a fresh chat re-invoking to continue exactly where the last one sto
 Print a one-line notice (`Resuming {name} at {phase} — checkpoint {age} old`) and execute the
 **§On "Resume"** steps below directly. The fast path applies to **any** recorded `phase`: workflow
 phases relaunch per On-Resume step 4's existing bullets; an interactive phase re-enters per its
-bullet there; `"PHASE 0 · plan gate"` jumps to the plan gate.
+bullet there; `"PHASE 0 · define"` (dev/game) re-runs define from the top (the draft was in plan
+mode, not checkpointed).
 
 Fall through to the `AskUserQuestion` below **only** when a fast-path condition fails: no explicit
 arg, `status: "failed"`, or `updatedAt` > 24h (staleness). Otherwise, do **not** silently continue
@@ -98,12 +99,14 @@ options:
      (dev/game) / the stored check results (design). **PHASE 4 with `results.refactor` already present**
      → skip the workflow relaunch and resume at the finalize step (the refactor ran; only the
      merge/cleanup remains).
-   - **If the recorded phase is `"PHASE 0 · plan gate"`** (dev/game light checkpoint) → jump straight
-     to the pipeline's Step 4b plan-approval gate, restoring the in-memory draft from
-     `plan.featureDraft` (the durable pre-accept home — `feature.json` is not written until accept).
-     Re-write the plan-file appendix from it and present the gate; no interview re-run. (Step 3
-     patches its `verificationProfile`/`playtestProfile` into `plan.featureDraft` after write point 0,
-     so by the time the gate is reachable the stored draft already carries it — no re-derive needed.)
+   - **If the recorded phase is `"PHASE 0 · define"`** (dev/game minimal checkpoint) → **re-run define
+     from the top** (the pipeline's `phase-0-*.md` from Step 1). The feature draft was authored inside
+     plan mode, which blocks the `.project/` write that would checkpoint it, and the plan file's
+     harness-generated name is not linked to the feature — so the draft is **not** recoverable
+     cross-session and the interview re-runs. (A **same-session** interruption keeps the draft: plan
+     mode + the plan file persist in the session, so just continue there instead of resuming.) The
+     minimal checkpoint's `baselineSha` + bookkeeping are reused; `feature.json` does not exist yet, so
+     there is nothing to reconstruct from disk.
 
 ### On "Restart fresh"
 

@@ -227,8 +227,8 @@ their domain learnings/glossary during their phases. Cross-phase signals only ex
 a small set (0-2) to `project-context.json#learnings[]` via `shared/LEARNING-EXTRACTION.md`
 (`source: "extracted"`, same dedup): a recurring `autoDecisions` pattern, a direction axis the
 user consistently overrides, or copy the user regenerated repeatedly (signals a brief gap). Only
-write genuinely reusable signals — skip if none. Then run the consolidation gate (active list ≤40
-per `shared/LEARNING-EXTRACTION.md § consolidation`).
+write genuinely reusable signals — skip if none. Then run the consolidation gate per
+`shared/LEARNING-EXTRACTION.md § Consolidation Gate` (trigger `> 60` → merge, archive, target ≤40).
 
 > **Todo**: mark PHASE 5 → `completed`.
 

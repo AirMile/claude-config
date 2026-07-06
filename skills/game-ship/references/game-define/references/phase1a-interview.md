@@ -78,15 +78,23 @@ Use these as starting points — adapt to the conversation flow. Don't use them 
 
 Stop interviewing when all required dimensions are covered.
 
-Close with an explicit summary:
+**No blocking summary-confirm here.** In the game-ship flow the whole plan is reviewed at the gate
+(game-ship Step 4b `ExitPlanMode`), and a reject there loops back to revise — so the old
+"Is this correct?" ceremony is redundant. Instead close lightly:
 
-> "I understood that: [1–3 sentences covering: what gameplay problem this solves, what the player experience should be, key mechanics/rules, and explicit failure modes or non-goals]. Is this correct, or am I missing something?"
+1. Show a short recap (1–3 sentences: gameplay problem, player experience, key mechanics/rules,
+   failure modes/non-goals) as a **statement**, not a question — the user does not need to answer it
+   to proceed.
+2. **One optional final open question** — ask "anything else before I write up the plan?" **only when
+   it is genuinely useful** (an unresolved thread, a dimension closed on a best-guess). If the
+   interview landed cleanly, skip it and move on.
+   - User adds/corrects something → acknowledge, fold it in, proceed.
+   - User signals done ("that's it", "go ahead") → proceed.
+3. Proceed to PHASE 1b. Anything still fuzzy is surfaced in the gate plan file for review — not
+   re-litigated here.
 
-- **User confirms** → proceed to PHASE 1b.
-- **User adds or corrects something** → acknowledge, update your understanding, briefly re-confirm that part ("Got it — so {correction}. Anything else?"), then proceed.
-- **User signals done** ("you already know enough", "that's it", "go ahead") → accept and proceed.
-
-Do not loop the summary more than once — after a correction is acknowledged, move on.
+If ≥1 dimension is still unresolved, still name it in the recap (see "Handling I Don't Know" below) so
+the user knows it will be filled with a best-guess and can catch it at the gate.
 
 ## Handling "I Don't Know" Responses
 

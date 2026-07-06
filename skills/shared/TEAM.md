@@ -18,18 +18,18 @@ Three signals:
 
 ## Skills per phase
 
-| Phase               | Relevant                                                                    | Less relevant in mature team repo                   |
-| ------------------- | --------------------------------------------------------------------------- | --------------------------------------------------- |
-| Concept / discovery | (not your task — team already has a concept or backlog)                     | `/project-seed`, `/project-plan` (greenfield tools) |
-| Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas)      | —                                                   |
-| Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)            | —                                                   |
-| Define              | `/dev-ship` (define phase), `/design-convert`                                | —                                                   |
+| Phase               | Relevant                                                                      | Less relevant in mature team repo                   |
+| ------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------- |
+| Concept / discovery | (not your task — team already has a concept or backlog)                       | `/project-seed`, `/project-plan` (greenfield tools) |
+| Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas)        | —                                                   |
+| Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)              | —                                                   |
+| Define              | `/dev-ship` (define phase), `/design-convert`                                 | —                                                   |
 | Build               | `/dev-ship` (build phase), `/design-convert` Build, `/design-convert` Convert | —                                                   |
-| Test                | `/dev-ship` (verify phase), `/design-ship`                                 | —                                                   |
-| Commit              | `/core-commit` (detects team commit convention automatically)               | —                                                   |
-| Refactor            | `/dev-ship` (refactor phase)                                                | —                                                   |
-| Review              | `/team-review` (PRs), `/team-verify` (completeness)                         | —                                                   |
-| Sync teammate code  | `/core-pull`                                                                | —                                                   |
+| Test                | `/dev-ship` (verify phase), `/design-ship`                                    | —                                                   |
+| Commit              | `/core-commit` (detects team commit convention automatically)                 | —                                                   |
+| Refactor            | `/dev-ship` (refactor phase)                                                  | —                                                   |
+| Review              | `/team-review` (PRs), `/team-verify` (completeness)                           | —                                                   |
+| Sync teammate code  | `/core-pull`                                                                  | —                                                   |
 
 ## Issue-driven flow
 
@@ -129,3 +129,5 @@ For Jira and Linear there is no native CLI integration in v1. Approach:
 | `project-context.json#learnings[]` with `source: "synced"` | ✓ (local) | — (extracted from team code) |
 
 `project-context.json#learnings[]` with `source: "synced"` are extractions from teammate code via `/core-pull` or `/core-setup --mode=mature` — they belong to you, not the team.
+
+These personal artifacts may still travel to **your own** other devices via the orphan branch `claude/state` (`shared/STATE-SYNC.md`, `/project-sync`) — never via `main`. In a team project (`project.json#team.mode == "team"`) the first push prompts for a per-developer branch name (`claude/state-{user}`) so personal state is not published to teammates.

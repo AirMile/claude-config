@@ -15,7 +15,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 4.1.0
+  version: 4.2.0
   category: core
 ---
 
@@ -77,6 +77,13 @@ Pull remote changes, analyze the diff, refresh `.project/` context, analyze team
    On "Stash": `git stash push -u -m "core-pull auto-stash"` (`-u` for untracked files). After successful pull in PHASE 1: `git stash apply` (NOT `pop`). On apply success → `git stash drop`. On conflict after apply → report and let user resolve. **NEVER drop the stash on conflict** — the stash remains as a safety net.
    On "Commit first" → exit with instruction to run `/core-commit` and then `/core-pull`.
    On "Cancel" → exit.
+
+4. **State-branch staleness check** — the preflight already fetched, so this is cheap. Resolve the state branch per `shared/STATE-SYNC.md § 2`; `git rev-parse "refs/remotes/origin/{branch}"` — absent → skip silently. Compare against `.project/session/state-sync.json#lastSyncedSha`:
+   - Equal → skip.
+   - Remote ahead (or no `state-sync.json` yet) → **AskUserQuestion** (header "Project state"):
+     - "Pull project state (Recommended)" — "Bring newer `.project/` state from your other device — follow `shared/STATE-SYNC.md § 7` now"
+     - "Skip" — "Leave it — run `/project-sync pull` later"
+   - On "Pull": follow `shared/STATE-SYNC.md § 7` before continuing to PHASE 1. On "Skip": continue.
 
 ### PHASE 1: Pull
 

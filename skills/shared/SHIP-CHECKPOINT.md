@@ -43,26 +43,27 @@ command). See `BACKLOG.md § Board rendering`.
   "updatedAt": "<ISO>",
   "status": "running", // "running" | "failed" | "complete"
   "phase": "PHASE 2", // current phase pointer (label matches the skill's phase list); may also be
-  //                     the pre-approval value "PHASE 0 · plan gate" (dev/game light checkpoint —
-  //                     written after define authors the draft, before the plan gate;
-  //                     completedPhases:[], plan holds only featureDraft — see plan field below)
+  //                     the pre-approval value "PHASE 0 · define" (dev/game minimal checkpoint —
+  //                     written before EnterPlanMode; completedPhases:[], plan:{} — the draft is
+  //                     authored inside plan mode and is NOT checkpointed; see plan field below)
   "completedPhases": ["PHASE 0", "PHASE 1"],
   "baselineSha": "<git rev-parse HEAD before ship>", // rollback anchor
   "preRefactorSha": "<worktree HEAD at PHASE 4 start>", // optional; revert anchor if refactor fails (dev/game)
   "plan": {
-    /* dev: SHIP_PLAN (auto-derived refactorLenses, securityLight, securityDeep,
-                verificationProfile). At the pre-accept "PHASE 0 · plan gate" the dev/game plan
-                holds ONLY `featureDraft` — the complete in-memory feature.json draft define
-                authored, before it is written to disk. feature.json is written only at
-                gate-accept (extracted from the plan-file appendix), so until then the checkpoint
-                is the draft's only durable home — the same deferred-write pattern design uses for
-                its inline spec (below). Step 5 (post-accept) drops `featureDraft` and replaces it
-                with the formalized SHIP_PLAN. design: the FULL PHASE 0 objects — direction (incl.
-                its token decisions + chosen layout), archetype, brief, checkScope, composition
-                (PAGE only), and the inline spec when captured (its disk write is deferred to
-                the build sync, so until the build completes the checkpoint is its only durable
-                home). Store the objects the agent prompts are assembled from — never
-                display-abbreviated names. */
+    /* dev/game: SHIP_PLAN (auto-derived refactorLenses, securityLight, securityDeep,
+                verificationProfile), set at write point 1 (post gate-accept). At the pre-accept
+                "PHASE 0 · define" checkpoint the dev/game plan is EMPTY (`{}`): define authors the
+                feature.json draft INSIDE plan mode, which blocks the `.project/` write that would
+                store it, so the draft lives only in memory + the plan file until accept. A
+                cross-session death before accept therefore re-runs define (the draft is not
+                recoverable) — the accepted cost of running the thinking on the planning model.
+                feature.json is written only at gate-accept (extracted from the plan-file appendix);
+                Step 5 (post-accept) sets the formalized SHIP_PLAN here. design: the FULL PHASE 0
+                objects — direction (incl. its token decisions + chosen layout), archetype, brief,
+                checkScope, composition (PAGE only), and the inline spec when captured (its disk
+                write is deferred to the build sync, so until the build completes the checkpoint is
+                its only durable home). Store the objects the agent prompts are assembled from —
+                never display-abbreviated names. */
   },
   "results": {
     /* structured agent returns, filled per phase.
@@ -118,23 +119,21 @@ fights shell quoting.
 
 ### When the orchestrator writes
 
-0. **Light checkpoint at the plan gate (dev/game only)** — the object's first write. Written right
-   after define finishes authoring the feature.json draft (**no** `DEFINED` flip yet — that is
-   hoisted to gate-accept), **before** `EnterPlanMode` (plan mode blocks `.project/` writes, so this
-   is the last write slot before the gate). Create via `init`. Set `pipeline`, `feature`,
-   `startedAt`/`updatedAt`, `status: "running"`, `phase: "PHASE 0 · plan gate"`,
-   `completedPhases: []`, `baselineSha`, empty `results`/`prompts`, `activeWorkflow: null`, and
-   `plan: { featureDraft: <the in-memory draft> }`. The `featureDraft` is the draft's durable
-   pre-accept home (no `feature.json` exists yet) — it makes the gate resumable from a fresh session
-   **without re-running the interview**: a re-invoke direct-resumes to the gate and restores the draft
-   from here. `SHIP_PLAN` is not formalized until after the gate (Step 5, which drops `featureDraft`).
-   Design has no light checkpoint (its PHASE 0 selections are irreproducible user choices written
-   post-gate), so for design write point 1 is the first write.
-1. **End of PHASE 0 (post-accept)** — for dev/game this **patches** the light checkpoint: set the
-   formalized `plan` (SHIP_PLAN + verification/playtest profile) and drop the pre-accept
-   `plan.featureDraft` (pass `featureDraft: null` — `patch` deep-merges `plan`), advance
-   `phase` = the first agent phase, `completedPhases: ["PHASE 0"]`. For design it is the **first**
-   write (`init`). Either way set `plan` (the PHASE 0 selections), `baselineSha`
+0. **Minimal checkpoint before plan mode (dev/game only)** — the object's first write. Written in the
+   pipeline's PHASE 0 bookkeeping step (dev-ship Step 2a) **before** `EnterPlanMode` — plan mode
+   blocks `.project/` writes, so this is the last write slot before the whole define thinking-block.
+   Create via `init`. Set `pipeline`, `feature`, `startedAt`/`updatedAt`, `status: "running"`,
+   `phase: "PHASE 0 · define"`, `completedPhases: []`, `baselineSha`, empty `results`/`prompts`,
+   `activeWorkflow: null`, and `plan: {}`. It marks the run started (board shows it **parked** if the
+   session dies) and durably anchors the rollback SHA. It deliberately holds **no** feature draft:
+   define authors the draft inside plan mode, which cannot write to disk, so the draft is not
+   checkpointed and a cross-session death before accept re-runs the interview. `SHIP_PLAN` is not
+   formalized until after the gate (Step 5). Design has no minimal checkpoint (its PHASE 0 selections
+   are irreproducible user choices written post-gate), so for design write point 1 is the first write.
+1. **End of PHASE 0 (post-accept)** — for dev/game this **patches** the minimal checkpoint: set the
+   formalized `plan` (SHIP_PLAN + verification/playtest profile — the pre-accept `plan` was `{}`, so
+   there is nothing to drop), advance `phase` = the first agent phase, `completedPhases: ["PHASE 0"]`.
+   For design it is the **first** write (`init`); set `plan` (the PHASE 0 selections), `baselineSha`
    (`git rev-parse HEAD` captured before any ship work), `phase` = the first agent phase,
    `completedPhases: ["PHASE 0"]`, `status: "running"`.
 2. **Immediately after launching a Workflow** — the tool result returns a `runId` even while the

@@ -17,7 +17,7 @@ here are **no arg**, a fast-path miss, or **no open checkpoint**.
   Resume/Restart/Inspect, then the On-"Resume" jump to the recorded phase). Design phase map: the
   interactive **PHASE 4 review** re-enters per `SHIP-RESUME.md § On "Resume"` step 4; a workflow phase
   relaunches per the same section; re-derive `SHIP_CONTEXT` fresh (Step 10) before a workflow phase.
-  Design has **no** `"PHASE 0 · plan gate"` light checkpoint — its PHASE 0 selections are
+  Design has **no** `"PHASE 0 · define"` minimal checkpoint — its PHASE 0 selections are
   irreproducible user choices (direction, archetype, brief) written only at Step 9, post-plan-exit,
   so the first checkpoint write already lands after the gate. This asymmetry with dev/game is
   deliberate. A **Restart** choice continues fresh below.

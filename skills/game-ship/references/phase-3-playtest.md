@@ -49,6 +49,17 @@ Categorization) — TESTABLE / MEASURABLE / SUBJECTIVE:
 - **MEASURABLE** (relative, no unit test: "animation too slow") → adjust the value directly, then
   re-test live.
 
+**Plan-mode gate (OpusPlan-aware) — conditional, after gathering evidence.** Once you have the
+evidence but **before** editing (or before writing the background-agent descriptor), enter plan mode
+when the fix warrants design thinking — mirror the verify fix-loop conditions
+(`game-verify/references/phase-3-fix-loop.md § Plan-mode gate` where present): **enter** (`EnterPlanMode`
+→ write the fix plan: problem → root cause → proposed fix → verification → `ExitPlanMode`; rejected plan
+→ re-investigate) when the root cause is still **unclear** after DEBUG-LADDER evidence, **or** the fix
+spans **>1–2 scripts/scenes** (likely shared root cause). The plan-mode analysis runs in the **main
+chat** (a background fix agent can never enter plan mode — contract); its output becomes the fix plan /
+the descriptor the agent executes. **Skip plan mode silently** for a quick MEASURABLE value tweak or a
+single-script TESTABLE fix with an obvious root cause — the common case, no extra approval prompt.
+
 Route the fix work via **one `AskUserQuestion`** (first option recommended):
 
 - **Fix via background agent (Recommended)** → write a compact failure descriptor (each failed item:
@@ -95,10 +106,12 @@ change, not a failed acceptance item. The playtest offers a **Tweak** outcome al
 Fail/Skip/Defer, distinct from a FAIL and from net-new scope:
 
 - **Tweak = tune existing scope** (a value, timing, feel, feedback of something already built). Run
-  an **open iterate loop in the main chat**: the user describes the change → (one clarifying question
-  if vague, per the SUBJECTIVE axes above) → adjust the value/scene → re-launch the live window → the
-  user judges → next. **No round cap** — the max-rounds guard governs failed re-tests, not tuning;
-  iterate until the user is satisfied. Commit each accepted tweak scoped to the worktree.
+  an **open iterate loop in the main chat** — **no plan mode** (these are quick live tuning passes, not
+  root-cause fixes; the conditional plan-gate above governs FAIL fixes, not tweaks): the user describes
+  the change → (one clarifying question if vague, per the SUBJECTIVE axes above) → adjust the
+  value/scene → re-launch the live window → the user judges → next. **No round cap** — the max-rounds
+  guard governs failed re-tests, not tuning; iterate until the user is satisfied. Commit each accepted
+  tweak scoped to the worktree.
 - **Net-new = a new mechanic/scope** not in `remainingManualItems`. Keep it out of the iterate loop:
   one bounded fix-agent round if small and in-theme, else defer to `/project-todo` and finish on the
   verified scope. Then run the regression re-check below.

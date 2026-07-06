@@ -8,6 +8,13 @@ skills/shared/SCOPED-COMMIT.md and CLAUDE.md § Bootstrap Philosophy).
 Exit code: 0 = clean, 1 = one or more violations found.
 
 Allowlist: append  # check-no-project-commit: allow  to a line to skip it.
+
+State-sync exemption: /project-sync commits a durable subset of .project/ to the
+orphan branch `claude/state` inside a *detached temp worktree* (skills/shared/
+STATE-SYNC.md). Model A stays intact — no working branch ever tracks .project/.
+Those git add/commit lines operate on the "$STATE_WT" variable, so no literal
+.project/ appears on an add/commit line and this checker does not (and must not)
+flag them. Skills keep the .project/ path off add/commit lines via that variable.
 """
 
 import re

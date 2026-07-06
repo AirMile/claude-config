@@ -177,3 +177,24 @@ PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
 | team      | `MERGED`                 | Run `shared/FINALIZE.md` mode=`cleanup-only`.                                                                                                                                          |
 | team      | `OPEN`                   | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize {feature-name} after review."` Exit.                                                                        |
 | team      | empty / `CLOSED` / no-gh | **Leave worktree open** — refactor already ran on the branch. Print `"Team project: push + open a PR via /team-review, or run /core-finalize {feature-name} to merge directly."` Exit. |
+
+## Post-merge reconcile + state-push (merge route only)
+
+After a successful merge (the `FINALIZE.md solo` / `cleanup-only` rows above — **not** the halt / leave-worktree
+rows), the main chat (game-ship PHASE 4 tail) must finish the postconditions the pre-merge agent could not:
+
+1. **Reconcile the archive.** The pre-merge refactor agent wrote its completion batch in the worktree
+   and could not see the merge, so enforce the archive postcondition here: verify the feature is
+   **absent** from `backlog.json#features[]` **and present** in
+   `.project/archive/backlog-archive.json#archived[]` with `shipped: true` — the same re-read invariant
+   `game-refactor/references/completion-batch.md` already requires. **Self-heal a half-run**: if the
+   entry was removed from `features[]` but never archived, reconstruct the archive entry from
+   `feature.json`; if it is still in `features[]`, move it into the archive now — a green completion
+   always ends archive-only.
+2. **Re-stamp `shippedSha`** in the archive entry to the merge sha (`git -C {main_root} rev-parse HEAD`),
+   not the pre-merge refactor commit the agent recorded.
+3. **State auto-push** — follow `shared/STATE-SYNC.md § 8` (Auto-push; non-fatal — on failure print
+   the hint line and continue).
+
+On the halt / leave-worktree rows, skip this section entirely — nothing merged, so the worktree/PR
+still owns the state.

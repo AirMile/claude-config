@@ -130,17 +130,10 @@ node -e "
   }, null, 2));
 " 2>/dev/null || echo "{}"
 
-node -e "
-  const c = require('.project/project-context.json');
-  console.log(JSON.stringify({
-    learnings: (c.learnings || [])
-      .filter(l => l.type === 'pitfall' || l.scope === 'architectural')
-      .slice(0, 10)
-  }, null, 2));
-" 2>/dev/null || echo "{}"
+node ~/.claude/scripts/learnings-search.js "." load --scopes architectural --pitfall-prefix true
 ```
 
-Store `$ENTITIES`, `$GLOSSARY`, `$LEARNINGS`. If files absent → treat all as empty.
+Store `$ENTITIES`, `$GLOSSARY`, and the loader's `LEARNINGS CONTEXT` block as `$LEARNINGS` (project-wide pitfalls + architectural patterns, relevance-scored — see `../shared/LEARNINGS-LOAD.md`). If files absent → the loader prints nothing; treat all as empty.
 
 ### 0.4 Bestanden + feature-context vinden
 
