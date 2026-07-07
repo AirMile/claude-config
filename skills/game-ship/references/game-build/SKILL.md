@@ -205,7 +205,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
    **Workspace setup:**
 
-   Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = "{feature-name}"`. The procedure auto-creates an isolated worktree and wires `.project/` symlinks. No AskUserQuestion needed — creation is automatic when no worktree exists for the feature yet. Skip if already in a worktree (procedure detects).
+   Follow `shared/WORKTREE-CREATE.md → Auto-create worktree` with `feature-name = "{feature-name}"`. The procedure auto-creates an isolated worktree and wires `.project/` symlinks. No AskUserQuestion needed — creation is automatic when no worktree exists for the feature yet. Skip if already in a worktree (procedure detects).
 
    **Mandatory output** (always log, never silent):
 
@@ -226,7 +226,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
      echo "GATE: ok — worktree explicitly skipped"
    else
      echo "ABORT: PHASE 0 incomplete — not inside expected worktree and no 'WORKTREE: not-applied' marker found."
-     echo "Re-run /game-build from the start; follow shared/WORKTREE.md → Auto-create worktree literally."
+     echo "Re-run /game-build from the start; follow shared/WORKTREE-CREATE.md → Auto-create worktree literally."
      exit 1
    fi
    ```

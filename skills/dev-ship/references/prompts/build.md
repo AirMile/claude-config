@@ -18,7 +18,7 @@ context-load; only load what is missing there.
 
 BUILD-SPECIFIC:
 
-- dev-build already creates the worktree (WORKTREE.md) and never merges — keep it that way.
+- dev-build already creates the worktree (WORKTREE-CREATE.md) and never merges — keep it that way.
 - Run the TDD build for all requirements; do dev-build's normal .project/ sync + scoped worktree
   commit at the end.
 - Skip dev-build's terminal Next-Step Clipboard Offer.

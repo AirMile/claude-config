@@ -19,7 +19,7 @@ load what is missing there.
 
 BUILD-SPECIFIC:
 
-- game-build already creates the worktree (WORKTREE.md → Auto-create) and never merges — keep it
+- game-build already creates the worktree (WORKTREE-CREATE.md → Auto-create) and never merges — keep it
   that way. Honor the Pre-PHASE-1 worktree GATE.
 - Run the TDD build (RED-GREEN) for all COVERED/testable requirements; Implementation Only only where
   automated tests add no value. Run PHASE 3a full GUT regression gate and PHASE 3b integration scene

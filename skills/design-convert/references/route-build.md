@@ -308,11 +308,11 @@ Caveats:      {missing deps, missing tokens, auto-patch layout, etc. — or "non
 
 #### Step 7b: Worktree setup
 
-Follow `shared/WORKTREE.md → Auto-create worktree` with `feature-name = $TARGET`. Runs now — after `ExitPlanMode` — because Auto-create performs git and filesystem writes and may show collision `AskUserQuestion`s, both of which require plan mode to be exited. Creates an isolated worktree for this build so generated code lands on a separate branch. Skip if already in a worktree (procedure detects).
+Follow `shared/WORKTREE-CREATE.md → Auto-create worktree` with `feature-name = $TARGET`. Runs now — after `ExitPlanMode` — because Auto-create performs git and filesystem writes and may show collision `AskUserQuestion`s, both of which require plan mode to be exited. Creates an isolated worktree for this build so generated code lands on a separate branch. Skip if already in a worktree (procedure detects).
 
 #### Step 7c: Generate and write
 
-**Pre-write gate** — before the first Write/Edit, assert the worktree is live: current branch is `worktree-{$TARGET}`, OR a `shared/WORKTREE.md` skip-condition demonstrably applied (already in a worktree / no feature-name / batch-mode). If neither holds, Step 7b was skipped in error — run it now before generating. Never write source files straight onto the default branch when a worktree should exist.
+**Pre-write gate** — before the first Write/Edit, assert the worktree is live: current branch is `worktree-{$TARGET}`, OR a `shared/WORKTREE-CREATE.md` skip-condition demonstrably applied (already in a worktree / no feature-name / batch-mode). If neither holds, Step 7b was skipped in error — run it now before generating. Never write source files straight onto the default branch when a worktree should exist.
 
 After the worktree is set up (Step 7b) — generate and write:
 

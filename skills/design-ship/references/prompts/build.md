@@ -25,7 +25,7 @@ BUILD-SPECIFIC:
 - Steps 0–5 already happened in the main chat — start at the route's "External setup context"
   Todo (VERCEL-CONTEXT.md), then Step 7. Never re-ask or change the design direction: its token
   decisions are binding.
-- Step 7b creates the worktree (WORKTREE.md) — keep it open; never merge (contract rule 6).
+- Step 7b creates the worktree (WORKTREE-CREATE.md) — keep it open; never merge (contract rule 6).
 - Run the completion sync (10a–10f) as the copied file says — it keeps the "shipping" transition.
 - Report `smokeUrl` even when the smoke fix-round failed (the main chat reuses the route for the
   PHASE 4 live preview); kill your dev server before returning (contract rule 10).

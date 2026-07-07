@@ -37,7 +37,7 @@ standalone.
    synthesis). Keep the task-specific analysis such a spawn also does (e.g. verify's classification /
    coverage probing, refactor's per-feature anti-pattern scan) — run it inline if you cannot spawn
    (rule 9).
-7. **Worktree — role-bound.** Build-agent: create the worktree (`shared/WORKTREE.md → Auto-create`),
+7. **Worktree — role-bound.** Build-agent: create the worktree (`shared/WORKTREE-CREATE.md → Auto-create`),
    commit, **never merge**. Verify/refactor-agent: use the existing worktree; **never**
    finalize/merge/`ExitWorktree`/`git worktree remove`. The main chat owns finalize (PHASE 4, after
    refactor). Ignore the workflow's PHASE Finalize / `FINALIZE.md` / `completion-finalize.md` merge

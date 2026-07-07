@@ -183,7 +183,7 @@ If scope is a component: skip this step.
 
 ### 0.5b Worktree Setup
 
-Feature-name: use backlog-matched feature name from 0.5 (page scope), or component name derived from scope selection (component scope). Follow `shared/WORKTREE.md → Auto-create worktree`. Skip if no clear feature-name is available or if already in a worktree (procedure detects).
+Feature-name: use backlog-matched feature name from 0.5 (page scope), or component name derived from scope selection (component scope). Follow `shared/WORKTREE-CREATE.md → Auto-create worktree`. Skip if no clear feature-name is available or if already in a worktree (procedure detects).
 
 ### 0.6 Theme & Project Context
 
