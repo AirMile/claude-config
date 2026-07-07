@@ -114,15 +114,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 1. **If no feature name provided — check backlog:**
 
-   Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
-
-   ```
-   profile: queue
-   status: DEFINED
-   transition: building
-   ```
-
-   Run the `queue` snippet. Auto-select the first entry with `transition === "building"` (no modal needed). Fallback: re-run without transition filter (`$TRANSITION = ""`) to list all DEFINED features. Use **AskUserQuestion** with the first ready feature as suggestion:
+   Backlog load: `node ~/.claude/scripts/backlog-load.js "$REPO" game-queue DEFINED building` → `{ backlogPresent, items }` (see [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)). Auto-select the first entry with `transition === "building"` (no modal needed). Fallback: re-run with no transition arg (`game-queue DEFINED`) to list all DEFINED features. Use **AskUserQuestion** with the first ready feature as suggestion:
 
    ```
    Backlog suggests: {feature-name}
@@ -141,13 +133,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
 
 3. **Project context** (optional, skip if not present):
 
-   Project context load (via [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)):
-
-   ```
-   profile: build
-   ```
-
-   Run the two `node -e` snippets for the `build` profile. Extracts: `stack`, `entities[]` from `project.json`; `structure`, `patterns` (max 15), and full `architecture` (componentTree, scenes, signals, resources) from `project-context.json`.
+   Project context load: `node ~/.claude/scripts/context-load.js "$REPO" game-build` → `{ project, projectContext }` (see [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)). Extracts: `stack`, `entities[]` from `project.json`; `structure`, `patterns` (max 15), and full `architecture` (componentTree, scenes, signals, resources) from `project-context.json`.
 
    **Conventions** (per [shared/CONVENTIONS.md](../shared/CONVENTIONS.md) load rules): run the status check (`head -1 .project/conventions.md`). `set` → `Read` `.project/conventions.md` in full and follow it during code generation for naming, structure, and style — conventions override SHOULD_DO global rules, never MUST_DO. `none` or absent → skip silently, no elicitation here. Log: `CONVENTIONS: loaded | none | not set up`.
 
@@ -202,35 +188,16 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    1. Use queue output from step 1 → suggest via **AskUserQuestion** (ready features at top)
    2. Fallback (backlog absent): list `.project/features/` with `feature.json`, let user select
 
-   Feature load (via [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)):
+   Feature load: `node ~/.claude/scripts/context-load.js "$REPO" game-feature-build "{feature-name}"` (see [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)). Use extracted fields: `requirements[]` (with `tuningLevers[]` per REQ), `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (full scene graph), `design` (sceneLayout/gameplayFlow). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions made by the user).
 
-   ```
-   profile: build
-   feature-name: {feature-name}
-   ```
-
-   Run the `build` snippet. Use extracted fields: `requirements[]` (with `tuningLevers[]` per REQ), `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (full scene graph), `design` (sceneLayout/gameplayFlow). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions made by the user).
-
-   `FEATURE_JSON: not present` → exit: "Run `/game-define` first."
+   `present: false` → exit: "Run `/game-define` first."
 
    **Dependency check:**
 
-   First, load the current feature's backlog entry to get its `dependencies[]` (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
-
-   ```
-   profile: read-feature
-   feature-name: {feature-name}
-   ```
+   First, load the current feature's backlog entry to get its `dependencies[]`: `node ~/.claude/scripts/backlog-load.js "$REPO" game-read-feature "{feature-name}"` (see [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)).
 
    Skip the rest of the dependency check if `blockers[]` (from feature.json) is empty AND backlog `dependencies[]` is absent or empty.
-   1. For each dependency: Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
-
-      ```
-      profile: read-feature
-      feature-name: {dep-name}
-      ```
-
-      Run `read-feature` per dep. Status must be `"DONE"`.
+   1. For each dependency: `node ~/.claude/scripts/backlog-load.js "$REPO" game-read-feature "{dep-name}"` — status must be `"DONE"`.
 
    2. Blockers found → **AskUserQuestion**:
       - "Stop — finish {dep} first (Recommended)" / "Continue anyway"

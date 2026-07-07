@@ -1,168 +1,33 @@
 # Backlog Load Protocol
 
-Shared protocol for extracting fields from `.project/backlog.json` without loading the full file into context. Skills reference this for PHASE 0 read-only access only.
+Extracts fields from `.project/backlog.json` (legacy `.project/backlog.html` fallback) without
+loading the full store into context. Read-only — PHASE 0 context loading only.
 
-> **Schema**: backlog feature-objecten — zie [BACKLOG.md](BACKLOG.md) voor volledige veldlijst en lifecycle-protocol.
+**Not for mutations.** Status updates, date changes, `auto`/`shipped*` flag writes, and transition
+flips use the full Read → mutate-in-memory → Write cycle documented in
+[BACKLOG.md → Lifecycle Protocol → Write](BACKLOG.md).
 
-**Prerequisites** (must be set before running any snippet):
-
-- `$REPO` — absolute path to project root (set in PHASE 0 git baseline detection)
-- `$FEAT` — current feature name in kebab-case (required for `read-feature` profile; not needed for `ready-queue`)
-
----
-
-## When to load
-
-Skills load backlog context during their **PHASE 0 context-load phase** for read-only purposes: risk scores, dependency checks, and external references.
-
-**This protocol is NOT for mutations.** Backlog status updates, date changes, `auto`/`shipped*` flag writes, and transition flips use the full Read → mutate-in-memory → Write cycle documented in [BACKLOG.md → Lifecycle Protocol → Write](BACKLOG.md).
-
-**Legacy fallback**: pre-migration projects store the data embedded in `.project/backlog.html`. Both snippets fall back to extracting from the legacy file so reads keep working until `scripts/migrate-project.py` has run. Write paths migrate first — see BACKLOG.md.
-
----
-
-## Three profiles
-
-### Profile: `read-feature`
-
-For dev-ship's build and define phases (PHASE 0) — extracts the record for the current feature only.
-
-Requires `$FEAT` to be set to the current feature name.
-
-```bash
-node -e "
-  const fs = require('fs');
-  let data = null;
-  try { data = JSON.parse(fs.readFileSync('$REPO/.project/backlog.json', 'utf8')); }
-  catch { try {
-    const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
-    const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
-    if (m) data = JSON.parse(m[1]);
-  } catch {} }
-  if (!data) { console.log('BACKLOG_NOT_PRESENT'); process.exit(0); }
-  const feat = (data.features || []).find(f => f.name === '$FEAT');
-  if (!feat) { console.log('BACKLOG_FEATURE_NOT_FOUND'); process.exit(0); }
-  console.log(JSON.stringify({
-    name: feat.name,
-    type: feat.type,
-    status: feat.status,
-    description: feat.description || null,
-    risk: feat.risk ?? null,
-    dependencies: feat.dependencies || [],
-    externalRef: feat.externalRef || null,
-    transition: feat.transition || null,
-    pageHint: feat.pageHint || []
-  }, null, 2));
-" 2>/dev/null || echo "BACKLOG_NOT_PRESENT"
-```
-
-**Use for**: risk-check (skip ≥4 warning), dependency-status check, `externalRef` passthrough to `feature.json` in PHASE 3, and `description` as interview anchor in PHASE 1a (context echo + coverage check — see `BACKLOG.md § Description quality`).
-
-### Profile: `ready-queue`
-
-For dev-ship's build phase (PHASE 0) — lists DEFINED features to compose the "Ready to build" / "Blocked" queue display.
-
-```bash
-node -e "
-  const fs = require('fs');
-  let data = null;
-  try { data = JSON.parse(fs.readFileSync('$REPO/.project/backlog.json', 'utf8')); }
-  catch { try {
-    const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
-    const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
-    if (m) data = JSON.parse(m[1]);
-  } catch {} }
-  if (!data) { console.log('BACKLOG_NOT_PRESENT'); process.exit(0); }
-  const defined = (data.features || [])
-    .filter(f => f.status === 'DEFINED')
-    .map(f => ({
-      name: f.name,
-      status: f.status,
-      phase: f.phase,
-      dependencies: f.dependencies || []
-    }));
-  const doneNames = new Set(
-    (data.features || []).filter(f => f.status === 'DONE').map(f => f.name)
-  );
-  const result = defined.map(f => ({
-    ...f,
-    ready: f.dependencies.every(d => doneNames.has(d)),
-    blocking: f.dependencies.filter(d => !doneNames.has(d))
-  }));
-  console.log(JSON.stringify(result, null, 2));
-" 2>/dev/null || echo "BACKLOG_NOT_PRESENT"
-```
-
-**Use for**: feature selection display (ready ✓ / blocked ✗ indicators). Dependency-status is computed inline — no separate lookup needed.
-
-### Profile: `open-items`
-
-For the Backlog Impact Check ([BACKLOG.md § Impact Check](BACKLOG.md#impact-check-consumer-protocol)) — lists all **other** open dev-track items so a define-phase can detect which ones this feature covers or obsoletes. Works for both dev and game projects (same store).
-
-Requires `$FEAT` to be set to the current feature name (excluded from the result).
-
-```bash
-node -e "
-  const fs = require('fs');
-  let data = null;
-  try { data = JSON.parse(fs.readFileSync('$REPO/.project/backlog.json', 'utf8')); }
-  catch { try {
-    const html = fs.readFileSync('$REPO/.project/backlog.html', 'utf8');
-    const m = html.match(/<script id=\"backlog-data\"[^>]*>([\s\S]*?)<\/script>/);
-    if (m) data = JSON.parse(m[1]);
-  } catch {} }
-  if (!data) { console.log('BACKLOG_NOT_PRESENT'); process.exit(0); }
-  const items = (data.features || [])
-    .filter(f => f.name !== '$FEAT'
-      && (f.status === 'TODO' || f.status === 'DEFINED')
-      && f.type !== 'PAGE' && f.type !== 'COMPONENT' && f.type !== 'THEME')
-    .map(f => ({
-      name: f.name,
-      type: f.type,
-      status: f.status,
-      description: f.description || null,
-      dependencies: f.dependencies || [],
-      externalRef: f.externalRef ? f.externalRef.type + '#' + f.externalRef.id : null
-    }));
-  console.log(items.length ? JSON.stringify(items, null, 2) : 'BACKLOG_NO_OPEN_ITEMS');
-" 2>/dev/null || echo "BACKLOG_NOT_PRESENT"
-```
-
-**Use for**: the Backlog Impact Check only. `BACKLOG_NO_OPEN_ITEMS` → the check skips silently. Design-track items (PAGE/COMPONENT/THEME) are excluded — their lifecycle is owned by the design pipeline (`pageHint`/`dependencies` linking).
-
----
-
-## Output format
-
-Both profiles return compact JSON. Skills parse the output to compose their PHASE 0 display.
-
-- `BACKLOG_NOT_PRESENT` → no backlog store (neither `backlog.json` nor legacy `backlog.html` with data); skip risk-check, log `Backlog: ⓘ not present — risk-check skipped`.
-- `BACKLOG_FEATURE_NOT_FOUND` → feature not in backlog; log `Backlog: ⓘ not present — risk-check skipped` and continue.
-
----
-
-## Edge cases
-
-- **`$REPO` not set**: `fs.readFileSync` throws → fallback chain ends in `BACKLOG_NOT_PRESENT`.
-- **Malformed JSON**: `JSON.parse` throws → caught, falls through to `BACKLOG_NOT_PRESENT`.
-- **Legacy `<script>` tag has extra attributes**: regex `[^>]*` tolerates any attribute (e.g. `type="application/json"`).
-- **Feature record missing optional fields** (e.g. no `externalRef`): `|| null` / `|| []` defaults return safe empties.
-- **`ready-queue` with no DEFINED features**: returns `[]` — skill shows "No features ready to build."
-
----
-
-## Skill-specific configuration
-
-Each skill specifies in its SKILL.md or references file:
+> **Schema**: backlog feature objects — see [BACKLOG.md](BACKLOG.md) for the full field list and lifecycle protocol.
 
 ```
-Backlog load (via shared/BACKLOG-LOAD.md):
-- profile: read-feature     # or: ready-queue
-- feature-name: <kebab>     # only required for "read-feature" profile
+node scripts/backlog-load.js <repo-root> <profile> [feature-name]
 ```
 
----
+| Profile        | Feature name?                   | Used by                                                                                        |
+| -------------- | ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `read-feature` | required                        | dev-ship build/define PHASE 0 (risk-check, dependency-status, `externalRef`, interview anchor) |
+| `ready-queue`  | —                               | dev-ship build phase selection display (ready ✓ / blocked ✗)                                   |
+| `open-items`   | required (excluded from result) | Backlog Impact Check — [BACKLOG.md § Impact Check](BACKLOG.md#impact-check-consumer-protocol)  |
+| `pages`        | —                               | frontend PAGE enumeration (e.g. `dev-define/references/frontend-discovery.md`)                 |
 
-## Implementation note
+Output: one JSON object per profile.
 
-This is a **read-only** protocol for PHASE 0 context loading only. Backlog mutations (status, date, `auto` flag, `shipped*` velden, `transition`, `audit`) remain the responsibility of PHASE 4/5 writer-paths per [BACKLOG.md → Lifecycle Protocol → Write](BACKLOG.md).
+- `read-feature` → `{ present: false }` if the store or the feature is absent, else
+  `{ present: true, name, type, status, description, risk, dependencies, externalRef, transition, pageHint }`.
+- `ready-queue` / `open-items` / `pages` → `{ backlogPresent, items }` — `items` may be `[]`.
+
+## Game-pipeline equivalent
+
+Game-ship skills use the same script's `game-read-feature` / `game-queue` profiles (parameterized
+on `status`/`transition` — see the game-define/build/verify workflow files for the exact
+invocation per phase).

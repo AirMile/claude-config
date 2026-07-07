@@ -298,7 +298,7 @@ block from the external shared loaders (`shared/` stays external — read in pla
 
 The bullets below are the full-load form (used when define was skipped, and as the shape of each part):
 
-- `shared/PROJECT-CONTEXT-LOAD.md` — run the **build** profile (`FEAT="{feature-name}"`) → stack,
+- `node ~/.claude/scripts/context-load.js "$REPO" build` (see [shared/PROJECT-CONTEXT-LOAD.md](.claude/skills/shared/PROJECT-CONTEXT-LOAD.md)) → stack,
   endpoints, entities, structure, routing, patterns[], componentsCount. _(Reuse from Step 2c when
   define ran — stable dimensions.)_
 - `shared/LEARNINGS-LOAD.md` — scopes `[component]` + `pitfall-prefix: true`, `current-feature:

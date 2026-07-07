@@ -29,13 +29,7 @@ git -C "$REPO" rev-parse HEAD > "$REPO/.project/session/pre-skill-sha.txt"
 
 **Project context** (skip if not present):
 
-Project context load (via [shared/PROJECT-CONTEXT-LOAD.md](.claude/skills/shared/PROJECT-CONTEXT-LOAD.md)):
-
-```
-profile: build
-```
-
-Run the two `node -e` snippets for the `build` profile. Use the extracted output for:
+Project context load: `node ~/.claude/scripts/context-load.js "$REPO" build` → `{ project, projectContext }` (see [shared/PROJECT-CONTEXT-LOAD.md](.claude/skills/shared/PROJECT-CONTEXT-LOAD.md)). Use the extracted output for:
 
 - Existing endpoints (prevent duplicate routes)
 - Existing DB schema / entity names (prevent conflicts)
@@ -68,13 +62,7 @@ Store the loaded learnings for PHASE 1 (Technique Mapping).
 
 Ready queue (only if no feature name provided via CLI):
 
-Backlog load (via [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)):
-
-```
-profile: ready-queue
-```
-
-Run the `ready-queue` snippet. For each returned feature, compute `ready` (all deps DONE) vs blocked. Display before the feature selection:
+Backlog load: `node ~/.claude/scripts/backlog-load.js "$REPO" ready-queue` → `{ backlogPresent, items }` (see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). `items[]` already carries computed `ready`/`blocking`. Display before the feature selection:
 
 ```
 Ready to build:
@@ -91,26 +79,13 @@ Blocked:
 
 If no feature name provided:
 
-1. Backlog load (via [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)):
-
-   ```
-   profile: ready-queue
-   ```
-
-   From the `ready-queue` output: first check for a feature with `transition === "building"` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`. Fallback: filter `ready === true` → suggest via **AskUserQuestion** (ready features at the top).
+1. Backlog load: `node ~/.claude/scripts/backlog-load.js "$REPO" ready-queue` → `{ backlogPresent, items }` (see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). From `items[]`: first check for a feature with `transition === "building"` → if found, auto-select, show: `Backlog: ✓ Task picked up — {name}`. Fallback: filter `ready === true` → suggest via **AskUserQuestion** (ready features at the top).
 
 2. Fallback: list `.project/features/` with `feature.json`, let user select
 
-Feature load (via [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)):
+Feature load: `node ~/.claude/scripts/context-load.js "$REPO" feature-build "{feature-name}"` (see [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)). Use extracted fields: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files.
 
-```
-profile: build
-feature-name: {feature-name}
-```
-
-Run the `build` snippet. Use extracted fields: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files.
-
-`FEATURE_JSON: not present` → exit: "Run `/dev-define` first."
+`present: false` → exit: "Run `/dev-define` first."
 
 **COMPONENT detection** (immediately after feature.json load):
 

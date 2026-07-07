@@ -85,15 +85,7 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
 
    **a) Check backlog for next feature:**
 
-   Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
-
-   ```
-   profile: queue
-   status: DEFINED
-   transition: defining
-   ```
-
-   Run the `queue` snippet. Filter: first entry with `transition === "defining"` → auto-select (no modal needed). Empty result → fall through to option (c)/(d).
+   Backlog load: `node ~/.claude/scripts/backlog-load.js "$REPO" game-queue DEFINED defining` → `{ backlogPresent, items }` (see [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)). Filter: first entry with `transition === "defining"` → auto-select (no modal needed). Empty result → fall through to option (c)/(d).
 
    **b) If backlog has a next feature:**
 
@@ -174,16 +166,9 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 
 5. **Load project context** (parallelize with step 4):
    - Glob + Grep for existing code that imports the feature name
-   - Project context load (via [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)):
+   - Project context load: `node ~/.claude/scripts/context-load.js "$REPO" game-define "{feature-name}"` → `{ project, projectContext }` (see [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)). Extracts: `stack`, `pitch`, `features[]`, `entities[]`, `thinking[]` (filtered to current feature) from `project.json`; `patterns` (max 15) and full `architecture` from `project-context.json`. Use the extracted output for: stack fallback, feature context/pitch, existing feature list (prevent duplicates), existing entities, thinking as PHASE 1 input, code patterns, current scene graph.
 
-     ```
-     profile: define
-     feature-name: {feature-name}
-     ```
-
-     Run the two `node -e` snippets for the `define` profile. Extracts: `stack`, `pitch`, `features[]`, `entities[]`, `thinking[]` (filtered to current feature) from `project.json`; `patterns` (max 15) and full `architecture` from `project-context.json`. Use the extracted output for: stack fallback, feature context/pitch, existing feature list (prevent duplicates), existing entities, thinking as PHASE 1 input, code patterns, current scene graph.
-
-   - **Open-items load** (feeds the PHASE 3 Backlog Impact Check): run the `open-items` profile from [shared/BACKLOG-LOAD.md](../shared/BACKLOG-LOAD.md) (set `$FEAT` to the feature name; the profile is store-generic — it works on game backlogs too) and keep the compact list in memory. `BACKLOG_NOT_PRESENT` / `BACKLOG_NO_OPEN_ITEMS` → the Impact Check will skip silently.
+   - **Open-items load** (feeds the PHASE 3 Backlog Impact Check): `node ~/.claude/scripts/backlog-load.js "$REPO" open-items "{feature-name}"` → `{ backlogPresent, items }` (see [shared/BACKLOG-LOAD.md](../shared/BACKLOG-LOAD.md) — store-generic, works on game backlogs too) and keep the compact list in memory. `backlogPresent: false` or empty `items` → the Impact Check will skip silently.
    - **Name-match on thinking markdown**: Grep `.project/thinking/*.md` on feature name (filename + content). With 1+ match: read the match(es) and use as input for PHASE 1 questions. The `.md` files are the source of truth for thinking output — no 7-day window anymore.
    - **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
      ```

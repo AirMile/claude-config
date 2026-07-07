@@ -297,7 +297,7 @@ block from the external shared loaders (`shared/` stays external — read in pla
 
 The bullets below are the full-load form (used when define was skipped, and as the shape of each part):
 
-- `shared/GAME-CONTEXT-LOAD.md` — run the **build** profile → stack, entities, structure, patterns[],
+- `node ~/.claude/scripts/context-load.js "$REPO" game-build` (see [shared/GAME-CONTEXT-LOAD.md](.claude/skills/shared/GAME-CONTEXT-LOAD.md)) → stack, entities, structure, patterns[],
   full architecture (componentTree, scenes, signals, resources). _(Reuse from Step 2c when define
   ran — stable dimensions.)_
 - `shared/LEARNINGS-LOAD.md` — scopes `[component]` + `pitfall-prefix: true`, `current-feature:

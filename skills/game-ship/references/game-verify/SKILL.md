@@ -163,15 +163,7 @@ Use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at
 
 1. **Check backlog for built features (if no feature name provided):**
 
-   Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
-
-   ```
-   profile: queue
-   status: DOING
-   transition: verifying
-   ```
-
-   Run the `queue` snippet. Auto-select the first entry with `transition === "verifying"` (no modal needed). Fallback: re-run without transition filter (`$TRANSITION = ""`) to list all DOING features, then filter client-side on `stage === "built"`.
+   Backlog load: `node ~/.claude/scripts/backlog-load.js "$REPO" game-queue DOING verifying` → `{ backlogPresent, items }` (see [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)). Auto-select the first entry with `transition === "verifying"` (no modal needed). Fallback: re-run with no transition arg (`game-queue DOING`) to list all DOING features, then filter client-side on `stage === "built"`.
 
    Use **AskUserQuestion** if built features found:
    - header: "Feature"
@@ -192,14 +184,7 @@ Use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at
 
 4. **Locate playtest checklist:**
 
-   Feature load (via [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)):
-
-   ```
-   profile: verify
-   feature-name: {feature-name}
-   ```
-
-   Run the `verify` snippet. Parse `checklist[]`, `requirements[]` (with `tuningLevers[]`), `design`, and `build` from the output.
+   Feature load: `node ~/.claude/scripts/context-load.js "$REPO" game-feature-verify "{feature-name}"` (see [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)). Parse `checklist[]`, `requirements[]` (with `tuningLevers[]`), `design`, and `build` from the output.
 
 5. **Validate feature.json exists with tests.checklist:**
 

@@ -91,15 +91,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 1. **Read backlog for pipeline status:**
 
-   Backlog load (via [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)):
-
-   ```
-   profile: queue
-   status: DONE
-   transition: refactoring
-   ```
-
-   Run the `queue` snippet. Auto-select first entry with `transition === "refactoring"` — pre-select. Fallback: re-run without transition filter (`$TRANSITION = ""`) to list all DONE features.
+   Backlog load: `node ~/.claude/scripts/backlog-load.js "$REPO" game-queue DONE refactoring` → `{ backlogPresent, items }` (see [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)). Auto-select first entry with `transition === "refactoring"` — pre-select. Fallback: re-run with no transition arg (`game-queue DONE`) to list all DONE features.
    - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` section
    - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
 
@@ -118,16 +110,9 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 4. **Load feature.json for every feature in queue:**
 
-   For each feature, run Feature load (via [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)):
+   For each feature: `node ~/.claude/scripts/context-load.js "$REPO" game-feature-verify "{feature-name}"` (see [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)). Extracts: `requirements[]` (with tuningLevers), `files[]`, `checklist[]`, `design`, `build`. Use `requirements[]` for architecture analysis, `files[]` for file list, `checklist[]` to check verification coverage. Full `architecture` is available from the `game-build` profile (step 6).
 
-   ```
-   profile: verify
-   feature-name: {feature-name}
-   ```
-
-   The `verify` profile extracts: `requirements[]` (with tuningLevers), `files[]`, `checklist[]`, `design`, `build`. Use `requirements[]` for architecture analysis, `files[]` for file list, `checklist[]` to check verification coverage. Full `architecture` is available from GAME-CONTEXT-LOAD `build` profile (step 6).
-
-   `FEATURE_JSON: not present` → remove from queue and warn.
+   `present: false` → remove from queue and warn.
 
 5. **Build pipeline files list per feature:**
 
@@ -138,13 +123,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 6. **Load project conventions + learnings** (for Explore agent context):
 
-   Project context load (via [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)):
-
-   ```
-   profile: build
-   ```
-
-   Run snippet 2 only (project-context.json). Extracts: `structure`, `patterns` (max 15), full `architecture`. Store `patterns` as `PROJECT_CONVENTIONS` and `architecture` as scene-graph context for injection into Explore agent prompts (PHASE 1).
+   Project context load: `node ~/.claude/scripts/context-load.js "$REPO" game-build` (see [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)) — use the `projectContext` half of the output only. Extracts: `structure`, `patterns` (max 15), full `architecture`. Store `patterns` as `PROJECT_CONVENTIONS` and `architecture` as scene-graph context for injection into Explore agent prompts (PHASE 1).
 
    **Conventions status check** (see [shared/CONVENTIONS.md](../shared/CONVENTIONS.md)): `head -1 .project/conventions.md` → `set` → store `conventions_set = true` for the PHASE 1 agent prompt (agents read the file themselves). `none` or absent → skip silently — **no elicitation here** (that lives in core-setup + dev-ship's refactor phase).
 

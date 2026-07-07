@@ -70,21 +70,11 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
 
 4. **Context load** (reads only, parallelize):
    - Glob + Grep for existing code that imports the feature name. ≥1 match: briefly mention files.
-   - Project context load (via [shared/PROJECT-CONTEXT-LOAD.md](.claude/skills/shared/PROJECT-CONTEXT-LOAD.md)):
-     ```
-     profile: define
-     feature-name: {feature-name}
-     ```
-     Run the two `node -e` snippets for the `define` profile (set `FEAT="{feature-name}"` before running).
-   - **Onboarding check** (after project.json extract): `PROJECT_JSON: not present` → warn `⚠️ No project.json found. Consider /core-setup.`; present but `stack === null && features.length === 0` → warn `ℹ️ project.json lacks codebase context. /core-setup can fill this in.`; present with content → continue silently. Non-blocking.
+   - Project context load: `node ~/.claude/scripts/context-load.js "$REPO" define "{feature-name}"` → `{ project, projectContext }` (see [shared/PROJECT-CONTEXT-LOAD.md](.claude/skills/shared/PROJECT-CONTEXT-LOAD.md) for field rationale).
+   - **Onboarding check** (after the extract): `project === null` → warn `⚠️ No project.json found. Consider /core-setup.`; present but `stack === null && features.length === 0` → warn `ℹ️ project.json lacks codebase context. /core-setup can fill this in.`; present with content → continue silently. Non-blocking.
    - Read `.claude/research/stack-baseline.md` — **decision input, not just fallback**: extract the section(s) matching this feature's stack area (e.g. navigation, storage, maps) into memory so PHASE 1b's baseline gate and PHASE 2's baseline check can reuse them without re-reading. If absent, use `project.json.stack` as basis.
-   - **Backlog read-only** (required — feeds the PHASE 1 risk-check + PHASE 3 externalRef passthrough): Backlog load (via [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)):
-     ```
-     profile: read-feature
-     feature-name: {feature-name}
-     ```
-     Keep `risk`, `dependencies`, `externalRef`, and `description` in memory for PHASE 1 and PHASE 3 — `description` feeds the PHASE 1a context echo and coverage check. Mutations (status, date, `auto` flag) happen in PHASE 4. `BACKLOG_FEATURE_NOT_FOUND` or `BACKLOG_HTML: not present` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
-   - **Open-items load** (same batch — feeds the PHASE 2 Backlog Impact Check): run the `open-items` profile from [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md) (`$FEAT` already set) and keep the compact list in memory. `BACKLOG_NOT_PRESENT` / `BACKLOG_NO_OPEN_ITEMS` → the Impact Check will skip silently.
+   - **Backlog read-only** (required — feeds the PHASE 1 risk-check + PHASE 3 externalRef passthrough): `node ~/.claude/scripts/backlog-load.js "$REPO" read-feature "{feature-name}"` → `{ present, risk, dependencies, externalRef, description, ... }` (see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). Keep `risk`, `dependencies`, `externalRef`, and `description` in memory for PHASE 1 and PHASE 3 — `description` feeds the PHASE 1a context echo and coverage check. Mutations (status, date, `auto` flag) happen in PHASE 4. `present: false` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
+   - **Open-items load** (same batch — feeds the PHASE 2 Backlog Impact Check): `node ~/.claude/scripts/backlog-load.js "$REPO" open-items "{feature-name}"` → `{ backlogPresent, items }` and keep the compact list in memory. `backlogPresent: false` or empty `items` → the Impact Check will skip silently.
 
 5. **Optional context** (skip each item if results would be empty):
    - **Thinking files**: Grep `.project/thinking/*.md` for feature name. Read matches as PHASE 1 input.

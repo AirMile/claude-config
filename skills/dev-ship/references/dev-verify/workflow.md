@@ -60,22 +60,15 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    - Feature name + inline feedback → skip to PHASE 1b.
    - Feature name + free text → skip to PHASE 1b.
 
-3. **Validate build output** — Feature load (via [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)):
+3. **Validate build output** — Feature load: `node ~/.claude/scripts/context-load.js "$REPO" feature-verify "{feature-name}"` (see [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)). Parse `checklist[]` from the output.
 
-   ```
-   profile: verify
-   feature-name: {feature-name}
-   ```
-
-   Run the `verify` snippet. Parse `checklist[]` from the output.
-
-   `FEATURE_JSON: not present` or `checklist` empty → check whether `/dev-build` committed it to the worktree-branch but main doesn't have it yet:
+   `present: false` or `checklist` empty → check whether `/dev-build` committed it to the worktree-branch but main doesn't have it yet:
 
    ```bash
    git -C {worktree-path} show HEAD:.project/features/{feature-name}/feature.json 2>/dev/null
    ```
 
-   Output with valid JSON containing `tests.checklist[]` → write it to main's `.project/features/{feature-name}/feature.json` (creates the file from the committed worktree state), then **re-run the FEATURE-LOAD `verify` snippet** so `type` / `checklist` / `requirements` / `files` are loaded into context, and proceed. No worktree, or `git show` empty/invalid → exit: run `/dev-build` first.
+   Output with valid JSON containing `tests.checklist[]` → write it to main's `.project/features/{feature-name}/feature.json` (creates the file from the committed worktree state), then **re-run the `feature-verify` load** so `type` / `checklist` / `requirements` / `files` are loaded into context, and proceed. No worktree, or `git show` empty/invalid → exit: run `/dev-build` first.
 
    **COMPONENT detection** (after feature.json load): check whether `feature.type === "COMPONENT"` or backlog-item type is COMPONENT. If yes: set `IS_COMPONENT_VERIFY = true`. Resolve render context in this order:
    1. Grep `app/**/page.tsx` for an import matching `{PascalName}` — first match → navigate to that route.
@@ -100,13 +93,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
    Substitute `npm run lint` with the project's lint script (resolve from `package.json` scripts: `lint` / `check` / `typecheck`; no match → write empty file).
 
-6. **Load stack & project context** — CLAUDE.md stack section + project context via [shared/PROJECT-CONTEXT-LOAD.md](.claude/skills/shared/PROJECT-CONTEXT-LOAD.md):
-
-   ```
-   profile: verify
-   ```
-
-   Run the two `node -e` snippets for the `verify` profile. Compose STACK_CONTEXT from the extracted output:
+6. **Load stack & project context** — CLAUDE.md stack section + `node ~/.claude/scripts/context-load.js "$REPO" verify` → `{ project, projectContext }` (see [shared/PROJECT-CONTEXT-LOAD.md](.claude/skills/shared/PROJECT-CONTEXT-LOAD.md)). Compose STACK_CONTEXT from the extracted output:
 
    ```
    STACK CONTEXT:

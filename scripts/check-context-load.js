@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Guard script: validates that all context-load helper profiles extract
- * the expected keys from the fixture files in scripts/fixtures/.
+ * Guard script: validates that scripts/context-load.js and
+ * scripts/backlog-load.js return the expected keys for every profile,
+ * running the real scripts (not a re-implementation) against a throwaway
+ * .project/ tree built from scripts/fixtures/.
  *
  * Run: node scripts/check-context-load.js
  * Exit 0 = all profiles OK. Exit 1 = one or more failures.
@@ -13,29 +15,12 @@
 
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
+const { execFileSync } = require("child_process");
 
+const ROOT = path.join(__dirname, "..");
 const FIXTURES = path.join(__dirname, "fixtures");
 const FEAT = "fixture-feature";
-
-// Backlog store loader — mirrors BACKLOG-LOAD.md / GAME-BACKLOG-LOAD.md:
-// canonical .project/backlog.json first, legacy backlog.html fallback.
-function loadBacklogData(jsonFixture, htmlFixture) {
-  const jp = path.join(FIXTURES, jsonFixture);
-  if (fs.existsSync(jp)) return JSON.parse(fs.readFileSync(jp, "utf8"));
-  const html = fs.readFileSync(path.join(FIXTURES, htmlFixture), "utf8");
-  const m = html.match(/<script id="backlog-data"[^>]*>([\s\S]*?)<\/script>/);
-  if (!m) throw new Error("no backlog-data script tag found");
-  return JSON.parse(m[1]);
-}
-
-// Legacy-only loader — used to assert the fallback path keeps working on
-// pre-migration projects.
-function loadLegacyBacklogData(htmlFixture) {
-  const html = fs.readFileSync(path.join(FIXTURES, htmlFixture), "utf8");
-  const m = html.match(/<script id="backlog-data"[^>]*>([\s\S]*?)<\/script>/);
-  if (!m) throw new Error("no backlog-data script tag found");
-  return JSON.parse(m[1]);
-}
 
 let passed = 0;
 let failed = 0;
@@ -59,9 +44,18 @@ function checkKeys(label, obj, requiredKeys) {
   }
 }
 
-function run(label, fn, requiredKeys) {
+function runScript(script, args) {
+  const out = execFileSync(
+    "node",
+    [path.join(ROOT, "scripts", script), ...args],
+    { encoding: "utf8" },
+  );
+  return JSON.parse(out);
+}
+
+function check(label, script, args, requiredKeys) {
   try {
-    const result = fn();
+    const result = runScript(script, args);
     if (result === null || typeof result !== "object") {
       fail(label, `expected object, got ${typeof result}`);
       return;
@@ -72,158 +66,154 @@ function run(label, fn, requiredKeys) {
   }
 }
 
-// ─── PROJECT-CONTEXT-LOAD: build profile ──────────────────────────────────────
+// ─── Build a throwaway .project/ tree from fixtures ───────────────────────────
 
-run(
-  "PROJECT-CONTEXT-LOAD / build / project.json",
-  () => {
-    const p = require(path.join(FIXTURES, "project.json"));
-    return {
-      stack: p.stack || null,
-      endpoints: (p.endpoints || []).map((e) => ({
-        method: e.method,
-        path: e.path,
-        auth: e.auth,
-      })),
-      entities: (p.data?.entities || []).map((e) => e.name),
-      themeColors: p.theme?.colors || [],
-      themeMotionPack: p.theme?.motion?.pack || null,
-      themeCssVarsEmpty: !p.theme?.cssVars || p.theme.cssVars.trim() === "",
-    };
-  },
+const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), "context-load-guard-"));
+const devRepo = path.join(tmpBase, "dev");
+const gameRepo = path.join(tmpBase, "game");
+const legacyRepo = path.join(tmpBase, "legacy");
+
+function seed(repoRoot, files) {
+  fs.mkdirSync(path.join(repoRoot, ".project", "features", FEAT), {
+    recursive: true,
+  });
+  for (const [dest, src] of Object.entries(files)) {
+    fs.copyFileSync(
+      path.join(FIXTURES, src),
+      path.join(repoRoot, ".project", dest),
+    );
+  }
+}
+
+seed(devRepo, {
+  "project.json": "project.json",
+  "project-context.json": "project-context.json",
+  "backlog.json": "backlog.json",
+  [`features/${FEAT}/feature.json`]: "feature.json",
+});
+
+seed(gameRepo, {
+  "project.json": "game-project.json",
+  "project-context.json": "game-project-context.json",
+  "backlog.json": "game-backlog.json",
+  [`features/${FEAT}/feature.json`]: "game-feature.json",
+});
+
+// Legacy repo: backlog.html only, no backlog.json — proves the fallback path.
+fs.mkdirSync(path.join(legacyRepo, ".project"), { recursive: true });
+fs.copyFileSync(
+  path.join(FIXTURES, "backlog.html"),
+  path.join(legacyRepo, ".project", "backlog.html"),
+);
+
+// ─── context-load.js ───────────────────────────────────────────────────────────
+
+check(
+  "context-load / build",
+  "context-load.js",
+  [devRepo, "build"],
+  ["project", "projectContext"],
+);
+check(
+  "context-load / define",
+  "context-load.js",
+  [devRepo, "define", FEAT],
+  ["project", "projectContext"],
+);
+check(
+  "context-load / verify",
+  "context-load.js",
+  [devRepo, "verify"],
+  ["project", "projectContext"],
+);
+check(
+  "context-load / feature-build",
+  "context-load.js",
+  [devRepo, "feature-build", FEAT],
   [
-    "stack",
-    "endpoints",
-    "entities",
-    "themeColors",
-    "themeMotionPack",
-    "themeCssVarsEmpty",
+    "present",
+    "type",
+    "requirements",
+    "buildSequence",
+    "files",
+    "testStrategy",
+    "architecture",
+    "clarifications",
+    "blockers",
   ],
 );
-
-run(
-  "PROJECT-CONTEXT-LOAD / build / project-context.json",
-  () => {
-    const c = require(path.join(FIXTURES, "project-context.json"));
-    return {
-      structure: c.context?.structure || null,
-      routing: c.context?.routing || null,
-      patterns: (c.context?.patterns || []).slice(0, 15),
-      componentsCount: (c.architecture?.components || []).length,
-    };
-  },
-  ["structure", "routing", "patterns", "componentsCount"],
-);
-
-// ─── PROJECT-CONTEXT-LOAD: define profile ─────────────────────────────────────
-
-run(
-  "PROJECT-CONTEXT-LOAD / define / project.json",
-  () => {
-    const p = require(path.join(FIXTURES, "project.json"));
-    const f = FEAT;
-    return {
-      stack: p.stack,
-      pitch: p.seed?.pitch || (p.seed?.content || "").slice(0, 240),
-      // Feature list now comes from the backlog store (single source of truth)
-      features: (
-        loadBacklogData("backlog.json", "backlog.html").features || []
-      ).map((x) => ({
-        name: x.name,
-        status: x.status,
-        summary: x.summary || x.description,
-      })),
-      endpoints: (p.endpoints || []).map((e) => ({
-        method: e.method,
-        path: e.path,
-      })),
-      entities: (p.data?.entities || []).map((e) => e.name),
-      thinking: (p.thinking || []).filter((t) => t.newFeature === f),
-      designComponents: (p.design?.components || []).map((c) => c.name),
-      designPages: (p.design?.pages || []).map((pg) => pg.name),
-    };
-  },
+check(
+  "context-load / feature-verify",
+  "context-load.js",
+  [devRepo, "feature-verify", FEAT],
   [
-    "stack",
-    "pitch",
-    "features",
-    "endpoints",
-    "entities",
-    "thinking",
-    "designComponents",
-    "designPages",
+    "present",
+    "type",
+    "checklist",
+    "requirements",
+    "files",
+    "runCommand",
+    "design",
+    "apiContract",
   ],
 );
-
-run(
-  "PROJECT-CONTEXT-LOAD / define / project-context.json",
-  () => {
-    const c = require(path.join(FIXTURES, "project-context.json"));
-    return {
-      patterns: (c.context?.patterns || []).slice(0, 15),
-      components: (c.architecture?.components || []).map((x) => ({
-        name: x.name,
-        description: x.description,
-        feature: x.feature,
-      })),
-    };
-  },
-  ["patterns", "components"],
+check(
+  "context-load / feature-build (missing feature → present:false)",
+  "context-load.js",
+  [devRepo, "feature-build", "no-such-feature"],
+  ["present"],
 );
 
-// ─── PROJECT-CONTEXT-LOAD: verify profile ─────────────────────────────────────
-
-run(
-  "PROJECT-CONTEXT-LOAD / verify / project.json",
-  () => {
-    const p = require(path.join(FIXTURES, "project.json"));
-    return {
-      stack: p.stack || null,
-      endpoints: (p.endpoints || []).map((e) => ({
-        method: e.method,
-        path: e.path,
-        auth: e.auth,
-      })),
-      entities: (p.data?.entities || []).map((e) => e.name),
-    };
-  },
-  ["stack", "endpoints", "entities"],
+check(
+  "context-load / game-define",
+  "context-load.js",
+  [gameRepo, "game-define", FEAT],
+  ["project", "projectContext"],
 );
-
-run(
-  "PROJECT-CONTEXT-LOAD / verify / project-context.json",
-  () => {
-    const c = require(path.join(FIXTURES, "project-context.json"));
-    return {
-      structure: c.context?.structure || null,
-      routing: c.context?.routing || null,
-      patterns: (c.context?.patterns || []).slice(0, 15),
-      components: (c.architecture?.components || []).map((x) => x.name),
-    };
-  },
-  ["structure", "routing", "patterns", "components"],
+check(
+  "context-load / game-build",
+  "context-load.js",
+  [gameRepo, "game-build"],
+  ["project", "projectContext"],
 );
-
-// ─── BACKLOG-LOAD: read-feature profile ───────────────────────────────────────
-
-run(
-  "BACKLOG-LOAD / read-feature",
-  () => {
-    const data = loadBacklogData("backlog.json", "backlog.html");
-    const feat = (data.features || []).find((f) => f.name === FEAT);
-    if (!feat) throw new Error(`feature "${FEAT}" not found in backlog`);
-    return {
-      name: feat.name,
-      type: feat.type,
-      status: feat.status,
-      risk: feat.risk ?? null,
-      dependencies: feat.dependencies || [],
-      externalRef: feat.externalRef || null,
-      transition: feat.transition || null,
-      pageHint: feat.pageHint || [],
-    };
-  },
+check(
+  "context-load / game-verify",
+  "context-load.js",
+  [gameRepo, "game-verify"],
+  ["project", "projectContext"],
+);
+check(
+  "context-load / game-feature-build",
+  "context-load.js",
+  [gameRepo, "game-feature-build", FEAT],
   [
+    "present",
+    "type",
+    "requirements",
+    "buildSequence",
+    "files",
+    "testStrategy",
+    "architecture",
+    "design",
+    "clarifications",
+    "blockers",
+  ],
+);
+check(
+  "context-load / game-feature-verify",
+  "context-load.js",
+  [gameRepo, "game-feature-verify", FEAT],
+  ["present", "type", "checklist", "requirements", "files", "design", "build"],
+);
+
+// ─── backlog-load.js ───────────────────────────────────────────────────────────
+
+check(
+  "backlog-load / read-feature",
+  "backlog-load.js",
+  [devRepo, "read-feature", FEAT],
+  [
+    "present",
     "name",
     "type",
     "status",
@@ -234,305 +224,30 @@ run(
     "pageHint",
   ],
 );
-
-// ─── BACKLOG-LOAD: ready-queue profile ────────────────────────────────────────
-
-run(
-  "BACKLOG-LOAD / ready-queue",
-  () => {
-    const data = loadBacklogData("backlog.json", "backlog.html");
-    const doneNames = new Set(
-      (data.features || [])
-        .filter((f) => f.status === "DONE")
-        .map((f) => f.name),
-    );
-    const result = (data.features || [])
-      .filter((f) => f.status === "DEFINED")
-      .map((f) => ({
-        name: f.name,
-        status: f.status,
-        phase: f.phase,
-        dependencies: f.dependencies || [],
-        ready: (f.dependencies || []).every((d) => doneNames.has(d)),
-        blocking: (f.dependencies || []).filter((d) => !doneNames.has(d)),
-      }));
-    // Validate item shape of the first entry (if any)
-    if (result.length > 0) {
-      const item = result[0];
-      const itemKeys = [
-        "name",
-        "status",
-        "phase",
-        "dependencies",
-        "ready",
-        "blocking",
-      ];
-      const missing = itemKeys.filter((k) => item[k] === undefined);
-      if (missing.length) {
-        throw new Error(`ready-queue item missing keys: ${missing.join(", ")}`);
-      }
-    }
-    return { queue: result };
-  },
-  ["queue"],
+check(
+  "backlog-load / ready-queue",
+  "backlog-load.js",
+  [devRepo, "ready-queue"],
+  ["backlogPresent", "items"],
 );
-
-// ─── FEATURE-LOAD: build profile ──────────────────────────────────────────────
-
-run(
-  "FEATURE-LOAD / build",
-  () => {
-    const f = require(path.join(FIXTURES, "feature.json"));
-    return {
-      type: f.type || "FEATURE",
-      hasUI: f.hasUI ?? false,
-      requirements: (f.requirements || []).map((r) => ({
-        id: r.id,
-        description: r.description,
-        acceptance: r.acceptance,
-        errorScenarios: r.errorScenarios,
-        deltaOp: r.deltaOp,
-      })),
-      buildSequence: f.buildSequence || [],
-      files: (f.files || []).map((x) => ({ path: x.path, action: x.action })),
-      testStrategy: f.testStrategy || [],
-      architecture: {
-        registries: f.architecture?.registries || [],
-        interfaces: f.architecture?.interfaces || null,
-        scope: f.architecture?.scope || null,
-      },
-      clarifications: f.clarifications || [],
-      blockers: f.build?.blockers || [],
-    };
-  },
+check(
+  "backlog-load / open-items",
+  "backlog-load.js",
+  [devRepo, "open-items", FEAT],
+  ["backlogPresent", "items"],
+);
+check(
+  "backlog-load / pages",
+  "backlog-load.js",
+  [devRepo, "pages"],
+  ["backlogPresent", "items"],
+);
+check(
+  "backlog-load / game-read-feature",
+  "backlog-load.js",
+  [gameRepo, "game-read-feature", FEAT],
   [
-    "type",
-    "hasUI",
-    "requirements",
-    "buildSequence",
-    "files",
-    "testStrategy",
-    "architecture",
-    "clarifications",
-    "blockers",
-  ],
-);
-
-// ─── FEATURE-LOAD: verify profile ─────────────────────────────────────────────
-
-run(
-  "FEATURE-LOAD / verify",
-  () => {
-    const f = require(path.join(FIXTURES, "feature.json"));
-    return {
-      type: f.type || "FEATURE",
-      checklist: f.tests?.checklist || [],
-      requirements: (f.requirements || []).map((r) => ({
-        id: r.id,
-        description: r.description,
-        acceptance: r.acceptance,
-        errorScenarios: r.errorScenarios,
-        deltaOp: r.deltaOp,
-        httpContractTested: r.httpContractTested,
-      })),
-      files: (f.files || []).map((x) => ({ path: x.path, action: x.action })),
-      runCommand: f.build?.runCommand || null,
-      design: f.design || null,
-      apiContract: f.apiContract || null,
-    };
-  },
-  [
-    "type",
-    "checklist",
-    "requirements",
-    "files",
-    "runCommand",
-    "design",
-    "apiContract",
-  ],
-);
-
-// ─── GAME-CONTEXT-LOAD: define profile ───────────────────────────────────────
-
-const GAME_FEAT = "fixture-feature";
-
-run(
-  "GAME-CONTEXT-LOAD / define / game-project.json",
-  () => {
-    const p = require(path.join(FIXTURES, "game-project.json"));
-    return {
-      stack: p.stack || null,
-      pitch: p.seed?.pitch || (p.seed?.content || "").slice(0, 240),
-      // Feature list now comes from the backlog store (single source of truth)
-      features: (
-        loadBacklogData("game-backlog.json", "game-backlog.html").features || []
-      ).map((x) => ({
-        name: x.name,
-        status: x.status,
-        summary: x.summary || x.description,
-      })),
-      entities: (p.data?.entities || []).map((e) =>
-        typeof e === "string" ? e : e.name,
-      ),
-      thinking: (p.thinking || []).filter((t) => t.newFeature === GAME_FEAT),
-    };
-  },
-  ["stack", "pitch", "features", "entities", "thinking"],
-);
-
-run(
-  "GAME-CONTEXT-LOAD / define / game-project-context.json",
-  () => {
-    const c = require(path.join(FIXTURES, "game-project-context.json"));
-    return {
-      patterns: (c.context?.patterns || []).slice(0, 15),
-      architecture: c.architecture || null,
-    };
-  },
-  ["patterns", "architecture"],
-);
-
-// ─── GAME-CONTEXT-LOAD: build profile ────────────────────────────────────────
-
-run(
-  "GAME-CONTEXT-LOAD / build / game-project.json",
-  () => {
-    const p = require(path.join(FIXTURES, "game-project.json"));
-    return {
-      stack: p.stack || null,
-      entities: (p.data?.entities || []).map((e) =>
-        typeof e === "string" ? e : e.name,
-      ),
-    };
-  },
-  ["stack", "entities"],
-);
-
-run(
-  "GAME-CONTEXT-LOAD / build / game-project-context.json",
-  () => {
-    const c = require(path.join(FIXTURES, "game-project-context.json"));
-    return {
-      structure: c.context?.structure || null,
-      patterns: (c.context?.patterns || []).slice(0, 15),
-      architecture: c.architecture || null,
-    };
-  },
-  ["structure", "patterns", "architecture"],
-);
-
-// ─── GAME-CONTEXT-LOAD: verify profile ───────────────────────────────────────
-
-run(
-  "GAME-CONTEXT-LOAD / verify / game-project.json",
-  () => {
-    const p = require(path.join(FIXTURES, "game-project.json"));
-    return {
-      stack: p.stack || null,
-      entities: (p.data?.entities || []).map((e) =>
-        typeof e === "string" ? e : e.name,
-      ),
-    };
-  },
-  ["stack", "entities"],
-);
-
-run(
-  "GAME-CONTEXT-LOAD / verify / game-project-context.json",
-  () => {
-    const c = require(path.join(FIXTURES, "game-project-context.json"));
-    return {
-      structure: c.context?.structure || null,
-      routing: c.context?.routing ?? null,
-      patterns: (c.context?.patterns || []).slice(0, 15),
-      architecture: c.architecture || null,
-    };
-  },
-  ["structure", "routing", "patterns", "architecture"],
-);
-
-// ─── GAME-FEATURE-LOAD: build profile ────────────────────────────────────────
-
-run(
-  "GAME-FEATURE-LOAD / build",
-  () => {
-    const f = require(path.join(FIXTURES, "game-feature.json"));
-    return {
-      type: f.type || "FEATURE",
-      requirements: (f.requirements || []).map((r) => ({
-        id: r.id,
-        description: r.description,
-        acceptance: r.acceptance,
-        errorScenarios: r.errorScenarios,
-        tuningLevers: r.tuningLevers || null,
-      })),
-      buildSequence: f.buildSequence || [],
-      files: (f.files || []).map((x) => ({ path: x.path, action: x.action })),
-      testStrategy: f.testStrategy || [],
-      architecture: f.architecture || null,
-      design: f.design || null,
-      clarifications: f.clarifications || [],
-      blockers: f.build?.blockers || [],
-    };
-  },
-  [
-    "type",
-    "requirements",
-    "buildSequence",
-    "files",
-    "testStrategy",
-    "architecture",
-    "design",
-    "clarifications",
-    "blockers",
-  ],
-);
-
-// ─── GAME-FEATURE-LOAD: verify profile ───────────────────────────────────────
-
-run(
-  "GAME-FEATURE-LOAD / verify",
-  () => {
-    const f = require(path.join(FIXTURES, "game-feature.json"));
-    return {
-      type: f.type || "FEATURE",
-      checklist: f.tests?.checklist || [],
-      requirements: (f.requirements || []).map((r) => ({
-        id: r.id,
-        description: r.description,
-        acceptance: r.acceptance,
-        errorScenarios: r.errorScenarios,
-        tuningLevers: r.tuningLevers || null,
-      })),
-      files: (f.files || []).map((x) => ({ path: x.path, action: x.action })),
-      design: f.design || null,
-      build: f.build || null,
-    };
-  },
-  ["type", "checklist", "requirements", "files", "design", "build"],
-);
-
-// ─── GAME-BACKLOG-LOAD: read-feature profile ──────────────────────────────────
-
-run(
-  "GAME-BACKLOG-LOAD / read-feature",
-  () => {
-    const data = loadBacklogData("game-backlog.json", "game-backlog.html");
-    const feat = (data.features || []).find((f) => f.name === GAME_FEAT);
-    if (!feat) throw new Error(`feature "${GAME_FEAT}" not found in backlog`);
-    return {
-      name: feat.name,
-      type: feat.type,
-      status: feat.status,
-      stage: feat.stage || null,
-      risk: feat.risk ?? null,
-      dependencies: feat.dependencies || [],
-      externalRef: feat.externalRef || null,
-      transition: feat.transition || null,
-      pageHint: feat.pageHint || [],
-    };
-  },
-  [
+    "present",
     "name",
     "type",
     "status",
@@ -544,108 +259,49 @@ run(
     "pageHint",
   ],
 );
-
-// ─── GAME-BACKLOG-LOAD: queue profile (status=DEFINED) ───────────────────────
-
-run(
-  "GAME-BACKLOG-LOAD / queue / DEFINED",
-  () => {
-    const data = loadBacklogData("game-backlog.json", "game-backlog.html");
-    const status = "DEFINED";
-    const transition = "";
-    const doneNames = new Set(
-      (data.features || [])
-        .filter((f) => f.status === "DONE")
-        .map((f) => f.name),
+check(
+  "backlog-load / game-queue / DEFINED",
+  "backlog-load.js",
+  [gameRepo, "game-queue", "DEFINED"],
+  ["backlogPresent", "items"],
+);
+check(
+  "backlog-load / game-queue / DOING+verifying",
+  "backlog-load.js",
+  [gameRepo, "game-queue", "DOING", "verifying"],
+  ["backlogPresent", "items"],
+);
+{
+  const result = runScript("backlog-load.js", [
+    gameRepo,
+    "game-queue",
+    "DOING",
+    "verifying",
+  ]);
+  if (!Array.isArray(result.items) || result.items.length === 0) {
+    fail(
+      "backlog-load / game-queue / DOING+verifying (non-empty)",
+      "expected >=1 DOING+verifying feature in fixture",
     );
-    const result = (data.features || [])
-      .filter(
-        (f) =>
-          f.status === status && (!transition || f.transition === transition),
-      )
-      .map((f) => ({
-        name: f.name,
-        status: f.status,
-        stage: f.stage || null,
-        phase: f.phase,
-        dependencies: f.dependencies || [],
-        transition: f.transition || null,
-        ready:
-          status === "DEFINED"
-            ? (f.dependencies || []).every((d) => doneNames.has(d))
-            : null,
-        blocking:
-          status === "DEFINED"
-            ? (f.dependencies || []).filter((d) => !doneNames.has(d))
-            : null,
-      }));
-    if (result.length > 0) {
-      const item = result[0];
-      const itemKeys = [
-        "name",
-        "status",
-        "stage",
-        "phase",
-        "dependencies",
-        "transition",
-        "ready",
-        "blocking",
-      ];
-      const missing = itemKeys.filter((k) => item[k] === undefined);
-      if (missing.length) {
-        throw new Error(`queue item missing keys: ${missing.join(", ")}`);
-      }
-    }
-    return { queue: result };
-  },
-  ["queue"],
-);
-
-// ─── GAME-BACKLOG-LOAD: queue profile (status=DOING, transition=verifying) ───
-
-run(
-  "GAME-BACKLOG-LOAD / queue / DOING+verifying",
-  () => {
-    const data = loadBacklogData("game-backlog.json", "game-backlog.html");
-    const status = "DOING";
-    const transition = "verifying";
-    const result = (data.features || [])
-      .filter(
-        (f) =>
-          f.status === status && (!transition || f.transition === transition),
-      )
-      .map((f) => ({
-        name: f.name,
-        status: f.status,
-        stage: f.stage || null,
-        phase: f.phase,
-        dependencies: f.dependencies || [],
-        transition: f.transition || null,
-        ready: null,
-        blocking: null,
-      }));
-    if (result.length === 0)
-      throw new Error("expected ≥1 DOING+verifying feature in fixture");
-    return { queue: result };
-  },
-  ["queue"],
-);
+  } else {
+    ok("backlog-load / game-queue / DOING+verifying (non-empty)");
+  }
+}
 
 // ─── Legacy fallback: pre-migration backlog.html still readable ───────────────
 
-run(
-  "BACKLOG-LOAD / legacy backlog.html fallback",
-  () => {
-    const data = loadLegacyBacklogData("backlog.html");
-    const feat = (data.features || []).find((f) => f.name === FEAT);
-    if (!feat) throw new Error(`feature "${FEAT}" not found in legacy backlog`);
-    return { name: feat.name, status: feat.status };
-  },
-  ["name", "status"],
+check(
+  "backlog-load / legacy backlog.html fallback",
+  "backlog-load.js",
+  [legacyRepo, "read-feature", FEAT],
+  ["present", "name", "status"],
 );
 
-// ─── Summary ──────────────────────────────────────────────────────────────────
+// ─── Cleanup ───────────────────────────────────────────────────────────────────
 
+fs.rmSync(tmpBase, { recursive: true, force: true });
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\nContext-load guard: ${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
