@@ -304,9 +304,9 @@ When in doubt → do not emit. Append-only contract makes cleanup expensive.
 
 ## Consolidation (size lifecycle)
 
-`learnings[]` is append-only at write time, but not unbounded: when the list grows past the threshold, `/core-pull` consolidates it (PHASE 4j.7). This keeps the active list small enough that scoped loads stay sharp and dedup passes stay cheap.
+`learnings[]` is append-only at write time. Consolidation is **opportunistic noise reduction** — merging redundant same-`feature`+`type` clusters and aging out stale observations — not a hard cap on active-list size: loads are relevance-scored (`scripts/learnings-search.js` / `LEARNINGS-LOAD.md`), so context cost scales with what a load _shows_ (per-scope capped, e.g. 10/15/5), never with how many entries are _stored_. A large, diverse active list costs nothing to load.
 
-**Trigger**: after the dedup-and-sync step, `learnings.length > 60`.
+**Trigger**: after the dedup-and-sync step, `learnings.length > 60` — this is a merge-opportunity check, not a size ceiling. If nothing qualifies (no cluster reaches the group-size threshold, no observation is old enough to age out), the correct outcome is a no-op, not a forced reduction.
 
 **Archive file**: `.project/archive/learnings-{YYYY-MM}.json` — shape `{ "schemaVersion": 2, "archived": [ <original learning objects> ] }`. Append; create dir/scaffold if absent. Archived entries are excluded from the default recency loads, but they remain **reachable by relevance search** — `scripts/learnings-search.js` scans the archive as a damped on-demand tier (`--archive`), so a strongly-matching old entry still surfaces for a related feature (it just never surfaces on recency alone). This is why consolidation is lossy-summary but not memory-loss.
 
@@ -333,7 +333,7 @@ The script recomputes the plan, replaces each matched group with your completed 
 group originals + age-outs to the archive. Never consolidate entries newer than 3 months — the
 script already excludes them from grouping.
 
-**Guarantees**: idempotent (a consolidated list under the threshold never triggers another pass); lossless in provenance (originals live in the archive); pitfalls are never silently dropped — only merged or archived with a consolidated successor in place.
+**Guarantees**: idempotent (a consolidated list under the threshold never triggers another pass); lossless in provenance (originals live in the archive); pitfalls are never silently dropped — only merged or archived with a consolidated successor in place. A list over the threshold with no qualifying cluster or age-out candidate is a legitimate no-op — `gate` reports nothing to do, and the list is expected to stay over 60 until a matching cluster or stale observation appears.
 
 ---
 
@@ -346,6 +346,6 @@ to do; otherwise author the merged summaries per § Consolidation and run `conso
 The script's own report line (`Learnings consolidated: {N} merged, {M} archived ({before} → {after})`)
 is the output — nothing else to emit.
 
-Properties: idempotent (a list already ≤ 60 is a no-op check); `.project/`-only writes (the consolidation is never part of a code commit — `.project/` is gitignored / state-branch). **Callers reference this section — do not restate the trigger or the procedure inline.**
+Properties: idempotent (a list already ≤ 60, or over 60 with nothing to cluster/age-out, is a no-op check); `.project/`-only writes (the consolidation is never part of a code commit — `.project/` is gitignored / state-branch). **Callers reference this section — do not restate the trigger or the procedure inline.**
 
 **Who runs it** (every terminal append point): `/core-pull` (after its dedup-and-sync), the ship orchestrators `dev-ship` / `game-ship` / `design-ship` (PHASE 5, after ship-level extraction), `dev-ship` / `game-ship` are covered at the orchestrator level so their build/verify/refactor domain phases do **not** each run it, `dev-debug` / `game-debug` (PHASE 10, after the per-bug pitfall append), and `core-setup --mode=mature` (after the onboard write-back).

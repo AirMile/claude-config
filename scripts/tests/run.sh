@@ -653,6 +653,7 @@ mkdir -p "$LWT/proj/.project"
 
 lw_reset_small() { cp "$LWFX/context.json" "$LWT/proj/.project/project-context.json"; }
 lw_reset_large() { cp "$LWFX/context-large.json" "$LWT/proj/.project/project-context.json"; }
+lw_reset_no_op() { cp "$LWFX/context-no-op.json" "$LWT/proj/.project/project-context.json"; }
 lw_learnings_len() { node -e 'const c=require(process.argv[1]);process.stdout.write(String(c.learnings.length))' "$LWT/proj/.project/project-context.json"; }
 
 # (a) append a genuinely new entry → appended, date stamped, nothing skipped.
@@ -747,6 +748,16 @@ if [ "$LW_H_OUT" = "Learnings consolidated: 0 merged, 4 archived (65 → 61)" ] 
   echo "PASS  learnings-write: consolidate with empty merges → age-out only"; PASS=$((PASS + 1))
 else
   echo "FAIL  learnings-write: consolidate with empty merges (out='$LW_H_OUT' len=$(lw_learnings_len))"; FAIL=$((FAIL + 1))
+fi
+
+# (i) gate over 60 but no qualifying cluster or age-out candidate (61 diverse,
+# unique-feature, recent entries) → silent no-op, not a plan with empty groups/ageOut.
+lw_reset_no_op
+LW_I_OUT=$(cd "$LWT" && node "$LW" gate proj 2>/dev/null); LW_I_CODE=$?
+if [ "$LW_I_CODE" -eq 0 ] && [ -z "$LW_I_OUT" ]; then
+  echo "PASS  learnings-write: gate over 60 with no qualifying cluster/age-out → silent no-op"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: gate over 60 no-op (code=$LW_I_CODE out='$LW_I_OUT')"; FAIL=$((FAIL + 1))
 fi
 
 rm -rf "$LWT"

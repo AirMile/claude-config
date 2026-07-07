@@ -90,6 +90,8 @@ Set `data.updated` to current date.
 - Append the full feature object (including the just-set shipped fields) to `archived[]` — dedup by `name` (skip append if an entry with the same name already exists)
 - ROLLED_BACK features are NOT archived — they stay in `data.features[]`
 
+**Self-heal**: if a prior run left a feature removed from `data.features[]` but absent from `backlog-archive.json#archived[]` (archive write failed or was skipped after the backlog write), reconstruct the archive entry from the still-present `feature.json` (shipped fields + status) and append it — a completed run always ends archive-only, never missing from both. If instead a feature is still in `data.features[]` but already present in the archive, remove it from `data.features[]`.
+
 **Dashboard** (see `shared/DASHBOARD.md`): unchanged — no separate dashboard merge in game-refactor other than feature status. Learning extraction: see Step 2.5 below.
 
 **Context sync (conditional)** — only if REFACTORED features contain structural changes:
@@ -106,12 +108,13 @@ When triggered (in `project-context.json` mutation):
 - `architecture.components` → update existing components (status, src, test, connects_to), add new ones if scenes/signals were renamed/split. Follow component-first model from `shared/DASHBOARD.md`.
 - Log: `context: {N} updates ({keys touched})` or `context: no updates needed`
 
-Write back in parallel:
+**Write order**: Write `.project/archive/backlog-archive.json` first (only if features were archived) — then, once that succeeds, write the rest in parallel:
 
 - Edit `.project/backlog.json`
-- Write `.project/archive/backlog-archive.json` (only if features were archived)
 - Write `project.json`
 - Write `project-context.json` (if context/architecture changed)
+
+This ordering matters: if the run is interrupted, the failure mode is a feature present in _both_ files (healable duplicate — see the self-heal note above) rather than a feature missing from both.
 
 **Deferred refactor-patterns append**: when PHASE 2 collected `pendingPatternAppends` (uncovered-system research ran inside plan mode — the write was deferred), append those sections to `.claude/research/refactor-patterns.md` in the same parallel batch. Empty or absent → skip silently.
 

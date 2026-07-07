@@ -203,7 +203,7 @@ const checklist =
   feature.tests && Array.isArray(feature.tests.checklist)
     ? feature.tests.checklist
     : [];
-const checklistIds = new Set(checklist.map((c) => c.id));
+const checklistIds = new Set(checklist.map((c) => String(c.id)));
 for (const [id, status] of Object.entries(payload.checklist)) {
   if (!checklistIds.has(id))
     fail6(

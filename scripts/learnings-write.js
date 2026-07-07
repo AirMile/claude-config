@@ -255,6 +255,13 @@ function buildPlan(learnings) {
     merged: buildMergedScaffold(g),
   }));
 
+  // Being over the threshold is an opportunity check, not a hard cap: loads are
+  // relevance-scored (learnings-search.js), so active-list size doesn't drive
+  // context cost. If nothing clusters and nothing ages out, there is genuinely
+  // nothing to do — report a no-op rather than a plan with empty groups/ageOut.
+  if (!ageOut.length && !withMerged.length)
+    return { needsConsolidation: false, before, ageOut: [], groups: [] };
+
   return { needsConsolidation: true, before, ageOut, groups: withMerged };
 }
 

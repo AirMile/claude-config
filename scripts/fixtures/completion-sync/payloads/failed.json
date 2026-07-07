@@ -3,5 +3,5 @@
     { "id": "REQ-001", "verdict": "PASS" },
     { "id": "REQ-002", "verdict": "FAIL" }
   ],
-  "checklist": { "T-001": "PASS", "T-002": "FAIL" }
+  "checklist": { "1": "PASS", "2": "FAIL" }
 }

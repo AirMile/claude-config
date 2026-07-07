@@ -78,7 +78,7 @@ Follow `shared/SYNC.md` 3-File Sync Pattern. Read backlog.json + project.json + 
 
 **Context sync** (only if structural changes: files renamed/moved/extracted, patterns fundamentally changed): update `context.structure`, `context.patterns`, `context.updated`, `architecture.components` (see `shared/DASHBOARD.md` for edge types). Log `context: {N} updates` or `context: no updates needed`.
 
-Write back in parallel: Write backlog.json, Write `.project/archive/backlog-archive.json` (only if features were archived), Write project.json, Write project-context.json.
+**Write order**: Write `.project/archive/backlog-archive.json` first (only if features were archived) — then, once that succeeds, write `backlog.json`, `project.json`, and `project-context.json` in parallel. This ordering matters: if the run is interrupted, the failure mode is a feature present in _both_ files (healable duplicate — see Step 3b self-heal) rather than a feature missing from both.
 
 ## Step 3b — Completion consistency check (invariant)
 
@@ -97,6 +97,7 @@ After the parallel writes complete, verify each CLEAN/REFACTORED feature from th
 
 - Missing `shipped` fields on an already-written `f.refactor`: re-write the backlog entry with the full atomic set (shipped + shippedAt + shippedSha + remove from features[] + append to archive).
 - Feature still in `backlog.json#features[]` but present in archive: remove it from features[] and rewrite backlog.json.
+- Feature removed from `backlog.json#features[]` but absent from `backlog-archive.json#archived[]` (archive write failed or was skipped after the backlog write): reconstruct the archive entry from the still-present `feature.json` (shipped fields + status) and append it. A completed run always ends archive-only — never missing from both.
 - Feature-dir not yet moved (Step 5 ran before check): run the mv again (idempotent).
 - Leftover `transition: "refactoring"` (invariant 5): treat the feature as CLEAN — add a `refactor` section with `status: "CLEAN"` and its deferred findings as `SKIP` decisions (Step 1), then run the full atomic shipped-set + archive + feature-dir move. This closes the stale TO REFACTOR card.
 

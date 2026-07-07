@@ -9,8 +9,8 @@
   ],
   "tests": {
     "checklist": [
-      { "id": "T-001", "title": "Login form renders", "status": "TODO" },
-      { "id": "T-002", "title": "Logout clears session", "status": "TODO" }
+      { "id": 1, "title": "Login form renders", "status": "TODO" },
+      { "id": 2, "title": "Logout clears session", "status": "TODO" }
     ],
     "finalStatus": null
   },

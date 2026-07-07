@@ -7,5 +7,5 @@
       "evidence": "needs real OAuth credentials"
     }
   ],
-  "checklist": { "T-001": "PASS", "T-002": "skip" }
+  "checklist": { "1": "PASS", "2": "skip" }
 }

@@ -1,0 +1,431 @@
+{
+  "learnings": [
+    {
+      "date": "2026-01-01",
+      "feature": "filler-001",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 1 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-02",
+      "feature": "filler-002",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 2 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-03",
+      "feature": "filler-003",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 3 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-04",
+      "feature": "filler-004",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 4 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-05",
+      "feature": "filler-005",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 5 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-06",
+      "feature": "filler-006",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 6 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-07",
+      "feature": "filler-007",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 7 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-08",
+      "feature": "filler-008",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 8 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-09",
+      "feature": "filler-009",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 9 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-10",
+      "feature": "filler-010",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 10 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-11",
+      "feature": "filler-011",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 11 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-12",
+      "feature": "filler-012",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 12 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-13",
+      "feature": "filler-013",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 13 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-14",
+      "feature": "filler-014",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 14 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-15",
+      "feature": "filler-015",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 15 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-16",
+      "feature": "filler-016",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 16 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-17",
+      "feature": "filler-017",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 17 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-18",
+      "feature": "filler-018",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 18 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-19",
+      "feature": "filler-019",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 19 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-20",
+      "feature": "filler-020",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 20 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-21",
+      "feature": "filler-021",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 21 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-22",
+      "feature": "filler-022",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 22 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-23",
+      "feature": "filler-023",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 23 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-24",
+      "feature": "filler-024",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 24 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-25",
+      "feature": "filler-025",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 25 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-26",
+      "feature": "filler-026",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 26 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-27",
+      "feature": "filler-027",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 27 about something unique to itself only"
+    },
+    {
+      "date": "2026-01-28",
+      "feature": "filler-028",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 28 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-01",
+      "feature": "filler-029",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 29 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-02",
+      "feature": "filler-030",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 30 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-03",
+      "feature": "filler-031",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 31 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-04",
+      "feature": "filler-032",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 32 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-05",
+      "feature": "filler-033",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 33 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-06",
+      "feature": "filler-034",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 34 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-07",
+      "feature": "filler-035",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 35 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-08",
+      "feature": "filler-036",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 36 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-09",
+      "feature": "filler-037",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 37 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-10",
+      "feature": "filler-038",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 38 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-11",
+      "feature": "filler-039",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 39 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-12",
+      "feature": "filler-040",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 40 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-13",
+      "feature": "filler-041",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 41 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-14",
+      "feature": "filler-042",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 42 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-15",
+      "feature": "filler-043",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 43 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-16",
+      "feature": "filler-044",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 44 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-17",
+      "feature": "filler-045",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 45 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-18",
+      "feature": "filler-046",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 46 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-19",
+      "feature": "filler-047",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 47 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-20",
+      "feature": "filler-048",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 48 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-21",
+      "feature": "filler-049",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 49 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-22",
+      "feature": "filler-050",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 50 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-23",
+      "feature": "filler-051",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 51 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-24",
+      "feature": "filler-052",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 52 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-25",
+      "feature": "filler-053",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 53 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-26",
+      "feature": "filler-054",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 54 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-27",
+      "feature": "filler-055",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 55 about something unique to itself only"
+    },
+    {
+      "date": "2026-02-28",
+      "feature": "filler-056",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 56 about something unique to itself only"
+    },
+    {
+      "date": "2026-03-01",
+      "feature": "filler-057",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 57 about something unique to itself only"
+    },
+    {
+      "date": "2026-03-02",
+      "feature": "filler-058",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 58 about something unique to itself only"
+    },
+    {
+      "date": "2026-03-03",
+      "feature": "filler-059",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 59 about something unique to itself only"
+    },
+    {
+      "date": "2026-03-04",
+      "feature": "filler-060",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 60 about something unique to itself only"
+    },
+    {
+      "date": "2026-03-05",
+      "feature": "filler-061",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 61 about something unique to itself only"
+    }
+  ]
+}
