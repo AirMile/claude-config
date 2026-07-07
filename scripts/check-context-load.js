@@ -140,6 +140,7 @@ check(
     "architecture",
     "clarifications",
     "blockers",
+    "research",
   ],
 );
 check(
@@ -197,6 +198,7 @@ check(
     "design",
     "clarifications",
     "blockers",
+    "research",
   ],
 );
 check(

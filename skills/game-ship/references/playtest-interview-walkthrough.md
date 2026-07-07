@@ -98,6 +98,10 @@ fixing:
 - **Diagnostic capture** — offer to pull DebugListener output (`get_debug_output`, or the scene's
   debug log under `.project/features/{feature}/` when godot-mcp is unavailable) as evidence for the
   fix round.
+- **On Fail** — capture objective failure evidence now, while it still reproduces: the DebugListener
+  output above, editor Output-log lines, any `push_error` messages. The fix round consumes it, and
+  after repeated failed rounds the debug round does (`fix-round.md § Re-check` ladder →
+  `references/debug-round.md`). Still collect-only — do not fix anything here.
 
 Record the category (TESTABLE / MEASURABLE) alongside the finding. Then move to the next item — the
 fix routing lives in `phase-3-playtest.md § Findings ledger + routing`, not here.

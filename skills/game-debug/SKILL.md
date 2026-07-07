@@ -71,6 +71,13 @@ Run the two `node -e` snippets for the `verify` profile. Extracts: `stack`, `ent
 
     Run the `verify` snippet. Use `requirements[]` (id + description) as FEATURE_REQUIREMENTS for use in PHASE 3 (spec-vs-impl distinction). `FEATURE_JSON: not present` → skip silently.
 
+**Ship-round escalation pre-fill** (optional — only when this run was reached via a ship handoff):
+check `.project/session/ship-{feature-name}.json` for a `playtest.items[]` entry with
+`escalatedTo: "game-debug"`. Found → carry its full record (title, steps, observed/expected, category,
+and the round history that led to escalation) as pre-filled intake; PHASE 1 then confirms this summary
+instead of running the full intake questions. This is a read-only lifecycle signal
+(`shared/DEVINFO.md § Implicit signals`) — game-debug never writes to the ship checkpoint.
+
 **Worktree switch** (only when active feature detected):
 
 If active feature found in previous step, follow `shared/WORKTREE.md → Switch into existing worktree` (Steps 0-4). Debug-mode replaces two of the hard Step 4 outcomes with AskUserQuestion (debug is ad-hoc, not a hard pipeline step):
@@ -180,6 +187,8 @@ Present findings + hypothesis + confidence (high/medium/low) + spec-issue flag (
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
 **Skip if**: root cause is purely internal GDScript logic (no Godot engine APIs or add-on libraries involved) → go directly to PHASE 5.
+
+Cache order + query caps: `shared/CONTEXT7.md` (check the stack-baseline Library-IDs table before `resolve-library-id`).
 
 1. `mcp__context7__resolve-library-id` for Godot-related libraries
 2. `mcp__context7__query-docs` for:
@@ -413,6 +422,11 @@ Learning: {pitfall summary added, or "no extraction"}
 Next steps:
   1. /game-ship {feature} → re-verify or rebuild as needed
 ```
+
+If this run resolved a ship-round escalation (PHASE 0's pre-fill was present): the next-step line
+reads `/game-ship {feature} → resumes at the re-check of this finding` instead of the generic line
+above — game-debug wrote nothing to the ship checkpoint, so the ship resume re-checks this item via
+`phase-3-playtest.md § Resume entry`'s `escalatedTo` handling.
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.

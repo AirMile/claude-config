@@ -42,7 +42,16 @@ protect:
    root-cause hypothesis, following `shared/DEBUG-LADDER.md`'s evidence-first discipline; record the
    fix approach, the finding's category (TESTABLE/MEASURABLE, per
    `shared/FEEDBACK-CATEGORIZATION.md`), and how it will be verified — for TESTABLE, a GUT
-   reproduction test; for MEASURABLE, a live re-check against the running game.
+   reproduction test; for MEASURABLE, a live re-check against the running game. Finding implicates an
+   external library/addon API? Research it per `shared/CONTEXT7.md` now — both tools work inside plan
+   mode — and fold the results into the fix approach. Skip for purely internal logic.
+
+   A finding whose root cause is still unclear after reviewing the ledger evidence does **not** get a
+   guessed fix: run `references/debug-round.md` Steps 4–5 (Explore investigation + research) for that
+   finding inside this same plan-mode session, then design its fix from that evidence. This is the
+   same machinery the § Re-check ladder forces after 2 failed rounds — here it runs proactively,
+   before a first guess is even attempted.
+
 2. **Group findings into file-disjoint groups** (scripts/scenes/resources/tests) — two findings share
    a group only if grouping them doesn't help; two findings that touch overlapping files **must** be
    grouped together (a single agent/inline session should never race another over the same file).
@@ -153,30 +162,45 @@ new interview close; that only runs once per full walkthrough).
   the round gate on anything substantial).
 - **Substantial new finding, or still failing** → append it to the ledger now (this write happens
   outside plan mode — we are back in the main-chat re-check step, not the gate) via
-  `ship-checkpoint.js item {feature} playtest`, then present **one** `AskUserQuestion` rather than
-  looping automatically — repeated rounds burn main-chat context fast, and the user should choose how
-  to spend the next one:
+  `ship-checkpoint.js item {feature} playtest`, incrementing that item's `failedRounds` (starts at 0;
+  the same upsert call — no script change) — this counter, not self-estimated confidence, drives the
+  mechanical ladder below (`shared/DEBUG-LADDER.md`'s "every failed round escalates one tier" made
+  literal). Then present **one** `AskUserQuestion` rather than looping automatically — repeated rounds
+  burn main-chat context fast, and the user should choose how to spend the next one:
 
-  1. **"Park — continue in a fresh chat"** (recommended, _except_ after 2 failed rounds on this item
-     — see Escalation, where Escalate becomes the recommended option instead). The ledger is already
-     persistent: `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`, patch
+  **`failedRounds == 1`:**
+
+  1. **"Park — continue in a fresh chat"** (recommended). The ledger is already persistent:
+     `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`, patch
      `playtest.pendingRound: true`, print the park/handoff template from `SKILL.md § PHASE 1–4` with
      `/game-ship {feature}` as the resume command, **end the turn**. A fresh session resumes via
      `phase-3-playtest.md § Resume entry`'s `playtest.pendingRound` bullet, landing directly in
      `§ Hoisted bookkeeping` for the next round (re-check already ran here — it does not re-run).
   2. **"Another round in this chat"** → go back to `§ Hoisted bookkeeping` for a new round (not in
      plan mode now, so its writes execute immediately, per the "not in plan mode yet" case there).
-  3. **"Escalate — debug ladder"** → Read `shared/DEBUG-LADDER.md` and pull the item into **tier 2 in
-     the main chat** (the game is running; confirming the root cause here is cheap), and only if that
-     also fails, tier 3 `/game-debug {feature}`. Other items in the ledger are unaffected and keep
-     progressing normally.
+  3. **"Escalate — debug round"** → Read `references/debug-round.md` and run it in full for this item
+     (Explore investigation + Context7 research in plan mode + a single evidence-backed fix plan). Other
+     items in the ledger are unaffected and keep progressing normally.
   4. **"Defer to backlog todo"** — offered **only** when every open finding in this round is
      `tweak`-class (never when any is `fail` — see the Fail-never-to-todo policy in
      `phase-3-playtest.md § Findings ledger + routing`): route each remaining finding to
      `/project-todo`, then proceed to the regression re-check and completion on the verified scope.
 
-  **Escalation**: after **2** failed dispatch rounds on the same item, option 1's recommendation flips
-  to option 3 — do not keep offering a third identical round as the default.
+  **`failedRounds == 2`:** same four options, but option 3 ("Escalate — debug round") is now the
+  **recommended** one — do not keep offering a plain repeat round as the default once a round has
+  already failed twice with no new evidence.
+
+  **`failedRounds >= 3`** (hard ceiling, mirrors `dev-verify/references/fix-loop.md`'s max-3):
+  option 2 ("Another round in this chat") is **no longer offered** for this item — repeating the same
+  tier a third time burns a round without new information. Options collapse to:
+
+  1. **"Debug round"** (recommended) — as above, but if `references/debug-round.md` has already run
+     once for this item and failed again, its own park step (Step 8) is tier 3: it hands off to
+     `/game-debug {feature}` directly, with the ledger's evidence pre-filled.
+  2. **"Park — continue in a fresh chat"** — same mechanics as `failedRounds == 1` option 1.
+
+  (`"Defer to backlog todo"` stays available under the same tweak-only condition at every
+  `failedRounds` level.)
 
 Once every item is Pass (or explicitly Skip/Defer) and no round is in flight, return to
 `phase-3-playtest.md § Findings ledger + routing` for the regression re-check.

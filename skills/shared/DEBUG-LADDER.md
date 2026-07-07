@@ -21,6 +21,12 @@ reliable signal — force escalation.
 **Entry rule:** MEASURABLE + localized → tier 1. TESTABLE or cause-unclear → tier 2. Cross-module /
 intermittent / a previous session already tried and failed → tier 3.
 
+**Inside a ship manual-verify round** (`dev-ship`/`game-ship` PHASE 3), tier 2→3 does not jump straight
+to `/dev-debug`/`/game-debug` — it runs the ship's own `references/debug-round.md` first (Explore
+investigation + research + a single evidence-backed fix plan, still in the same session's plan mode).
+Only a failed debug round hands off to `/dev-debug`/`/game-debug`. See `fix-round.md § Re-check` for
+the mechanical `failedRounds` ladder that drives this.
+
 ## Tier 2 — the hypothesis loop (the discipline that prevents guess-and-check)
 
 1. **State the hypothesis before touching code**: "I think the cause is X; if so I expect to see Y
@@ -33,6 +39,9 @@ intermittent / a previous session already tried and failed → tier 3.
    fix without new evidence — an untested second guess is the same mistake as the first.
 4. **Verify** the fix reproduces green (the check that failed now passes; re-check live for visual).
 5. **Remove the instrumentation** you added (logs, temp assertions) before completing.
+
+If the hypothesis (tier 2) or the fix-strategy fan-out (tier 3) implicates an external library API,
+research it per `shared/CONTEXT7.md` before fixing — both tools work inside plan mode.
 
 ## Escalation rule (hard)
 

@@ -52,13 +52,17 @@ Skip plan mode silently when ALL:
 - Only MEASURABLE bugs (direct config/styling/timing tweaks)
 - ≤1 TESTABLE bug with an obvious root cause from the failing test
 
-When entering plan mode: call `EnterPlanMode`, write the fix plan to the plan file (one section per bug: problem → root cause → proposed fix → verification), then `ExitPlanMode` for approval. After approval, continue with the Fix step below. Rejected plan → re-categorize or ask user.
+When entering plan mode: call `EnterPlanMode`, write the fix plan to the plan file (one section per bug: problem → root cause → research → proposed fix → verification), then `ExitPlanMode` for approval. After approval, continue with the Fix step below. Rejected plan → re-categorize or ask user.
 
 Show before entering: `PLAN MODE: {n} bug(s) need design — entering plan mode (OpusPlan-aware).`
 
 ### Fix
 
-Complex issues → AskUserQuestion: Research via Context7 (Recommended) | Fix directly.
+**Research (conditional, no question)** — when the failing API or error signature implicates an
+external library (skip for purely internal logic): follow
+[shared/CONTEXT7.md](.claude/skills/shared/CONTEXT7.md) — query = failing API + error signature. If
+the plan-mode gate fired, run this inside plan mode and add a `research:` line to each affected bug's
+plan section.
 
 Reproduce the failure with a test (RED), then fix (GREEN). Max 3 attempts, then ask user. For SPEC items the reproducing test is the acceptance test.
 

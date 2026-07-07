@@ -83,7 +83,7 @@ If no feature name provided:
 
 2. Fallback: list `.project/features/` with `feature.json`, let user select
 
-Feature load: `node ~/.claude/scripts/context-load.js "$REPO" feature-build "{feature-name}"` (see [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)). Use extracted fields: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files.
+Feature load: `node ~/.claude/scripts/context-load.js "$REPO" feature-build "{feature-name}"` (see [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)). Use extracted fields: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`), `research`. If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files. If `research` is present: it is define-scout's library digest for exactly this feature's unfamiliar-API areas — first stop during PHASE 2 GREEN steps, before any new Context7 query (cache order: [shared/CONTEXT7.md](.claude/skills/shared/CONTEXT7.md)).
 
 `present: false` → exit: "Run `/dev-define` first."
 

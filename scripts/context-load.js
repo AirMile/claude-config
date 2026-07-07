@@ -195,6 +195,7 @@ switch (profile) {
       },
       clarifications: f.clarifications || [],
       blockers: f.build?.blockers || [],
+      research: f.research || null,
     });
     break;
   }
@@ -317,6 +318,7 @@ switch (profile) {
       design: f.design || null,
       clarifications: f.clarifications || [],
       blockers: f.build?.blockers || [],
+      research: f.research || null,
     });
     break;
   }

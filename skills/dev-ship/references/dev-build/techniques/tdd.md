@@ -57,7 +57,15 @@ Run test — expect FAIL. If the test passes immediately — you are testing exi
 
 ### Step 2: Implement (GREEN)
 
-Write minimal code to make the test pass. Context7 research if needed.
+Write minimal code to make the test pass.
+
+**Library research (conditional)** — only when this step hits an unfamiliar external library API, a
+suspected deprecation, or a library-implicating error: follow
+[shared/CONTEXT7.md](.claude/skills/shared/CONTEXT7.md) — check `feature.json#research` first, then
+the stack-baseline Library-IDs table, then at most 2 direct `resolve-library-id` → `query-docs` calls
+for this requirement. You run in an isolated context — query directly, no digest. Cap hit or no
+match → implement best-effort and record it in the SYNC line.
+
 Run test — expect PASS.
 
 ### Step 3: Refactor

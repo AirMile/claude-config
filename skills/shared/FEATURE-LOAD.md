@@ -19,18 +19,19 @@ node scripts/context-load.js <repo-root> feature-build <feature-name>
 node scripts/context-load.js <repo-root> feature-verify <feature-name>
 ```
 
-| Profile          | Used by                                                                                                            |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `feature-build`  | dev-ship build PHASE 0 "Load feature" (requirements, buildSequence, files, architecture, clarifications, blockers) |
-| `feature-verify` | dev-ship verify PHASE 0 (checklist, requirements, files, runCommand, design, apiContract)                          |
+| Profile          | Used by                                                                                                                      |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `feature-build`  | dev-ship build PHASE 0 "Load feature" (requirements, buildSequence, files, architecture, clarifications, blockers, research) |
+| `feature-verify` | dev-ship verify PHASE 0 (checklist, requirements, files, runCommand, design, apiContract)                                    |
 
 Output: `{ present: false }` if `feature.json` is absent (skill should exit: "Run `/dev-ship`
 first."), else `{ present: true, ...fields }`.
 
-Fields deliberately excluded (not needed in PHASE 0): `durableDecisions[]`, `audit{}`, `research`,
+Fields deliberately excluded (not needed in PHASE 0): `durableDecisions[]`, `audit{}`,
 `tests.checklist`/`tests.finalStatus`, `suggestionsLog[]`, `status`, plus whichever of
 `design`/`apiContract`/`clarifications`/`buildSequence`/`architecture` the other profile doesn't
-list above.
+list above. `research` (define-scout's Context7/library digest) is now carried by `feature-build`
+only — see `shared/CONTEXT7.md`.
 
 ## Game-pipeline equivalent
 

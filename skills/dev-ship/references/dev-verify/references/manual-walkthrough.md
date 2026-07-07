@@ -47,7 +47,9 @@ EXPECTED:
 
 AskUserQuestion per item: Pass (Recommended) | Fail | Skip | Defer.
 
-- Fail → ask briefly what went wrong
+- Fail → ask briefly what went wrong, and capture objective evidence while it still reproduces
+  (console error, failing network response). The fix loop (`references/fix-loop.md`) picks this
+  up; repeated failures escalate per `shared/DEBUG-LADDER.md`.
 - Skip → note reason ("not testing, accept as-is")
 - Defer → ask which external prereq blocks it (account, CORS-origin, API-token,
   third-party config); item stays open for re-test when prereq landed

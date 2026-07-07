@@ -56,6 +56,14 @@ Structured 11-phase debugging: context → intake → investigate → analyze �
   - Read `.project/features/{feature-name}/feature.json` (if present) → extract `requirements[]` (id + description + status)
   - Note as FEATURE_REQUIREMENTS for use in PHASE 3 (spec-vs-impl distinction)
 
+**Ship-round escalation pre-fill** (optional — only when this run was reached via a ship handoff):
+check `.project/session/ship-{feature-name}.json` for a `manual.items[]` entry with
+`escalatedTo: "dev-debug"`. Found → carry its full record (title, steps, observed/expected,
+screenshot, category, and the round history that led to escalation) as pre-filled intake; PHASE 1
+then confirms this summary instead of running the full intake questions. This is a read-only
+lifecycle signal (`shared/DEVINFO.md § Implicit signals`) — dev-debug never writes to the ship
+checkpoint.
+
 **Worktree switch** (only if active feature detected):
 
 If active feature found in previous step, follow `shared/WORKTREE.md → Switch into existing worktree` (Steps 0-4). Debug-mode replaces two of the hard Step 4 outcomes with AskUserQuestion (debug is ad-hoc, not a hard pipeline step):
@@ -167,6 +175,8 @@ Present findings + hypothesis + confidence (high/medium/low) + spec-issue markin
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
 **Skip if**: root cause is purely internal logic (no external library APIs or third-party dependencies involved in affected files) → go directly to PHASE 5.
+
+Cache order + query caps: `shared/CONTEXT7.md` (check the stack-baseline Library-IDs table before `resolve-library-id`).
 
 1. `mcp__context7__resolve-library-id` for relevant libraries
 2. `mcp__context7__query-docs` for:
@@ -409,6 +419,11 @@ Learning: {pitfall summary added, or "no extraction"}
 Next steps:
   1. /dev-ship {feature} → re-verify or rebuild as needed
 ```
+
+If this run resolved a ship-round escalation (PHASE 0's pre-fill was present): the next-step line
+reads `/dev-ship {feature} → resumes at the re-check of this finding` instead of the generic line
+above — dev-debug wrote nothing to the ship checkpoint, so the ship resume re-checks this item via
+`phase-3-manual-finalize.md § Resume entry`'s `escalatedTo` handling.
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.

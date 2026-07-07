@@ -188,7 +188,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    1. Use queue output from step 1 → suggest via **AskUserQuestion** (ready features at top)
    2. Fallback (backlog absent): list `.project/features/` with `feature.json`, let user select
 
-   Feature load: `node ~/.claude/scripts/context-load.js "$REPO" game-feature-build "{feature-name}"` (see [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)). Use extracted fields: `requirements[]` (with `tuningLevers[]` per REQ), `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (full scene graph), `design` (sceneLayout/gameplayFlow). If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions made by the user).
+   Feature load: `node ~/.claude/scripts/context-load.js "$REPO" game-feature-build "{feature-name}"` (see [shared/GAME-FEATURE-LOAD.md](../shared/GAME-FEATURE-LOAD.md)). Use extracted fields: `requirements[]` (with `tuningLevers[]` per REQ), `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (full scene graph), `design` (sceneLayout/gameplayFlow), `research`. If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions made by the user). If `research` is present: it is game-define's scene/pattern research digest for this feature — check it before dispatching a fresh `godot-code-researcher`/`godot-test-researcher` lookup (cache order: [shared/CONTEXT7.md](../shared/CONTEXT7.md)).
 
    `present: false` → exit: "Run `/game-define` first."
 

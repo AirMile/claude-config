@@ -20,10 +20,10 @@ node scripts/context-load.js <repo-root> game-feature-build <feature-name>
 node scripts/context-load.js <repo-root> game-feature-verify <feature-name>
 ```
 
-| Profile               | Used by                                                                                                                                                              |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `game-feature-build`  | game-ship build PHASE 0 "Load feature.json", refactor batch-scan (requirements + tuningLevers, buildSequence, files, architecture, design, clarifications, blockers) |
-| `game-feature-verify` | game-ship verify PHASE 0 (checklist, requirements + tuningLevers, files, design, build)                                                                              |
+| Profile               | Used by                                                                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `game-feature-build`  | game-ship build PHASE 0 "Load feature.json", refactor batch-scan (requirements + tuningLevers, buildSequence, files, architecture, design, clarifications, blockers, research) |
+| `game-feature-verify` | game-ship verify PHASE 0 (checklist, requirements + tuningLevers, files, design, build)                                                                                        |
 
 Output: `{ present: false }` if `feature.json` is absent (skill should exit: "Run `/game-ship`
 first."), else `{ present: true, ...fields }`. `architecture`/`design` pass through in full — no

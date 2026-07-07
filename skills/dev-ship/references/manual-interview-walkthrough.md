@@ -99,6 +99,10 @@ start fixing:
   element pointer now and capture the screenshot right after plan-mode exit (the app is still
   running) — screenshot capture is a disk write, blocked until then. The later fix round needs this
   signal to converge on the first try.
+- **On Fail** — capture objective failure evidence now, while it still reproduces: console errors,
+  the failing network response, the screenshot already specified above. The fix round consumes it,
+  and after repeated failed rounds the debug round does (`fix-round.md § Re-check` ladder →
+  `references/debug-round.md`). Still collect-only — do not fix anything here.
 
 Record the category (TESTABLE / MEASURABLE) alongside the finding. Then move to the next item — the
 fix routing lives in `phase-3-manual-finalize.md § Findings ledger + routing`, not here.

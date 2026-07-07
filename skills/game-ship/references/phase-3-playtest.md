@@ -36,7 +36,10 @@ normal path, then route on the checkpoint's `playtest` block:
 - **`playtest.pendingRound: true`** (a prior round's re-check found still-open findings and the user
   chose to park instead of continuing — `fix-round.md § Re-check`'s park option) → clear the flag,
   then go straight to `fix-round.md § Hoisted bookkeeping` for the next round. Re-check already ran
-  before parking — do not re-run it.
+  before parking — do not re-run it. **Exception**: items flagged `escalatedTo: "game-debug"` skip fix
+  design entirely — walk them straight through re-check (`playtest-interview-walkthrough.md` Steps
+  B–E); a pass clears the flag, a fail re-enters the ladder at the ceiling (the debug round already ran
+  for this item — see `references/debug-round.md`).
 
 Keep the checkpoint `phase: "PHASE 3"` throughout.
 
