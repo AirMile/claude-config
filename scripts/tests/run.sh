@@ -628,12 +628,12 @@ fi
 rm -rf "$LSE"
 
 # (f) vocab drift: --print-vocab must equal the tag names in the § Tag Vocabulary
-#     table of LEARNING-EXTRACTION.md (single source of truth for tag NAMES).
+#     table of LEARNING-WRITE.md (single source of truth for tag NAMES).
 VOCAB_SCRIPT=$(node "$LS" --print-vocab | sort)
-VOCAB_DOC=$(awk '/^## Tag Vocabulary/{f=1;next} /^## /{f=0} f' "$ROOT/skills/shared/LEARNING-EXTRACTION.md" \
+VOCAB_DOC=$(awk '/^## Tag Vocabulary/{f=1;next} /^## /{f=0} f' "$ROOT/skills/shared/LEARNING-WRITE.md" \
   | grep -oE '^\| `[a-z-]+`' | tr -d '| `' | sort)
 if [ "$VOCAB_SCRIPT" = "$VOCAB_DOC" ] && [ -n "$VOCAB_DOC" ]; then
-  echo "PASS  learnings-search: vocab matches LEARNING-EXTRACTION.md table"; PASS=$((PASS + 1))
+  echo "PASS  learnings-search: vocab matches LEARNING-WRITE.md table"; PASS=$((PASS + 1))
 else
   echo "FAIL  learnings-search: vocab drift between script and doc"
   diff <(printf '%s' "$VOCAB_SCRIPT") <(printf '%s' "$VOCAB_DOC")

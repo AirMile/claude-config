@@ -36,7 +36,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 // ── Controlled tag vocabulary ────────────────────────────────────────────────
-// Single source of truth for the TAG NAMES is LEARNING-EXTRACTION.md § Tag
+// Single source of truth for the TAG NAMES is LEARNING-WRITE.md § Tag
 // Vocabulary; a drift test (scripts/tests/run.sh) diffs that table against
 // `--print-vocab`. Aliases live here only — they are matching hints, expanded
 // through the same tokenizer as summaries/queries so normalized forms line up.
@@ -220,7 +220,7 @@ export const VOCAB = {
   ],
 };
 
-// ── Tokenizer (exact port of LEARNING-EXTRACTION.md § Dedup Tokenizer) ────────
+// ── Tokenizer (exact port of LEARNING-WRITE.md § Dedup Tokenizer) ────────
 // Exported: learnings-write.js imports these to run the same dedup algorithm
 // rather than re-implementing it (single source of truth for tokenization).
 export const STOPWORDS = new Set(

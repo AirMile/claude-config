@@ -120,7 +120,7 @@ Recorded in test results.
    backlog match, feature.json written) fall back to authoring the mutations by hand per the
    script's header.
 
-   **Learning Extraction** — append to `project-context.json#learnings[]` per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](../../shared/LEARNING-EXTRACTION.md) (schema, relevance filter, two-stage dedup). game-verify source mapping — read the just-written `feature.json`:
+   **Learning Extraction** — append to `project-context.json#learnings[]` per [shared/LEARNING-WRITE.md § Writer Append Protocol](../../shared/LEARNING-WRITE.md) (schema, relevance filter, two-stage dedup). game-verify source mapping — read the just-written `feature.json`:
    - `tests.fixSync[]` and `tests.sessions[].fixes` → type `pitfall`, source `extracted` (bugs with root causes)
    - `observations[]` → type `observation`, source `inferred` (cross-feature insights)
 

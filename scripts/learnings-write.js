@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Append / dedup / consolidate project-context.json#learnings[] — the write
-// side of the learnings library (shared/LEARNING-EXTRACTION.md § Writer Append
+// side of the learnings library (shared/LEARNING-WRITE.md § Writer Append
 // Protocol, § Consolidation, § Consolidation Gate). The read/scoring side lives
 // in learnings-search.js (deliberately kept read-only there — see its header).
 //
@@ -13,7 +13,7 @@
 // wrong (off-by-one group thresholds, forgetting the within-batch dedup pass,
 // hand-computing a tag-frequency tie-break). This script owns all of that;
 // the model still supplies the only genuinely semantic piece — the merged
-// summary text for each consolidation group (LEARNING-EXTRACTION.md's
+// summary text for each consolidation group (LEARNING-WRITE.md's
 // "preserve each distinct point, drop only true repetition" rule is authored
 // judgment, not something to derive mechanically).
 //
@@ -149,7 +149,7 @@ function parseStdinPayload() {
   return payload;
 }
 
-// ── Dedup Tokenizer parity — LEARNING-EXTRACTION.md § Dedup Tokenizer ──────
+// ── Dedup Tokenizer parity — LEARNING-WRITE.md § Dedup Tokenizer ──────
 // normalize() is the "lowercase + strip punctuation" used by the exact-tuple
 // shortcut; tokenize() (imported from learnings-search.js) backs the Jaccard pass.
 function normalize(str) {
@@ -167,7 +167,7 @@ function jaccard(aTokens, bTokens) {
   return union === 0 ? 0 : intersection / union;
 }
 
-// ── Consolidation planning — LEARNING-EXTRACTION.md § Consolidation ────────
+// ── Consolidation planning — LEARNING-WRITE.md § Consolidation ────────
 function shiftMonths(date, delta) {
   const d = new Date(date.getTime());
   d.setMonth(d.getMonth() + delta);

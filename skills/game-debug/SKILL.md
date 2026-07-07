@@ -376,18 +376,18 @@ Per resolved bug, evaluate whether root cause + fix has cross-feature value. Fil
   "source": "extracted",
   "summary": "{root cause + where the fix was, max 200 chars}",
   "tags": [
-    "{0-3 domain tags from LEARNING-EXTRACTION.md § Tag Vocabulary, e.g. scene, game-loop; omit if none fit}"
+    "{0-3 domain tags from LEARNING-WRITE.md § Tag Vocabulary, e.g. scene, game-loop; omit if none fit}"
   ]
 }
 ```
 
-**Dedup** (per `shared/LEARNING-EXTRACTION.md`): tokenize summary → check against existing `learnings[]` with same `(type, normalize(summary), author)` tuple. Match → skip. `tags` are not part of the dedup key.
+**Dedup** (per `shared/LEARNING-WRITE.md`): tokenize summary → check against existing `learnings[]` with same `(type, normalize(summary), author)` tuple. Match → skip. `tags` are not part of the dedup key.
 
 No relevant pitfall → skip step without warning.
 
 ### Step 1b: Consolidation gate
 
-After the append (skip if no pitfall was written), run the consolidation gate per [shared/LEARNING-EXTRACTION.md § Consolidation Gate](../shared/LEARNING-EXTRACTION.md) — `> 60` active learnings → merge/archive down to ≤40, else a no-op. This keeps debug-heavy sessions from growing `learnings[]` unbounded between pulls/ships. `.project/`-only write; not part of the Step 2 code commit.
+After the append (skip if no pitfall was written), run the consolidation gate per [shared/LEARNING-WRITE.md § Consolidation Gate](../shared/LEARNING-WRITE.md) — `> 60` active learnings → merge/archive down to ≤40, else a no-op. This keeps debug-heavy sessions from growing `learnings[]` unbounded between pulls/ships. `.project/`-only write; not part of the Step 2 code commit.
 
 ### Step 2: Scoped Commit
 

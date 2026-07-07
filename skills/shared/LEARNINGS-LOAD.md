@@ -35,7 +35,7 @@ One process runs the pitfall-prefix, `component`, and `architectural` scopes in 
 
 `scoreEntry()` in `learnings-search.js` is the single relevance function:
 
-- **+4** per shared tag (entry `tags[]` ∩ tags implied by the feature/query — see `LEARNING-EXTRACTION.md § Tag Vocabulary`)
+- **+4** per shared tag (entry `tags[]` ∩ tags implied by the feature/query — see `LEARNING-WRITE.md § Tag Vocabulary`)
 - **+2** feature-name match (bidirectional substring)
 - **+1** per summary keyword overlap (same tokenizer as dedup), capped at 5
 - **recency**: a sub-point tiebreak (`< 1`), so relevance always outranks date
@@ -86,13 +86,13 @@ Load learnings via shared/LEARNINGS-LOAD.md:
 - **Empty `learnings[]`**: script exits 0 silently.
 - **No `current-feature` specified**: `component` scope produces nothing; the pitfall-prefix falls back to the last 5 by date; `architectural` falls back to date order.
 - **Worktree-aware**: point `$REPO` at the main worktree (per [SYNC.md](SYNC.md) Worktree-aware Path Resolution) — the archive lives there, not in the feature worktree.
-- **Archived learnings** (`.project/archive/learnings-*.json`, see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation): loaded as a **damped on-demand tier** by the `component` and `pitfall` scopes — a strongly-relevant or tag-matching old entry resurfaces, but archive never surfaces on recency alone. `architectural` never reads the archive (the consolidated successor is already in the active list).
+- **Archived learnings** (`.project/archive/learnings-*.json`, see [LEARNING-WRITE.md](LEARNING-WRITE.md) § Consolidation): loaded as a **damped on-demand tier** by the `component` and `pitfall` scopes — a strongly-relevant or tag-matching old entry resurfaces, but archive never surfaces on recency alone. `architectural` never reads the archive (the consolidated successor is already in the active list).
 
 ---
 
 ## Implementation note
 
-This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-ship (verify phase)`, `dev-ship (refactor phase)` (PHASE 5), `core-pull`, `core-setup --mode=mature`). Consolidation/archiving of the learnings list itself happens in `core-pull` — see [LEARNING-EXTRACTION.md](LEARNING-EXTRACTION.md) § Consolidation.
+This is a **read-only** protocol. No mutations to `learnings[]` — that remains the responsibility of writer-skills (`dev-ship (verify phase)`, `dev-ship (refactor phase)` (PHASE 5), `core-pull`, `core-setup --mode=mature`). Consolidation/archiving of the learnings list itself happens in `core-pull` — see [LEARNING-WRITE.md](LEARNING-WRITE.md) § Consolidation.
 
 Skills that pass learnings to an agent: run the script first and embed the filtered block in the agent prompt (never the full list).
 

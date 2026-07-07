@@ -33,7 +33,7 @@ Pull candidate evidence from each store. Keep each pull small — this is retrie
 node ~/.claude/scripts/learnings-search.js "$REPO" search --query "<question>" --archive --json --cap 12
 ```
 
-Returns scored entries `{date, feature, type, source, author, summary, tags, archived, score}`. These already blend active and archived memory, ranked by relevance (see `shared/LEARNINGS-LOAD.md § Relevance model`). If the question names a specific area, also pass `--tags <tag>` (a tag from `LEARNING-EXTRACTION.md § Tag Vocabulary`) to sharpen the match.
+Returns scored entries `{date, feature, type, source, author, summary, tags, archived, score}`. These already blend active and archived memory, ranked by relevance (see `shared/LEARNINGS-LOAD.md § Relevance model`). If the question names a specific area, also pass `--tags <tag>` (a tag from `LEARNING-WRITE.md § Tag Vocabulary`) to sharpen the match.
 
 **1b) Architecture** — read `$REPO/.project/project-context.json` → `architecture.components[]`. Keep components whose `name`, `description`, `feature`, `endpoints[]`, or `entities[]` match the question tokens. For each kept component report `name`, `layer`, `description`, and its `connects_to[]` edges (so "how does X reach Y" is answerable). Also scan `architecture.routes[]` when the question is about routing/pages.
 

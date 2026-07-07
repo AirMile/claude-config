@@ -173,14 +173,14 @@ On trigger: call `learning-extractor` agent via Agent tool:
 - `subagent_type: "learning-extractor"`
 - prompt contains: `mode: "pull-signal"`, `files: [<triggered paths>]`, `existing_learnings: <current learnings[]>`, `cap: 5`
 
-Parse JSON output. For each entry: set `source: "synced"`, `author: null` (codebase-wide), `feature: <triggered dir>`, and keep the agent's `tags` (0–3 from `LEARNING-EXTRACTION.md § Tag Vocabulary`; default `[]`). Append to extraction results.
+Parse JSON output. For each entry: set `source: "synced"`, `author: null` (codebase-wide), `feature: <triggered dir>`, and keep the agent's `tags` (0–3 from `LEARNING-WRITE.md § Tag Vocabulary`; default `[]`). Append to extraction results.
 
 **4j.6) Dedup and sync**
 
 Read `project-context.json` (re-read immediately before write per SYNC.md). For each new entry from 4j.1-4j.5:
 
 - Exact dedup key: `(type, normalize(summary), author ?? null)`. Normalize = lowercase + strip punctuation. Match → skip.
-- Jaccard dedup (second layer): tokenize candidate.summary via `shared/LEARNING-EXTRACTION.md` Dedup Tokenizer. For each existing learning in `learnings[]` with the same `type`: `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip.
+- Jaccard dedup (second layer): tokenize candidate.summary via `shared/LEARNING-WRITE.md` Dedup Tokenizer. For each existing learning in `learnings[]` with the same `type`: `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip.
 - Intra-run Jaccard: same check but against other entries in this run (same `type`, Jaccard ≥ 0.55) → skip.
 - Cap total new entries per run at **20**. On overflow: prefer pitfalls over patterns over observations, then most recent date.
 
@@ -190,7 +190,7 @@ Track counts for PHASE 5 report: `{ patterns: P, pitfalls: Q, observations: R, b
 
 **4j.7) Consolidation (only when `learnings.length > 60` after sync)**
 
-Run the consolidation gate per `shared/LEARNING-EXTRACTION.md § Consolidation Gate` (trigger `> 60`, merge per-feature clusters, archive originals, target ≤ 40, one report line). Fold its write into the same `learnings[]`/archive write as 4j.6/4j.8. Skip silently when under the threshold.
+Run the consolidation gate per `shared/LEARNING-WRITE.md § Consolidation Gate` (trigger `> 60`, merge per-feature clusters, archive originals, target ≤ 40, one report line). Fold its write into the same `learnings[]`/archive write as 4j.6/4j.8. Skip silently when under the threshold.
 
 **4j.8) Opportunistic tag backfill**
 

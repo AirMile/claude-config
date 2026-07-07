@@ -136,7 +136,7 @@ REFACTORED/CLEAN only (skip ROLLED_BACK):
 - **Cross-cutting**: touches naming, typing (GDScript type-hints), error handling, layering, a DRY violation against an existing shared/utility, async/sync misuse.
 - **Godot-specific**: signal pollution (too many `connect()` chains on a single node), node-lifecycle violations (`_ready` doing work that belongs in `_init` or vice versa), autoload misuse, scene leaks (missing `queue_free` after instantiation), shader/material allocations in `_process`, the `_physics_process` vs `_process` choice, hardcoded paths (`get_node("../../../foo")`) instead of `@onready var`, security-sensitive netcode (input validation, state authority leak).
 - **Convention-derived**: the fix is directly traceable to a rule in `.claude/research/architecture-baseline.md`, an existing `pattern` learning in `project-context.json`, or `context.patterns` in `project.json`.
-- **Auto-promote**: if a `pattern` learning with the same dedup-key already exists (see `shared/LEARNING-EXTRACTION.md § Dedup Tokenizer`) → emit as `pitfall` instead of pattern.
+- **Auto-promote**: if a `pattern` learning with the same dedup-key already exists (see `shared/LEARNING-WRITE.md § Dedup Tokenizer`) → emit as `pitfall` instead of pattern.
 
 Do not mark as pitfall if: the fix is feature-specific (a single scene/node/script without a generalizable principle), pure performance without architectural implications, or cosmetic (whitespace, comment).
 
@@ -148,7 +148,7 @@ Emit only if the rationale describes a general principle: security/netcode, nume
 
 Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
-**Filter and dedup:** schema, relevance filter, and two-stage dedup per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](../../shared/LEARNING-EXTRACTION.md). Append to `project-context.json → learnings[]` (add to the in-memory mutation from Step 2 and write in the parallel write-back above). Log confirmation or "no learnings — skip".
+**Filter and dedup:** schema, relevance filter, and two-stage dedup per [shared/LEARNING-WRITE.md § Writer Append Protocol](../../shared/LEARNING-WRITE.md). Append to `project-context.json → learnings[]` (add to the in-memory mutation from Step 2 and write in the parallel write-back above). Log confirmation or "no learnings — skip".
 
 ## Step 3 — Scoped auto-commit
 

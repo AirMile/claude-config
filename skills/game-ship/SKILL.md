@@ -260,13 +260,13 @@ Auto-decisions ({N}):
 **Ship-level learning extraction** (the layer the agents cannot see — game-ship owns it). The copied
 build/verify/refactor already wrote their **domain** learnings during their phases (do not re-write
 those). But cross-phase, ship-level signals only exist in the main chat — extract a small set (0-3)
-to `project-context.json#learnings[]` via `shared/LEARNING-EXTRACTION.md` (`source: "extracted"`,
+to `project-context.json#learnings[]` via `shared/LEARNING-WRITE.md` (`source: "extracted"`,
 same dedup): a recurring `autoDecisions` pattern, playtest friction (an item that repeatedly needed a
 human), or a refactor improvement the GUT test-guard **reverted** (signals a fragile pattern).
 Only write genuinely reusable signals — skip if none.
 
 **Memory consolidation** (so future `game-ship` runs have insight). This step then runs the
-consolidation gate per `shared/LEARNING-EXTRACTION.md § Consolidation Gate` (trigger `> 60` →
+consolidation gate per `shared/LEARNING-WRITE.md § Consolidation Gate` (trigger `> 60` →
 merge per-feature clusters, archive originals, target ≤40). Archived entries stay **searchable by
 relevance** (the loader scans the archive as a damped tier), so consolidation shrinks the active
 list without losing recall. This closes the loop: the next `game-ship` run's PHASE 0 `SHIP_CONTEXT`

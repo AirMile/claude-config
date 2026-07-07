@@ -52,7 +52,7 @@ REFACTORED/CLEAN only (skip ROLLED_BACK):
 
 - **Cross-cutting**: touches naming, typing, error handling, layering/architecture, dependency direction, a DRY violation against an existing shared/utility, async/sync misuse, or a security-sensitive domain (input validation, auth checks, data leak).
 - **Convention-derived**: the fix is directly traceable to a rule in `shared/PATTERNS.md`, an existing `pattern` learning in `project-context.json`, or a convention in `project.json#context.patterns`.
-- **Auto-promote**: if a `pattern` learning with the same dedup-key already exists (see `shared/LEARNING-EXTRACTION.md § Dedup Tokenizer`) → emit as `pitfall` instead of pattern.
+- **Auto-promote**: if a `pattern` learning with the same dedup-key already exists (see `shared/LEARNING-WRITE.md § Dedup Tokenizer`) → emit as `pitfall` instead of pattern.
 
 Do not mark as pitfall if: the fix is feature-specific (a single entity/route/business rule), pure performance without a generalizable principle, or cosmetic (whitespace, comment).
 
@@ -64,7 +64,7 @@ Emit only if the rationale describes a general principle: security, numerical co
 
 Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
-**Filter and dedup:** schema, relevance filter, and two-stage dedup per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](.claude/skills/shared/LEARNING-EXTRACTION.md). Append to `project-context.json → learnings[]` (written in step 3). Log confirmation or "no learnings — skip".
+**Filter and dedup:** schema, relevance filter, and two-stage dedup per [shared/LEARNING-WRITE.md § Writer Append Protocol](.claude/skills/shared/LEARNING-WRITE.md). Append to `project-context.json → learnings[]` (written in step 3). Log confirmation or "no learnings — skip".
 
 ## Step 3 — Parallel sync
 

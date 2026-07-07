@@ -53,7 +53,7 @@ main-root/feature.json/JSON problems, see the script's usage.
 
 ## Step 3b: Learning Extraction
 
-Append to `project-context.json#learnings[]` per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](.claude/skills/shared/LEARNING-EXTRACTION.md) (schema, relevance filter, two-stage dedup). dev-verify source mapping — read the just-written `feature.json`:
+Append to `project-context.json#learnings[]` per [shared/LEARNING-WRITE.md § Writer Append Protocol](.claude/skills/shared/LEARNING-WRITE.md) (schema, relevance filter, two-stage dedup). dev-verify source mapping — read the just-written `feature.json`:
 
 - `tests.fixSync[]` → type `pitfall`, source `extracted` (bugs with root causes)
 - `observations[]` → type `observation`, source `inferred` (cross-feature insights)

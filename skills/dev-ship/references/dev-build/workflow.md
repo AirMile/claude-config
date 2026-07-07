@@ -254,7 +254,7 @@ Follow [Discovery — Reuse-Discovery](.claude/skills/shared/SKILL-PATTERNS.md#r
 
 **Source:** `"/dev-build"` · **Direction:** `"dev→frontend"` · **Type:** `COMPONENT`
 
-**Learning extraction** (after feature.json sync): append to `project-context.json learnings[]` per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](.claude/skills/shared/LEARNING-EXTRACTION.md) (schema + two-stage dedup). dev-build is the **single writer** for `build.decisions[]` — source mapping:
+**Learning extraction** (after feature.json sync): append to `project-context.json learnings[]` per [shared/LEARNING-WRITE.md § Writer Append Protocol](.claude/skills/shared/LEARNING-WRITE.md) (schema + two-stage dedup). dev-build is the **single writer** for `build.decisions[]` — source mapping:
 
 - **`type: "pattern"`** — architectural/structural choices that future builds should reuse (e.g. "centralised env-loader via assertEnv()", "RHF + Zod for forms").
 - **`type: "pitfall"`** — version pins, peer-dep workarounds, package upgrades forced by ecosystem mismatch, or "don't do X because Y" guidance (e.g. "next-sanity@9 incompatible with Next 15 — use v10+").

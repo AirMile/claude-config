@@ -34,7 +34,7 @@ Subagent runs on Sonnet (see `agents/learning-extractor.md`), output JSON `[{typ
 For each entry from subagent output:
 
 - Set `source: "synced"`, `author: null` (codebase-wide), `date: <today>`, `feature: <first-segment-from-evidence>`
-- Keep the agent's `tags` (0–3 from `LEARNING-EXTRACTION.md § Tag Vocabulary`; default `[]`)
+- Keep the agent's `tags` (0–3 from `LEARNING-WRITE.md § Tag Vocabulary`; default `[]`)
 - Append to extraction results
 
 On subagent failure (timeout, no JSON) → log warning, continue without LLM learnings.

@@ -33,7 +33,7 @@ Pull remote changes, analyze the diff, refresh `.project/` context, analyze team
 
 - `shared/SYNC.md` — merge protocol (read-modify-write per section)
 - `shared/DASHBOARD.md` — project.json + project-context.json schema
-- `shared/LEARNING-EXTRACTION.md` — heuristics for MVP signals and LLM extraction (PHASE 4j)
+- `shared/LEARNING-EXTRACTION.md` — heuristics for MVP signals and LLM extraction (PHASE 4j); write-side schema/dedup/tags/consolidation: `shared/LEARNING-WRITE.md`
 
 ## Process
 

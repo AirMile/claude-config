@@ -20,7 +20,7 @@ wc -l < /tmp/scan-files.txt
 - **> 2000 files and no `--scope`**: show the top-level directory sizes (`cut -d/ -f1 | sort | uniq -c | sort -rn | head -15`, plus detected workspaces from `package.json#workspaces` / `pnpm-workspace.yaml`) and AskUserQuestion: scan everything anyway (slow), or pick a scope (recommended; one option per major package/dir, multiSelect true). Chosen scopes become `$SCOPE` for PHASE 1–4; re-runs can add more later.
 - **Hard caps regardless of choice** (apply per phase): structure ≤ 60 directories listed (append `… +N more` line); routes/entities/components globs filter `/tmp/scan-files.txt` instead of re-globbing the tree; TODO/FIXME grep output ≤ 200 matches; `git blame` only on the first 50 matches that survive the word-count filter (blame is the expensive step); LLM sampling keeps its existing 50-file cap.
 
-See `../shared/SYNC.md`, `../shared/DASHBOARD.md`, and `../shared/LEARNING-EXTRACTION.md` for protocols.
+See `../shared/SYNC.md`, `../shared/DASHBOARD.md`, `../shared/LEARNING-EXTRACTION.md`, and `../shared/LEARNING-WRITE.md` for protocols.
 
 ---
 
@@ -341,7 +341,7 @@ Log: `Reconciled N package versions: {list of name@old → name@new}`.
 - `project-context.json`: update `context.structure`, `context.routing`, `context.patterns`, `architecture.components`, append `learnings[]`
 - `context.updated` → today
 
-After the `learnings[]` append, run the consolidation gate per [shared/LEARNING-EXTRACTION.md § Consolidation Gate](../../shared/LEARNING-EXTRACTION.md) — onboarding can add up to 50 learnings at once, so a project that already had entries can cross `> 60`; the gate merges/archives down to ≤40 in the same write. No-op when under threshold.
+After the `learnings[]` append, run the consolidation gate per [shared/LEARNING-WRITE.md § Consolidation Gate](../../shared/LEARNING-WRITE.md) — onboarding can add up to 50 learnings at once, so a project that already had entries can cross `> 60`; the gate merges/archives down to ≤40 in the same write. No-op when under threshold.
 
 Skip-worktree recovery as in `core-pull` PHASE 0.
 
