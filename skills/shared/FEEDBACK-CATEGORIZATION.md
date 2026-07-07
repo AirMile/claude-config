@@ -1,9 +1,10 @@
 # Feedback categorization (shared)
 
 The canonical semantics for classifying a failed/flagged verification or playtest item before fixing
-it. Used by the dev and game fix loops (`dev-verify` fix-loop, `dev-ship` / `game-ship` manual
-round, `game-verify`). Centralized so the category meanings and the SUBJECTIVE-clarify rule live in
-one place; each caller keeps its own domain examples and fix-routing mechanics.
+it. Used by the dev and game fix loops (`dev-verify` fix-loop, `dev-ship`'s manual round,
+`game-ship`'s playtest round, `game-verify`). Centralized so the category meanings and the
+SUBJECTIVE-clarify rule live in one place; each caller keeps its own domain examples and fix-routing
+mechanics.
 
 ## The three core categories
 
@@ -26,5 +27,6 @@ TESTABLE is tier-2 (confirm the cause with evidence before editing). A failed ro
 `dev-verify`'s fix-loop adds a **SPEC** category — an acceptance criterion the implementation does not
 meet (the acceptance test fails, not a builder test). It is routed like TESTABLE, except the failing
 test **is** the acceptance test (write/update it), and a SPEC miss often needs design thought (plan
-mode) rather than a one-line fix. Flows that only judge human-observed items (the ship manual round,
-playtest) use the core three; SPEC is specific to `dev-verify`'s test-driven fix-loop.
+mode) rather than a one-line fix. Flows that only judge human-observed items (dev-ship's manual
+round, game-ship's playtest round) use the core three; SPEC is specific to `dev-verify`'s
+test-driven fix-loop.

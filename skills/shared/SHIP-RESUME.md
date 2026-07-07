@@ -94,11 +94,15 @@ options:
      hands off here (parks the run, ends the turn) so this phase runs on a fresh session. The re-entry steps live in the pipeline's own
      interactive-phase file, not here (this spec stays pipeline-generic): dev/game run that file's
      worktree-entry step (via `shared/WORKTREE.md`) + app/game-launch step before presenting the
-     checklist (dev: `phase-3-manual-finalize.md § Resume entry`; game: `phase-3-playtest.md`); design
-     re-enters its PHASE 4 review. Then the walkthrough replays from `results.verify.remainingManualItems`
-     (dev/game) / the stored check results (design). **PHASE 4 with `results.refactor` already present**
-     → skip the workflow relaunch and resume at the finalize step (the refactor ran; only the
-     merge/cleanup remains).
+     checklist (dev: `phase-3-manual-finalize.md § Resume entry`; game: `phase-3-playtest.md §
+Resume entry`); design re-enters its PHASE 4 review. Then the walkthrough replays from
+     `results.verify.remainingManualItems` (dev/game) / the stored check results (design) — for
+     dev/game, filtered against the checkpoint's `manual`/`playtest` items verdicts respectively
+     (already-verdicted items are not re-asked), and a stored `fixPlan` /
+     `activeWorkflow: "phase3fix"` resumes at the fix-round gate/dispatch instead of the walkthrough
+     (routing detail: each pipeline's own `§ Resume entry` — `phase-3-manual-finalize.md` /
+     `phase-3-playtest.md`). **PHASE 4 with `results.refactor` already present** → skip the workflow
+     relaunch and resume at the finalize step (the refactor ran; only the merge/cleanup remains).
    - **If the recorded phase is `"PHASE 0 · define"`** (dev/game minimal checkpoint) → **re-run define
      from the top** (the pipeline's `phase-0-*.md` from Step 1). The feature draft was authored inside
      plan mode, which blocks the `.project/` write that would checkpoint it, and the plan file's

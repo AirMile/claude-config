@@ -80,7 +80,9 @@ When a dev/game skill processes a feature, write a signal file so the backlog da
 ```
 
 `waiting` is **optional**: absent/null = the skill is actively running; a short reason string
-(`"manual-tests"`, `"playtest"`, `"review"`) = the skill is **paused for user input**. The board
+(`"manual-tests"`, `"fix-plan"`, `"playtest"`, `"review"`) = the skill is **paused for user input**
+(`"fix-plan"` = dev-ship / game-ship PHASE 3's round-level fix-plan gate, each pipeline's own
+`references/fix-round.md`). The board
 renders waiting rows amber with a static ⏸ badge ("{label} · input needed") and sorts them to the
 top of the IN PROGRESS section — the user sees at a glance that the pipeline is blocked on them.
 Write it by rewriting the signal file with the `waiting` field when an interactive gate follows

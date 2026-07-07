@@ -47,9 +47,9 @@ pipeline: it carries its own vendored copies of the four phase workflows under
 ## Design
 
 - **Two human touchpoints**: PHASE 0 (define + plan-approval gate) up front, PHASE 3 (live playtest)
-  mid-run; everything else hands-off. Merge happens at the end of PHASE 4. The playtest classification
-  (COVERED=GUT vs MANUAL=playtest) is advisory; AGENT 2's `remainingManualItems` is authoritative for
-  PHASE 3.
+  mid-run **and its fix-plan gate**; everything else hands-off. Merge happens at the end of PHASE 4.
+  The playtest classification (COVERED=GUT vs MANUAL=playtest) is advisory; AGENT 2's
+  `remainingManualItems` is authoritative for PHASE 3.
 - **Build and verify are separate agents/contexts** (fresh verify = adversarial). **`.project/` is
   shared on disk, context isolated** — sequential, one writer, re-read `.project/` after every agent
   return. See `references/agent-verify.md` / `references/non-interactive-contract.md`.
@@ -63,11 +63,12 @@ pipeline: it carries its own vendored copies of the four phase workflows under
   string. The Agent-tool path in each `agent-*.md` is the **fallback** (model override only there —
   it cannot set effort).
 
-  | Agent            | Model    | Effort   | Why                                                           |
-  | ---------------- | -------- | -------- | ------------------------------------------------------------- |
-  | AGENT 1 build    | `sonnet` | `high`   | contract-driven TDD — feature.json + tests bound the work     |
-  | AGENT 2 verify   | `opus`   | `high`   | the one independent adversarial GUT judgment; backstops build |
-  | AGENT 3 refactor | `sonnet` | `medium` | GUT test-guarded (revert-on-red), low risk                    |
+  | Agent                 | Model    | Effort   | Why                                                                   |
+  | --------------------- | -------- | -------- | --------------------------------------------------------------------- |
+  | AGENT 1 build         | `sonnet` | `high`   | contract-driven TDD — feature.json + tests bound the work             |
+  | AGENT 2 verify        | `opus`   | `high`   | the one independent adversarial GUT judgment; backstops build         |
+  | AGENT 3 refactor      | `sonnet` | `medium` | GUT test-guarded (revert-on-red), low risk                            |
+  | AGENT F fix (PHASE 3) | `sonnet` | `high`   | plan-bound fixes; the round gate did the thinking (Opus in plan mode) |
 
 > Full rationale (two-touchpoint model, playtest 85/15, why fresh verify contexts, checkpoint
 > durability, `.project/` sharing, prompt-by-pointer): `references/design-rationale.md`.
@@ -133,6 +134,12 @@ mode, so the gate just writes the plan file (its appendix holds the complete fea
 before this) and the sync runs; **reject** stays in plan mode and loops back
 to revise. A re-invoked feature that is already `DEFINED` means a prior run already accepted the gate,
 so it skips define, plan mode, and the gate, flowing straight to build (the resume-recovery path).
+
+PHASE 3 has a **second, conditional** plan-mode block (the fix-plan gate, `references/fix-round.md`)
+with the same hoisted-bookkeeping shape — findings are collected and checkpointed first, the round's
+fix design runs in plan mode (Opus), then `ExitPlanMode` gates dispatch. Unlike define, its input (the
+findings ledger) is already durable before entry, so a cross-session death during the gate re-enters
+the gate without re-running the walkthrough.
 
 It also assembles **`SHIP_CONTEXT`** (Step 6 of the reference) — one project-context block built
 here from the external `shared/GAME-CONTEXT-LOAD.md` (build profile) + `shared/LEARNINGS-LOAD.md`
@@ -241,9 +248,10 @@ Signal` worktree caveat), else the board reads the wrong (worktree-local) copy.
 
 The playtest runs in the main chat so `AskUserQuestion` and the live game window (via
 `mcp__godot-mcp__run_project` on `playtest_scene.tscn`) reach the real user. The reference owns the
-full routing — batched walkthrough, FAIL categorization (TESTABLE / MEASURABLE / SUBJECTIVE) + bounded
-fix loops, background-fix-agent vs `/game-debug` routing, and the GUT regression re-run after fixes.
-On all-green (or empty) complete the feature (DONE write) and **stay in the worktree**; finalize/merge
+full routing — item-by-item walkthrough + interview close → findings ledger (checkpoint) →
+conditional round-level fix-plan gate (mirrors PHASE 0's gate) → fix dispatch via
+`references/workflows/ship-game-fix.js` + inline mix → re-check round → GUT regression re-run. On
+all-green (or empty) complete the feature (DONE write) and **stay in the worktree**; finalize/merge
 runs at the end of PHASE 4 so refactor commits land on the feature branch. **No refactor/finalize
 until failed items pass.**
 
@@ -317,7 +325,7 @@ SHIP COMPLETE: {feature}
 ========================
 Plan:      auto-derived → lenses {refactorLenses}
 Build:     {passed}/{total} GUT PASS
-Verify:    COVERED {n} GUT PASS · MANUAL {n} ({pass}/{fail}/{skip}/{defer})
+Verify:    COVERED {n} GUT PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}) · {rounds} fix round(s)
 Refactor:  {lenses applied} · {improvements} applied ({reverted} reverted)
 Merged:    {yes → main | no → {reason}}
 

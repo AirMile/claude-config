@@ -78,13 +78,39 @@ command). See `BACKLOG.md § Board rendering`.
                   static bodies live in references/prompts/*, read by the agents), and those
                   files persist on disk — so store PATHS, never prompt bodies.
                   dev: { buildPromptPath, verifyPromptPath } or
-                       { refactorPromptPath, scanners, triagePromptPath }.
+                       { refactorPromptPath, scanners, triagePromptPath } or
+                       { fixGroupPromptPaths } (PHASE 3 fix dispatch — one path per fix group).
+                  game: same shape minus scanners/triagePromptPath (no security phase); PHASE 3 fix
+                       dispatch is also { fixGroupPromptPaths } — same key, game-ship's own paths.
                   design: { buildPromptPath, contentPromptPath, checkPromptPath }.
                   Lets a resume relaunch with the exact original prompt files; reassemble
                   from plan + disk only if a file is missing. */
   },
-  "activeWorkflow": null, // "phase12" | "phase4" | "design123" | null
-  "workflowRunId": null // "wf_..." from the Workflow tool result, for resumeFromRunId
+  "activeWorkflow": null, // "phase12" | "phase4" | "phase3fix" | "design123" | null
+  "workflowRunId": null, // "wf_..." from the Workflow tool result, for resumeFromRunId
+  "manual": {
+    /* dev-ship PHASE 3 only: the findings ledger + fix-round state (round-state, not an agent
+                return — sibling of `results`, not nested under it). Written incrementally through
+                the walkthrough, the fix-plan gate, and dispatch — see phase-3-manual-finalize.md,
+                manual-interview-walkthrough.md, fix-round.md.
+                round: 1-based counter, bumped before each fix-plan gate entry.
+                items: [{ id, title, verdict: "pass"|"fail"|"tweak"|"skip"|"defer", category,
+                          observed, expected, screenshot, source: "checklist"|"interview" }] —
+                        re-send the FULL array on every patch (ship-checkpoint.js replaces arrays
+                        wholesale, it does not merge them element-wise).
+                interviewDone: bool — the "now that you see it" close has run.
+                fixPlan: the accepted round-gate appendix object (findings/groups/waves), or absent.
+                dispatch: { groups: { [groupId]: { status, itemsFixed, testsGreen, notes,
+                           autoDecisions } }, allFixed: bool } — merged in from ship-fix.js's return. */
+  },
+  "playtest": {
+    /* game-ship PHASE 3 only: the same shape as `manual` above (round, items[], interviewDone,
+                fixPlan, dispatch), scoped separately because game-ship's ledger vocabulary differs
+                (playtest, not manual-test) — see phase-3-playtest.md, playtest-interview-walkthrough.md,
+                game-ship's fix-round.md. `dispatch.groups[id]`'s `itemsFixed`/`notes` describe GUT-test
+                results where the finding was TESTABLE. Never present together with `manual` — a
+                checkpoint is one pipeline at a time (`pipeline: "dev" | "design" | "game"`). */
+  }
 }
 ```
 
@@ -143,6 +169,14 @@ fights shell quoting.
 3. **On each workflow/agent return** — merge the returned structured object(s) into `results`,
    advance `phase`, append the just-finished phase(s) to `completedPhases`, clear
    `activeWorkflow`/`workflowRunId`/`prompts`.
+   3b. **PHASE 3 mid-phase writes (dev-ship manual round / game-ship playtest round)** — finer-grained
+   than the phase boundaries above, because the interactive round has its own resumable sub-state:
+   patch `manual.items` (dev) / `playtest.items` (game) (full array) after every per-item verdict
+   during the walkthrough; patch `.interviewDone` after the interview close; patch `.round` (+1)
+   before entering the fix-plan gate's plan mode; patch `.fixPlan` at gate-accept; set
+   `activeWorkflow: "phase3fix"` + `workflowRunId` + `prompts.fixGroupPromptPaths` at dispatch launch
+   (write point 2 applies here too); patch `.dispatch` and clear
+   `activeWorkflow`/`workflowRunId`/`prompts` on dispatch return.
 4. **On a failure-jump to the report phase** — set `status: "failed"` (keep everything else so the
    user can resume or inspect).
 5. **On successful completion (report phase)** — run `complete` (sets `status: "complete"`, then
