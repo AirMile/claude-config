@@ -43,6 +43,10 @@ RAW_READ_RE = re.compile(
 # Read -> mutate-in-memory -> Write cycle, not a PHASE 0 read-only context load.
 ALLOWLIST = [
     (
+        "skills/dev-ship/references/dev-verify/references/completion-sync-fallback.md",
+        "Re-read `backlog.json`: confirm the matched entry has `status === \"DONE\"`",
+    ),
+    (
         "skills/dev-ship/references/dev-refactor/references/completion-batch.md",
         "Read backlog.json + project.json + project-context.json in parallel",
     ),

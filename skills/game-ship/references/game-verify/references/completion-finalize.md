@@ -116,9 +116,11 @@ Recorded in test results.
 
    `requirements[]`/`checklist` follow the same shape as dev-verify (see
    `dev-verify/references/completion-sync.md § Step 3`). `componentSync` only when PHASE 3 fixes
-   touched `architecture.components[]`. Exit `6` (validation failed, nothing written) or `7` (no
-   backlog match, feature.json written) fall back to authoring the mutations by hand per the
-   script's header.
+   touched `architecture.components[]`. Exit `6` (validation failed, nothing written) — fall back
+   to hand-authoring; > **Todo**: Read
+   '.claude/skills/dev-ship/references/dev-verify/references/completion-sync-fallback.md' (never
+   the script source, same file as dev-verify). Exit `7` (no backlog match, feature.json written)
+   — warn and stop; backlog/context/project files are left untouched.
 
    **Learning Extraction** — append to `project-context.json#learnings[]` per [shared/LEARNING-WRITE.md § Writer Append Protocol](../../shared/LEARNING-WRITE.md) (schema, relevance filter, two-stage dedup). game-verify source mapping — read the just-written `feature.json`:
    - `tests.fixSync[]` and `tests.sessions[].fixes` → type `pitfall`, source `extracted` (bugs with root causes)

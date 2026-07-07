@@ -44,8 +44,9 @@ Field notes:
 - `componentSync`/`designComponent`: only when PHASE 4 touched components / `IS_COMPONENT_VERIFY = true`.
 
 Exit codes: `0` full sync · `6` validation failed before any write (missing/unknown verdict, or a
-forbidden key anywhere in the payload) — fall back to authoring the mutations by hand per the field
-list the script's header documents · `7` feature.json was written but no backlog entry matched
+forbidden key anywhere in the payload) — fall back to hand-authoring; > **Todo**: Read
+'.claude/skills/dev-ship/references/dev-verify/references/completion-sync-fallback.md' (never the
+script source) · `7` feature.json was written but no backlog entry matched
 `feature.name` — warn and stop (backlog/context/project files are left untouched) · `3`/`4`/`5` —
 main-root/feature.json/JSON problems, see the script's usage.
 

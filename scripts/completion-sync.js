@@ -38,7 +38,9 @@
 //   4 = feature.json or backlog.json not found.
 //   5 = invalid JSON on stdin.
 //   6 = validation failed BEFORE any write (missing/unknown verdict,
-//       forbidden key in payload, ...) — caller falls back to manual authoring.
+//       forbidden key in payload, ...) — caller falls back to manual authoring
+//       per dev-ship/references/dev-verify/references/completion-sync-fallback.md
+//       (never by reading this source at runtime).
 //   7 = feature.json written, but no backlog entry matched feature.name
 //       (warn + stop — backlog/context/project files left untouched).
 
