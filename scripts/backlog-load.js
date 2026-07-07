@@ -12,6 +12,7 @@
 // Usage:
 //   node scripts/backlog-load.js <repo-root> read-feature <feature-name>
 //   node scripts/backlog-load.js <repo-root> ready-queue
+//   node scripts/backlog-load.js <repo-root> queue <status> [transition]
 //   node scripts/backlog-load.js <repo-root> open-items <feature-name>
 //   node scripts/backlog-load.js <repo-root> pages
 //   node scripts/backlog-load.js <repo-root> game-read-feature <feature-name>
@@ -96,6 +97,41 @@ switch (profile) {
       transition: feat.transition || null,
       pageHint: feat.pageHint || [],
     });
+    break;
+  }
+
+  case "queue": {
+    if (!arg1) usageError('profile "queue" requires <status>');
+    const status = arg1;
+    const transition = arg2 || "";
+    if (!data) {
+      emit({ backlogPresent: false, items: [] });
+      break;
+    }
+    const doneNames = new Set(
+      features.filter((f) => f.status === "DONE").map((f) => f.name),
+    );
+    const items = features
+      .filter(
+        (f) =>
+          f.status === status && (!transition || f.transition === transition),
+      )
+      .map((f) => ({
+        name: f.name,
+        status: f.status,
+        phase: f.phase,
+        dependencies: f.dependencies || [],
+        transition: f.transition || null,
+        ready:
+          status === "DEFINED"
+            ? (f.dependencies || []).every((d) => doneNames.has(d))
+            : null,
+        blocking:
+          status === "DEFINED"
+            ? (f.dependencies || []).filter((d) => !doneNames.has(d))
+            : null,
+      }));
+    emit({ backlogPresent: true, items });
     break;
   }
 
@@ -232,6 +268,6 @@ switch (profile) {
 
   default:
     usageError(
-      `unknown profile "${profile}" — expected one of: read-feature, ready-queue, open-items, pages, game-read-feature, game-queue`,
+      `unknown profile "${profile}" — expected one of: read-feature, ready-queue, queue, open-items, pages, game-read-feature, game-queue`,
     );
 }

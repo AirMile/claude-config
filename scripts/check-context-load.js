@@ -231,6 +231,12 @@ check(
   ["backlogPresent", "items"],
 );
 check(
+  "backlog-load / queue / DONE",
+  "backlog-load.js",
+  [devRepo, "queue", "DONE"],
+  ["backlogPresent", "items"],
+);
+check(
   "backlog-load / open-items",
   "backlog-load.js",
   [devRepo, "open-items", FEAT],

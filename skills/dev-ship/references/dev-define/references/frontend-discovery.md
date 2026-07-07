@@ -27,7 +27,7 @@ For the shared sync implementation of `discoveredComponents` in PHASE 4, see [sh
 
 Skip for pure API/backend/game features. After Reuse-Discovery, ask which PAGE(s) this feature surfaces on. This writes `pageHint[]` to `feature.json` (PHASE 3) and enables `/design-convert` Build to pre-populate its composition menu.
 
-1. Read `.project/backlog.json` → collect all PAGE-type features (any status). Read `project.json#design.pages[]` — collect page names. Merge both lists (dedupe by name) as `$KNOWN_PAGES`.
+1. `node ~/.claude/scripts/backlog-load.js "$REPO" pages` → `{ backlogPresent, items }` (all PAGE-type features, any status — see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). Read `project.json#design.pages[]` — collect page names. Merge both lists (dedupe by name) as `$KNOWN_PAGES`.
 
 2. ```yaml
    header: "Page placement"

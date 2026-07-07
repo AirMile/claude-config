@@ -46,7 +46,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
 > **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 5 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
-1. **Read backlog** — read `.project/backlog.json` → parse JSON (see `shared/BACKLOG.md → Lifecycle Protocol → Read`).
+1. **Read backlog**: `node ~/.claude/scripts/backlog-load.js "$REPO" queue DOING verifying` → `{ backlogPresent, items }` (see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). Empty `items` → re-run with no transition arg (`queue DOING`) to list all DOING features.
 
    Resolve the active feature in this precedence order:
    - **Arg provided + matches a verifying feature** → use the arg. Show: `Backlog: ✓ Task picked up — {name}`.

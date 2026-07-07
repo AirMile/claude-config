@@ -108,5 +108,5 @@ Idempotent — skip if file already exists. No junction needed: `~/.claude/CLAUD
 - New skills: copy frontmatter structure from an existing skill in the same category
 - Test by actually running the skill
 - Dev/game pipeline sync: for structural changes to `dev-ship` (its define/build/verify/refactor phases) or `dev-debug`, check whether the game-pipeline counterpart (`game-ship`, `game-debug`) needs the same change. Domain-specific content (Godot vs web, GUT vs browser) does not need to be synced.
-- Before tagging a release: run `python3 scripts/check-handoff.py`, `python3 scripts/check-dashboard-writers.py`, `python3 scripts/check-no-project-commit.py`, and `bash scripts/tests/run.sh` — all must exit 0. (`run.sh` is bash; on Windows run via WSL.)
+- Before tagging a release: run `python3 scripts/check-handoff.py`, `python3 scripts/check-dashboard-writers.py`, `python3 scripts/check-no-project-commit.py`, `python3 scripts/check-backlog-reads.py`, `node scripts/check-context-load.js`, and `bash scripts/tests/run.sh` — all must exit 0. (`run.sh` is bash; on Windows run via WSL.)
 - New skills forecasted >500 lines: apply lazy-reference-loading before committing — see `skills/shared/SKILL-PATTERNS.md § Lazy Reference Loading`.

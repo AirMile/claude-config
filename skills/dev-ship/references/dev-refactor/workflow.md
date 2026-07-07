@@ -60,8 +60,7 @@ The active-feature signal file is written in step 3 — in no-arg mode the featu
 
 1. **Step 1: Read backlog for pipeline status:**
 
-   Read `.project/backlog.json` (if exists), parse JSON (see `shared/BACKLOG.md`):
-   - Filter DONE features: `data.features.filter(f => f.status === "DONE" && !f.shipped)`
+   `node ~/.claude/scripts/backlog-load.js "$REPO" queue DONE refactoring` → `{ backlogPresent, items }` (see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). Empty `items` → re-run with no transition arg (`queue DONE`) to list all DONE features not yet shipped:
    - For each DONE feature, check `.project/features/{name}/feature.json` for existing `refactor` section
    - Categorize: `unrefactored` (no refactor section) vs `refactored` (has refactor section)
    - Filter small-items: features with `status === "DONE" && !shipped` where `[ -f .project/features/{name}/feature.json ]` is false — items without pipeline (CHANGE/BUG/PAGE/COMPONENT/etc)
