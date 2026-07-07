@@ -242,14 +242,10 @@ surface for the whole plan. It always runs (no env-var opt-out).
      the plan file, and `ExitPlanMode` again. Loop until accepted (mirrors `dev-debug`'s
      plan-rejection-revises pattern).
 
-**Resume note.** Between Step 2b (`EnterPlanMode`) and Accept, the draft lives **only in memory + the
-plan file** — plan mode blocks the `.project/` write that would checkpoint it, and the plan file's
-harness-generated name is not linked to the feature, so it is not reliably discoverable cross-session.
-Consequently: a **same-session** interruption keeps the draft (plan mode + the plan file persist in
-the session — just continue). A **cross-session** death anywhere in the define/plan-mode block (the
-checkpoint reads `phase: "PHASE 0 · define"`, `plan: {}`) means the interview **re-runs** on resume —
-the accepted cost of moving the thinking onto the planning model. Once Accept writes `feature.json`,
-that file is the durable home and Step 5's checkpoint patch makes the rest resumable normally.
+**Resume note.** Same-session interruption between Step 2b and Accept: just continue (plan mode + the
+plan file persist in the session). Cross-session death re-runs the interview — see Step 0's
+`PHASE 0 · define` case above for why. Once Accept writes `feature.json`, that file is the durable
+home and Step 5's checkpoint patch makes the rest resumable normally.
 
 ## Step 5 — Store the derived plan in memory + advance the checkpoint
 
