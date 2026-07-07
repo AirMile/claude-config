@@ -23,12 +23,20 @@ and `feature.json#files[]` (the build agent just wrote them).
 SCOPE LIMITS (critical — this is a partial verify):
 
 - Run dev-verify PHASE 0 (load + classify AUTO/MANUAL/COVERED per test-classification.md) and the
-  automated testing of AUTO/COVERED items, including any fix-loop needed to make failing AUTO items
-  pass. The worktree already exists (branch worktree-{feature} at the path in your CONTEXT block) —
-  dev-verify's PHASE 0 detects and switches into it via WORKTREE.md; .project/ is shared so
-  feature.json is present (the git-show reconciliation branch will not fire).
+  automated testing of AUTO/COVERED items — this includes AUTO/BROWSER items: execute them yourself
+  via Claude-in-Chrome (preferred) or the `playwright-cli` daemon (fallback — see
+  `shared/CLAUDE-IN-CHROME.md`), same as any other AUTO item — including any fix-loop needed to make
+  failing AUTO items pass. The worktree already exists (branch worktree-{feature} at the path in your
+  CONTEXT block) — dev-verify's PHASE 0 detects and switches into it via WORKTREE.md; .project/ is
+  shared so feature.json is present (the git-show reconciliation branch will not fire).
+- **Classification discipline**: assign MANUAL only when `test-classification.md § MANUAL`'s
+  criteria are genuinely met, and attach the matching `manualReason`
+  (`perception`/`real-credentials`/`audio`/`physical-device`/`screen-reader`) to every item you
+  return in `remainingManualItems`. If you are uncertain whether an item needs a human, it does
+  not — execute it yourself as AUTO/BROWSER instead of downgrading it to MANUAL. An item with no
+  `manualReason` is a contract violation (`agent-verify.md § Main-chat handling` checks for this).
 - DO NOT run the MANUAL walkthrough (dev-verify PHASE 2 / manual-walkthrough.md) — collect the
-  MANUAL items and return them instead.
+  MANUAL items (each with its `manualReason`) and return them instead.
 - DO NOT run completion-sync's DONE transition and DO NOT run PHASE Finalize — leave backlog status
   as DOING and do NOT merge or remove the worktree. Finalize is the main chat's job (PHASE 4, after
   refactor).
@@ -50,6 +58,7 @@ remainingManualItems:
   title: <manual item title>
   steps: [<step>, ...]
   expected: <observable outcome>
+  manualReason: perception | real-credentials | audio | physical-device | screen-reader
 
 # ... or "none"
 

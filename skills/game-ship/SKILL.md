@@ -29,7 +29,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.6.0
+  version: 0.7.0
   category: game
 ---
 
@@ -38,9 +38,9 @@ metadata:
 Runs the full Godot gamedev pipeline — **define → build → GUT auto-verify → human playtest → refactor** —
 in one chat. Heavy work runs in isolated inline agents (context stays clean); only human interaction
 (define choices, the live playtest) happens in the main chat; the autonomous PHASE 1–4 stretch runs
-in one background orchestrator agent (AGENT O) so the define-heavy main chat wakes once. `game-ship`
-is the **standalone** game pipeline: it carries its own vendored copies of the four phase workflows
-under
+as background Workflows launched by the main chat, which wakes on their task-notifications.
+`game-ship` is the **standalone** game pipeline: it carries its own vendored copies of the four phase
+workflows under
 `references/game-{define,build,verify,refactor}/` and drives them internally — there are no separate
 `/game-define`…`/game-refactor` skills anymore.
 
@@ -59,22 +59,20 @@ under
   subagent has no display and must never call `mcp__godot-mcp__run_project`. The only interactive
   launch is the main chat's PHASE 3 playtest. **`{godot_executable}` is resolved once in PHASE 0** and
   injected into every agent slice (agents never re-resolve).
-- **Agents run via the Workflow tool** (PHASE 1+2, PHASE 4); prompts passed **by pointer, never
-  inline**; results schema-validated. Both workflow scripts **normalize `args`** at the top
-  (`typeof args === "string" ? JSON.parse(args) : args`) — a runtime may deliver `args` as a JSON
-  string. The Agent-tool path in each `agent-*.md` is the **fallback** (model override only there —
-  it cannot set effort).
-- **Workflow-in-workflow nesting is forbidden, but a background agent may call the Workflow tool** —
-  that is what makes AGENT O (below) possible: it is a background `Agent` that itself launches the
-  PHASE 1+2 and PHASE 4 workflows.
+- **Agents run via the Workflow tool** (PHASE 1+2, PHASE 4), launched directly by the main chat;
+  prompts passed **by pointer, never inline**; results schema-validated. Both workflow scripts
+  **normalize `args`** at the top (`typeof args === "string" ? JSON.parse(args) : args`) — a runtime
+  may deliver `args` as a JSON string. The Agent-tool path in each `agent-*.md` is the **fallback**
+  (model override only there — it cannot set effort) — a background subagent cannot call the
+  Workflow tool (not reachable even via `ToolSearch`), so the fallback is run by the main chat
+  itself, never by an intermediate orchestrator agent.
 
-  | Agent                 | Model    | Effort   | Why                                                                                        |
-  | --------------------- | -------- | -------- | ------------------------------------------------------------------------------------------ |
-  | AGENT O orchestrator  | `sonnet` | n/a      | Agent tool, not Workflow — mechanical routing; judgment lives in the workflows it launches |
-  | AGENT 1 build         | `sonnet` | `high`   | contract-driven TDD — feature.json + tests bound the work                                  |
-  | AGENT 2 verify        | `opus`   | `high`   | the one independent adversarial GUT judgment; backstops build                              |
-  | AGENT 3 refactor      | `sonnet` | `medium` | GUT test-guarded (revert-on-red), low risk                                                 |
-  | AGENT F fix (PHASE 3) | `sonnet` | `high`   | plan-bound fixes; the round gate did the thinking (Opus in plan mode)                      |
+  | Agent                 | Model    | Effort   | Why                                                                   |
+  | --------------------- | -------- | -------- | --------------------------------------------------------------------- |
+  | AGENT 1 build         | `sonnet` | `high`   | contract-driven TDD — feature.json + tests bound the work             |
+  | AGENT 2 verify        | `opus`   | `high`   | the one independent adversarial GUT judgment; backstops build         |
+  | AGENT 3 refactor      | `sonnet` | `medium` | GUT test-guarded (revert-on-red), low risk                            |
+  | AGENT F fix (PHASE 3) | `sonnet` | `high`   | plan-bound fixes; the round gate did the thinking (Opus in plan mode) |
 
 > Full rationale (two-touchpoint model, playtest 85/15, why fresh verify contexts, checkpoint
 > durability, `.project/` sharing, prompt-by-pointer): `references/design-rationale.md`.
@@ -87,15 +85,12 @@ under
 
 **Durable checkpoint (pause/resume across sessions)** — beyond the compaction-safe `TaskCreate` list,
 the run is mirrored to `.project/session/ship-{feature}.json` at every phase boundary via
-`ship-checkpoint.js` (use `pipeline: "game"`). **Exactly one designated writer at a time**: the main
-chat owns the checkpoint by default, transfers ownership to the background orchestrator agent
-(AGENT O) at write point 1b, and regains it when AGENT O's final write clears the `orchestrator`
-marker (worker subagents never touch it — contract rule 1). Schema, write points 0–5 (including 1b),
-and the board's **parked** row: `shared/SHIP-CHECKPOINT.md`; resume detection, fast-path
-direct-resume, and orphan-cleanup: `shared/SHIP-RESUME.md`. This skill follows both — the per-phase
-field patches below are the only checkpoint detail restated here. Note the PHASE 2→3 boundary is a
-**deliberate handoff stop**: park, then a fresh-session resume into the playtest (see AGENT O's
-`parked` return) when playtest items remain.
+`ship-checkpoint.js` (use `pipeline: "game"`). **The main chat is the single writer throughout**
+(worker subagents never touch it — contract rule 1). Schema, write points 0–5, and the board's
+**parked** row: `shared/SHIP-CHECKPOINT.md`; resume detection, fast-path direct-resume, and
+orphan-cleanup: `shared/SHIP-RESUME.md`. This skill follows both — the per-phase field patches below
+are the only checkpoint detail restated here. Note the PHASE 2→3 boundary is a **deliberate handoff
+stop**: park, then a fresh-session resume into the playtest when playtest items remain.
 
 1. PHASE 0: Define + Classify + Auto-derive technique plan
 2. PHASE 1: Build (AGENT 1)
@@ -157,7 +152,7 @@ into each PHASE 1/2/4 agent's **pointer file** — so no agent re-bootstraps its
 chat is the context-hub. Each `agent-*.md` § Spawn documents the pointer-file template that carries
 this slice.
 
-### PHASE 1–4: Background orchestrator (AGENT O)
+### PHASE 1–4: Orchestration (main chat, background workflows)
 
 > **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`. Rewrite the board live-signal:
 > `echo '{"skill":"build"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}`,
@@ -169,17 +164,13 @@ this slice.
 > each pointer + SHIP_CONTEXT-slice file** — `.project/session/ship-prompts/{feature}-build.txt` and
 > `-verify.txt` — keeping the literal `{worktreePath}` placeholder in the verify file, and pass the
 > **paths** (never inline). This stays main-chat work: the main chat holds `SHIP_CONTEXT` (including
-> the resolved `{godot_executable}`) in memory from PHASE 0; AGENT O never re-bootstraps it.
+> the resolved `{godot_executable}`) in memory from PHASE 0.
 >
-> **Write point 1b**: patch `{"orchestrator":{"status":"running","startedAt":"{ISO}"}}` via
-> `ship-checkpoint.js` — this is your **last** checkpoint write before spawning; from here AGENT O
-> holds the write token. Spawn per
-> `.claude/skills/game-ship/references/agent-orchestrator.md § Spawn`, passing the two pointer paths
-> above. **End the turn** with a one-liner ("Shipping `{feature}` in the background — I'll report
-> when it returns.") — no further tool calls.
+> Read `.claude/skills/game-ship/references/orchestration.md` and follow it — launch the PHASE 1+2
+> workflow (§3) with the two pointer paths above. **End the turn** with a one-liner ("Shipping
+> `{feature}` in the background — I'll report when it returns.") — no further tool calls.
 >
-> **On wake** (task-notification with AGENT O's result): per `agent-orchestrator.md`'s Wake
-> handling, branch on `status`:
+> **On workflow notification**, branch on the returned `status`:
 >
 > - **`"complete"`** → proceed to PHASE 5.
 > - **`"parked"`** (playtest items remain) → print the handoff message below — no further tool calls.
@@ -195,23 +186,18 @@ this slice.
 >   The board shows this run as parked (⏸) with the same resume button.
 >   Prefer to continue here instead? Say so and I'll run PHASE 3 in this session.
 >   ```
->   **Same-session escape hatch**: if the user replies "continue here" (or equivalent), read
->   `.claude/skills/game-ship/references/prompts/orchestrator.md` and execute it inline in this chat
->   yourself instead — re-arm the live signal first; you hold the write token throughout.
+>   **Same-session escape hatch**: if the user replies "continue here" (or equivalent), continue
+>   with `orchestration.md § 4` (PHASE 3 completion) inline in this chat instead of parking.
 > - **`"failed"`** → print, depending on `failedPhase`, then proceed to PHASE 5's failure path:
 >   - `"build"`: "Build failed at `{build.failedAt}`, worktree intact at `{build.worktreePath}` — run
 >     `/game-debug {feature}`, or re-run `/game-ship {feature}` to resume."
 >   - `"verify"`: "GUT auto-verify failed at `{verify.failedAt}`, worktree intact — run
 >     `/game-debug {feature}`, or re-run `/game-ship {feature}` to resume."
->
-> **Fallback** (Agent tool unavailable): read
-> `.claude/skills/game-ship/references/prompts/orchestrator.md` and execute it inline in this chat
-> yourself — same contract, main chat holds the write token throughout.
 
-AGENT O runs both agents sequentially in isolated contexts (model/effort matrix in § Design),
-launches PHASE 4's refactor/finalize when no playtest items remain, and returns exactly once. Full
-mechanics: `references/prompts/orchestrator.md`. Full agent behaviour: `agent-build.md` /
-`agent-verify.md` / `agent-refactor.md`.
+You run both agents sequentially in isolated contexts (model/effort matrix in § Design), launch
+PHASE 4's refactor/finalize when no playtest items remain, and continue to PHASE 5. Full mechanics:
+`references/orchestration.md`. Full agent behaviour: `agent-build.md` / `agent-verify.md` /
+`agent-refactor.md`.
 
 ### PHASE 3: Human playtest + Completion (MAIN CHAT — fresh-session playtest round)
 
@@ -219,8 +205,8 @@ mechanics: `references/prompts/orchestrator.md`. Full agent behaviour: `agent-bu
 > Rewrite the board live-signal: `echo '{"skill":"test"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}`
 > (cwd-in-worktree safe — the script resolves main-root itself, same as the checkpoint write), and
 > update the checkpoint `phase: "PHASE 3"`.
-> You arrive here with non-empty `remainingManualItems`, normally **from a fresh session** (AGENT O's
-> `parked` return handed off) via the reference's **Resume entry** note — re-enter the worktree +
+> You arrive here with non-empty `remainingManualItems`, normally **from a fresh session** (the
+> `"parked"` handoff above) via the reference's **Resume entry** note — re-enter the worktree +
 > relaunch the game window first — or from the same-session **escape hatch** (the user chose to
 > continue here instead of parking). Either way re-arm the live signal, then proceed: Read
 > `.claude/skills/game-ship/references/phase-3-playtest.md` and run the live playtest walkthrough
@@ -233,9 +219,9 @@ conditional round-level fix-plan gate (mirrors PHASE 0's gate) → fix dispatch 
 `references/workflows/ship-game-fix.js` + inline mix → re-check round → GUT regression re-run. On
 all-green complete the feature (DONE write) and **stay in the worktree**; finalize/merge runs at the
 end of PHASE 4 so refactor commits land on the feature branch. **No refactor/finalize until failed
-items pass.** Once complete, spawn AGENT O per `references/agent-orchestrator.md § Spawn` (no
-build/verify pointer paths needed — the checkpoint's `phase: "PHASE 3"` with a resolved playtest
-ledger routes AGENT O straight into PHASE 4) and handle its wake as described in § PHASE 1–4 above.
+items pass.** Once complete, continue per `references/orchestration.md` (the checkpoint's `route`
+subcommand sends you straight to PHASE 4) and handle its notification as described in § PHASE 1–4
+above.
 
 ### PHASE 5: Report
 
@@ -255,9 +241,8 @@ ledger routes AGENT O straight into PHASE 4) and handle its wake as described in
 
 Print the ship summary (ASCII table): feature, build test counts, GUT auto-verify results, playtest
 outcomes, refactor result, and the collected `autoDecisions[]` (choices the agents auto-made in
-non-interactive mode) for your review. On the no-playtest path the fields come from AGENT O's
-`SHIP_ORCH_RESULT` plus the checkpoint's `results`; on the playtest path they come from the
-in-context PHASE 3 walkthrough plus `results`.
+non-interactive mode) for your review. All fields come from the checkpoint's `results` (and, on the
+playtest path, the in-context PHASE 3 walkthrough).
 
 ```
 SHIP COMPLETE: {feature}

@@ -76,17 +76,15 @@ options:
    the scripts also enforce this, so a resumed failed result re-runs its agent instead of replaying
    the failure:
    - **dev/game, agent phases** (PHASE 1/2/4, and PHASE 3 when no open manual/playtest work
-     remains) → clear a stale `orchestrator` marker first
-     (`echo '{"orchestrator":null}' | node ~/.claude/scripts/ship-checkpoint.js patch {name}` — a
-     cross-session resume always means the agent died with its session), then respawn AGENT O per
-     the pipeline's `references/agent-orchestrator.md § Spawn`. AGENT O re-reads the checkpoint and
-     performs all relaunch mechanics itself: the stored `prompts` **paths** (reassembling from `plan`
-     - disk only if a file is missing), `args.resume` built from the green `results` above, and —
-       same-session only — `TaskStop` + `resumeFromRunId: "{workflowRunId}"` when `activeWorkflow` was
-       still set. This also covers **PHASE 4 with `results.refactor` already present** — AGENT O skips
-       the workflow relaunch and resumes at the finalize step (the refactor ran; only merge/cleanup
-       remains).
-   - **design** (has no orchestrator agent — these bullets are design-only):
+     remains) → run `node ~/.claude/scripts/ship-checkpoint.js route {name}` and follow the returned
+     `route` per the pipeline's `references/orchestration.md § 2`. The main chat performs all
+     relaunch mechanics itself: the stored `prompts` **paths** (reassembling from `plan` + disk only
+     if a file is missing), `args.resume` = the `route` command's returned `resume` object, and —
+     same-session only — `TaskStop` + `resumeFromRunId: "{workflowRunId}"` when `activeWorkflow` was
+     still set. This also covers **PHASE 4 with `results.refactor` already present**
+     (`route` → `"phase4-finalize-only"`) — skip the workflow relaunch and resume at the finalize
+     step (the refactor ran; only merge/cleanup remains).
+   - **design** (has no `route` subcommand — these bullets are design-only):
      - **If `activeWorkflow` + `workflowRunId` are set** (a workflow was in flight) and this is the
        **same session** → stop the in-flight run first (`TaskStop` — `resumeFromRunId` requires the
        prior run stopped), then relaunch with `resumeFromRunId: "{workflowRunId}"` and the same
@@ -114,7 +112,7 @@ Resume entry`); design re-enters its PHASE 4 review. Then the walkthrough replay
      `activeWorkflow: "phase3fix"` resumes at the fix-round gate/dispatch instead of the walkthrough
      (routing detail: each pipeline's own `§ Resume entry` — `phase-3-manual-finalize.md` /
      `phase-3-playtest.md`). (dev/game PHASE 4 relaunch, including the `results.refactor`-already-present
-     finalize-only case, is handled by the dev/game bullet above — AGENT O does it.)
+     finalize-only case, is handled by the dev/game bullet above via the `route` subcommand.)
    - **If the recorded phase is `"PHASE 0 · define"`** (dev/game minimal checkpoint) → **re-run define
      from the top** (the pipeline's `phase-0-*.md` from Step 1). The feature draft was authored inside
      plan mode, which blocks the `.project/` write that would checkpoint it, and the plan file's

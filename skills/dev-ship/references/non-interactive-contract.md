@@ -11,8 +11,7 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
 1. **Phase tracking** — do **not** call `TaskCreate`/`TaskUpdate`. dev-ship owns phase tracking.
    Follow the workflow's phases in order and track progress in prose. Ignore every "call TaskCreate"
    / "mark PHASE X → …" instruction and every phase-seed block. The checkpoint is written only by the
-   **designated orchestrator** (the main chat, or the ship-orchestrator agent — AGENT O — while it
-   holds the write token) — worker agents never touch it.
+   main chat — worker agents never touch it.
 2. **Plan mode** — **never** call `EnterPlanMode`/`ExitPlanMode`. You are already a subagent; run all
    analytical/design phases directly. Ignore "plan mode must be active before …" constraints. (This is
    subagent-scoped. The one plan-mode surface in the whole pipeline is the main-chat PHASE 0 Step 4b
@@ -34,8 +33,7 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
    `httpContractTested` / `acceptanceTests` probing) — run it inline if you cannot spawn (rule 9).
 7. **Worktree — role-bound.** Build-agent: create the worktree, commit, **never merge**.
    Verify/refactor-agent: use the existing worktree; **never** finalize/merge/`ExitWorktree`/
-   `git worktree remove`. The ship orchestrator owns finalize (PHASE 4, after refactor) — AGENT O on
-   the no-manual path, the main chat on the manual path and the inline fallback. Ignore the
+   `git worktree remove`. The main chat owns finalize (PHASE 4, after refactor). Ignore the
    workflow's Finalize / `FINALIZE.md` / `ExitWorktree` phase entirely.
 8. **No browser side-effects** — skip HTML-preview generation + `HTML-PRESENT.md` (dev-define visual
    preview). No browser in a subagent.
@@ -57,8 +55,8 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
 
 ## Git boundary (recap of rule 7)
 
-The only git integration is the ship orchestrator's PHASE 4 finalize (after refactor — AGENT O on
-the no-manual path, the main chat otherwise). Build commits in the worktree; verify commits fixes
+The only git integration is the main chat's PHASE 4 finalize (after refactor). Build commits in the
+worktree; verify commits fixes
 in the worktree; refactor commits in the worktree on the feature branch (pre-merge). No agent runs
 `git merge`, `git branch -d/-D`, `git worktree remove`, or switches to `main`.
 
@@ -79,11 +77,10 @@ each `_START` … `_END`. Keep prose minimal — the block IS the return value.
 
 In both cases: always include `autoDecisions[]` (rule 3).
 
-## Orchestrator side
+## Main-chat side
 
-The orchestrator role is held by the background AGENT O for PHASE 1–4 on the no-manual path, and by
-the main chat elsewhere (PHASE 3's manual round, and the inline fallback when the Agent/Workflow
-tools are unavailable).
+The main chat holds the orchestration role throughout: PHASE 1–4 (launching the Workflow tool
+itself), PHASE 3's manual round, and the inline fallback when the Workflow tool is unavailable.
 
 - **Workflow path (primary)**: the workflow's return value carries each agent's schema-validated
   result object — read fields directly, nothing to parse. **Agent-tool fallback**: parse the block

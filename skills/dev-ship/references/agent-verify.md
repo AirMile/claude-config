@@ -33,7 +33,7 @@ CONTEXT (verify-slice of SHIP_CONTEXT; worktree path = {worktreePath}):
 {paste the verify-slice of SHIP_CONTEXT (PHASE 0) — the dynamic project-context lines}
 ```
 
-## Orchestrator handling (PHASE 2)
+## Main-chat handling (PHASE 2)
 
 1. **Workflow path**: `ship-phase12.js` returns the validated `verify` object — read fields
    directly. **Fallback path**: parse `SHIP_VERIFY_RESULT_START/END` (robust).
@@ -42,3 +42,10 @@ CONTEXT (verify-slice of SHIP_CONTEXT; worktree path = {worktreePath}):
    worktree intact — run `/dev-debug {feature}`." Do not finalize.
 3. `status: green` → **re-read `.project/` from disk**. `remainingManualItems` is **authoritative**
    for PHASE 3 (overrides the PHASE 0 advisory estimate). Continue to PHASE 3.
+
+**Contract check**: every element of `remainingManualItems` must carry a `manualReason` (one of
+`perception`/`real-credentials`/`audio`/`physical-device`/`screen-reader` —
+`dev-verify/references/test-classification.md § MANUAL`). An item with no `manualReason`, or one
+AGENT 2 downgraded to MANUAL out of uncertainty rather than a genuine human-only criterion, is a
+contract violation — AGENT 2 should have executed it itself as AUTO/BROWSER (`prompts/verify.md`
+tells the agent to do exactly this) instead of pushing it to the human round.

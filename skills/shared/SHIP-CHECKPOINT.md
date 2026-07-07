@@ -10,13 +10,13 @@ stop on purpose at the PHASE 2→3 boundary when auto-verify leaves manual items
 expensive interactive phase (manual tests / playtest) resumes on a fresh, cheap session instead of on
 top of the whole build+verify transcript.
 
-**Single writer.** Exactly **one designated writer** at a time: the main chat owns the checkpoint by
-default, transfers ownership to the ship orchestrator agent (AGENT O) at write point 1b, and regains
-it when the agent's final write clears the `orchestrator` marker. Worker subagents (build, verify,
-refactor, scanners, fix) never touch the checkpoint (non-interactive-contract rule 1: the ship skill
-owns phase tracking). design-ship has no orchestrator agent — its main chat remains the sole writer.
-The pipeline is sequential and ownership is handed off explicitly, so there is one writer at a time —
-no write-races.
+**Single writer.** The main chat is the checkpoint's **only writer**, throughout the whole run — it
+launches the PHASE 1+2 / PHASE 4 Workflows itself and picks the write back up on each
+task-notification (there is no intermediate orchestrator agent: a background subagent cannot call
+the Workflow tool, so routing this through a spawned agent bought nothing but an extra hop). Worker
+subagents (build, verify, refactor, scanners, fix) never touch the checkpoint
+(non-interactive-contract rule 1: the ship skill owns phase tracking). The pipeline is sequential and
+the main chat is the sole writer throughout — no write-races.
 
 **Not `SHIP_CONTEXT`.** The checkpoint stores only the **irreproducible** state: the user's PHASE 0
 choices (`plan`) and the agent results. `SHIP_CONTEXT` is deliberately **not** stored — it is cheap
@@ -92,11 +92,6 @@ command). See `BACKLOG.md § Board rendering`.
   },
   "activeWorkflow": null, // "phase12" | "phase4" | "phase3fix" | "design123" | null
   "workflowRunId": null, // "wf_..." from the Workflow tool result, for resumeFromRunId
-  "orchestrator": null, // dev/game only. Set to {"status":"running","startedAt":"<ISO>"} at write
-  //                        point 1b (spawn) — the main chat's last write before spawning AGENT O.
-  //                        Cleared (null) by AGENT O's final write on every exit (parked/complete/
-  //                        failed). Found set on a cross-session resume ⇒ the agent died with its
-  //                        session: clear it and respawn (SHIP-RESUME.md § On "Resume").
   "manual": {
     /* dev-ship PHASE 3 only: the findings ledger + fix-round state (round-state, not an agent
                 return — sibling of `results`, not nested under it). Written incrementally through
@@ -111,7 +106,11 @@ command). See `BACKLOG.md § Board rendering`.
                 interviewDone: bool — the "now that you see it" close has run.
                 fixPlan: the accepted round-gate appendix object (findings/groups/waves), or absent.
                 dispatch: { groups: { [groupId]: { status, itemsFixed, testsGreen, notes,
-                           autoDecisions } }, allFixed: bool } — merged in from ship-fix.js's return. */
+                           autoDecisions } }, allFixed: bool } — merged in from ship-fix.js's return.
+                pendingRound: bool — set when a round's re-check found still-open findings and the
+                           user chose to park (fix-round.md § Re-check) rather than continue; a fresh
+                           session's Resume entry clears it and re-enters § Hoisted bookkeeping for
+                           the next round without re-running the re-check. Absent otherwise. */
   },
   "playtest": {
     /* game-ship PHASE 3 only: the same shape as `manual` above (round, items[], interviewDone,
@@ -130,7 +129,7 @@ command). See `BACKLOG.md § Board rendering`.
 
 All checkpoint writes go through `~/.claude/scripts/ship-checkpoint.js`. The script **resolves the
 main checkout root itself** (first line of `git worktree list --porcelain`) and always writes to
-`<main_root>/.project/session/ship-{name}.json`. This is the crux: the ship orchestrator runs with
+`<main_root>/.project/session/ship-{name}.json`. This is the crux: the main chat runs with
 cwd **inside the feature worktree** during PHASE 3/4 (manual tests / refactor+finalize), where
 `.project/session/` is worktree-local — deliberately **not** symlinked — so a relative path would
 silently write the wrong (worktree-local) location. Because the script resolves main_root, callers
@@ -138,15 +137,16 @@ may invoke it from **any cwd**. It does the atomic tmp+rename, deep-merges patch
 `updatedAt` on every write. JSON travels on **stdin** (not argv) so the object/patch blob never
 fights shell quoting.
 
-| Write kind                              | Command                                                                                   | Notes                                                                                      |
-| --------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| **Create** (write point 0/1)            | `echo '<full object>' \| node ~/.claude/scripts/ship-checkpoint.js init {name}`           | full checkpoint object; overwrites if present                                              |
-| **Patch delta** (write points 1–4)      | `echo '<delta>' \| node ~/.claude/scripts/ship-checkpoint.js patch {name}`                | deep-merge; pass `"key": null` to clear it (e.g. `"activeWorkflow": null`)                 |
-| **Complete** (write point 5)            | `node ~/.claude/scripts/ship-checkpoint.js complete {name}`                               | sets `status:"complete"`, then removes the file                                            |
-| resolve path (debug)                    | `node ~/.claude/scripts/ship-checkpoint.js path {name}`                                   | prints the absolute checkpoint path, no write                                              |
-| **Live signal** (skill start)           | `echo '{"skill":"..."}' \| node ~/.claude/scripts/ship-checkpoint.js signal {name}`       | writes `active-{name}.json` wholesale; script stamps `feature`/`startedAt`                 |
-| **Live signal clear** (skill end)       | `node ~/.claude/scripts/ship-checkpoint.js signal-clear {name}`                           | removes `active-{name}.json`; exit 0 whether or not it existed                             |
-| **Ledger item upsert** (write point 3b) | `echo '<item>' \| node ~/.claude/scripts/ship-checkpoint.js item {name} manual\|playtest` | upserts one item by `id` into `manual.items`/`playtest.items` — send only the changed item |
+| Write kind                              | Command                                                                                      | Notes                                                                                            |
+| --------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Create** (write point 0/1)            | `echo '<full object>' \| node ~/.claude/scripts/ship-checkpoint.js init {name}`              | full checkpoint object; overwrites if present                                                    |
+| **Patch delta** (write points 1–4)      | `echo '<delta>' \| node ~/.claude/scripts/ship-checkpoint.js patch {name}`                   | deep-merge; pass `"key": null` to clear it (e.g. `"activeWorkflow": null`)                       |
+| **Complete** (write point 5)            | `node ~/.claude/scripts/ship-checkpoint.js complete {name}`                                  | sets `status:"complete"`, then removes the file                                                  |
+| resolve path (debug)                    | `node ~/.claude/scripts/ship-checkpoint.js path {name}`                                      | prints the absolute checkpoint path, no write                                                    |
+| **Live signal** (skill start)           | `echo '{"skill":"..."}' \| node ~/.claude/scripts/ship-checkpoint.js signal {name}`          | writes `active-{name}.json` wholesale; script stamps `feature`/`startedAt`                       |
+| **Live signal clear** (skill end)       | `node ~/.claude/scripts/ship-checkpoint.js signal-clear {name}`                              | removes `active-{name}.json`; exit 0 whether or not it existed                                   |
+| **Ledger item upsert** (write point 3b) | `echo '<item(s)>' \| node ~/.claude/scripts/ship-checkpoint.js item {name} manual\|playtest` | upserts one item (or a JSON array of items, batch) by `id` — send only the changed item(s)       |
+| **Route** (dev/game orchestration)      | `node ~/.claude/scripts/ship-checkpoint.js route {name}`                                     | prints `{"route": "...", "resume": {...}\|null}` — no write; see the script header for the logic |
 
 - The merge is a **deep merge for nested objects** (`results`, `plan`) and a **replace for arrays
   and scalars** — so `results.build` from an earlier write survives when a later write adds
@@ -175,36 +175,28 @@ fights shell quoting.
    For design it is the **first** write (`init`); set `plan` (the PHASE 0 selections), `baselineSha`
    (`git rev-parse HEAD` captured before any ship work), `phase` = the first agent phase,
    `completedPhases: ["PHASE 0"]`, `status: "running"`.
-   1b. **Orchestrator spawn (dev/game only)** — the main chat's **last** write before spawning the ship
-   orchestrator agent (AGENT O): `patch {"orchestrator":{"status":"running","startedAt":"<ISO>"}}`.
-   From this write until AGENT O's final clearing write, AGENT O holds the checkpoint write token —
-   it executes write points 2/3/4 (and the PHASE 3 completion patch) itself. design has no
-   orchestrator agent, so it has no write point 1b.
-2. **Immediately after launching a Workflow** _(executed by AGENT O on the dev/game background path;
-   by the main chat on the inline fallback and for design)_ — the tool result returns a `runId` even
-   while the workflow runs in the background; store it as `workflowRunId`, set `activeWorkflow`, and
-   store the assembled Workflow prompt args as `prompts`. This is what makes a mid-workflow crash
-   resumable — with the exact original prompts.
-3. **On each workflow/agent return** _(executed by AGENT O on the dev/game background path; by the
-   main chat on the inline fallback and for design)_ — merge the returned structured object(s) into
-   `results`, advance `phase`, append the just-finished phase(s) to `completedPhases`, clear
-   `activeWorkflow`/`workflowRunId`/`prompts`.
+2. **Immediately after launching a Workflow** (always the main chat — it launches every Workflow
+   itself, dev/game and design alike) — the tool result returns a `runId` even while the workflow
+   runs in the background; store it as `workflowRunId`, set `activeWorkflow`, and store the
+   assembled Workflow prompt args as `prompts`. This is what makes a mid-workflow crash resumable —
+   with the exact original prompts.
+3. **On each workflow/agent return** (the task-notification wakes the main chat, which does this
+   write) — merge the returned structured object(s) into `results`, advance `phase`, append the
+   just-finished phase(s) to `completedPhases`, clear `activeWorkflow`/`workflowRunId`/`prompts`. The
+   dev/game `route` subcommand (table above) reads exactly these fields to decide where to go next.
    3b. **PHASE 3 mid-phase writes (dev-ship manual round / game-ship playtest round)** — always
-   executed by the main chat (PHASE 3's interactive round runs in the main chat, never in AGENT O).
-   Finer-grained than the phase boundaries above, because the interactive round has its own
-   resumable sub-state: upsert `manual.items` (dev) / `playtest.items` (game) one item at a time via
-   `ship-checkpoint.js item {name} manual|playtest` after every per-item verdict during the
-   walkthrough; patch `.interviewDone` after the interview close; patch
-   `.round` (+1) before entering the fix-plan gate's plan mode; patch `.fixPlan` at gate-accept; set
-   `activeWorkflow: "phase3fix"` + `workflowRunId` + `prompts.fixGroupPromptPaths` at dispatch launch
-   (write point 2 applies here too); patch `.dispatch` and clear
+   executed by the main chat (PHASE 3's interactive round runs in the main chat). Finer-grained than
+   the phase boundaries above, because the interactive round has its own resumable sub-state: upsert
+   `manual.items` (dev) / `playtest.items` (game) — one item at a time, or batched as a JSON array —
+   via `ship-checkpoint.js item {name} manual|playtest` (see manual-interview-walkthrough.md § Batch
+   persist for the plan-mode-deferred batch case); patch `.interviewDone` after the interview close;
+   patch `.round` (+1) before entering the fix-plan gate's plan mode; patch `.fixPlan` at gate-accept;
+   set `activeWorkflow: "phase3fix"` + `workflowRunId` + `prompts.fixGroupPromptPaths` at dispatch
+   launch (write point 2 applies here too); patch `.dispatch` and clear
    `activeWorkflow`/`workflowRunId`/`prompts` on dispatch return.
-4. **On a failure-jump to the report phase** _(executed by AGENT O on the dev/game background path;
-   by the main chat on the inline fallback and for design)_ — set `status: "failed"` (keep everything
-   else so the user can resume or inspect), and on the dev/game background path clear the
-   `orchestrator` marker as part of the same exit.
-5. **On successful completion (report phase)** — always executed by the main chat (write point 5 is
-   never AGENT O's — it returns `complete` and the main chat runs this). Run `complete` (sets
+4. **On a failure-jump to the report phase** (the main chat) — set `status: "failed"` (keep
+   everything else so the user can resume or inspect).
+5. **On successful completion (report phase)** — the main chat runs `complete` (sets
    `status: "complete"`, then removes the file). Do **not** run it on a failure exit — a failed run
    keeps its checkpoint.
 

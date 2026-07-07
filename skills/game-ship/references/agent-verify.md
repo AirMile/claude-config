@@ -34,7 +34,7 @@ CONTEXT (verify-slice of SHIP_CONTEXT — includes the resolved {godot_executabl
 {paste the verify-slice of SHIP_CONTEXT (PHASE 0) — the dynamic project-context lines}
 ```
 
-## Orchestrator handling (PHASE 2)
+## Main-chat handling (PHASE 2)
 
 1. **Workflow path**: `ship-game-phase12.js` returns the validated `verify` object — read fields
    directly. **Fallback path**: parse `SHIP_VERIFY_RESULT_START/END` (robust).

@@ -88,13 +88,20 @@ Each test item is classified as **COVERED**, **AUTO**, or **MANUAL** before test
 
 AUTO items have three sub-methods — the Task agent picks the best one per item:
 
-### AUTO/BROWSER (playwright-cli daemon)
+### AUTO/BROWSER (Claude-in-Chrome, or the playwright-cli daemon)
 
 Assign AUTO/BROWSER when ALL of the following are true:
 
 - **DOM-verifiable**: pass/fail can be determined by inspecting elements, text content, attributes, or URL state
 - **Simple interactions**: test steps are limited to: navigate, click, type, fill_form, select_option, press_key, resize, wait_for
 - **Observable outcome**: result is visible in a snapshot, screenshot, or URL
+
+Execution vehicle: prefer Claude-in-Chrome when a live local Chrome is connected (interactive,
+ad-hoc — the common case for a single verify item); fall back to the `playwright-cli` daemon
+otherwise, or for a scripted/repeatable sweep. See `shared/CLAUDE-IN-CHROME.md` for the tool-loading
+ritual and the full decision rule. Caveat for workflow subagents: they reach the
+`mcp__claude-in-chrome__*` tools via `ToolSearch` like any other agent, but a headless/remote run
+with no live Chrome connected always falls back to Playwright.
 
 ### AUTO/CLI (bash commands)
 
@@ -125,15 +132,20 @@ Execution detail (axe-core injection snippet + common A11Y patterns): `reference
 
 ### MANUAL (human walkthrough)
 
-Assign MANUAL **only** when human perception or judgment is truly required — if it can be objectively checked, it's AUTO.
+Assign MANUAL **only** when human perception or judgment is truly required — if it can be objectively checked, it's AUTO. **When in doubt, it is AUTO.**
 
-MANUAL when ANY of the following are true:
+**Contract**: every MANUAL item carries a `manualReason` field naming exactly one criterion from the
+list below. An item with no `manualReason`, or one that doesn't match any of these, is not a valid
+MANUAL item — reclassify it as AUTO instead of returning it in `remainingManualItems`.
 
-- **Subjective visual quality**: animation smoothness, design "feel", whitespace balance, color harmony
-- **Perception-based**: "feels fast enough", "feels intuitive", "looks professional"
-- **Assistive technology**: screen reader flow, VoiceOver experience
-- **Audio/sound**: sounds play correctly, volume appropriate, timing right
-- **Physical multi-device**: "log out on phone, log in on desktop" (requires actual second device)
+MANUAL when ANY of the following are true (the matching `manualReason` value in parens):
+
+- **Subjective visual quality** (`perception`): animation smoothness, design "feel", whitespace balance, color harmony
+- **Perception-based** (`perception`): "feels fast enough", "feels intuitive", "looks professional"
+- **Assistive technology** (`screen-reader`): screen reader flow, VoiceOver experience
+- **Audio/sound** (`audio`): sounds play correctly, volume appropriate, timing right
+- **Physical multi-device** (`physical-device`): "log out on phone, log in on desktop" (requires actual second device)
+- **Real-credential auth** (`real-credentials`): a login/flow that requires a genuine third-party account, OAuth consent, or production credentials no test double can stand in for
 
 NOT MANUAL (these are AUTO):
 

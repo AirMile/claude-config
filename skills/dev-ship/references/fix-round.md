@@ -14,13 +14,22 @@ re-check.
 
 ## § Hoisted bookkeeping (before plan mode)
 
-The ledger is already persisted (`manual-interview-walkthrough.md § Step E/F`). Before entering plan
-mode:
+The ledger is already persisted (or, on the round-1 path below, still in memory — see the two cases).
+Before entering plan mode, check whether a plan-mode session is **already active** (the same check
+`§ Round gate`'s `EnterPlanMode` uses — an active plan-mode system-reminder):
 
-1. Patch the checkpoint: `manual.round` incremented (starts at 1 on the first round).
-2. Rewrite the live signal **with** `waiting: "fix-plan"` (main checkout, per the worktree caveat) —
-   this must happen **now**, not after `EnterPlanMode`, because plan mode blocks the write and the
-   board would otherwise show "running" while it is actually blocked on the round-gate design work.
+- **Not in plan mode yet** (round 2+ re-entry after `§ Re-check`, or a cross-session resume landing
+  directly in this gate) → execute both writes now: patch the checkpoint `manual.round` incremented
+  (starts at 1 on the first round), and rewrite the live signal **with** `waiting: "fix-plan"` (main
+  checkout, per the worktree caveat) — this must happen **now**, not after `EnterPlanMode`, because
+  plan mode blocks the write and the board would otherwise show "running" while it is actually
+  blocked on the round-gate design work.
+- **Already in plan mode** (round 1, arriving straight from the interview walkthrough's own plan-mode
+  session — `manual-interview-walkthrough.md § Step A3`) → both writes are blocked (they are disk
+  writes; plan mode blocks `.project/` and the live signal alike). Defer them to `§ Accept →
+extraction` below. The board keeps showing `waiting: "manual-tests"` for the duration of the gate —
+  acceptable, since the gate itself is short and this `ExitPlanMode` is the same one that closes the
+  interview's plan mode (`phase-3-manual-finalize.md § Findings ledger + routing`).
 
 ## § Round gate (plan mode)
 
@@ -84,10 +93,16 @@ file, `ExitPlanMode` again — loop until accepted (mirrors PHASE 0's gate-rejec
 
 ## § Accept → extraction
 
-No extraction script — the appendix JSON was authored this same plan-mode session, so the
-orchestrator parses it directly (a resume that lands back in the gate simply re-plans instead).
-On accept:
+No extraction script — the appendix JSON was authored this same plan-mode session, so the main chat
+parses it directly (a resume that lands back in the gate simply re-plans instead). On accept:
 
+0. **If this gate ran inside the interview's own plan-mode session** (the deferred case from
+   `§ Hoisted bookkeeping` above) — do the deferred writes first, in one batch, right after this
+   `ExitPlanMode`: the walkthrough's batch persist
+   (`manual-interview-walkthrough.md § Step E, Batch persist`) and the deferred `manual.round`
+   increment. Skip the `waiting: "fix-plan"` live-signal write — the gate already resolved with this
+   same exit, so go straight to step 3 below's `waiting`-clear. (On a round 2+ gate, both writes
+   already happened in `§ Hoisted bookkeeping` — skip this step.)
 1. Patch the checkpoint: `manual.fixPlan` = the appendix object.
 2. For every `agent`-dispatch group, write one rich descriptor file to
    `.project/session/ship-prompts/{feature}-fix-{groupId}.txt` — that group's findings (title, steps,
@@ -132,12 +147,32 @@ runs once per full walkthrough).
   plan mode, iterate directly in the main chat until the user is satisfied (this is the old
   Tweak/iterate-mode behaviour, now scoped specifically to post-dispatch polish — not a substitute for
   the round gate on anything substantial).
-- **Substantial new finding, or still failing** → append to the ledger and go back to
-  `§ Hoisted bookkeeping` for a new round.
-- **Escalation**: after **2** failed dispatch rounds on the same item, do not start a third identical
-  round — Read `shared/DEBUG-LADDER.md` and pull that item into **tier 2 in the main chat** (the app
-  is running; confirming the root cause here is cheap), and only if that also fails, tier 3
-  `/dev-debug {feature}`. Other items in the ledger are unaffected and keep progressing normally.
+- **Substantial new finding, or still failing** → append it to the ledger now (this write happens
+  outside plan mode — we are back in the main-chat re-check step, not the gate) via
+  `ship-checkpoint.js item {feature} manual`, then present **one** `AskUserQuestion` rather than
+  looping automatically — repeated rounds burn main-chat context fast, and the user should choose how
+  to spend the next one:
+
+  1. **"Park — continue in a fresh chat"** (recommended, _except_ after 2 failed rounds on this item
+     — see Escalation, where Escalate becomes the recommended option instead). The ledger is already
+     persistent: `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`, patch
+     `manual.pendingRound: true`, print the park/handoff template from `SKILL.md § PHASE 1–4` with
+     `/dev-ship {feature}` as the resume command, **end the turn**. A fresh session resumes via
+     `phase-3-manual-finalize.md § Resume entry`'s `manual.pendingRound` bullet, landing directly in
+     `§ Hoisted bookkeeping` for the next round (re-check already ran here — it does not re-run).
+  2. **"Another round in this chat"** → go back to `§ Hoisted bookkeeping` for a new round (not in
+     plan mode now, so its writes execute immediately, per the "not in plan mode yet" case there).
+  3. **"Escalate — debug ladder"** → Read `shared/DEBUG-LADDER.md` and pull the item into **tier 2 in
+     the main chat** (the app is running; confirming the root cause here is cheap), and only if that
+     also fails, tier 3 `/dev-debug {feature}`. Other items in the ledger are unaffected and keep
+     progressing normally.
+  4. **"Defer to backlog todo"** — offered **only** when every open finding in this round is
+     `tweak`-class (never when any is `fail` — see the Fail-never-to-todo policy in
+     `phase-3-manual-finalize.md § Findings ledger + routing`): route each remaining finding to
+     `/project-todo`, then proceed to the regression re-check and completion on the verified scope.
+
+  **Escalation**: after **2** failed dispatch rounds on the same item, option 1's recommendation flips
+  to option 3 — do not keep offering a third identical round as the default.
 
 Once every item is Pass (or explicitly Skip/Defer) and no round is in flight, return to
 `phase-3-manual-finalize.md § Regression re-check`.

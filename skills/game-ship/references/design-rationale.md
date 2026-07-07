@@ -15,15 +15,22 @@ _why_ the flow is built this way — it is not needed to execute a run.
   through to just the completion (DONE write) — the merge happens at the end of PHASE 4, after
   refactor. The **playtest classification** computed in PHASE 0 (COVERED=GUT vs MANUAL=playtest) is an
   **advisory estimate**; AGENT 2's returned `remainingManualItems` is authoritative for PHASE 3.
-- **Why the background orchestrator (AGENT O) exists.** The define-heavy main chat (SKILL.md +
-  `phase-0-define-classify.md` + the interview transcript + loaded learnings/context) can run
-  ~40-60k tokens after PHASE 0. Workflows run 10-30+ minutes — longer than the prompt cache's
-  5-minute TTL — so every workflow-boundary wake-up in the no-playtest case used to re-read that
-  whole context **uncached**: roughly 100-200k wasted input tokens per ship. AGENT O runs the
-  PHASE 1–4 stretch in its own small context and returns once, so the main chat pays that cost at
-  most once per run. The human gates (`AskUserQuestion`, `EnterPlanMode`/`ExitPlanMode`, the live
-  game window) cannot move into AGENT O — they only work in a main chat — which is why define and
-  the PHASE 3 playtest round stay there.
+- **Why there is no background orchestrator agent (and the cache-miss cost that follows from it).**
+  An earlier version of this pipeline spawned a background "AGENT O" to run the PHASE 1–4 stretch in
+  its own small context, specifically to avoid the define-heavy main chat (SKILL.md +
+  `phase-0-define-classify.md` + the interview transcript + loaded learnings/context, ~40-60k tokens
+  after PHASE 0) paying an **uncached** re-read at every workflow-boundary wake-up — Workflows run
+  10-30+ minutes, longer than the prompt cache's 5-minute TTL. That design turned out to be
+  infeasible: the Workflow tool is not reachable from a background subagent (confirmed — not even via
+  `ToolSearch`), so AGENT O could never actually launch the PHASE 1+2/PHASE 4 workflows and always ran
+  on the inferior Agent-tool fallback (no effort control, no resume-cache, no schema validation) —
+  worse than just running inline. The main chat now launches every workflow itself and accepts the
+  cache-miss cost on each notification wake-up as a known trade-off: the alternative (an orchestrator
+  agent that cannot do the one thing it exists for) is strictly worse. The turn still ends
+  immediately after each launch, so the cost is token spend on wake-up, not wall-clock waiting. The
+  human gates (`AskUserQuestion`, `EnterPlanMode`/`ExitPlanMode`, the live game window) only work in
+  the main chat anyway — which is why define and the PHASE 3 playtest round were always going to
+  stay there.
 - **Build and verify are separate agents (separate context windows)** — a fresh verify agent is
   unbiased/adversarial, which is the whole value of verify. See `references/agent-verify.md`.
 - **No game window in a subagent.** Build and GUT auto-verify run **headless** (`gut_cmdln.gd`) — a

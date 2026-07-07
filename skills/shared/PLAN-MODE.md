@@ -72,14 +72,39 @@ Skills may optionally name specific tools used intensively in plan mode (e.g. "W
 
 ## Conditional entry
 
-Some skills enter plan mode only when a condition fires mid-flow: `dev-ship (refactor phase)` / `game-ship (refactor phase)` after triage finds ≥1 HAS_FINDINGS; the `dev-ship (verify phase)` fix-loop on SPEC or unclear-root-cause bugs; the `dev-ship (verify phase — PHASE 3 manual)` / `game-ship (playtest)` **round-level fix-plan gate** after the item-by-item walkthrough + interview close, when the findings ledger is non-trivial (≤2 obvious cosmetic MEASURABLE tweaks skip silently and fix inline; the post-dispatch polish loop also stays out of plan mode) — see `dev-ship/references/fix-round.md` and `game-ship/references/fix-round.md`; the `dev-ship (build phase)` / `game-ship (build phase)` regression gate when the regression was not caused by the build itself; `design-convert` (route-design.md PHASE 1.5) when the chosen action is a synthesis route (Page/Component/Flow/Principles/Import/Brief) — CRUD and self-managed sub-routes do not enter. The Entry/Exit protocol applies unchanged from the moment of entry. The deviation from "Entry before the first thinking step" is deliberate — runs where the condition never fires stay friction-free. Document the condition at the entry point in the skill.
+Some skills enter plan mode only when a condition fires mid-flow: `dev-ship (refactor phase)` / `game-ship (refactor phase)` after triage finds ≥1 HAS_FINDINGS; the `dev-ship (verify phase)` fix-loop on SPEC or unclear-root-cause bugs; the `dev-ship (build phase)` / `game-ship (build phase)` regression gate when the regression was not caused by the build itself; `design-convert` (route-design.md PHASE 1.5) when the chosen action is a synthesis route (Page/Component/Flow/Principles/Import/Brief) — CRUD and self-managed sub-routes do not enter. The Entry/Exit protocol applies unchanged from the moment of entry. The deviation from "Entry before the first thinking step" is deliberate — runs where the condition never fires stay friction-free. Document the condition at the entry point in the skill.
+
+The `dev-ship (verify phase — PHASE 3 manual)` / `game-ship (playtest)` **round-level fix-plan gate**
+(`references/fix-round.md § Round gate`) is a hybrid, not a plain conditional entry: on the common
+round-1 path it does not call `EnterPlanMode` at all — it continues inside the walkthrough's own
+full-phase plan-mode session (see § Used by below), entering only the design work when the ledger
+turns out non-trivial (≤2 obvious cosmetic MEASURABLE tweaks skip silently and fix inline; the
+post-dispatch polish loop also stays out of plan mode). Only on a **round 2+** re-entry (after
+`§ Re-check` sends the run back for another round, when no plan-mode session is active) does it call
+a fresh `EnterPlanMode` the traditional conditional way.
 
 ---
 
 ## Used by
 
-Full-phase: `dev-debug`, `game-debug`, `project-plan`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`, `dev-ship (define phase)`, `game-ship (define phase)`. The two `*-ship (define phase)` entries are a **full-phase variant**: entry is at PHASE 0 Step 2b (before the interview, so the whole define thinking-block runs on the planning model) and exit is the **plan-approval gate** itself (Step 4b `ExitPlanMode`) — accept writes `feature.json` + starts build, reject stays in plan mode and loops back to revise. Conditional entry (see § Conditional entry): `dev-ship (refactor phase)`, `game-ship (refactor phase)`, `dev-ship (verify phase — PHASE 3 manual)`, `game-ship (playtest)`, `design-convert` (route-design.md PHASE 1.5 gate — synthesis routes only). Self-managed within a sub-route: `design-convert` Create (`references/route-create.md`) and Build (`references/route-build.md` — enters at Step 0b, exits at Step 7 before worktree setup + codegen), Convert (`references/route-convert.md` PHASE 0); `design-tokens` Create (`references/route-create.md` — Steps 0b–7).
+Full-phase: `dev-debug`, `game-debug`, `project-plan`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`, `dev-ship (define phase)`, `game-ship (define phase)`. The two `*-ship (define phase)` entries are a **full-phase variant**: entry is at PHASE 0 Step 2b (before the interview, so the whole define thinking-block runs on the planning model) and exit is the **plan-approval gate** itself (Step 4b `ExitPlanMode`) — accept writes `feature.json` + starts build, reject stays in plan mode and loops back to revise.
 
-Authoritative for the above: `grep -rl "Entry protocol" skills/*/SKILL.md skills/*/references/*.md` — **except** the two `*-ship (define phase)` full-phase variants, which call `EnterPlanMode` inline at PHASE 0 Step 2b (referencing this file's Entry) rather than embedding the boilerplate Entry section, so they do not appear in that grep; their entry point is documented at Step 2b of each `phase-0-define-classify.md`.
+`dev-ship (verify phase — PHASE 3 manual)` / `game-ship (playtest)` are a second **full-phase
+variant**, with an unconditional entry but a conditional exit: entry is
+`manual-interview-walkthrough.md § Step A3`, before the first interview item — unconditional once
+`remainingManualItems` is non-empty (after the board signal, app-launch, and the evidence pre-check
+sweep, none of which touch plan mode). Exit is **one of three points**, decided by the ledger state
+at `phase-3-manual-finalize.md § Findings ledger + routing`: an immediate `ExitPlanMode` on an
+all-pass ledger, an immediate `ExitPlanMode` on the ≤2-cosmetic inline-fix path, or — when the ledger
+needs a real fix round — staying in the same session while `fix-round.md § Round gate` designs the
+round plan, with its `ExitPlanMode` presenting the interview outcome and the fix plan together.
+Verdicts and ledger items are collected in memory throughout and batch-persisted immediately after
+whichever exit fires (`manual-interview-walkthrough.md § Step E`) — the accepted trade-off is that a
+session death mid-interview loses that session's in-memory verdicts, recovered by the resume path
+filtering already-persisted items back out.
 
-Inline gates that call `EnterPlanMode` without the full Entry section (documented at the gate): `dev-ship (verify phase)` (`references/fix-loop.md § Plan-mode gate`), `dev-ship (verify phase — PHASE 3 manual)` (`references/fix-round.md § Round gate`), `game-ship (playtest)` (`references/fix-round.md § Round gate`), `dev-ship (build phase)` PHASE 2b and `game-ship (build phase)` PHASE 3a (regression-not-caused-by-build path). (The `*-ship (define phase)` gate is **not** here anymore — it is now the exit of the full-phase define plan mode above, not a standalone inline `EnterPlanMode` at Step 4b.)
+Conditional entry (see § Conditional entry): `dev-ship (refactor phase)`, `game-ship (refactor phase)`, `design-convert` (route-design.md PHASE 1.5 gate — synthesis routes only), and the fix-round gate's **round 2+** path. Self-managed within a sub-route: `design-convert` Create (`references/route-create.md`) and Build (`references/route-build.md` — enters at Step 0b, exits at Step 7 before worktree setup + codegen), Convert (`references/route-convert.md` PHASE 0); `design-tokens` Create (`references/route-create.md` — Steps 0b–7).
+
+Authoritative for the above: `grep -rl "Entry protocol" skills/*/SKILL.md skills/*/references/*.md` — **except** the two `*-ship (define phase)` full-phase variants, which call `EnterPlanMode` inline at PHASE 0 Step 2b (referencing this file's Entry) rather than embedding the boilerplate Entry section, so they do not appear in that grep; their entry point is documented at Step 2b of each `phase-0-define-classify.md`. The PHASE 3 manual/playtest full-phase variant is documented the same way, at `manual-interview-walkthrough.md § Step A3` / `playtest-interview-walkthrough.md`'s equivalent step.
+
+Inline gates that call `EnterPlanMode` without the full Entry section (documented at the gate): `dev-ship (verify phase)` (`references/fix-loop.md § Plan-mode gate`), `dev-ship (verify phase — PHASE 3 manual)` **round 2+ only** (`references/fix-round.md § Round gate` — round 1 continues the walkthrough's already-active session instead), `game-ship (playtest)` **round 2+ only** (`references/fix-round.md § Round gate`), `dev-ship (build phase)` PHASE 2b and `game-ship (build phase)` PHASE 3a (regression-not-caused-by-build path). (The `*-ship (define phase)` gate is **not** here anymore — it is now the exit of the full-phase define plan mode above, not a standalone inline `EnterPlanMode` at Step 4b.)

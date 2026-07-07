@@ -5,10 +5,10 @@ Resumes the half of `game-verify` that AGENT 2 deliberately skipped: the live pl
 the DONE completion. Finalize/merge has moved to the end of PHASE 4 (after refactor) so refactor
 commits land on the feature branch first. AGENT 2's `remainingManualItems` is authoritative here.
 
-**Dual reader**: this file is read by the main chat (playtest-items path, below) and by AGENT O
-(`references/prompts/orchestrator.md § Phase 3 completion`, the no-playtest path) — AGENT O runs
-only **Step 1** + **Step 3**, never Step 2 (no game window launch, no walkthrough, no human to show
-anything to) and never the routing sections below (those assume playtest items).
+**Dual reader**: this file is read by the main chat on both paths — the playtest-items path (below),
+and the no-playtest path (`references/orchestration.md § 4`), which runs only **Step 1** + **Step 3**,
+never Step 2 (no game window launch, no walkthrough — this route only fires when there's nothing to
+show a human) and never the routing sections below (those assume playtest items).
 
 ## Resume entry (fresh session)
 
@@ -33,6 +33,10 @@ normal path, then route on the checkpoint's `playtest` block:
   `playtest.dispatch` (cross-session) or `resumeFromRunId` (same session, per `shared/SHIP-RESUME.md`).
 - **`playtest.fixPlan` present and dispatch complete (`playtest.dispatch.allFixed` or all groups
   terminal)** → go to `fix-round.md § Re-check`.
+- **`playtest.pendingRound: true`** (a prior round's re-check found still-open findings and the user
+  chose to park instead of continuing — `fix-round.md § Re-check`'s park option) → clear the flag,
+  then go straight to `fix-round.md § Hoisted bookkeeping` for the next round. Re-check already ran
+  before parking — do not re-run it.
 
 Keep the checkpoint `phase: "PHASE 3"` throughout.
 
@@ -66,37 +70,47 @@ signals for the whole session.
 
 Then run the **item-by-item interview walkthrough**: Read
 `.claude/skills/game-ship/references/playtest-interview-walkthrough.md` and execute it for the
-`remainingManualItems` from AGENT 2 — items are presented one at a time against the single running
-game window, each judged live, non-pass verdicts get their detail captured immediately, and a closing
-interview asks what else should feel or behave differently. **Nothing is fixed during this
-walkthrough** — it only builds the findings ledger (persisted to the checkpoint after every item, so
-a killed session resumes mid-walkthrough).
+`remainingManualItems` from AGENT 2 — the walkthrough enters plan mode right after the game window
+launches (Step A2), items are presented one at a time against the single running game window, each
+judged live, non-pass verdicts get their detail captured immediately, and a closing interview asks
+what else should feel or behave differently. **Nothing is fixed during this walkthrough** — it only
+builds the findings ledger, collected in memory and batch-persisted to the checkpoint right after the
+`ExitPlanMode` named below (so a killed session resumes mid-walkthrough at the last **persisted**
+item, per § Resume entry).
 
 ## Findings ledger + routing
 
-Once the walkthrough (`playtest-interview-walkthrough.md`) returns, route on the accumulated ledger
-(`playtest.items` + any interview-close findings):
+You are still inside the walkthrough's plan mode here — this routing decision determines **which**
+`ExitPlanMode` closes it. Route on the accumulated in-memory ledger (`playtest.items` + any
+interview-close findings):
 
-| Ledger state                                                                      | Route                                                           |
-| --------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| No Fail/Tweak findings (all Pass, or only Skip/Defer)                             | Skip to Regression re-check → Step 3                            |
-| ≤2 findings, all MEASURABLE, cosmetic, obvious fix (a value/timing/feel tweak)    | **Inline fix now** (below) — no gate — then Regression → Step 3 |
-| Anything else (any TESTABLE finding, >2 findings, or an unclear/multi-script fix) | Read `fix-round.md` and run the round loop                      |
+| Ledger state                                                                      | Route                                                                                                                                                                         |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No Fail/Tweak findings (all Pass, or only Skip/Defer)                             | `ExitPlanMode` now (short summary, e.g. "all N items pass") → batch-persist (walkthrough § Step E) → Regression re-check → Step 3                                             |
+| ≤2 findings, all MEASURABLE, cosmetic, obvious fix (a value/timing/feel tweak)    | `ExitPlanMode` now → batch-persist → **Inline fix now** (below) → Regression → Step 3                                                                                         |
+| Anything else (any TESTABLE finding, >2 findings, or an unclear/multi-script fix) | Stay in plan mode — Read `fix-round.md` and run the round gate; **its** `ExitPlanMode` (presenting interview outcome + fix plan together) closes this walkthrough's plan mode |
 
 **Inline-fix path (skip-gate case)** — mirrors dev-ship's equivalent skip-silently condition: fix
 each finding directly in the main chat, Read `shared/DEBUG-LADDER.md` and apply tier 1 (symptom +
 cause both visible, ≤1-2 scripts/scenes), re-launch the game window, let the user confirm live. No
-plan mode, no round bookkeeping — this is the common trivial case and should stay friction-free.
+round bookkeeping — this is the common trivial case and should stay friction-free (plan mode itself
+already closed by the table above).
 
 **Otherwise** → Read `.claude/skills/game-ship/references/fix-round.md` and follow it: the
-hoisted-bookkeeping + round-level plan-mode fix-plan gate (Opus designs the fix, groups findings into
-file-disjoint waves, decides inline-vs-agent dispatch per group), the `ship-game-fix.js` dispatch
-(Sonnet), and the post-dispatch re-check. That file owns everything from here through "all findings
-resolved or explicitly deferred" — it returns control here only when ready for the regression
-re-check below.
+hoisted-bookkeeping + round-level plan-mode fix-plan gate (Opus designs the fix, in the **same**
+plan-mode session as the interview, grouping findings into file-disjoint waves and deciding
+inline-vs-agent dispatch per group), the `ship-game-fix.js` dispatch (Sonnet), and the post-dispatch
+re-check. That file owns everything from here through "all findings resolved or explicitly
+deferred" — it returns control here only when ready for the regression re-check below.
 
-`Skip` / `Defer` outcomes never block completion — they are recorded (deferred items stay open for a
-later re-test), and the flow continues regardless of how many are open.
+**Policy — a `fail` finding never leaves the ship via a backlog todo.** It is fixed, parked (the
+checkpoint stays open, the feature stays non-DONE — see `fix-round.md § Re-check`'s park option), or
+escalated via the debug ladder. Only `tweak` findings and net-new capability (walkthrough Step F) may
+route to `/project-todo` — the ship then finalizes normally and **refactor runs as usual** (no
+deferral). `Skip`/`Defer` outcomes never block completion either — they are recorded (deferred items
+stay open for a later re-test), and the flow continues regardless of how many are open; remember
+that Defer is for external blockers only (walkthrough Step C) — a `fail` is never disguised as a
+Defer to get it out of the way.
 
 **Regression re-check after fixes/tweaks** — if any PHASE 3 fix **or tweak** touched code, re-run the
 FULL GUT suite headless (`"{godot_executable}" --headless --path . -s addons/gut/gut_cmdln.gd -gexit`)
@@ -119,12 +133,12 @@ All COVERED passed (AGENT 2) and no open playtest FAIL → complete (but do **no
 
 Do **not** finalize/merge here — stay in the worktree. Finalize runs at the end of PHASE 4
 (SKILL.md § PHASE 1–4) so refactor commits land on the feature branch first. **Return to SKILL.md
-§ PHASE 1–4**: spawn AGENT O per `references/agent-orchestrator.md § Spawn` (the checkpoint routes
-it to PHASE 4) and handle its wake there.
+§ PHASE 1–4**: continue per `references/orchestration.md § 5` (the checkpoint's `route` subcommand
+sends you straight to PHASE 4) and handle its notification there.
 
 ## Guard
 
-Never merge in this phase, even on all-green. The merge belongs to AGENT O's finalize. (On a
+Never merge in this phase, even on all-green. The merge belongs to PHASE 4's finalize step. (On a
 playtest FAIL the routing above already blocks PHASE 4.)
 
 ## Fallback — godot-mcp unavailable

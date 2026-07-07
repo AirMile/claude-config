@@ -234,6 +234,101 @@ else
   echo "PASS  ship-checkpoint: item on missing checkpoint → non-zero exit"; PASS=$((PASS + 1))
 fi
 
+# --- ship-checkpoint.js route (deterministic replacement for orchestrator prose routing) ---
+# (n) PHASE 1, no results → phase12, resume null.
+(cd "$SCT/wt" && echo '{"pipeline":"dev","feature":"r","status":"running","phase":"PHASE 1","results":{}}' | node "$SC" init r) >/dev/null 2>&1
+ROUTE_N=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null)
+if [ "$ROUTE_N" = '{"route":"phase12","resume":null}' ]; then
+  echo "PASS  ship-checkpoint: route PHASE 1 → phase12, resume null"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route PHASE 1 → phase12 (got: $ROUTE_N)"; FAIL=$((FAIL + 1))
+fi
+
+# (o) a failed verify result routes back to phase12 even though phase says PHASE 3;
+# resume carries only the green build (a failed result is never resumed).
+(cd "$SCT/wt" && echo '{"phase":"PHASE 3","results":{"build":{"status":"green"},"verify":{"status":"failed"}}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_O=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null)
+if [ "$ROUTE_O" = '{"route":"phase12","resume":{"build":{"status":"green"}}}' ]; then
+  echo "PASS  ship-checkpoint: route falls back to phase12 on a failed verify result"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route falls back to phase12 on a failed verify result (got: $ROUTE_O)"; FAIL=$((FAIL + 1))
+fi
+
+# (p) build+verify green, remainingManualItems empty → phase3-completion; resume carries both.
+(cd "$SCT/wt" && echo '{"results":{"verify":{"status":"green","remainingManualItems":[]}}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_P=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null)
+if [ "$ROUTE_P" = '{"route":"phase3-completion","resume":{"build":{"status":"green"},"verify":{"status":"green","remainingManualItems":[]}}}' ]; then
+  echo "PASS  ship-checkpoint: route PHASE 3, empty remainingManualItems → phase3-completion"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route PHASE 3 empty remainingManualItems (got: $ROUTE_P)"; FAIL=$((FAIL + 1))
+fi
+
+# (q) non-empty remainingManualItems + an unresolved ledger item (verdict "fail") → phase3-manual.
+(cd "$SCT/wt" && echo '{"results":{"verify":{"status":"green","remainingManualItems":["MT-1"]}},"manual":{"items":[{"id":"MT-1","verdict":"fail"}]}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_Q=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(r.route)')
+if [ "$ROUTE_Q" = "phase3-manual" ]; then
+  echo "PASS  ship-checkpoint: route PHASE 3, unresolved ledger → phase3-manual"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route PHASE 3 unresolved ledger (got: $ROUTE_Q)"; FAIL=$((FAIL + 1))
+fi
+
+# (r) same non-empty remainingManualItems, but the ledger is now fully resolved
+# (pass/skip/defer, no fixPlan, no in-flight dispatch) → phase3-completion overrides it.
+(cd "$SCT/wt" && echo '{"manual":{"items":[{"id":"MT-1","verdict":"pass"}]}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_R=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(r.route)')
+if [ "$ROUTE_R" = "phase3-completion" ]; then
+  echo "PASS  ship-checkpoint: route PHASE 3, resolved ledger overrides non-empty remainingManualItems"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route PHASE 3 resolved ledger (got: $ROUTE_R)"; FAIL=$((FAIL + 1))
+fi
+
+# (s) an in-flight fix dispatch keeps the ledger open → phase3-manual even with all-pass items.
+(cd "$SCT/wt" && echo '{"activeWorkflow":"phase3fix"}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_S=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(r.route)')
+if [ "$ROUTE_S" = "phase3-manual" ]; then
+  echo "PASS  ship-checkpoint: route in-flight phase3fix dispatch → phase3-manual"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route in-flight phase3fix dispatch (got: $ROUTE_S)"; FAIL=$((FAIL + 1))
+fi
+(cd "$SCT/wt" && echo '{"activeWorkflow":null}' | node "$SC" patch r) >/dev/null 2>&1
+
+# (t) PHASE 4, no refactor result yet → phase4.
+(cd "$SCT/wt" && echo '{"phase":"PHASE 4","results":{"refactor":null}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_T=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(r.route)')
+if [ "$ROUTE_T" = "phase4" ]; then
+  echo "PASS  ship-checkpoint: route PHASE 4, no refactor result → phase4"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route PHASE 4 no refactor (got: $ROUTE_T)"; FAIL=$((FAIL + 1))
+fi
+
+# (u) PHASE 4, refactor already applied → phase4-finalize-only; resume carries it too.
+(cd "$SCT/wt" && echo '{"results":{"refactor":{"status":"applied"}}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_U=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null)
+if [ "$ROUTE_U" = '{"route":"phase4-finalize-only","resume":{"build":{"status":"green"},"verify":{"status":"green","remainingManualItems":["MT-1"]},"refactor":{"status":"applied"}}}' ]; then
+  echo "PASS  ship-checkpoint: route PHASE 4 with applied refactor → phase4-finalize-only"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route PHASE 4 with applied refactor (got: $ROUTE_U)"; FAIL=$((FAIL + 1))
+fi
+(cd "$SCT/wt" && node "$SC" complete r) >/dev/null 2>&1
+
+# (v) route on a missing checkpoint → non-zero exit.
+if (cd "$SCT/wt" && node "$SC" route r) >/dev/null 2>&1; then
+  echo "FAIL  ship-checkpoint: route on missing checkpoint → non-zero exit (got 0)"; FAIL=$((FAIL + 1))
+else
+  echo "PASS  ship-checkpoint: route on missing checkpoint → non-zero exit"; PASS=$((PASS + 1))
+fi
+
+# (w) item: a JSON array on stdin batch-upserts (one update + one append) in a single atomic write.
+(cd "$SCT/wt" && echo '{"pipeline":"dev","feature":"b","status":"running","phase":"PHASE 3","results":{},"manual":{"items":[{"id":"MT-1","verdict":"fail"}]}}' | node "$SC" init b) >/dev/null 2>&1
+(cd "$SCT/wt" && echo '[{"id":"MT-1","verdict":"pass"},{"id":"MT-2","verdict":"skip"}]' | node "$SC" item b manual) >/dev/null 2>&1
+BATCH=$(node -e 'const c=require(process.argv[1]);process.stdout.write(JSON.stringify(c.manual.items))' "$SCT/.project/session/ship-b.json" 2>/dev/null)
+if [ "$BATCH" = '[{"id":"MT-1","verdict":"pass"},{"id":"MT-2","verdict":"skip"}]' ]; then
+  echo "PASS  ship-checkpoint: item batch array upserts + appends in one atomic write"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: item batch array (got: $BATCH)"; FAIL=$((FAIL + 1))
+fi
+(cd "$SCT/wt" && node "$SC" complete b) >/dev/null 2>&1
+
 rm -rf "$SCT"
 
 # --- state-files.py (project-sync manifest copy) ---

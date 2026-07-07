@@ -31,7 +31,7 @@ CONTEXT (build-slice of SHIP_CONTEXT — includes the resolved {godot_executable
 {paste the build-slice of SHIP_CONTEXT (PHASE 0) — the dynamic project-context lines}
 ```
 
-## Orchestrator handling (PHASE 1)
+## Main-chat handling (PHASE 1)
 
 1. **Workflow path**: `ship-game-phase12.js` returns the validated `build` object (and skips verify
    on failure) — read fields directly, no parsing. **Fallback path**: parse

@@ -25,7 +25,8 @@
 //                          node scripts/ship-checkpoint.js path         <name>
 //   echo '<signal obj>'  | node scripts/ship-checkpoint.js signal       <name>
 //                          node scripts/ship-checkpoint.js signal-clear <name>
-//   echo '<one item>'    | node scripts/ship-checkpoint.js item         <name> <manual|playtest>
+//   echo '<item(s)>'     | node scripts/ship-checkpoint.js item         <name> <manual|playtest>
+//                          node scripts/ship-checkpoint.js route        <name>
 //
 // - init:         create the checkpoint (atomic tmp+rename). Stamps updatedAt.
 // - patch:        deep-merge the delta into the existing checkpoint (nested objects
@@ -38,13 +39,35 @@
 //                 "waiting" / other DEVINFO.md fields; the script stamps "feature"
 //                 (from <name>) and "startedAt" (now).
 // - signal-clear: remove active-<name>.json. Exit 0 whether or not it existed.
-// - item:         upsert one ledger item by "id" into the checkpoint's
+// - item:         upsert one or more ledger items by "id" into the checkpoint's
 //                 manual.items (or playtest.items) array — append if the id is
-//                 new, replace in place if it already exists.
+//                 new, replace in place if it already exists. Stdin accepts either
+//                 a single item object or a JSON array of item objects (batch
+//                 upsert, one atomic write — see manual-interview-walkthrough.md
+//                 § Batch persist).
+// - route:        print `{"route": "...", "resume": {...}|null}` for the given
+//                 checkpoint (no write) — the deterministic replacement for the
+//                 orchestrator's former prose routing (dev-ship/game-ship
+//                 references/orchestration.md § 2). See § Route logic below.
 //
 // Exit 0 = ok. 2 = usage. 3 = main_root unresolved (not a git repo).
-//   4 = checkpoint missing (patch/complete/item). 5 = invalid JSON, or missing
-//   required field (stdin / existing file).
+//   4 = checkpoint missing (patch/complete/item/route). 5 = invalid JSON, or
+//   missing required field (stdin / existing file).
+//
+// § Route logic (pure function of the checkpoint object):
+//   - phase is "PHASE 1"/"PHASE 2", or results.build/results.verify is missing
+//     or failed                                        → "phase12"
+//   - phase is "PHASE 3" and either results.verify.remainingManualItems is
+//     empty, or the manual ledger is fully resolved (every item's verdict is
+//     pass/skip/defer, no in-flight "activeWorkflow":"phase3fix", and any
+//     fixPlan's dispatch is complete)                  → "phase3-completion"
+//   - phase is "PHASE 3" with open manual work          → "phase3-manual"
+//   - phase is "PHASE 4"                                → "phase4"
+//     (results.refactor already present               → "phase4-finalize-only")
+//   `resume` is built only from green/completed results (build/verify
+//   status:"green"; refactor status:"applied"|"clean") — a failed result is
+//   never included, so the caller re-runs that agent. `null` when nothing
+//   qualifies.
 
 import { execFileSync } from "node:child_process";
 import {
@@ -66,12 +89,13 @@ const COMMANDS = [
   "signal",
   "signal-clear",
   "item",
+  "route",
 ];
 const LEDGERS = ["manual", "playtest"];
 
 if (!cmd || !name || !COMMANDS.includes(cmd)) {
   console.error(
-    "Usage: ship-checkpoint.js <init|patch|complete|path> <name>\n" +
+    "Usage: ship-checkpoint.js <init|patch|complete|path|route> <name>\n" +
       "       ship-checkpoint.js <signal|signal-clear> <name>\n" +
       "       ship-checkpoint.js item <name> <manual|playtest>\n" +
       "  init/patch/signal/item read their JSON payload from stdin.",
@@ -127,6 +151,37 @@ function parseObject(text, label) {
     process.exit(5);
   }
   return value;
+}
+
+// item accepts a single object OR a JSON array of objects (batch upsert).
+function parseItemPayload(text) {
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch (err) {
+    console.error(
+      `ship-checkpoint: invalid JSON in stdin (ledger item): ${err.message}`,
+    );
+    process.exit(5);
+  }
+  const items = Array.isArray(value) ? value : [value];
+  if (items.length === 0) {
+    console.error("ship-checkpoint: item array must not be empty");
+    process.exit(5);
+  }
+  for (const item of items) {
+    if (item === null || typeof item !== "object" || Array.isArray(item)) {
+      console.error("ship-checkpoint: each ledger item must be a JSON object");
+      process.exit(5);
+    }
+    if (typeof item.id !== "string" || !item.id) {
+      console.error(
+        'ship-checkpoint: item requires a non-empty "id" string field',
+      );
+      process.exit(5);
+    }
+  }
+  return items;
 }
 
 function readStdin() {
@@ -226,13 +281,7 @@ if (cmd === "init") {
   rmSync(signalFile, { force: true });
   console.error(`ship-checkpoint: signal-clear ${signalFile}`);
 } else if (cmd === "item") {
-  const item = parseObject(readStdin(), "stdin (ledger item)");
-  if (typeof item.id !== "string" || !item.id) {
-    console.error(
-      'ship-checkpoint: item requires a non-empty "id" string field',
-    );
-    process.exit(5);
-  }
+  const incoming = parseItemPayload(readStdin());
   const cur = readExisting();
   if (
     !cur[extra] ||
@@ -243,12 +292,85 @@ if (cmd === "init") {
   }
   if (!Array.isArray(cur[extra].items)) cur[extra].items = [];
   const items = cur[extra].items;
-  const existingIndex = items.findIndex((i) => i && i.id === item.id);
-  if (existingIndex >= 0) items[existingIndex] = item;
-  else items.push(item);
+  let updated = 0;
+  let appended = 0;
+  for (const item of incoming) {
+    const existingIndex = items.findIndex((i) => i && i.id === item.id);
+    if (existingIndex >= 0) {
+      items[existingIndex] = item;
+      updated += 1;
+    } else {
+      items.push(item);
+      appended += 1;
+    }
+  }
   cur.updatedAt = new Date().toISOString();
   atomicWrite(cur);
   console.error(
-    `ship-checkpoint: item ${existingIndex >= 0 ? "updated" : "appended"} ${extra}.items[${existingIndex >= 0 ? existingIndex : items.length - 1}] (id=${item.id})`,
+    `ship-checkpoint: item ${extra} — ${appended} appended, ${updated} updated (${incoming.length} total)`,
+  );
+} else if (cmd === "route") {
+  const cur = readExisting();
+  const phase = cur.phase;
+  const results = cur.results || {};
+  const isGreen = (r) => r && r.status === "green";
+  const manual = cur.manual || {};
+  const manualItems = Array.isArray(manual.items) ? manual.items : [];
+  const remaining =
+    results.verify && Array.isArray(results.verify.remainingManualItems)
+      ? results.verify.remainingManualItems
+      : [];
+
+  const manualLedgerResolved = () => {
+    if (manualItems.length === 0) return false;
+    if (cur.activeWorkflow === "phase3fix") return false;
+    const allResolved = manualItems.every((i) =>
+      ["pass", "skip", "defer"].includes(i && i.verdict),
+    );
+    if (!allResolved) return false;
+    if (
+      manual.fixPlan &&
+      !(manual.dispatch && manual.dispatch.allFixed === true)
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  let route;
+  if (
+    phase === "PHASE 1" ||
+    phase === "PHASE 2" ||
+    !isGreen(results.build) ||
+    !isGreen(results.verify)
+  ) {
+    route = "phase12";
+  } else if (phase === "PHASE 3") {
+    route =
+      remaining.length === 0 || manualLedgerResolved()
+        ? "phase3-completion"
+        : "phase3-manual";
+  } else if (phase === "PHASE 4") {
+    route = results.refactor ? "phase4-finalize-only" : "phase4";
+  } else {
+    console.error(`ship-checkpoint: route: unrecognized phase "${phase}"`);
+    process.exit(5);
+  }
+
+  const resume = {};
+  if (isGreen(results.build)) resume.build = results.build;
+  if (isGreen(results.verify)) resume.verify = results.verify;
+  if (
+    results.refactor &&
+    ["applied", "clean"].includes(results.refactor.status)
+  ) {
+    resume.refactor = results.refactor;
+  }
+
+  process.stdout.write(
+    JSON.stringify({
+      route,
+      resume: Object.keys(resume).length > 0 ? resume : null,
+    }) + "\n",
   );
 }
