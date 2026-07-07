@@ -220,7 +220,8 @@ surface for the whole plan. It always runs (no env-var opt-out).
      "Accept → build starts (PHASE 1); the proposals above are applied. Reject → back into the define
      interview to revise (tell me what to change)."
    - **`## Appendix — machine contract (skip review)`** — the complete `featureDraft` (incl.
-     `verificationProfile`) as a single ```json block. This is what the extract reads on Accept.
+     `verificationProfile`) as a single ```json block, **compact single-line JSON (no indentation)** —
+     halves the token cost of the plan-file echo. This is what the extract reads on Accept.
 2. **`ExitPlanMode`** to present it for approval (this exits plan mode; the session returns to its
    prior permission mode).
    - **Accept** → writes are allowed again; run define's hoisted PHASE 3+4 now:

@@ -109,6 +109,13 @@ run_case_plain "feature-from-plan: merge preserves build/tests/refactor" \
 run_exit_fail "feature-from-plan: broken appendix JSON → non-zero exit" \
   node "$ROOT/scripts/feature-from-plan.js" "$FFP/plan-broken.md" "$FFP_TMP/broken.json"
 
+# (d) Compact single-line appendix JSON → identical extraction to the pretty-printed fixture.
+rm -f "$FFP_TMP/compact.json"
+node "$ROOT/scripts/feature-from-plan.js" "$FFP/plan-compact.md" "$FFP_TMP/compact.json" 2>/dev/null
+run_case_plain "feature-from-plan: compact single-line appendix → same as pretty-printed" \
+  "$FFP/expected/fresh.json" \
+  "$(cat "$FFP_TMP/compact.json")"
+
 # --- ship-checkpoint.js ---
 # Integration test in a throwaway git repo + worktree. The core property: invoked with cwd
 # INSIDE a linked worktree, the script must still write to the MAIN checkout's .project/session/

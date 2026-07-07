@@ -59,7 +59,9 @@ Write the plan file (path from `EnterPlanMode`):
 
 - **Review surface** — per finding: what/why, the proposed fix, how it'll be verified; then the wave
   table (wave → groups → dispatch → files).
-- **`## Appendix — machine contract (skip review)`** — one ```json block:
+- **`## Appendix — machine contract (skip review)`** — one ```json block, authored as **compact
+  single-line JSON (no indentation)** — halves the token cost of the plan-file echo. Shape (shown
+  pretty-printed here for readability only):
   ```json
   {
     "round": 1,
