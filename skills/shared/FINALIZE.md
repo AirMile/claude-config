@@ -276,7 +276,7 @@ Dispatch on `FEATURE_TYPE`:
     `ℹ {feature-name} merged but left at TO CHECK — run /design-ship {feature-name} to ship.`
 - **dev-track (`FEATURE`: type other than COMPONENT/PAGE)** → skip. `/dev-ship (refactor phase)` owns `shipped`/`shippedSha` for those.
 
-**State auto-push**: follow `shared/STATE-SYNC.md § 8` (Auto-push — non-fatal). This covers both solo-merge and cleanup-only callers, so `/core-finalize` and `/design-ship` get it for free. **Skip when the caller is `dev-ship` / `game-ship` PHASE 4** — those pipelines push after their own post-merge archive reconcile (`STATE-SYNC.md § 8` runs once per ship, not twice). Record the outcome for the report line below.
+**State auto-push**: follow `shared/STATE-SYNC-PUSH.md § Auto-push` (non-fatal). This covers both solo-merge and cleanup-only callers, so `/core-finalize` and `/design-ship` get it for free. **Skip when the caller is `dev-ship` / `game-ship` PHASE 4** — those pipelines push after their own post-merge archive reconcile (`STATE-SYNC-PUSH.md § Auto-push` runs once per ship, not twice). Record the outcome for the report line below.
 
 ## Output Report
 

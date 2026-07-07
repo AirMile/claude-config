@@ -51,7 +51,7 @@ finish two postconditions the pre-merge agent could not:
    always ends archive-only.
 2. **Re-stamp `shippedSha`** in the archive entry to the merge sha (`git -C {main_root} rev-parse HEAD`),
    not the pre-merge refactor commit the agent recorded.
-3. **State auto-push** — follow `shared/STATE-SYNC.md § 8` (Auto-push; non-fatal — on failure print
+3. **State auto-push** — follow `shared/STATE-SYNC-PUSH.md § Auto-push` (non-fatal — on failure print
    the hint line and continue).
 
 On the halt rows, skip this section entirely — nothing merged, so the worktree/PR still owns the state.

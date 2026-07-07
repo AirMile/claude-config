@@ -31,7 +31,7 @@ bash. Command variants for both OSes are in `shared/STATE-SYNC.md`.
 
 ### PHASE 0: Pre-flight
 
-Follow `shared/STATE-SYNC.md § 5` (preflight & temp-worktree hygiene). Concretely:
+Follow `shared/STATE-SYNC-PUSH.md § Preflight & temp-worktree hygiene`. Concretely:
 
 1. **Main-checkout gate** — compute `main_root` / `current_root`. If
    `current_root != main_root` → **exit**: "project-sync only runs on the main
@@ -61,7 +61,7 @@ Argument `push` / `pull` / `status`. No argument → **AskUserQuestion**:
   vs `state-sync.json#lastSyncedSha`, local drift (the `collect`-into-`LAST`-worktree
   check from `STATE-SYNC.md § 7`, reported as a changed-file count), and last
   push/pull timestamps. No writes.
-- **push** — follow `shared/STATE-SYNC.md § 6` (Push procedure, incl. first-time orphan
+- **push** — follow `shared/STATE-SYNC-PUSH.md § Push procedure` (incl. first-time orphan
   and push-rejected retry). Update `state-sync.json`.
 - **pull** — follow `shared/STATE-SYNC.md § 7` (Pull procedure & conflict matrix).
   Update `state-sync.json`.
