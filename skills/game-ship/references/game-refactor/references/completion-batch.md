@@ -205,6 +205,6 @@ Next steps:
 1. Single-mode (`feature_queue.length == 1`, not codebase-mode)
 2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
 
-**Finalize prompt**: follow `shared/FINALIZE.md → Finalize Offer Decision` (TEAM_MODE + PR-state dispatch). In team mode, the matrix offers a 3-way choice: Open PR / Merge directly to main / Keep open.
+**Finalize prompt**: follow `shared/FINALIZE-REFERENCE.md → Finalize Offer Decision` (TEAM_MODE + PR-state dispatch). In team mode, the matrix offers a 3-way choice: Open PR / Merge directly to main / Keep open.
 
 On "Keep open" → print `💡 Run /game-refactor {feature-name} on this worktree when ready`.

@@ -77,7 +77,7 @@ Cancel → exit. Continue → proceed with batch flow as-is (finalize stays skip
 
 ### Mode-aware finalize (for FINALIZE.md and PHASE Finalize)
 
-See `shared/FINALIZE.md → Finalize Offer Decision` (single source of truth). That matrix covers all
+See `shared/FINALIZE-REFERENCE.md → Finalize Offer Decision` (single source of truth). That matrix covers all
 TEAM_MODE × PR_STATE combinations including the 3-way choice (Open PR / Merge directly / Keep open)
 for team + empty/CLOSED.
 

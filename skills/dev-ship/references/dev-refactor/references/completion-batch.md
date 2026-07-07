@@ -136,4 +136,4 @@ Print `REFACTOR COMPLETE` with per-feature ✓/✗ lines (name, status, improvem
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
 > Recommended command: /dev-define {next-feature} → loop to next backlog feature.
 
-**PHASE Finalize** (single-mode only — skip if `feature_queue.length > 1`): follow `shared/FINALIZE.md → Finalize Offer Decision` (TEAM_MODE + PR-state dispatch). In team mode, the matrix offers a 3-way choice: Open PR / Merge directly to main / Keep open.
+**PHASE Finalize** (single-mode only — skip if `feature_queue.length > 1`): follow `shared/FINALIZE-REFERENCE.md → Finalize Offer Decision` (TEAM_MODE + PR-state dispatch). In team mode, the matrix offers a 3-way choice: Open PR / Merge directly to main / Keep open.
