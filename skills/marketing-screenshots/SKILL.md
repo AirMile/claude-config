@@ -1,7 +1,7 @@
 ---
 name: marketing-screenshots
 argument-hint: "[url]"
-description: Generate marketing screenshots via Playwright. Use with /marketing-screenshots.
+description: Generate marketing screenshots and GIF demos. Use with /marketing-screenshots.
 metadata:
   author: claude-config
   version: 1.0.0
@@ -10,7 +10,9 @@ metadata:
 
 # Screenshots
 
-Generate marketing-quality screenshots of a web app using Playwright CLI. Analyzes the codebase to discover routes and features, plans screenshots with the user, and captures them at HiDPI resolution.
+Generate marketing-quality screenshots of a web app using Playwright CLI, plus optional GIF demos via Claude-in-Chrome. Analyzes the codebase to discover routes and features, plans screenshots with the user, and captures them at HiDPI resolution.
+
+HiDPI 2x screenshots stay on Playwright CLI (`deviceScaleFactor: 2`) — Claude-in-Chrome's `computer` screenshots are bound to physical display DPI and can't produce true retina output. GIF demos have no Playwright equivalent and use Claude-in-Chrome's `gif_creator` — see `../shared/CLAUDE-IN-CHROME.md`.
 
 **Trigger**: `/marketing-screenshots` or `/marketing-screenshots [url]`
 
@@ -138,6 +140,15 @@ If "Yes, I'll provide credentials" → follow-up **AskUserQuestion**:
   - label: "Both", description: "Desktop + mobile per feature"
 - multiSelect: false
 
+**Question 7: GIF demo**
+
+- header: "GIF demo"
+- question: "Do you also want a short GIF demo of an interaction (e.g. a flow or feature in action)?"
+- options:
+  - label: "No (Recommended)", description: "Static screenshots only"
+  - label: "Yes, record one", description: "Captures a short interaction via Claude-in-Chrome — requires a live local Chrome"
+- multiSelect: false
+
 ## PHASE 2: Analyze Codebase for Features
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
@@ -164,10 +175,11 @@ Discover routes and screenshottable features inline using Glob, Grep, and Read.
 
 Return structured output:
 FEATURES_START
-| # | Feature | URL Path | Description | Required State |
-|---|---------|----------|-------------|----------------|
-| 1 | {name} | {path} | {what it shows} | {logged in / public / modal open / etc.} |
-FEATURES_END
+
+| #            | Feature | URL Path | Description     | Required State                           |
+| ------------ | ------- | -------- | --------------- | ---------------------------------------- |
+| 1            | {name}  | {path}   | {what it shows} | {logged in / public / modal open / etc.} |
+| FEATURES_END |
 
 APP_DESCRIPTION: {1-2 sentence summary of what the app does}
 THEME_SUPPORT: {yes/no}
@@ -400,6 +412,16 @@ Twitter variant: same with `viewport: { width: 1200, height: 600 }` and `-tw-` f
 - OG image dimensions incorrect — expected 1200×630
 - Twitter card type missing (`meta[name="twitter:card"]` not present)
 
+### 4.3 GIF Capture (only if chosen in PHASE 1, Claude-in-Chrome)
+
+No Playwright equivalent — uses the built-in Claude-in-Chrome MCP tools against a live local Chrome. See `../shared/CLAUDE-IN-CHROME.md` for the full tool-loading ritual and command mapping.
+
+1. Load the tools in one `ToolSearch` call: `select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome__navigate,mcp__claude-in-chrome__tabs_create_mcp,mcp__claude-in-chrome__gif_creator`.
+2. Call `tabs_context_mcp` first. If no live browser is connected: skip GIF capture, note in the PHASE 5 summary as `GIF: skipped — no live Chrome connected`.
+3. `navigate` to the feature URL selected for the demo.
+4. Use `gif_creator` to record the interaction (e.g. opening a modal, switching a tab, completing a short flow).
+5. Save the resulting GIF to `.project/screenshots/{feature-slug}-demo.gif`.
+
 ### Execution Flow
 
 1. If credentials provided → run 4.0 (login + state-save) once.
@@ -414,6 +436,7 @@ Twitter variant: same with `viewport: { width: 1200, height: 600 }` and `-tw-` f
    - If both dark AND mobile → capture mobile-dark variant (suffix `-mobile-dark`)
    - Log: `Saved: {filename}`
 3. If social cards chosen → per feature: run 4.2 (meta extraction first, fallback to render mock)
+4. If GIF demo chosen → run 4.3 once (Claude-in-Chrome, or skip cleanly if no live Chrome)
 
 ## PHASE 5: Verify and Summarize
 
@@ -462,8 +485,9 @@ Twitter variant: same with `viewport: { width: 1200, height: 600 }` and `-tw-` f
    - [feature]: OG image dimensions [actual] — expected 1200×630
    ```
 
-5. If purpose is "Product Hunt" → mention recommended image sizes (1270x760)
-6. If purpose is "Social media" → suggest cropping for platform-specific ratios
+5. If GIF demo generated → add one line: `GIF: {feature-slug}-demo.gif` (or `GIF: skipped — no live Chrome connected`)
+6. If purpose is "Product Hunt" → mention recommended image sizes (1270x760)
+7. If purpose is "Social media" → suggest cropping for platform-specific ratios
 
 > **Todo**: mark PHASE 5 → `completed`.
 

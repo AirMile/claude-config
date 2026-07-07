@@ -364,14 +364,14 @@ multiSelect: false
 
 #### Step 8b: Render smoke check
 
-Single-round render check — catches crashes and broken imports, NOT visual quality (that stays /design-ship's job). If `playwright-cli` or a dev server is unavailable (detection per `shared/PLAYWRIGHT.md`): skip silently, set `$SMOKE = "SKIPPED"`.
+Single-round render check — catches crashes and broken imports, NOT visual quality (that stays /design-ship's job). Prefer Claude-in-Chrome when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md`; fall back to `playwright-cli`. If neither a browser nor a dev server is available (detection per `shared/PLAYWRIGHT.md`): skip silently, set `$SMOKE = "SKIPPED"`.
 
-**Determine the smoke target first.** PAGE → its route pattern (browser path below). COMPONENT with an auto-created demo route (file-based routing, Step 7) → demo route `/_dev/components/{name}` (browser path below). COMPONENT **without** a demo route (explicit-router frameworks — Angular, Vue Router) → use the **non-browser fallback** below; skip the Playwright steps.
+**Determine the smoke target first.** PAGE → its route pattern (browser path below). COMPONENT with an auto-created demo route (file-based routing, Step 7) → demo route `/_dev/components/{name}` (browser path below). COMPONENT **without** a demo route (explicit-router frameworks — Angular, Vue Router) → use the **non-browser fallback** below; skip the browser steps.
 
 Browser path:
 
 1. Route: PAGE → its route pattern; COMPONENT → demo route `/_dev/components/{name}`.
-2. `playwright-cli goto {url}` (store the full URL as `$SMOKE_URL`) → wait `networkidle` → screenshot to `.project/tmp/smoke-render-{$TARGET}.png` (store as `$SMOKE_SHOT`) → `playwright-cli console error`.
+2. `navigate` to `{url}` (store the full URL as `$SMOKE_URL`) → wait for load → `computer` screenshot to `.project/tmp/smoke-render-{$TARGET}.png` (store as `$SMOKE_SHOT`) → `read_console_messages`. Fallback: `playwright-cli goto {url}` → wait `networkidle` → `playwright-cli screenshot ...` → `playwright-cli console error`.
 3. Filter console output per `shared/PLAYWRIGHT.md → Default Ignore Patterns`.
 4. Renders + no unfiltered errors → `$SMOKE = "PASS"`.
 5. Crash/blank/console errors → apply ONE targeted fix (import/crash only), re-run steps 2-3 once. Still failing → `$SMOKE = "FAIL"`, store first error as `$SMOKE_ERROR`, continue (non-blocking). No multi-round loop.
@@ -404,7 +404,7 @@ Components:       {reused components}
 Block inventory:  +{$INV_NEW} new, ~{$INV_UPDATED} updated, !{$INV_CONFLICTS} conflict
 Linked:           {uses/usedIn sync — or "n/a"}
 Missing deps:     {list or "none"}
-Smoke:            {$SMOKE} ({$SMOKE_SHOT} | skipped — Playwright unavailable)
+Smoke:            {$SMOKE} ({$SMOKE_SHOT} | skipped — no browser available)
 Verification:     {$VERIFY_STATUS}
 Verify error:     {$VERIFY_ERROR}   (only shown when $VERIFY_STATUS = "FAIL")
 Gaps:             {N linked | M created | K pending | "none"}

@@ -5,10 +5,11 @@ Loaded when scope contains **Error states**.
 Test how the app responds to error scenarios:
 
 ```
-1. 404: playwright-cli goto {url}/this-route-does-not-exist-404test
-          playwright-cli snapshot + screenshot → check if app-404 renders (not browser-default)
+1. 404: prefer Claude-in-Chrome — navigate {url}/this-route-does-not-exist-404test + read_page
+        (see shared/CLAUDE-IN-CHROME.md; fallback: playwright-cli goto {url}/this-route-does-not-exist-404test
+        + playwright-cli snapshot + screenshot) → check if app-404 renders (not browser-default)
 
-2. Offline: playwright-cli run-code "async page => {
+2. Offline (no Claude-in-Chrome equivalent — stays on Playwright): playwright-cli run-code "async page => {
      await page.context().setOffline(true);
      await page.reload();
      await page.waitForTimeout(2000);
@@ -17,7 +18,7 @@ Test how the app responds to error scenarios:
    }"
    → snapshot → check if offline-UI renders
 
-3. Slow 3G: playwright-cli run-code "async page => {
+3. Slow 3G (no Claude-in-Chrome equivalent — stays on Playwright): playwright-cli run-code "async page => {
      await page.context().route('**/*', async route => {
        await new Promise(r => setTimeout(r, 1500));
        await route.continue();

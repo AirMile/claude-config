@@ -12,7 +12,9 @@ Copy-mode counterpart to token mapping: capture exact source values instead of m
 
 ### 1.0 Ground-Truth Extraction (`$INPUT_SOURCE = "url"` only)
 
-When the source is a live URL, extract computed styles instead of estimating from pixels. The browser session from PHASE 0.1 is closed — re-open the URL:
+When the source is a live URL, extract computed styles instead of estimating from pixels. The browser session from PHASE 0.1 is closed — re-open the URL.
+
+Prefer `navigate` + `javascript_tool` (Claude-in-Chrome) when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md` for the tool-loading ritual. Fall back to the `playwright-cli` sequence below otherwise:
 
 ```
 playwright-cli open [url]

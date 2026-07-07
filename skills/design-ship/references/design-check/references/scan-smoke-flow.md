@@ -8,14 +8,16 @@ Lightweight health check over all routes. Read routes in order of precedence:
 2. `design.pages[].name` if routing is missing
 3. **Fallback** if both are absent: only check `/` (the target URL) + warn user: "No routes list found — only entry URL checked. Run `/design-convert` or fill `project.json → context.routing` to smoke all routes."
 
+Prefer Claude-in-Chrome (`navigate`, `read_console_messages`, `read_network_requests`) when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md`. Fall back to `playwright-cli` otherwise:
+
 Per route:
 
 ```
-playwright-cli goto [route]
-playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
-playwright-cli console error
+navigate [route]                                                    # fallback: playwright-cli goto [route]
+(wait for load)                                                     # fallback: playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
+read_console_messages                                               # fallback: playwright-cli console error
 → Filter output against PLAYWRIGHT.md → Default Ignore Patterns before reporting; only unfiltered lines become findings.
-playwright-cli requests
+read_network_requests                                               # fallback: playwright-cli requests
 → Check: no status 4xx/5xx
 ```
 
@@ -46,11 +48,11 @@ Read `.project/project.json → design.flows[]`. Per flow:
 
 1. Map each step (page name) → URL via `project.json → context.routing`
    - If no mapping found: finding F002 + skip step
-2. Per step:
+2. Per step (prefer Claude-in-Chrome for navigate/console — see `shared/CLAUDE-IN-CHROME.md`; screenshot stays on Playwright for a stable on-disk artifact):
    ```
-   playwright-cli goto [url]
-   playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
-   playwright-cli console error
+   navigate [url]                                                    # fallback: playwright-cli goto [url]
+   (wait for load)                                                   # fallback: playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
+   read_console_messages                                             # fallback: playwright-cli console error
    → Filter against PLAYWRIGHT.md → Default Ignore Patterns
    playwright-cli screenshot --filename=.project/screenshots/flow-[name]-step[N].png
    ```

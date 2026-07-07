@@ -133,3 +133,4 @@ Exit code 0 = installation successful.
 - Browsers (~300MB per browser). With `install chromium` you only download Chromium (~100MB) — sufficient for most skill workflows.
 - `snapshotDir` in config points to `.project/playwright-runs/__screenshots__/` — all skills write their `toHaveScreenshot`/`toMatchAriaSnapshot` baselines there. Gitignored, but reusable across sessions.
 - See `shared/PLAYWRIGHT.md` for the full on-the-fly spec pattern that skills use for visual regression and a11y snapshots.
+- Claude-in-Chrome (`mcp__claude-in-chrome__*`) is built-in — no install — and is the preferred path for ad-hoc/interactive browser work when a live local Chrome is connected. This Playwright install remains the fallback and the sole owner of visual/aria regression, HiDPI 2x screenshots, and multi-viewport sweeps. See `shared/CLAUDE-IN-CHROME.md`.

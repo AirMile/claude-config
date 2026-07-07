@@ -9,7 +9,7 @@ Load this file when entering PHASE 3. Contains the Task agent prompt template an
 **Task agent prompt template:**
 
 ```
-Test the following items automatically via playwright-cli daemon, bash commands, or integration tests.
+Test the following items automatically via browser tools, bash commands, or integration tests.
 Dev server: {url}
 Feature: {feature-name}
 
@@ -25,11 +25,12 @@ ITEMS:
   Pattern: {matching test pattern from test-classification.md}
 
 INSTRUCTIONS:
-1. Navigate to the dev server URL and verify it is running
-2. For each item:
-   a. Execute the steps using browser tools (`playwright-cli` daemon — see `shared/PLAYWRIGHT.md`) or bash commands. For runtime-state assertions beyond DOM-snapshot (computed values, store contents, framework-internals), use `playwright-cli eval "() => ({ ... })"`.
+1. Browser setup: if a live local Chrome is connected, prefer Claude-in-Chrome — load its tools via one `ToolSearch` call (`select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome__navigate,mcp__claude-in-chrome__computer,mcp__claude-in-chrome__read_page,mcp__claude-in-chrome__read_console_messages,mcp__claude-in-chrome__javascript_tool`), call `tabs_context_mcp` first (see `shared/CLAUDE-IN-CHROME.md`). If no Chrome is connected, fall back to the `playwright-cli` daemon (see `shared/PLAYWRIGHT.md`).
+2. Navigate to the dev server URL and verify it is running
+3. For each item:
+   a. Execute the steps using the chosen browser tools (`navigate`/`computer`/`read_page`, or `playwright-cli` daemon fallback) or bash commands. For runtime-state assertions beyond DOM-snapshot (computed values, store contents, framework-internals), use `javascript_tool` (fallback: `playwright-cli eval "() => ({ ... })"`).
    b. Analyze the result and determine PASS or FAIL with evidence
-3. If a browser tool fails for an item, mark as TOOL_ERROR
+4. If a browser tool fails for an item, mark as TOOL_ERROR
 
 RESULT FORMAT (strict):
 AUTOMATED_RESULTS_START

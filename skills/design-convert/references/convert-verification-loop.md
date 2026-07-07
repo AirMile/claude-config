@@ -1,18 +1,20 @@
 # PHASE 3: Visual Verification Loop
 
-Self-verify by comparing the source image against a Playwright CLI screenshot of the generated output. Max 3 rounds. See `skills/shared/VERIFICATION.md` for the generic loop pattern, round management, and code quality checks.
+Self-verify by comparing the source image against a screenshot of the generated output. Max 3 rounds. See `skills/shared/VERIFICATION.md` for the generic loop pattern, round management, and code quality checks.
+
+Prefer Claude-in-Chrome (`navigate` + `computer` + `read_console_messages`) for the smoke/console steps below when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md`. Fall back to `playwright-cli` otherwise. The **runner verification** block (pixel-baseline / aria-snapshot regression) is unaffected — that stays on Playwright always.
 
 Thresholds come from the loaded `convert-mode-{$MODE}.md → Verification Thresholds`: `$VERIFY_PIXEL_RATIO` (copy 0.01, inspiration/sketch 0.03). Default to `0.03` when no mode file is loaded (patch fast-path).
 
 ### 3.0 Pre-flight
 
-Check Playwright CLI available: `playwright-cli --version`. If unavailable: skip with message `"Playwright CLI not available — open the page manually to verify."`, proceed to PHASE 4.
+Check for a live local Chrome (`tabs_context_mcp`) or, as fallback, Playwright CLI available: `playwright-cli --version`. If neither is available: skip with message `"No browser available — open the page manually to verify."`, proceed to PHASE 4.
 
 ### 3.1 Dev Server
 
 Detect or start dev server:
 
-1. Check if dev server already running on expected port (try `playwright-cli open http://localhost:[port]`)
+1. Check if dev server already running on expected port (try `navigate` to `http://localhost:[port]`, or `playwright-cli open http://localhost:[port]` as fallback)
 2. If not running: start in background (`npm run dev` / `npx next dev` based on framework)
 3. Wait for server ready
 
@@ -25,11 +27,10 @@ VERIFICATION ROUND [N]/3
 
 **Sequence:**
 
-1. `playwright-cli goto http://localhost:[port]/[page-path]`
-2. `playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"` (allow hydration)
-3. `playwright-cli screenshot --filename=.project/tmp/verify-round-[N].png`
-4. `Read .project/tmp/verify-round-[N].png` → capture generated page
-5. `playwright-cli console error` → check for runtime JS errors (see `skills/shared/PLAYWRIGHT.md` → Console Error Inspection)
+1. `navigate` to `http://localhost:[port]/[page-path]` (fallback: `playwright-cli goto ...`)
+2. Wait for hydration — Claude-in-Chrome: brief pause before reading; fallback: `playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"`
+3. `computer` screenshot → capture generated page (fallback: `playwright-cli screenshot --filename=.project/tmp/verify-round-[N].png` + `Read`)
+4. `read_console_messages` (fallback: `playwright-cli console error`) → check for runtime JS errors (see `skills/shared/PLAYWRIGHT.md` → Console Error Inspection)
    → Filter output against PLAYWRIGHT.md → Default Ignore Patterns before reporting; only unfiltered lines become findings.
 
 **Runner verification (round 1 only — create or compare baseline):**
@@ -89,7 +90,7 @@ Compare source image vs generated screenshot. Analyze:
 - Typography (heading sizes, weight, alignment)
 - Component rendering (all sections visible, no blank areas, no error overlays)
 - Missing elements (anything in source not present in output)
-- **Runtime errors** (from step 5 — JS errors indicate broken hydration or missing imports, even if nothing looks wrong visually; report as **P004** findings — see FRONTEND-RULES.md)
+- **Runtime errors** (from step 4 — JS errors indicate broken hydration or missing imports, even if nothing looks wrong visually; report as **P004** findings — see FRONTEND-RULES.md)
 
 **Assessment:**
 
@@ -176,4 +177,4 @@ Remaining:
 ════════════════════════════════════════════════════════════
 ```
 
-Close browser: `playwright-cli close`
+Close browser: `tabs_close_mcp` (fallback: `playwright-cli close`)

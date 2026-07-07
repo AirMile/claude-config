@@ -6,7 +6,7 @@ Loaded when scope contains **SEO** and/or **AEO**.
 
 Per route, check:
 
-**Critical:** Page titles (S001), meta descriptions (S002), rendering (S003 — Playwright CLI validate SSR via snapshot **+ content-endpoint check via `requests`/`request <i>` to prove content doesn't come from a fallback due to a failing API**), robots config (S004).
+**Critical:** Page titles (S001), meta descriptions (S002), rendering (S003 — validate SSR via `read_page` **+ content-endpoint check via `read_network_requests` to prove content doesn't come from a fallback due to a failing API**; prefer Claude-in-Chrome when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md` — fall back to `playwright-cli snapshot` + `requests`/`request <i>`), robots config (S004).
 
 **Important:** Open Graph (S101), canonical URLs (S102), sitemap (S103), robots.txt (S104), heading hierarchy (H002/H003), image alt text (R002).
 

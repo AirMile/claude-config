@@ -4,6 +4,8 @@ Reusable Playwright CLI patterns for visual validation, accessibility checks, an
 
 **CLI:** `playwright-cli` (global via `@playwright/cli`). Check: `playwright-cli --version`.
 
+> **Prefer Claude-in-Chrome for interactive/ad-hoc browser work** when a live local Chrome is connected — see `CLAUDE-IN-CHROME.md`. This CLI is the fallback, and remains the sole owner of all regression, HiDPI, and multi-viewport sweep work.
+
 ---
 
 ## Overview
@@ -268,8 +270,8 @@ playwright-cli -s=mysession close
 
 | Skill                   | Uses Playwright For                               | Snapshot strategy   |
 | ----------------------- | ------------------------------------------------- | ------------------- |
-| `design-ship`        | A11y tree, focus, multi-viewport, CWV, SEO, smoke | Inline + --filename |
-| `design-convert`       | Screenshot capture + verification loop (Convert)  | Screenshot only     |
+| `design-ship`           | A11y tree, focus, multi-viewport, CWV, SEO, smoke | Inline + --filename |
+| `design-convert`        | Screenshot capture + verification loop (Convert)  | Screenshot only     |
 | `marketing-screenshots` | HiDPI screenshots, dark mode variants             | run-code newContext |
 | `dev-debug`             | Runtime-state inspectie, hypothesis-validatie     | eval (JSON inline)  |
 | `team-verify`           | Automated browser checks, runtime assertions      | Inline + eval       |
@@ -544,6 +546,8 @@ NETWORK INSPECTION
 ---
 
 ## Daemon vs Runner — Decision Tree
+
+> The DAEMON branch below is Chrome-preferred when a live local Chrome is connected — see `CLAUDE-IN-CHROME.md`; `playwright-cli` daemon is the fallback. The RUNNER branch (regression) is unaffected — always Playwright.
 
 ```
 What do you need?
