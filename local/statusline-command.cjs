@@ -24,10 +24,8 @@ function formatBranch(branch, worktree) {
 
 function formatCtx(ctx) {
   const pct = ctx?.used_percentage;
-  const size = ctx?.context_window_size;
-  if (pct == null || size == null) return null;
-  const tokens = Math.round((pct / 100) * size);
-  return `${Math.round(tokens / 1000)}k`;
+  if (pct == null) return null;
+  return `${Math.round(pct)}%`;
 }
 
 function formatSession(rl) {
@@ -45,10 +43,11 @@ function formatWeekDuration(epochSec) {
   const totalSec = Math.floor(ms / 1000);
   const totalMin = Math.floor(totalSec / 60);
   const totalH = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
   const d = Math.floor(totalH / 24);
   const h = totalH % 24;
   if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
-  if (totalH > 0) return `${totalH}h`;
+  if (totalH > 0) return m > 0 ? `${totalH}h ${m}m` : `${totalH}h`;
   if (totalMin > 0) return `${totalMin}m`;
   return `${totalSec}s`;
 }
