@@ -5,6 +5,11 @@ Resumes the half of `game-verify` that AGENT 2 deliberately skipped: the live pl
 the DONE completion. Finalize/merge has moved to the end of PHASE 4 (after refactor) so refactor
 commits land on the feature branch first. AGENT 2's `remainingManualItems` is authoritative here.
 
+**Dual reader**: this file is read by the main chat (playtest-items path, below) and by AGENT O
+(`references/prompts/orchestrator.md § Phase 3 completion`, the no-playtest path) — AGENT O runs
+only **Step 1** + **Step 3**, never Step 2 (no game window launch, no walkthrough, no human to show
+anything to) and never the routing sections below (those assume playtest items).
+
 ## Resume entry (fresh session)
 
 When PHASE 3 is entered via a direct resume (a fresh chat re-invoking `/game-ship {feature}` after the
@@ -113,13 +118,14 @@ All COVERED passed (AGENT 2) and no open playtest FAIL → complete (but do **no
    drop the terminal handoff (adapter rule 4, applied here in the main chat).
 
 Do **not** finalize/merge here — stay in the worktree. Finalize runs at the end of PHASE 4
-(SKILL.md PHASE 4) so refactor commits land on the feature branch first. Proceed to PHASE 4 with the
-worktree active.
+(SKILL.md § PHASE 1–4) so refactor commits land on the feature branch first. **Return to SKILL.md
+§ PHASE 1–4**: spawn AGENT O per `references/agent-orchestrator.md § Spawn` (the checkpoint routes
+it to PHASE 4) and handle its wake there.
 
 ## Guard
 
-Never merge in this phase, even on all-green. The merge belongs to PHASE 4's finalize. (On a playtest
-FAIL the routing above already blocks PHASE 4.)
+Never merge in this phase, even on all-green. The merge belongs to AGENT O's finalize. (On a
+playtest FAIL the routing above already blocks PHASE 4.)
 
 ## Fallback — godot-mcp unavailable
 

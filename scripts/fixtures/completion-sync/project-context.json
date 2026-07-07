@@ -1,0 +1,21 @@
+{
+  "architecture": {
+    "components": [
+      {
+        "name": "auth",
+        "layer": "Services",
+        "status": "planned",
+        "src": ["src/auth/session.ts"],
+        "test": []
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "LoginForm",
+      "src": "src/components/ui/LoginForm.tsx",
+      "test": []
+    }
+  ],
+  "learnings": []
+}

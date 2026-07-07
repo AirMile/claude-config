@@ -1,0 +1,488 @@
+{
+  "learnings": [
+    {
+      "date": "2024-01-01",
+      "feature": "old-obs",
+      "type": "observation",
+      "source": "inferred",
+      "summary": "Observation 1 aged out"
+    },
+    {
+      "date": "2024-01-02",
+      "feature": "old-obs",
+      "type": "observation",
+      "source": "inferred",
+      "summary": "Observation 2 aged out"
+    },
+    {
+      "date": "2024-01-03",
+      "feature": "old-obs",
+      "type": "observation",
+      "source": "inferred",
+      "summary": "Observation 3 aged out"
+    },
+    {
+      "date": "2024-01-04",
+      "feature": "old-obs",
+      "type": "observation",
+      "source": "inferred",
+      "summary": "Observation 4 aged out"
+    },
+    {
+      "date": "2026-01-01",
+      "feature": "grouped-feature",
+      "type": "pitfall",
+      "source": "extracted",
+      "author": "alice",
+      "summary": "Pitfall A about auth issue 1",
+      "tags": [
+        "auth"
+      ]
+    },
+    {
+      "date": "2026-01-02",
+      "feature": "grouped-feature",
+      "type": "pitfall",
+      "source": "extracted",
+      "author": "alice",
+      "summary": "Pitfall B about auth issue 2",
+      "tags": [
+        "auth"
+      ]
+    },
+    {
+      "date": "2026-01-03",
+      "feature": "grouped-feature",
+      "type": "pitfall",
+      "source": "extracted",
+      "author": "alice",
+      "summary": "Pitfall C about auth issue 3",
+      "tags": [
+        "auth",
+        "api"
+      ]
+    },
+    {
+      "date": "2026-01-04",
+      "feature": "grouped-feature",
+      "type": "pitfall",
+      "source": "extracted",
+      "author": "alice",
+      "summary": "Pitfall D about auth issue 4",
+      "tags": [
+        "db"
+      ]
+    },
+    {
+      "date": "2026-01-05",
+      "feature": "grouped-feature",
+      "type": "pitfall",
+      "source": "extracted",
+      "author": "alice",
+      "summary": "Pitfall E about auth issue 5"
+    },
+    {
+      "date": "2026-02-01",
+      "feature": "small-group",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Pattern A small group perf note 1",
+      "tags": [
+        "perf"
+      ],
+      "author": "carol"
+    },
+    {
+      "date": "2026-02-02",
+      "feature": "small-group",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Pattern B small group perf note 2",
+      "tags": [
+        "perf"
+      ]
+    },
+    {
+      "date": "2026-02-03",
+      "feature": "small-group",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Pattern C small group perf note 3",
+      "tags": [
+        "perf"
+      ],
+      "author": "carol"
+    },
+    {
+      "date": "2026-05-01",
+      "feature": "filler-001",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 1 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-02",
+      "feature": "filler-002",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 2 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-03",
+      "feature": "filler-003",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 3 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-04",
+      "feature": "filler-004",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 4 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-05",
+      "feature": "filler-005",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 5 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-06",
+      "feature": "filler-006",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 6 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-07",
+      "feature": "filler-007",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 7 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-08",
+      "feature": "filler-008",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 8 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-09",
+      "feature": "filler-009",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 9 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-10",
+      "feature": "filler-010",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 10 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-11",
+      "feature": "filler-011",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 11 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-12",
+      "feature": "filler-012",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 12 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-13",
+      "feature": "filler-013",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 13 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-14",
+      "feature": "filler-014",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 14 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-15",
+      "feature": "filler-015",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 15 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-16",
+      "feature": "filler-016",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 16 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-17",
+      "feature": "filler-017",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 17 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-18",
+      "feature": "filler-018",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 18 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-19",
+      "feature": "filler-019",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 19 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-20",
+      "feature": "filler-020",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 20 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-21",
+      "feature": "filler-021",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 21 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-22",
+      "feature": "filler-022",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 22 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-23",
+      "feature": "filler-023",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 23 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-24",
+      "feature": "filler-024",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 24 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-25",
+      "feature": "filler-025",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 25 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-26",
+      "feature": "filler-026",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 26 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-27",
+      "feature": "filler-027",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 27 about something unrelated to the others"
+    },
+    {
+      "date": "2026-05-28",
+      "feature": "filler-028",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 28 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-01",
+      "feature": "filler-029",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 29 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-02",
+      "feature": "filler-030",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 30 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-03",
+      "feature": "filler-031",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 31 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-04",
+      "feature": "filler-032",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 32 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-05",
+      "feature": "filler-033",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 33 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-06",
+      "feature": "filler-034",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 34 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-07",
+      "feature": "filler-035",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 35 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-08",
+      "feature": "filler-036",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 36 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-09",
+      "feature": "filler-037",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 37 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-10",
+      "feature": "filler-038",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 38 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-11",
+      "feature": "filler-039",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 39 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-12",
+      "feature": "filler-040",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 40 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-13",
+      "feature": "filler-041",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 41 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-14",
+      "feature": "filler-042",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 42 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-15",
+      "feature": "filler-043",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 43 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-16",
+      "feature": "filler-044",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 44 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-17",
+      "feature": "filler-045",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 45 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-18",
+      "feature": "filler-046",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 46 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-19",
+      "feature": "filler-047",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 47 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-20",
+      "feature": "filler-048",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 48 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-21",
+      "feature": "filler-049",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 49 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-22",
+      "feature": "filler-050",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 50 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-23",
+      "feature": "filler-051",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Filler learning number 51 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-24",
+      "feature": "filler-052",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Filler learning number 52 about something unrelated to the others"
+    },
+    {
+      "date": "2026-06-25",
+      "feature": "filler-053",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Filler learning number 53 about something unrelated to the others"
+    }
+  ]
+}

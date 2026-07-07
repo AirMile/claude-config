@@ -62,7 +62,7 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
 3. **Initial setup writes** — **skip in the dev-ship context**: dev-ship's Step 2a already did the
    `mkdir -p .project/features/{feature-name}` + the `active-{feature-name}.json` live-signal write
    **before** entering plan mode (writes are blocked once inside). Do not repeat them here. (The
-   standalone form would run `mkdir` + `echo '{...}' > active-{feature-name}.json` itself.)
+   standalone form would run `mkdir` + `node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}` itself.)
 
    All `.project/{backlog,project,project-context}.json` writes are **deferred to dev-ship's
    gate-accept** (Step 4b) — PHASE 0→2 only read and author the in-memory draft, and plan mode blocks

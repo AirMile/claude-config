@@ -1,4 +1,3 @@
-
 # Refactor
 
 ## Overview
@@ -87,8 +86,8 @@ The active-feature signal file is written in step 3 — in no-arg mode the featu
 
    ```bash
    git status --porcelain | sort > .project/session/pre-skill-status.txt
-   echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
-   # Batch mode (queue > 1): use active-batch-{date}.json instead — single active file per run is best-effort tracking only
+   echo '{"skill":"refactor"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}
+   # Batch mode (queue > 1): use signal batch-{date} instead — single active file per run is best-effort tracking only
    ```
 
 > Steps 4–7 run as a parallel batch — all read-only, no shared data dependency.

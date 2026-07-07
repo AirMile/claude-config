@@ -1,0 +1,11 @@
+{
+  "requirements": [
+    { "id": "REQ-001", "verdict": "PASS" },
+    { "id": "REQ-002", "verdict": "PASS" }
+  ],
+  "checklist": { "T-001": "PASS", "T-002": "PASS" },
+  "fixSync": ["Added missing admin settings route guard"],
+  "seedPages": [
+    { "name": "admin-settings", "routePattern": "app/admin/settings/page.tsx" }
+  ]
+}

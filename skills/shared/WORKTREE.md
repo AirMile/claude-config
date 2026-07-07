@@ -268,8 +268,8 @@ echo "GATE: ok — .project/ symlinks intact"
 # Gate: verify inside worktree
 [[ "$(pwd)" == *"/.claude/worktrees/{feature-name}" ]] && echo "GATE: ok — inside worktree" || echo "ABORT: not inside worktree"
 
-# Session file
-echo '{"feature":"{feature-name}","skill":"{skill-name}","startedAt":"{ISO}"}' > "$WT/.project/session/active-{feature-name}.json"
+# Session file (main-root, never $WT — .project/session/ is worktree-local, not symlinked)
+echo '{"skill":"{skill-name}"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}
 ```
 
 #### Step 4: Continue with skill PHASE 0

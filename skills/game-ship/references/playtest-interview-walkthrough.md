@@ -19,7 +19,7 @@ Before presenting the first item, flag the board amber (see `shared/DEVINFO.md �
 Signal`):
 
 ```bash
-echo '{"feature":"{feature}","skill":"test","startedAt":"{ISO}","waiting":"playtest"}' > .project/session/active-{feature}.json
+echo '{"skill":"test","waiting":"playtest"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}
 ```
 
 After Step F closes, rewrite it **without** `waiting` — verification work (routing to the ledger)
@@ -82,16 +82,16 @@ fix routing lives in `phase-3-playtest.md § Findings ledger + routing`, not her
 
 ## Step E — Persist this item's verdict
 
-After every single item, patch the checkpoint so a killed session resumes mid-walkthrough rather than
-from the top:
+After every single item, upsert it into the checkpoint's ledger so a killed session resumes
+mid-walkthrough rather than from the top:
 
 ```bash
-echo '{"playtest":{"items":[ /* the FULL items array so far */ ]}}' | node ~/.claude/scripts/ship-checkpoint.js patch {feature}
+echo '{"id":"PT-3","title":"...","verdict":"pass","category":"...","observed":"...","expected":"...","source":"checklist"}' \
+  | node ~/.claude/scripts/ship-checkpoint.js item {feature} playtest
 ```
 
-`ship-checkpoint.js` deep-merges objects but **replaces arrays wholesale** (`shared/SHIP-CHECKPOINT.md`)
-— always send the complete `playtest.items` array, not just the new entry, or earlier verdicts are
-lost.
+Send only this one item — the script upserts it into `playtest.items` by `id` (replacing an existing
+entry with the same id, appending otherwise), so earlier verdicts are never lost to a partial resend.
 
 Repeat Steps B–E for every remaining item (the game window itself stays open the whole time).
 

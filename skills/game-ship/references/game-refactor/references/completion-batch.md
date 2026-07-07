@@ -154,7 +154,8 @@ Follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). game-refactor d
 - **Baseline**: status form — `.project/session/pre-skill-status.txt`.
 - **OVERLAP policy**: interactive. **Fallback**: `git add -A`.
 - **Commit**: batch `refactor(batch): {summary}` with body `{N} features analyzed, {clean} clean, {refactored} refactored, {rolled_back} rolled back` + one line per feature (REFACTORED: `{feature}: {improvement count} improvements ({categories})` · CLEAN: `{feature}: clean (no changes needed)` · ROLLED_BACK: `{feature}: rolled back ({reason})`). Single-feature: `refactor({feature}): {summary}`.
-- **Cleanup**: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+- **Cleanup**: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt` plus
+  `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature-name}`
 
 ## Step 3b — Feature archiving
 

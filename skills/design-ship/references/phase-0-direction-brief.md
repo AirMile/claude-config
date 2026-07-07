@@ -141,7 +141,7 @@ After the plan-mode exit (writes are unblocked now):
 
    ```bash
    mkdir -p .project/session
-   echo '{"feature":"{target}","skill":"design","startedAt":"{ISO}"}' > .project/session/active-{target}.json
+   echo '{"skill":"design"}' | node ~/.claude/scripts/ship-checkpoint.js signal {target}
    ```
 
    The agents rewrite this file with `skill: build | content | check` when they start (contract

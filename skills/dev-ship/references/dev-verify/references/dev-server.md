@@ -13,7 +13,10 @@ Loaded from PHASE 0 step 9 when ≥1 MANUAL, AUTO/BROWSER, or live-server AUTO/C
    - **Miss** → proceed to item 3 (launch).
    - **Hit** → do NOT silently reuse. Verify the running server is the worktree project (process cwd via `lsof -p <pid> | grep cwd` / `pwdx <pid>`, or its git HEAD vs the worktree branch). Confirmed worktree → reuse the URL, skip launch. Main or another project serving → kill it or launch from the worktree on a free port. Never run MANUAL tests against a server with unverified branch identity.
 3. Otherwise start via `Bash` with `run_in_background: true`. Use the `Monitor` tool to stream the background process's output until a `Local:` / `ready` / `listening on` line appears, then extract the URL. Timeout 30s → graceful fallback.
-4. Store `{devServerUrl, devServerPid}` in `.project/session/active-{name}.json` so PHASE 6 / PHASE Finalize can stop the process.
+4. Store `{devServerUrl, devServerPid}` on the live signal so PHASE 6 / PHASE Finalize can stop the
+   process: `echo '{"skill":"verify","devServerUrl":"{url}","devServerPid":{pid}}' | node ~/.claude/scripts/ship-checkpoint.js signal {name}`
+   (replace-wholesale, same as every other signal write — re-send `skill` and any other fields you
+   want to keep).
 5. Display once: `DEV SERVER: {url}`.
 
 ## Tunnel (team-mode only)

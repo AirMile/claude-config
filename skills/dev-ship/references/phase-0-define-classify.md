@@ -58,15 +58,15 @@ dev-track and stays here). Then check
 Plan mode blocks `.project/` writes, so **every** bookkeeping write happens here, up front:
 
 1. **Feature dir + session:** `mkdir -p .project/features/{feature-name} .project/session`.
-2. **Live signal** — write `.project/session/active-{feature-name}.json` with `skill: "define"`; add
-   `"waiting": "define"` **only when `defineNeeded`** (the board then shows the run waiting for input
-   through the whole interactive block):
+2. **Live signal** — write the board's live signal with `skill: "define"`; add `"waiting": "define"`
+   **only when `defineNeeded`** (the board then shows the run waiting for input through the whole
+   interactive block):
 
    ```bash
-   echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO}","waiting":"define"}' > .project/session/active-{feature-name}.json
+   echo '{"skill":"define","waiting":"define"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}
    ```
 
-   The later SKILL.md phase boundaries rewrite this same file with `skill: build | verify | refactor`
+   The later SKILL.md phase boundaries rewrite this same signal with `skill: build | verify | refactor`
    — the board badge follows the pipeline. (Define's own PHASE 0 §3 signal write is **skipped** —
    this is it; see Step 2c.)
 
@@ -231,8 +231,9 @@ surface for the whole plan. It always runs (no env-var opt-out).
      the project.json **endpoint** sync no-ops), **applying the plan-file proposals** the user did not
      reject: seed update, backlog-impact mutations, PAGE-seeding, and — on a split — the `00-split.md`
      write + sub-feature `mkdir`s (all deferred out of plan mode to here);
-     (c) re-set `transition: "shipping"` (Step 2a) and rewrite `active-{feature}.json` **without** the
-     `waiting` field. Then continue to Step 5 → Step 6 → build.
+     (c) re-set `transition: "shipping"` (Step 2a) and rewrite the live signal **without** the
+     `waiting` field (`echo '{"skill":"define"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}`).
+     Then continue to Step 5 → Step 6 → build.
    - **Reject** → the session **stays in plan mode** with the user's feedback (native plan-mode
      behaviour — no re-`EnterPlanMode`). Revise the in-memory draft, **re-asking only what the
      feedback touches** (e.g. reopen one design fork, adjust one requirement) — do not re-run the whole

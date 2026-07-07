@@ -16,15 +16,15 @@ the second question, which a pass/fail checklist alone cannot ask.
 ## Step A — Board signal (amber: waiting on the user)
 
 Before presenting the first item, flag the board amber (see `shared/DEVINFO.md § Active Feature
-Signal`), written to the **main checkout's** `.project/session/` (the worktree-caveat applies — cwd
-is inside the worktree here):
+Signal`):
 
 ```bash
-echo '{"feature":"{feature}","skill":"verify","startedAt":"{ISO}","waiting":"manual-tests"}' > .project/session/active-{feature}.json
+echo '{"skill":"verify","waiting":"manual-tests"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}
 ```
 
-After Step F closes, rewrite it **without** `waiting` — verification work (routing to the ledger)
-resumes.
+The script resolves the main checkout itself, so this is safe even though cwd is inside the worktree
+here. After Step F closes, rewrite it **without** `waiting` — verification work (routing to the
+ledger) resumes.
 
 ## Step B — Present ONE item
 
@@ -72,15 +72,16 @@ fix routing lives in `phase-3-manual-finalize.md § Findings ledger + routing`, 
 
 ## Step E — Persist this item's verdict
 
-After every single item (not batched at the end), patch the checkpoint so a killed session resumes
-mid-walkthrough rather than from the top:
+After every single item (not batched at the end), upsert it into the checkpoint's ledger so a killed
+session resumes mid-walkthrough rather than from the top:
 
 ```bash
-echo '{"manual":{"items":[ /* the FULL items array so far */ ]}}' | node ~/.claude/scripts/ship-checkpoint.js patch {feature}
+echo '{"id":"MT-3","title":"...","verdict":"pass","category":"...","observed":"...","expected":"...","screenshot":"...","source":"checklist"}' \
+  | node ~/.claude/scripts/ship-checkpoint.js item {feature} manual
 ```
 
-`ship-checkpoint.js` deep-merges objects but **replaces arrays wholesale** (`shared/SHIP-CHECKPOINT.md`)
-— always send the complete `manual.items` array, not just the new entry, or earlier verdicts are lost.
+Send only this one item — the script upserts it into `manual.items` by `id` (replacing an existing
+entry with the same id, appending otherwise), so earlier verdicts are never lost to a partial resend.
 
 Repeat Steps B–E for every remaining item.
 

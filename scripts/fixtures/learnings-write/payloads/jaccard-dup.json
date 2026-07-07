@@ -1,0 +1,11 @@
+{
+  "entries": [
+    {
+      "feature": "auth-login",
+      "type": "pitfall",
+      "source": "extracted",
+      "author": "alice",
+      "summary": "JWT refresh race condition during parallel requests corrupts a session"
+    }
+  ]
+}

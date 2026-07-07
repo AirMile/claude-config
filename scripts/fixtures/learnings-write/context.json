@@ -1,0 +1,20 @@
+{
+  "learnings": [
+    {
+      "date": "2026-05-01",
+      "feature": "auth-login",
+      "type": "pitfall",
+      "source": "extracted",
+      "author": "alice",
+      "summary": "JWT refresh race condition on parallel requests corrupts the session",
+      "tags": ["auth", "async"]
+    },
+    {
+      "date": "2026-05-02",
+      "feature": "checkout",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Repository pattern isolates data access in src/repositories"
+    }
+  ]
+}

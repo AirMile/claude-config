@@ -227,33 +227,11 @@ The tag NAMES below are the single source of truth — `scripts/learnings-search
 
 ## Dedup Tokenizer
 
-Tokenization algorithm. Used for:
-
-- Pre-write dedup within a single skill run
-- Cross-run dedup against existing `learnings[]`
-
-**Steps:**
-
-1. Lowercase
-2. Strip punctuation (`.,;:!?()[]{}'"` → spaces)
-3. Split on whitespace
-4. Filter stopwords:
-   ```
-   de het een en of maar dus dat die deze dit met via voor bij naar van uit op
-   in te is zijn was waren wordt worden werd geworden niet geen ook al alle
-   alleen wel dan toen toch nog
-   the a an and or but so that this these those with for at by from into
-   to is are was were be been being have has had do does did will would could
-   should may might shall not no also all only then when though still just
-   ```
-5. Filter tokens with length < 3
-   5b. Suffix normalization (tokens with length > 5):
-   - ends in `tion` or `sion` → remove last 3 chars (`condition` → `condit`)
-   - ends in `ing` → remove last 3 chars (`caching` → `cach`)
-   - ends in `ed` → remove last 2 chars (`failed` → `fail`)
-   - ends in `s` but NOT in `ss` → remove last char (`requests` → `request`)
-   - ends in `er` and length > 6 → remove last 2 chars (`handler` → `handl`)
-6. Result: `tokenSet` (unique)
+Lowercase → strip punctuation → split on whitespace → filter Dutch/English stopwords and tokens
+under 3 chars → suffix-normalize (strip `-tion`/`-sion`/`-ing`/`-ed`/plural `-s`/agentive `-er`) →
+unique `tokenSet`. Implemented once in `scripts/learnings-search.js` (exported `tokenize`) and
+applied by `scripts/learnings-write.js append` for both dedup stages below — the algorithm lives in
+the script, not here.
 
 **Dedup** for `learnings[]`: see § Writer Append Protocol below — exact-tuple shortcut, then Jaccard ≥ 0.55.
 
@@ -281,12 +259,18 @@ Single canon for every skill that appends to `project-context.json#learnings[]` 
 
 **Tags**: assign 0–3 domain tags from § Tag Vocabulary describing what the learning is _about_ (kebab-case; at most one free tag when nothing fits; omit rather than force). Tags let relevance search resurface an old entry by topic — a stale `auth` pitfall stays reachable when a new auth feature is built. Optional and backwards-compatible: entries without `tags` still match on feature name + summary keywords. **Tags are NOT part of the dedup key.**
 
-**Dedup (two stages, in order):**
+**Append + dedup** — never hand-write the mutation; the script owns the two-stage dedup (exact
+tuple `(type, normalize(summary), author ?? null)`, then Jaccard ≥ 0.55 tokenized, same `type`
+only) against existing `learnings[]` **and** earlier entries in the same call, appends survivors,
+and stamps `date`:
 
-1. **Exact shortcut**: tuple `(type, normalize(summary), author ?? null)` matches an existing entry (normalize = lowercase + strip punctuation) → skip candidate.
-2. **Near-duplicate**: tokenize the summary via § Dedup Tokenizer; for each existing learning with the same `type`: `Jaccard(candidate.tokens, existing.tokens) >= 0.55` → skip candidate.
+```bash
+echo '{"entries":[{"feature":"...","type":"pitfall","source":"extracted","summary":"...","tags":["auth"]}]}' \
+  | node ~/.claude/scripts/learnings-write.js append {project-root}
+```
 
-Passes both stages → append. No candidates → skip the step silently.
+Stdout: `{ "appended": N, "skipped": [{"summary","reason":"exact"|"jaccard","matched"}] }`. Exit 0
+even when everything dedups — a skip is expected behavior, not an error.
 
 **Single writer for build decisions**: `dev-ship (build phase)` PHASE 3A owns the `build.decisions[] → learnings` mapping (type `pattern`, source `extracted`). Downstream skills must not re-map decisions — `dev-ship (verify phase)` maps only `tests.fixSync[]` → `pitfall` and `observations[]` → `observation`.
 
@@ -326,15 +310,28 @@ When in doubt → do not emit. Append-only contract makes cleanup expensive.
 
 **Archive file**: `.project/archive/learnings-{YYYY-MM}.json` — shape `{ "schemaVersion": 2, "archived": [ <original learning objects> ] }`. Append; create dir/scaffold if absent. Archived entries are excluded from the default recency loads, but they remain **reachable by relevance search** — `scripts/learnings-search.js` scans the archive as a damped on-demand tier (`--archive`), so a strongly-matching old entry still surfaces for a related feature (it just never surfaces on recency alone). This is why consolidation is lossy-summary but not memory-loss.
 
-**Procedure** (target: active list ≤ 40 after the pass):
+**Procedure** (target: active list ≤ 40 after the pass) — `scripts/learnings-write.js` owns the
+mechanics (age-out, grouping by `feature`+`type` at a ≥4 threshold escalating to ≥3 when the
+projected size still exceeds 40, tag-union, author-unification); you author only the merged
+summary text for each group:
 
-1. **Age-out observations**: entries with `type === "observation"` older than 12 months → move to archive (no summary needed; observations age poorly).
-2. **Group by `feature`**: for every feature group with ≥ 4 remaining entries, merge each type-cluster (patterns together, pitfalls together) into max 1 consolidated entry per type:
-   - `summary`: one merged summary (≤ 200 chars) that preserves each distinct point — drop only true repetition, never distinct pitfalls.
-   - `type`: kept; `source: "consolidated"`; `date`: newest of the group; `feature`: kept; `author`: kept if identical across group, else `null`.
-   - `tags`: union of the group's tags, keeping the 3 most frequent (ties → first by vocabulary order); omit if the group had none.
-   - Originals → archive.
-3. **Still > 40?** Repeat step 2 for groups with ≥ 3 entries. Never consolidate entries newer than 3 months — recent learnings keep full resolution.
+```bash
+node ~/.claude/scripts/learnings-write.js gate {project-root}
+```
+
+Empty output → nothing to do. Otherwise it prints a plan — age-out list plus, per group, the
+original entries and a merge scaffold with every field filled except `summary`. For each group,
+write one merged `summary` (≤ 200 chars) that preserves each distinct point — drop only true
+repetition, never distinct pitfalls (this judgment call is yours, not the script's) — then:
+
+```bash
+echo '{"merges":[{"feature":"...","type":"pitfall","summary":"<your merged text>"}]}' \
+  | node ~/.claude/scripts/learnings-write.js consolidate {project-root}
+```
+
+The script recomputes the plan, replaces each matched group with your completed entry, and moves
+group originals + age-outs to the archive. Never consolidate entries newer than 3 months — the
+script already excludes them from grouping.
 
 **Guarantees**: idempotent (a consolidated list under the threshold never triggers another pass); lossless in provenance (originals live in the archive); pitfalls are never silently dropped — only merged or archived with a consolidated successor in place.
 
@@ -344,11 +341,10 @@ When in doubt → do not emit. Append-only contract makes cleanup expensive.
 
 **Single source of truth for _when_ to run § Consolidation.** Every flow that appends to `learnings[]` runs this gate **once, after its append(s)** — batched at the end of the flow, never per entry.
 
-1. Read `project-context.json#learnings[]`.
-2. If `learnings.length > 60` → run the § Consolidation procedure above (age-out observations, merge per-feature clusters into `source:"consolidated"`, archive originals to `.project/archive/learnings-{YYYY-MM}.json`, target ≤ 40). Mutate `learnings[]` and the archive in memory, then write both once.
-3. Else → skip silently (no output).
-
-When it ran, emit one report line: `Learnings consolidated: {N} merged, {M} archived ({before} → {after})`.
+Run `node ~/.claude/scripts/learnings-write.js gate {project-root}`: empty output → done, nothing
+to do; otherwise author the merged summaries per § Consolidation and run `consolidate` with them.
+The script's own report line (`Learnings consolidated: {N} merged, {M} archived ({before} → {after})`)
+is the output — nothing else to emit.
 
 Properties: idempotent (a list already ≤ 60 is a no-op check); `.project/`-only writes (the consolidation is never part of a code commit — `.project/` is gitignored / state-branch). **Callers reference this section — do not restate the trigger or the procedure inline.**
 

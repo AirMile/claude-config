@@ -1,0 +1,4 @@
+{
+  "requirements": [{ "id": "REQ-001", "verdict": "PASS" }],
+  "checklist": { "T-001": "PASS", "T-002": "PASS" }
+}

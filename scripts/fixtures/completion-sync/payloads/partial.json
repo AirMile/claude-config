@@ -1,0 +1,11 @@
+{
+  "requirements": [
+    { "id": "REQ-001", "verdict": "PASS" },
+    {
+      "id": "REQ-002",
+      "verdict": "BLOCKED",
+      "evidence": "needs real OAuth credentials"
+    }
+  ],
+  "checklist": { "T-001": "PASS", "T-002": "skip" }
+}

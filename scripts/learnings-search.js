@@ -33,13 +33,15 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 // ── Controlled tag vocabulary ────────────────────────────────────────────────
 // Single source of truth for the TAG NAMES is LEARNING-EXTRACTION.md § Tag
 // Vocabulary; a drift test (scripts/tests/run.sh) diffs that table against
 // `--print-vocab`. Aliases live here only — they are matching hints, expanded
 // through the same tokenizer as summaries/queries so normalized forms line up.
-const VOCAB = {
+// Exported: learnings-write.js reuses this vocabulary for tag-union merging.
+export const VOCAB = {
   auth: [
     "jwt",
     "oauth",
@@ -219,7 +221,9 @@ const VOCAB = {
 };
 
 // ── Tokenizer (exact port of LEARNING-EXTRACTION.md § Dedup Tokenizer) ────────
-const STOPWORDS = new Set(
+// Exported: learnings-write.js imports these to run the same dedup algorithm
+// rather than re-implementing it (single source of truth for tokenization).
+export const STOPWORDS = new Set(
   (
     "de het een en of maar dus dat die deze dit met via voor bij naar van uit op " +
     "in te is zijn was waren wordt worden werd geworden niet geen ook al alle " +
@@ -230,7 +234,7 @@ const STOPWORDS = new Set(
   ).split(/\s+/),
 );
 
-function normalizeSuffix(t) {
+export function normalizeSuffix(t) {
   if (t.length <= 5) return t;
   if (t.endsWith("tion") || t.endsWith("sion")) return t.slice(0, -3);
   if (t.endsWith("ing")) return t.slice(0, -3);
@@ -240,7 +244,7 @@ function normalizeSuffix(t) {
   return t;
 }
 
-function tokenize(str) {
+export function tokenize(str) {
   const out = new Set();
   for (let tok of String(str || "")
     .toLowerCase()
@@ -255,7 +259,7 @@ function tokenize(str) {
 // ── Reverse index: normalized token → Set<tag> ───────────────────────────────
 // Built from tag names (split on '-' so "build-tooling" also matches "build" /
 // "tooling") plus their aliases, all run through tokenize() for form parity.
-const TOKEN_TO_TAGS = (() => {
+export const TOKEN_TO_TAGS = (() => {
   const m = new Map();
   const add = (token, tag) => {
     if (!token) return;
@@ -567,21 +571,25 @@ function parseFlags(argv) {
   return flags;
 }
 
-const argv = process.argv.slice(2);
-if (argv.includes("--print-vocab")) {
-  cmdPrintVocab();
-  process.exit(0);
-}
-const root = argv[0];
-const cmd = argv[1] && !argv[1].startsWith("--") ? argv[1] : "search";
-if (!root || root.startsWith("--")) {
-  console.error(
-    "Usage: learnings-search.js <project-root> [load|search|suggest-tags] [flags]   (or --print-vocab)",
-  );
-  process.exit(2);
-}
-const flags = parseFlags(argv.slice(cmd === argv[1] ? 2 : 1));
+// CLI entrypoint — guarded so learnings-write.js can import this module's
+// exports (tokenize, VOCAB, ...) without triggering this script's own CLI.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  const argv = process.argv.slice(2);
+  if (argv.includes("--print-vocab")) {
+    cmdPrintVocab();
+    process.exit(0);
+  }
+  const root = argv[0];
+  const cmd = argv[1] && !argv[1].startsWith("--") ? argv[1] : "search";
+  if (!root || root.startsWith("--")) {
+    console.error(
+      "Usage: learnings-search.js <project-root> [load|search|suggest-tags] [flags]   (or --print-vocab)",
+    );
+    process.exit(2);
+  }
+  const flags = parseFlags(argv.slice(cmd === argv[1] ? 2 : 1));
 
-if (cmd === "load") cmdLoad(root, flags);
-else if (cmd === "suggest-tags") cmdSuggestTags(root);
-else cmdSearch(root, flags);
+  if (cmd === "load") cmdLoad(root, flags);
+  else if (cmd === "suggest-tags") cmdSuggestTags(root);
+  else cmdSearch(root, flags);
+}

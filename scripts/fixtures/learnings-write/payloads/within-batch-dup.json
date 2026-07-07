@@ -1,0 +1,16 @@
+{
+  "entries": [
+    {
+      "feature": "settings-page",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Settings page loses unsaved changes on accidental tab close"
+    },
+    {
+      "feature": "settings-page",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "settings page loses unsaved changes on accidental tab close."
+    }
+  ]
+}

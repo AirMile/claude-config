@@ -56,16 +56,16 @@ define-style transition match: a feature with `transition: "shipping"` (queued v
 Plan mode blocks `.project/` writes, so **every** bookkeeping write happens here, up front:
 
 1. **Feature dir + session:** `mkdir -p .project/features/{feature-name} .project/session`.
-2. **Live signal** — write `.project/session/active-{feature-name}.json` with `skill: "define"`; add
-   `"waiting": "define"` **only when `defineNeeded`** (the board then shows the run waiting for input
-   through the whole interactive block):
+2. **Live signal** — write the board's live signal with `skill: "define"`; add `"waiting": "define"`
+   **only when `defineNeeded`** (the board then shows the run waiting for input through the whole
+   interactive block):
 
    ```bash
-   echo '{"feature":"{feature-name}","skill":"define","startedAt":"{ISO}","waiting":"define"}' > .project/session/active-{feature-name}.json
+   echo '{"skill":"define","waiting":"define"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}
    ```
 
-   The later SKILL.md phase boundaries rewrite this same file with `skill: build | test | refactor` —
-   the board badge follows the pipeline. (Define's own PHASE 0 signal write is **skipped** — this is
+   The later SKILL.md phase boundaries rewrite this same signal with `skill: build | test | refactor`
+   — the board badge follows the pipeline. (Define's own PHASE 0 signal write is **skipped** — this is
    it; see Step 2c.)
 
 3. **Run marker** — set `transition: "shipping"` on the feature's `backlog.json` entry. This keeps
@@ -227,8 +227,9 @@ update` (from the Seed Alignment Check), `## Backlog impact` (obsoleted/adjusted
      project-context.json — per `game-define/references/phase5-sync.md`), **applying the plan-file
      proposals** the user did not reject: seed update, backlog-impact mutations, and — on a split — the
      `00-split.md` write + sub-feature `mkdir`s (all deferred out of plan mode to here);
-     (c) re-set `transition: "shipping"` (Step 2a) and rewrite `active-{feature}.json` **without** the
-     `waiting` field. Then continue to Step 5 → Step 6 → build.
+     (c) re-set `transition: "shipping"` (Step 2a) and rewrite the live signal **without** the
+     `waiting` field (`echo '{"skill":"define"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}`).
+     Then continue to Step 5 → Step 6 → build.
    - **Reject** → the session **stays in plan mode** with the user's feedback (native plan-mode
      behaviour — no re-`EnterPlanMode`). Revise the in-memory draft, **re-asking only what the
      feedback touches** (e.g. reopen one scene-layout fork, adjust one requirement) — do not re-run the

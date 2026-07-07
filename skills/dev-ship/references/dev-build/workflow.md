@@ -278,7 +278,7 @@ Follow [shared/SCOPED-COMMIT.md](.claude/skills/shared/SCOPED-COMMIT.md). dev-bu
 - **Diagnostics**: already ran in PHASE 2b — proceed directly to staging.
 - **Commit**: `feat({feature}): {subject}` — write `{subject}` yourself as a short sentence (≤65 chars) in the project's language (`CLAUDE.md → Language`) describing _what the feature does_. Base it on the requirements you just built. No counts, no `TDD`/`impl-only` labels. Example: `feat(map-home): kaartscherm met locatiemarkers en GPS`.
   Run: `git -C "$REPO" commit -m "feat({feature}): {subject}"`
-- **Cleanup**: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/active-{feature-name}.json" "$REPO/.project/session/worktree-status.txt"` — session files only; never touch the worktree, its branch, or main.
+- **Cleanup**: `rm -f "$REPO/.project/session/pre-skill-sha.txt" "$REPO/.project/session/worktree-status.txt"` plus `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature-name}` (the live signal always lives in the **main** checkout, never `$REPO` — the script resolves that itself) — session files only; never touch the worktree, its branch, or main.
 
 The commit and session-file cleanup above are the last git operations in this skill. Move immediately to the completion output — no further git commands:
 

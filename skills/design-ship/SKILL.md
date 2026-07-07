@@ -196,7 +196,7 @@ lastCheckedSha for COMPONENT). On "hold"/"abort": no merge, worktree stays, clea
 
 > **Todo**: mark the phases that actually ran → `completed` (on a failure-jump, leave the failed
 > phase `in_progress` and never mark a skipped phase `completed`), PHASE 5 → `in_progress`.
-> **Board cleanup** (every exit path, success or failure): `rm -f .project/session/active-{target}.json`,
+> **Board cleanup** (every exit path, success or failure): `node ~/.claude/scripts/ship-checkpoint.js signal-clear {target}`,
 > and if the target still exists in `backlog.json#features[]` with `transition: "shipping"`, remove
 > that `transition` (on full success PHASE 4 step 3 already cleared it; this catches failure-jumps
 > and hold/abort exits).

@@ -1,4 +1,3 @@
-
 # Verify
 
 Verify phase: define → build → **verify**
@@ -96,7 +95,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    git status --porcelain | sort > .project/session/pre-skill-status.txt
    # Lint baseline (failed lint at baseline → write output, do NOT block, display nothing)
    npm run lint 2>&1 > .project/session/pre-skill-lint.txt || true
-   echo '{"feature":"{name}","skill":"verify","startedAt":"{ISO}"}' > .project/session/active-{name}.json
+   echo '{"skill":"verify"}' | node ~/.claude/scripts/ship-checkpoint.js signal {name}
    ```
 
    Substitute `npm run lint` with the project's lint script (resolve from `package.json` scripts: `lint` / `check` / `typecheck`; no match → write empty file).

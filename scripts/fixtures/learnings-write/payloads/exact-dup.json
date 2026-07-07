@@ -1,0 +1,10 @@
+{
+  "entries": [
+    {
+      "feature": "checkout",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "REPOSITORY PATTERN ISOLATES DATA ACCESS IN SRC/REPOSITORIES!!"
+    }
+  ]
+}

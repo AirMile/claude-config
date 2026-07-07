@@ -1,0 +1,18 @@
+{
+  "name": "auth-login",
+  "type": "FEATURE",
+  "status": "DOING",
+  "requirements": [
+    { "id": "REQ-001", "description": "User can log in", "deltaOp": null },
+    { "id": "REQ-002", "description": "User can log out", "deltaOp": null },
+    { "id": "REQ-003", "description": "Legacy SSO flow", "deltaOp": "REMOVED" }
+  ],
+  "tests": {
+    "checklist": [
+      { "id": "T-001", "title": "Login form renders", "status": "TODO" },
+      { "id": "T-002", "title": "Logout clears session", "status": "TODO" }
+    ],
+    "finalStatus": null
+  },
+  "observations": []
+}

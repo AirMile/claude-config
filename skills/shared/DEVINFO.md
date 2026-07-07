@@ -95,26 +95,28 @@ AGENT 3, PHASE 4 review/merge)
 
 ### Protocol
 
-**On skill start** (after feature name is known):
+**On skill start** (after feature name is known), via `node ~/.claude/scripts/ship-checkpoint.js` —
+never a raw `echo >` (see below for why):
 
 ```bash
-mkdir -p .project/session
-echo '{"feature":"FEATURE_NAME","skill":"SKILL_VERB","startedAt":"TIMESTAMP"}' > .project/session/active-FEATURE_NAME.json
+echo '{"skill":"SKILL_VERB"}' | node ~/.claude/scripts/ship-checkpoint.js signal FEATURE_NAME
 ```
+
+The script stamps `feature` (from the argument) and `startedAt` itself; pass `"waiting":"..."` in
+the JSON when the skill is paused for user input (see below).
 
 **On skill end** (completion or error exit):
 
 ```bash
-rm -f .project/session/active-FEATURE_NAME.json
+node ~/.claude/scripts/ship-checkpoint.js signal-clear FEATURE_NAME
 ```
 
-**Worktree caveat.** The signal always lives in the **main checkout's** `.project/session/` — that is
-what the board watches. Most skills write it from the main checkout, so a relative path is correct. But
-a skill that writes the signal while its cwd is **inside a worktree** (the ship pipelines during their
-in-worktree PHASE 3/4) must target main-root explicitly — `.project/session/` is worktree-local (not
-symlinked), so a relative write lands in the worktree and the board never sees it. Resolve
-`main_root = git worktree list --porcelain | head -1 | awk '{print $2}'` and write to
-`$main_root/.project/session/active-{name}.json`.
+**Worktree-safe by construction.** The signal always lives in the **main checkout's**
+`.project/session/` — that is what the board watches. A skill whose cwd is **inside a worktree** (the
+ship pipelines during their in-worktree PHASE 3/4) cannot use a relative `echo >`/`rm -f` — `.project/session/`
+is worktree-local (not symlinked), so a relative write would land in the worktree and the board would
+never see it. `ship-checkpoint.js signal`/`signal-clear` resolve the main checkout root themselves
+(same mechanism as the ship checkpoint file), so calling them is safe from **any** cwd.
 
 Multiple features can be active simultaneously (e.g. parallel Claude sessions). Entries older than 2 hours are automatically ignored (staleness protection).
 

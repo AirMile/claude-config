@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 2,
+  "project": "fixture-project",
+  "generated": "2026-01-01",
+  "updated": "2026-01-01",
+  "features": [
+    {
+      "name": "auth-login",
+      "type": "FEATURE",
+      "status": "DOING",
+      "phase": "P1",
+      "description": "Auth login fixture",
+      "stage": "verify",
+      "transition": "designing"
+    },
+    {
+      "name": "run-marker-feature",
+      "type": "FEATURE",
+      "status": "DOING",
+      "phase": "P1",
+      "description": "Feature mid dev-ship run",
+      "transition": "shipping"
+    },
+    {
+      "name": "unrelated-feature",
+      "type": "FEATURE",
+      "status": "TODO",
+      "phase": "P1",
+      "description": "Not touched by this sync"
+    }
+  ]
+}

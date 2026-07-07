@@ -34,7 +34,8 @@ below) over the merged findings.
 **Fallback (Agent tool, when Workflow is unavailable)**: spawn each scanner via the `Agent` tool
 with `subagent_type: "owasp-aNN-scanner"` (model per its agent definition — already `sonnet`). If
 ≥2 codes are selected, spawn them **in one message** (parallel — they are independent and
-read-only); run the triage judgment inline in the main chat.
+read-only); run the triage judgment inline in the orchestrator (AGENT O, or the main chat on the
+inline fallback).
 
 Pass paths, not content (see
 `shared/SKILL-PATTERNS.md#pass-paths-not-content`): discover this feature's files via
@@ -69,8 +70,8 @@ The full triage instruction body is the **static** file
 JSON at call time; it runs as one `model: "opus"`, `effort: "high"` agent (matrix: SKILL.md § Design
 — the only pass without a test backstop).
 
-The main chat writes only a small **pointer + context** file to `triagePromptPath` (it does **not**
-read `prompts/security-triage.md`):
+The orchestrator writes only a small **pointer + context** file to `triagePromptPath` (it does
+**not** read `prompts/security-triage.md`):
 
 ```
 Read `.claude/skills/dev-ship/references/prompts/security-triage.md` — it is your full instruction
@@ -85,7 +86,7 @@ OWASP_CONTEXT:
 1. **Workflow path**: `ship-phase4.js` returns `{scannersRun, scannersFailed,
 findingsAboveThreshold, triage: {confirmed[], dismissed[], summary}}` — read directly.
    **Fallback path**: collect each scanner's report, filter to `confidence ≥ 60%`
-   (dev-security's threshold), and apply the triage judgment inline in the main chat (same
+   (dev-security's threshold), and apply the triage judgment inline in the orchestrator (same
    criteria as the static triage file).
 2. **Do not apply fixes.** In PHASE 5, present `triage.confirmed` (priority-ordered) +
    `triage.summary` and offer (as plain text, not an auto-run): "Run `/dev-security {feature}` to

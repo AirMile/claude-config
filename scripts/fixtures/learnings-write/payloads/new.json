@@ -1,0 +1,10 @@
+{
+  "entries": [
+    {
+      "feature": "dashboard",
+      "type": "observation",
+      "source": "inferred",
+      "summary": "Dashboard should show an empty state when there is no data yet"
+    }
+  ]
+}

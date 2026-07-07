@@ -11,7 +11,8 @@ Follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). game-build delt
 - **OVERLAP policy**: interactive.
 - **Fallback**: `git add -A`.
 - **Commit**: `git commit -m "build({feature}): {n} requirements ({tdd} TDD, {only} impl-only)"`
-- **Cleanup**: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+- **Cleanup**: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt` plus
+  `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature-name}`
 
 **Output:**
 

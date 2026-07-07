@@ -1,0 +1,12 @@
+{
+  "name": "orphan-feature",
+  "type": "FEATURE",
+  "status": "DOING",
+  "requirements": [
+    { "id": "REQ-001", "description": "Orphan requirement", "deltaOp": null }
+  ],
+  "tests": {
+    "checklist": [{ "id": "T-001", "title": "Orphan check", "status": "TODO" }],
+    "finalStatus": null
+  }
+}

@@ -230,7 +230,7 @@ Features:
 ```bash
 mkdir -p .project/session
 git status --porcelain | sort > .project/session/pre-skill-status.txt
-echo '{"feature":"{feature-name}","skill":"refactor","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+echo '{"skill":"refactor"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}
 ```
 
 ### PHASE 1: Parallel Batch Analysis + Triage

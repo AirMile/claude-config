@@ -6,53 +6,48 @@ Full sync logic for PHASE 6 Step 3. Loaded inline when executing Step 3.
 
 ## Step 3: 3-File Sync
 
-Update three files so the project state matches the verify result. **For feature.json: use a single Read → mutate-in-memory → Write cycle**, not per-field Edit calls.
+`node ~/.claude/scripts/completion-sync.js` owns the whole feature.json + backlog.json +
+project-context.json/project.json sync — it computes every derived field (`finalStatus`, session
+pass/fail/skip counts, per-REQ `evaluation`) and structurally never writes the backlog's
+refactor-owned keys (`shipped`/`shippedAt`/`shippedSha` — see `shared/BACKLOG.md` Lifecycle
+Protocol). You supply only judgment: verdicts, evidence, free text.
 
-**feature.json** — Read once, parse JSON, apply all mutations in memory, Write once:
+**PAGE-seeding (safety net — frontend projects only):** if PHASE 4 applied fixes (`fixSync` entries
+this session) AND the diff against `pre-skill-status.txt` shows new page-files not yet in
+`feature.json#files[]` (paths like `app/**/page.tsx`, `src/routes/**`, `pages/**`, or
+`*Page`/`*Screen`/`*View` components) that don't already exist as backlog features →
+AskUserQuestion ("PHASE 4 added {N} new page-file(s) — add as PAGE-todos?": Yes all (Recommended) /
+Selection / No). Pass the approved pages as `seedPages: [{ name, routePattern }]` in the payload
+below — the script pushes the full backlog object.
 
-- `status` → `"DONE"`
-- Per `requirements[]` (skip `deltaOp === "REMOVED"`): `status` → `"PASS"` / `"FAIL"` / `"BLOCKED"` / `"UNCLEAR"` per REQ (BLOCKED/UNCLEAR include `evidence` string)
-- Per `tests.checklist[]`: `status` → `"PASS"` / `"FAIL"` / `"skip"` per item
-- `tests.finalStatus` → `"PASSED"` (all requirements PASS) / `"FAILED"` (≥1 FAIL) / `"PARTIAL"` (≥1 BLOCKED or UNCLEAR, 0 FAIL). PARTIAL signals incomplete verification; feature `status` remains `"DONE"`.
-- `tests.sessions[]` → append `{ "date": "YYYY-MM-DD", "pass": N, "fail": N, "skip": N }`
-- `tests.fixSync` → fix summaries (if fixes applied)
-- `observations[]` → add (if present)
-- `tests.verificationCheckpoint` → `{ "gaps": ["REQ-ID"], "mismatches": ["description"], "adjustments": "none|added|reworded" }`
-- `tests.evaluation` → per-REQ scores `[{ reqId, acceptancePass, acceptanceTotal, builderPass, builderTotal, verdict }]`
-- `tests.acceptanceTestFile` → path to written acceptance test file (persistent in codebase)
+Build the payload and run:
 
-Single Write replaces the entire file. Prevents drift across ~10 sequential Edits.
+```bash
+echo '{
+  "requirements": [{ "id": "REQ-001", "verdict": "PASS", "acceptancePass": 2, "acceptanceTotal": 2, "builderPass": 3, "builderTotal": 3 }],
+  "checklist": { "T-001": "PASS" },
+  "fixSync": ["..."],
+  "observations": ["..."],
+  "verificationCheckpoint": { "gaps": [], "mismatches": [], "adjustments": "none" },
+  "acceptanceTestFile": "tests/acceptance/....spec.ts",
+  "seedPages": [{ "name": "admin-settings", "routePattern": "app/admin/settings/page.tsx" }],
+  "componentSync": [{ "name": "auth", "src": ["..."], "test": ["..."] }],
+  "designComponent": "Button"
+}' | node ~/.claude/scripts/completion-sync.js sync {feature-name}
+```
 
-**Verification**: parse feature.json once after writing — verify `status === "DONE"` + `tests.finalStatus` set. Display verification result ONLY if it fails.
+Field notes:
 
-**PAGE-seeding (safety net — frontend projects only):** before the backlog mutation, if PHASE 4 applied fixes (`tests.fixSync` entries this session) AND the diff against `pre-skill-status.txt` shows new page-files not yet in `feature.json#files[]` (paths like `app/**/page.tsx`, `src/routes/**`, `pages/**`, or `*Page`/`*Screen`/`*View` components) that don't already exist as backlog features → AskUserQuestion ("PHASE 4 added {N} new page-file(s) — add as PAGE-todos?": Yes all (Recommended) / Selection / No). Per selected page push to `data.features[]`: `{ name: "{kebab-name}", type: "PAGE", status: "TODO", phase: "P3", description: "Page introduced via fix in {parentFeature}. Routes: {route-pattern}", source: "/dev-verify", dependencies: ["{parentFeature}"], parentFeature, auto: true }`. Update `data.updated`, write backlog back.
+- `requirements[]`: one entry per non-`REMOVED` requirement, `verdict` ∈ `PASS|FAIL|BLOCKED|UNCLEAR`
+  (BLOCKED/UNCLEAR need `evidence`); score fields optional.
+- `checklist`: `{ "<checklist-id>": "PASS"|"FAIL"|"skip" }` for every `tests.checklist[]` item.
+- `componentSync`/`designComponent`: only when PHASE 4 touched components / `IS_COMPONENT_VERIFY = true`.
 
-**backlog:** read `.project/backlog.json` → parse JSON (see `shared/BACKLOG.md`). Match on `feature.name` (not `id` — the backlog format uses `name` as the unique key).
-
-Set on the matched entry:
-
-- `status = "DONE"`
-- remove `stage` and `transition` (if present — **except** `transition: "shipping"`, the dev-ship run marker: keep it)
-
-**Forbidden keys** — verify MAY NOT write these on the backlog entry; they belong exclusively to `/dev-refactor` (see `shared/BACKLOG.md` Lifecycle Protocol):
-
-- `shipped`
-- `shippedAt`
-- `shippedSha`
-
-This applies even when a merge SHA is available from PHASE Finalize: the SHA is informational only — never propagate it to the backlog from verify.
-
-**Verification** (after writing, parse the backlog again):
-
-1. Matched entry has `status === "DONE"`. Fails → warning + stop (silent no-op is a bug).
-2. Matched entry has **none** of `["shipped", "shippedAt", "shippedSha"]`. Any present → ABORT: `"Verify wrote forbidden refactor-key(s) {list} to backlog entry {name}. Remove them and retry — these belong to /dev-refactor."`
-3. No match on `feature.name`: log a warning and stop.
-
-**project-context.json**: When fixes in PHASE 4: update `architecture.components[]` — merge changed files into component `src`/`test`, confirm `status: "done"`, add test files.
-
-**COMPONENT design sync** (only if `IS_COMPONENT_VERIFY = true`):
-
-Update `project.json#design.components[]` — look up by name, set `status: "DONE"`. Not found → add with status `"DONE"`. Update `project-context.json#components[]` inventory: add test paths to existing inventory item (merge, do not overwrite).
+Exit codes: `0` full sync · `6` validation failed before any write (missing/unknown verdict, or a
+forbidden key anywhere in the payload) — fall back to authoring the mutations by hand per the field
+list the script's header documents · `7` feature.json was written but no backlog entry matched
+`feature.name` — warn and stop (backlog/context/project files are left untouched) · `3`/`4`/`5` —
+main-root/feature.json/JSON problems, see the script's usage.
 
 ---
 
@@ -100,7 +95,8 @@ git commit -m "{type}({feature}): {subject}
 
 Note: `{acceptance}`, `{auto}`, `{manual}`, `{covered}` counts are used for the VERIFY COMPLETE output table below — not for the commit message.
 
-Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/pre-skill-lint.txt .project/session/active-{name}.json`
+Clean up: `rm -f .project/session/pre-skill-status.txt .project/session/pre-skill-lint.txt` plus
+`node ~/.claude/scripts/ship-checkpoint.js signal-clear {name}`
 
 ---
 

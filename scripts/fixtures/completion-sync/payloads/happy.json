@@ -1,0 +1,21 @@
+{
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "verdict": "PASS",
+      "acceptancePass": 2,
+      "acceptanceTotal": 2,
+      "builderPass": 3,
+      "builderTotal": 3
+    },
+    {
+      "id": "REQ-002",
+      "verdict": "PASS",
+      "acceptancePass": 1,
+      "acceptanceTotal": 1,
+      "builderPass": 2,
+      "builderTotal": 2
+    }
+  ],
+  "checklist": { "T-001": "PASS", "T-002": "PASS" }
+}

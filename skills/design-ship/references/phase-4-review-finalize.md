@@ -10,7 +10,7 @@ The review is user input — flag it amber on the board (see `shared/DEVINFO.md 
 Signal`):
 
 ```bash
-echo '{"feature":"{target}","skill":"ship","startedAt":"{ISO}","waiting":"review"}' > .project/session/active-{target}.json
+echo '{"skill":"ship","waiting":"review"}' | node ~/.claude/scripts/ship-checkpoint.js signal {target}
 ```
 
 ## Step 2 — Live preview
@@ -82,7 +82,7 @@ Recommended — "Houd worktree open" is.
 ## Step 5 — Finalize (merge) + backlog completion
 
 0. **Live signal** — the review is answered; rewrite without `waiting` (merge work resumes):
-   `echo '{"feature":"{target}","skill":"ship","startedAt":"{ISO}"}' > .project/session/active-{target}.json`
+   `echo '{"skill":"ship"}' | node ~/.claude/scripts/ship-checkpoint.js signal {target}`
 1. **Dev-server cwd pre-check** — run the copied Build route Step 12.1 check (lsof on the
    worktree); with `$PREVIEW_OPENED = true` the "Keep running" recommendation flips as documented
    there. A server we started in Step 2: kill it now regardless.
@@ -98,7 +98,7 @@ Recommended — "Houd worktree open" is.
    - COMPONENT: keep `status: "DOING"`, set `lastCheckedSha`, remove `transition` — components
      ship with their consuming page (stock design-check semantics).
    - `data.updated` → today. Sync `project.json#features[]` if status changed.
-4. **Cleanup** — `rm -f .project/session/active-{target}.json`. Session-reorientation guard: if
+4. **Cleanup** — `node ~/.claude/scripts/ship-checkpoint.js signal-clear {target}`. Session-reorientation guard: if
    `pwd` is inside the removed worktree, `cd {main-repo-path}` (the FINALIZE cleanup normally
    handles this — verify).
 

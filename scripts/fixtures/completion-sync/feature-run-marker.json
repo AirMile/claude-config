@@ -1,0 +1,12 @@
+{
+  "name": "run-marker-feature",
+  "type": "FEATURE",
+  "status": "DOING",
+  "requirements": [
+    { "id": "REQ-001", "description": "Something works", "deltaOp": null }
+  ],
+  "tests": {
+    "checklist": [{ "id": "T-001", "title": "It works", "status": "TODO" }],
+    "finalStatus": null
+  }
+}

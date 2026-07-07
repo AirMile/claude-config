@@ -160,6 +160,80 @@ if (cd "$SCT/wt" && echo '{}' | node "$SC" patch t) >/dev/null 2>&1; then
 else
   echo "PASS  ship-checkpoint: patch on missing checkpoint → non-zero exit"; PASS=$((PASS + 1))
 fi
+
+# (f) signal from inside the worktree lands in MAIN, carries feature/startedAt.
+(cd "$SCT/wt" && echo '{"skill":"build"}' | node "$SC" signal t) >/dev/null 2>&1
+SIG=$(node -e 'const s=require(process.argv[1]);process.stdout.write([s.feature,s.skill,!!s.startedAt].join("|"))' "$SCT/.project/session/active-t.json" 2>/dev/null)
+if [ -f "$SCT/.project/session/active-t.json" ] && [ ! -f "$SCT/wt/.project/session/active-t.json" ] && [ "$SIG" = "t|build|true" ]; then
+  echo "PASS  ship-checkpoint: signal writes to main-root with feature/skill/startedAt"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: signal writes to main-root with feature/skill/startedAt (got: $SIG)"; FAIL=$((FAIL + 1))
+fi
+
+# (g) signal with a "waiting" field passes it through untouched.
+(cd "$SCT/wt" && echo '{"skill":"verify","waiting":"manual-tests"}' | node "$SC" signal t) >/dev/null 2>&1
+WAITING=$(node -e 'const s=require(process.argv[1]);process.stdout.write(String(s.waiting))' "$SCT/.project/session/active-t.json" 2>/dev/null)
+if [ "$WAITING" = "manual-tests" ]; then
+  echo "PASS  ship-checkpoint: signal passes through waiting field"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: signal passes through waiting field (got: $WAITING)"; FAIL=$((FAIL + 1))
+fi
+
+# (h) signal without "skill" → non-zero exit.
+if (cd "$SCT/wt" && echo '{}' | node "$SC" signal t) >/dev/null 2>&1; then
+  echo "FAIL  ship-checkpoint: signal without skill → non-zero exit (got 0)"; FAIL=$((FAIL + 1))
+else
+  echo "PASS  ship-checkpoint: signal without skill → non-zero exit"; PASS=$((PASS + 1))
+fi
+
+# (i) signal-clear removes the file; exit 0 even when it is already gone.
+(cd "$SCT/wt" && node "$SC" signal-clear t) >/dev/null 2>&1
+if [ ! -f "$SCT/.project/session/active-t.json" ]; then
+  echo "PASS  ship-checkpoint: signal-clear removes the file"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: signal-clear removes the file"; FAIL=$((FAIL + 1))
+fi
+if (cd "$SCT/wt" && node "$SC" signal-clear t) >/dev/null 2>&1; then
+  echo "PASS  ship-checkpoint: signal-clear on absent file → exit 0"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: signal-clear on absent file → exit 0"; FAIL=$((FAIL + 1))
+fi
+
+# (j) item: append then upsert-by-id → one element, updated fields.
+(cd "$SCT/wt" && echo '{"pipeline":"dev","feature":"t","status":"running","phase":"PHASE 3","results":{}}' | node "$SC" init t) >/dev/null 2>&1
+(cd "$SCT/wt" && echo '{"id":"MT-1","title":"first","verdict":"fail"}' | node "$SC" item t manual) >/dev/null 2>&1
+(cd "$SCT/wt" && echo '{"id":"MT-1","title":"first","verdict":"pass"}' | node "$SC" item t manual) >/dev/null 2>&1
+ITEMS=$(node -e 'const c=require(process.argv[1]);process.stdout.write(JSON.stringify(c.manual.items))' "$SCT/.project/session/ship-t.json" 2>/dev/null)
+if [ "$ITEMS" = '[{"id":"MT-1","title":"first","verdict":"pass"}]' ]; then
+  echo "PASS  ship-checkpoint: item upserts by id (2x same id → 1 element)"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: item upserts by id (2x same id → 1 element) (got: $ITEMS)"; FAIL=$((FAIL + 1))
+fi
+
+# (k) item: a second distinct id appends rather than replacing.
+(cd "$SCT/wt" && echo '{"id":"MT-2","title":"second","verdict":"skip"}' | node "$SC" item t manual) >/dev/null 2>&1
+COUNT=$(node -e 'const c=require(process.argv[1]);process.stdout.write(String(c.manual.items.length))' "$SCT/.project/session/ship-t.json" 2>/dev/null)
+if [ "$COUNT" = "2" ]; then
+  echo "PASS  ship-checkpoint: item appends a new id"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: item appends a new id (got: $COUNT)"; FAIL=$((FAIL + 1))
+fi
+
+# (l) item missing the ledger arg → non-zero exit.
+if (cd "$SCT/wt" && echo '{"id":"MT-3"}' | node "$SC" item t) >/dev/null 2>&1; then
+  echo "FAIL  ship-checkpoint: item missing ledger arg → non-zero exit (got 0)"; FAIL=$((FAIL + 1))
+else
+  echo "PASS  ship-checkpoint: item missing ledger arg → non-zero exit"; PASS=$((PASS + 1))
+fi
+
+# (m) item on a missing checkpoint → non-zero exit.
+(cd "$SCT/wt" && node "$SC" complete t) >/dev/null 2>&1
+if (cd "$SCT/wt" && echo '{"id":"MT-1"}' | node "$SC" item t manual) >/dev/null 2>&1; then
+  echo "FAIL  ship-checkpoint: item on missing checkpoint → non-zero exit (got 0)"; FAIL=$((FAIL + 1))
+else
+  echo "PASS  ship-checkpoint: item on missing checkpoint → non-zero exit"; PASS=$((PASS + 1))
+fi
+
 rm -rf "$SCT"
 
 # --- state-files.py (project-sync manifest copy) ---
@@ -223,6 +297,150 @@ else
   echo "FAIL  state-files: collect/restore manifest + denylist"; FAIL=$((FAIL + 1))
 fi
 rm -rf "$SFT"
+
+# --- completion-sync.js ---
+# Integration test in a throwaway git repo + worktree: the 3-file DONE-sync
+# (feature.json + backlog.json + project-context.json/project.json), run with
+# cwd INSIDE a linked worktree to prove writes land in the MAIN checkout.
+CS="$ROOT/scripts/completion-sync.js"
+CSFX="$ROOT/scripts/fixtures/completion-sync"
+CST=$(mktemp -d)
+(
+  cd "$CST" && git init -q && git config user.email t@t.t && git config user.name t &&
+    git commit -q --allow-empty -m init && git worktree add -q wt -b cswt
+) >/dev/null 2>&1
+
+cs_reset() {
+  rm -rf "$CST/.project"
+  mkdir -p "$CST/.project/features/auth-login" "$CST/.project/features/run-marker-feature" "$CST/.project/features/orphan-feature"
+  cp "$CSFX/feature.json" "$CST/.project/features/auth-login/feature.json"
+  cp "$CSFX/feature-run-marker.json" "$CST/.project/features/run-marker-feature/feature.json"
+  cp "$CSFX/feature-orphan.json" "$CST/.project/features/orphan-feature/feature.json"
+  cp "$CSFX/backlog.json" "$CST/.project/backlog.json"
+  cp "$CSFX/project-context.json" "$CST/.project/project-context.json"
+  cp "$CSFX/project.json" "$CST/.project/project.json"
+}
+
+cs_feature() { node -e "console.log(JSON.stringify(require(process.argv[1])))" "$CST/.project/features/$1/feature.json"; }
+cs_backlog_entry() { node -e "const b=require(process.argv[1]);console.log(JSON.stringify(b.features.find(f=>f.name===process.argv[2]) ?? null))" "$CST/.project/backlog.json" "$1"; }
+
+# (a) happy path: all PASS → finalStatus PASSED, evaluation carries scores,
+# session counts, backlog flips DONE and drops stage/transition (non-shipping),
+# and — the worktree property — nothing is written under wt/.project/.
+cs_reset
+CS_OUT=$(cd "$CST/wt" && cat "$CSFX/payloads/happy.json" | node "$CS" sync auth-login 2>&1)
+CS_CODE=$?
+CS_F=$(cs_feature auth-login)
+CS_STATUS=$(node -e 'const f=JSON.parse(process.argv[1]);process.stdout.write(f.status)' "$CS_F")
+CS_FINAL=$(node -e 'const f=JSON.parse(process.argv[1]);process.stdout.write(f.tests.finalStatus)' "$CS_F")
+CS_SESSION=$(node -e 'const f=JSON.parse(process.argv[1]);const s=f.tests.sessions.at(-1);process.stdout.write([s.pass,s.fail,s.skip,"fixes" in s].join("|"))' "$CS_F")
+CS_EVAL=$(node -e 'const f=JSON.parse(process.argv[1]);const e=f.tests.evaluation.find(x=>x.reqId==="REQ-001");process.stdout.write([e.verdict,e.acceptancePass,e.builderTotal].join("|"))' "$CS_F")
+CS_R3=$(node -e 'const f=JSON.parse(process.argv[1]);const r=f.requirements.find(x=>x.id==="REQ-003");process.stdout.write(String(r.status))' "$CS_F")
+CS_BL=$(cs_backlog_entry auth-login)
+CS_BL_CHECK=$(node -e 'const e=JSON.parse(process.argv[1]);process.stdout.write([e.status,"stage" in e,"transition" in e].join("|"))' "$CS_BL")
+if [ "$CS_CODE" -eq 0 ] && [ "$CS_STATUS" = "DONE" ] && [ "$CS_FINAL" = "PASSED" ] \
+  && [ "$CS_SESSION" = "2|0|0|false" ] && [ "$CS_EVAL" = "PASS|2|3" ] && [ "$CS_R3" = "undefined" ] \
+  && [ "$CS_BL_CHECK" = "DONE|false|false" ] && [ ! -f "$CST/wt/.project/features/auth-login/feature.json" ]; then
+  echo "PASS  completion-sync: happy path → PASSED, scores, session counts, backlog flip, main-root write"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: happy path (code=$CS_CODE status=$CS_STATUS final=$CS_FINAL session=$CS_SESSION eval=$CS_EVAL req3=$CS_R3 backlog=$CS_BL_CHECK)"; FAIL=$((FAIL + 1))
+fi
+
+# (b) 1x BLOCKED, 0 FAIL → PARTIAL.
+cs_reset
+(cd "$CST/wt" && cat "$CSFX/payloads/partial.json" | node "$CS" sync auth-login) >/dev/null 2>&1
+CS_FINAL_P=$(node -e 'const f=require(process.argv[1]);process.stdout.write(f.tests.finalStatus)' "$CST/.project/features/auth-login/feature.json")
+if [ "$CS_FINAL_P" = "PARTIAL" ]; then
+  echo "PASS  completion-sync: 1x BLOCKED, 0 FAIL → PARTIAL"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: 1x BLOCKED, 0 FAIL → PARTIAL (got: $CS_FINAL_P)"; FAIL=$((FAIL + 1))
+fi
+
+# (c) 1x FAIL → FAILED.
+cs_reset
+(cd "$CST/wt" && cat "$CSFX/payloads/failed.json" | node "$CS" sync auth-login) >/dev/null 2>&1
+CS_FINAL_F=$(node -e 'const f=require(process.argv[1]);process.stdout.write(f.tests.finalStatus)' "$CST/.project/features/auth-login/feature.json")
+if [ "$CS_FINAL_F" = "FAILED" ]; then
+  echo "PASS  completion-sync: 1x FAIL → FAILED"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: 1x FAIL → FAILED (got: $CS_FINAL_F)"; FAIL=$((FAIL + 1))
+fi
+
+# (d) missing verdict for an active requirement → exit 6, feature.json untouched.
+cs_reset
+if (cd "$CST/wt" && cat "$CSFX/payloads/missing-verdict.json" | node "$CS" sync auth-login) >/dev/null 2>&1; then
+  echo "FAIL  completion-sync: missing verdict → non-zero exit (got 0)"; FAIL=$((FAIL + 1))
+else
+  CS_UNCHANGED=$(node -e 'const f=require(process.argv[1]);process.stdout.write(f.status)' "$CST/.project/features/auth-login/feature.json")
+  if [ "$CS_UNCHANGED" = "DOING" ]; then
+    echo "PASS  completion-sync: missing verdict → exit 6, feature.json untouched"; PASS=$((PASS + 1))
+  else
+    echo "FAIL  completion-sync: missing verdict → feature.json was mutated (status=$CS_UNCHANGED)"; FAIL=$((FAIL + 1))
+  fi
+fi
+
+# (e) transition:"shipping" survives; a non-shipping transition + stage do not.
+cs_reset
+(cd "$CST/wt" && cat "$CSFX/payloads/marker.json" | node "$CS" sync run-marker-feature) >/dev/null 2>&1
+CS_MARKER=$(cs_backlog_entry run-marker-feature)
+CS_MARKER_CHECK=$(node -e 'const e=JSON.parse(process.argv[1]);process.stdout.write([e.status,e.transition].join("|"))' "$CS_MARKER")
+if [ "$CS_MARKER_CHECK" = "DONE|shipping" ]; then
+  echo "PASS  completion-sync: transition:shipping survives the sync"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: transition:shipping survives the sync (got: $CS_MARKER_CHECK)"; FAIL=$((FAIL + 1))
+fi
+
+# (f) a forbidden refactor-owned key anywhere in the payload → exit 6, nothing written.
+cs_reset
+if (cd "$CST/wt" && cat "$CSFX/payloads/forbidden.json" | node "$CS" sync auth-login) >/dev/null 2>&1; then
+  echo "FAIL  completion-sync: forbidden key in payload → non-zero exit (got 0)"; FAIL=$((FAIL + 1))
+else
+  CS_UNCHANGED2=$(node -e 'const f=require(process.argv[1]);process.stdout.write(f.status)' "$CST/.project/features/auth-login/feature.json")
+  if [ "$CS_UNCHANGED2" = "DOING" ]; then
+    echo "PASS  completion-sync: forbidden key in payload → exit 6, nothing written"; PASS=$((PASS + 1))
+  else
+    echo "FAIL  completion-sync: forbidden key in payload → feature.json was mutated"; FAIL=$((FAIL + 1))
+  fi
+fi
+
+# (g) feature name with no backlog match → exit 7, feature.json IS written, backlog untouched.
+cs_reset
+if (cd "$CST/wt" && cat "$CSFX/payloads/orphan.json" | node "$CS" sync orphan-feature) >/dev/null 2>&1; then
+  echo "FAIL  completion-sync: no backlog match → non-zero exit (got 0)"; FAIL=$((FAIL + 1))
+else
+  CS_ORPHAN_STATUS=$(node -e 'const f=require(process.argv[1]);process.stdout.write(f.status)' "$CST/.project/features/orphan-feature/feature.json")
+  CS_BL_LEN=$(node -e 'const b=require(process.argv[1]);process.stdout.write(String(b.features.length))' "$CST/.project/backlog.json")
+  if [ "$CS_ORPHAN_STATUS" = "DONE" ] && [ "$CS_BL_LEN" = "3" ]; then
+    echo "PASS  completion-sync: no backlog match → exit 7, feature.json written, backlog untouched"; PASS=$((PASS + 1))
+  else
+    echo "FAIL  completion-sync: no backlog match (status=$CS_ORPHAN_STATUS backlogLen=$CS_BL_LEN)"; FAIL=$((FAIL + 1))
+  fi
+fi
+
+# (h) seedPages → new PAGE backlog entry with the exact expected shape.
+cs_reset
+(cd "$CST/wt" && cat "$CSFX/payloads/seedpages.json" | node "$CS" sync auth-login) >/dev/null 2>&1
+CS_PAGE=$(cs_backlog_entry admin-settings)
+CS_PAGE_CHECK=$(node -e 'const e=JSON.parse(process.argv[1]);process.stdout.write([e.type,e.status,e.phase,e.source,e.parentFeature,e.auto,JSON.stringify(e.dependencies)].join("|"))' "$CS_PAGE")
+if [ "$CS_PAGE_CHECK" = "PAGE|TODO|P3|/dev-verify|auth-login|true|[\"auth-login\"]" ]; then
+  echo "PASS  completion-sync: seedPages pushes the expected PAGE shape"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: seedPages shape (got: $CS_PAGE_CHECK)"; FAIL=$((FAIL + 1))
+fi
+
+# (i) componentSync merges into architecture.components[] + designComponent upserts project.json.
+cs_reset
+(cd "$CST/wt" && cat "$CSFX/payloads/designcomponent.json" | node "$CS" sync auth-login) >/dev/null 2>&1
+CS_ARCH=$(node -e 'const c=require(process.argv[1]);const a=c.architecture.components.find(x=>x.name==="auth");process.stdout.write([a.status,a.src.includes("src/auth/session.ts"),a.src.includes("src/auth/oauth.ts")].join("|"))' "$CST/.project/project-context.json")
+CS_DESIGN=$(node -e 'const p=require(process.argv[1]);const c=p.design.components.find(x=>x.name==="LoginForm");process.stdout.write(c?c.status:"missing")' "$CST/.project/project.json")
+CS_INV=$(node -e 'const c=require(process.argv[1]);const i=c.components.find(x=>x.name==="LoginForm");process.stdout.write(JSON.stringify(i.test))' "$CST/.project/project-context.json")
+if [ "$CS_ARCH" = "done|true|true" ] && [ "$CS_DESIGN" = "DONE" ] && [ "$CS_INV" = '["src/auth/oauth.test.ts"]' ]; then
+  echo "PASS  completion-sync: componentSync merge + designComponent upsert"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: componentSync/designComponent (arch=$CS_ARCH design=$CS_DESIGN inv=$CS_INV)"; FAIL=$((FAIL + 1))
+fi
+
+rm -rf "$CST"
 
 # --- learnings-search.js ---
 # Relevance-scored memory loader/search. .project/ is gitignored, so fixtures are
@@ -320,6 +538,116 @@ else
   FAIL=$((FAIL + 1))
 fi
 rm -rf "$LST"
+
+# --- learnings-write.js ---
+# Write side of the learnings library (dedup on append; consolidation planning
+# + execution on gate/consolidate). Uses an explicit project-root (no git
+# worktree needed here — that resolution path is already covered by
+# ship-checkpoint.js / completion-sync.js's worktree tests).
+LW="$ROOT/scripts/learnings-write.js"
+LWFX="$ROOT/scripts/fixtures/learnings-write"
+LWT=$(mktemp -d)
+mkdir -p "$LWT/proj/.project"
+
+lw_reset_small() { cp "$LWFX/context.json" "$LWT/proj/.project/project-context.json"; }
+lw_reset_large() { cp "$LWFX/context-large.json" "$LWT/proj/.project/project-context.json"; }
+lw_learnings_len() { node -e 'const c=require(process.argv[1]);process.stdout.write(String(c.learnings.length))' "$LWT/proj/.project/project-context.json"; }
+
+# (a) append a genuinely new entry → appended, date stamped, nothing skipped.
+lw_reset_small
+LW_A=$(cd "$LWT" && cat "$LWFX/payloads/new.json" | node "$LW" append proj)
+LW_A_CHECK=$(echo "$LW_A" | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write([r.appended,r.skipped.length].join("|"))')
+LW_A_DATE=$(node -e 'const c=require(process.argv[1]);const e=c.learnings.find(l=>l.feature==="dashboard");process.stdout.write(e&&e.date?"has-date":"no-date")' "$LWT/proj/.project/project-context.json")
+if [ "$LW_A_CHECK" = "1|0" ] && [ "$LW_A_DATE" = "has-date" ] && [ "$(lw_learnings_len)" = "3" ]; then
+  echo "PASS  learnings-write: append a new entry (date stamped, 0 skipped)"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: append a new entry (got: $LW_A_CHECK date=$LW_A_DATE len=$(lw_learnings_len))"; FAIL=$((FAIL + 1))
+fi
+
+# (b) exact-tuple duplicate (same type + normalized summary + author) → skipped, reason "exact".
+lw_reset_small
+LW_B=$(cd "$LWT" && cat "$LWFX/payloads/exact-dup.json" | node "$LW" append proj)
+LW_B_CHECK=$(echo "$LW_B" | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write([r.appended,r.skipped[0]&&r.skipped[0].reason].join("|"))')
+if [ "$LW_B_CHECK" = "0|exact" ] && [ "$(lw_learnings_len)" = "2" ]; then
+  echo "PASS  learnings-write: exact-tuple duplicate skipped"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: exact-tuple duplicate (got: $LW_B_CHECK len=$(lw_learnings_len))"; FAIL=$((FAIL + 1))
+fi
+
+# (c) near-duplicate (Jaccard >= 0.55, same type) → skipped, reason "jaccard".
+lw_reset_small
+LW_C=$(cd "$LWT" && cat "$LWFX/payloads/jaccard-dup.json" | node "$LW" append proj)
+LW_C_CHECK=$(echo "$LW_C" | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write([r.appended,r.skipped[0]&&r.skipped[0].reason].join("|"))')
+if [ "$LW_C_CHECK" = "0|jaccard" ]; then
+  echo "PASS  learnings-write: near-duplicate (Jaccard) skipped"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: near-duplicate (Jaccard) (got: $LW_C_CHECK)"; FAIL=$((FAIL + 1))
+fi
+
+# (d) two near-identical entries in the SAME batch → first appended, second deduped against it.
+lw_reset_small
+LW_D=$(cd "$LWT" && cat "$LWFX/payloads/within-batch-dup.json" | node "$LW" append proj)
+LW_D_CHECK=$(echo "$LW_D" | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write([r.appended,r.skipped.length].join("|"))')
+if [ "$LW_D_CHECK" = "1|1" ]; then
+  echo "PASS  learnings-write: within-batch duplicate deduped against its own batch"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: within-batch duplicate (got: $LW_D_CHECK)"; FAIL=$((FAIL + 1))
+fi
+
+# (e) gate at/under the 60 threshold → silent, exit 0.
+lw_reset_small
+LW_E_OUT=$(cd "$LWT" && node "$LW" gate proj 2>/dev/null); LW_E_CODE=$?
+if [ "$LW_E_CODE" -eq 0 ] && [ -z "$LW_E_OUT" ]; then
+  echo "PASS  learnings-write: gate at/under 60 → silent, exit 0"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: gate at/under 60 (code=$LW_E_CODE out=$LW_E_OUT)"; FAIL=$((FAIL + 1))
+fi
+
+# (f) gate over 60 → plan: age-out list, threshold-4 group + threshold-3-escalation
+# group (sorted by feature), tag-union (count desc, vocab-order tiebreak), author
+# unification (identical → kept, mixed → null).
+lw_reset_large
+LW_F_OUT=$(cd "$LWT" && node "$LW" gate proj)
+LW_F_CHECK=$(echo "$LW_F_OUT" | node -e '
+const p = JSON.parse(require("fs").readFileSync(0));
+const g0 = p.groups[0], g1 = p.groups[1];
+process.stdout.write([
+  p.needsConsolidation, p.before, p.ageOut.length, p.groups.length,
+  g0.feature, g0.entries.length, g0.merged.author, JSON.stringify(g0.merged.tags), g0.merged.summary === "",
+  g1.feature, g1.entries.length, g1.merged.author, JSON.stringify(g1.merged.tags),
+].join("|"));
+')
+if [ "$LW_F_CHECK" = "true|65|4|2|grouped-feature|5|alice|[\"auth\",\"api\",\"db\"]|true|small-group|3||[\"perf\"]" ]; then
+  echo "PASS  learnings-write: gate over 60 → age-out + threshold-4/3 groups + tag-union + author rules"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: gate over 60 (got: $LW_F_CHECK)"; FAIL=$((FAIL + 1))
+fi
+
+# (g) consolidate both groups → active list shrinks, archive holds all originals,
+# report line matches, and a second gate is then silent (idempotent).
+lw_reset_large
+LW_G_OUT=$(cd "$LWT" && cat "$LWFX/payloads/consolidate-merges.json" | node "$LW" consolidate proj)
+LW_G_ARCHIVE=$(ls "$LWT/proj/.project/archive/learnings-"*.json 2>/dev/null | head -1)
+LW_G_ARCHIVED_LEN=$([ -n "$LW_G_ARCHIVE" ] && node -e 'const a=require(process.argv[1]);process.stdout.write(String(a.archived.length))' "$LW_G_ARCHIVE" || echo "no-archive")
+LW_G_GATE2=$(cd "$LWT" && node "$LW" gate proj 2>/dev/null)
+if [ "$LW_G_OUT" = "Learnings consolidated: 2 merged, 12 archived (65 → 55)" ] \
+  && [ "$(lw_learnings_len)" = "55" ] && [ "$LW_G_ARCHIVED_LEN" = "12" ] && [ -z "$LW_G_GATE2" ]; then
+  echo "PASS  learnings-write: consolidate merges + archives + idempotent second gate"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: consolidate (out='$LW_G_OUT' len=$(lw_learnings_len) archived=$LW_G_ARCHIVED_LEN gate2='$LW_G_GATE2')"; FAIL=$((FAIL + 1))
+fi
+rm -rf "$LWT/proj/.project/archive"
+
+# (h) consolidate with empty merges → age-out only, qualifying groups left untouched.
+lw_reset_large
+LW_H_OUT=$(cd "$LWT" && cat "$LWFX/payloads/consolidate-empty.json" | node "$LW" consolidate proj 2>/dev/null)
+if [ "$LW_H_OUT" = "Learnings consolidated: 0 merged, 4 archived (65 → 61)" ] && [ "$(lw_learnings_len)" = "61" ]; then
+  echo "PASS  learnings-write: consolidate with empty merges → age-out only"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: consolidate with empty merges (out='$LW_H_OUT' len=$(lw_learnings_len))"; FAIL=$((FAIL + 1))
+fi
+
+rm -rf "$LWT"
 
 echo
 echo "Result: $PASS passed, $FAIL failed"

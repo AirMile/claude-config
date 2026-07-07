@@ -11,7 +11,9 @@ standalone.
 
 1. **Phase tracking** — do **not** call `TaskCreate`/`TaskUpdate`. game-ship owns phase tracking.
    Follow the workflow's phases in order and track progress in prose. Ignore every "call TaskCreate"
-   / "mark PHASE X → …" instruction and every phase-seed block.
+   / "mark PHASE X → …" instruction and every phase-seed block. The checkpoint is written only by the
+   **designated orchestrator** (the main chat, or the ship-orchestrator agent — AGENT O — while it
+   holds the write token) — worker agents never touch it.
 2. **Plan mode** — **never** call `EnterPlanMode`/`ExitPlanMode`. You are already a subagent; run all
    analytical/design phases directly. Ignore "plan mode must be active before …" constraints and
    every "Enter Plan Mode NOW" / "write to the plan file" step (author the design in-context instead).
@@ -38,9 +40,10 @@ standalone.
    (rule 9).
 7. **Worktree — role-bound.** Build-agent: create the worktree (`shared/WORKTREE.md → Auto-create`),
    commit, **never merge**. Verify/refactor-agent: use the existing worktree; **never**
-   finalize/merge/`ExitWorktree`/`git worktree remove`. The main chat owns finalize (PHASE 4, after
-   refactor). Ignore the workflow's PHASE Finalize / `FINALIZE.md` / `completion-finalize.md` merge
-   phase entirely.
+   finalize/merge/`ExitWorktree`/`git worktree remove`. The ship orchestrator owns finalize (PHASE 4,
+   after refactor) — AGENT O on the no-playtest path, the main chat on the playtest path and the
+   inline fallback. Ignore the workflow's PHASE Finalize / `FINALIZE.md` / `completion-finalize.md`
+   merge phase entirely.
 8. **No game-window launch in a subagent** — **never** call `mcp__godot-mcp__run_project` (or any
    MCP call that opens an interactive game window / `get_debug_output` on a live window). A subagent
    has **no display**. Build and GUT auto-verify run **headless only**
@@ -69,10 +72,10 @@ standalone.
 
 ## Git boundary (recap of rule 7)
 
-The only git integration is the main chat's PHASE 4 finalize (after refactor). Build commits in the
-worktree; verify commits fixes in the worktree; refactor commits in the worktree on the feature
-branch (pre-merge). No agent runs `git merge`,
-`git branch -d/-D`, `git worktree remove`, or switches to `main`.
+The only git integration is the ship orchestrator's PHASE 4 finalize (after refactor — AGENT O on
+the no-playtest path, the main chat otherwise). Build commits in the worktree; verify commits fixes
+in the worktree; refactor commits in the worktree on the feature branch (pre-merge). No agent runs
+`git merge`, `git branch -d/-D`, `git worktree remove`, or switches to `main`.
 
 ## On failure
 
@@ -91,7 +94,11 @@ each `_START` … `_END`. Keep prose minimal — the block IS the return value.
 
 In both cases: always include `autoDecisions[]` (rule 3).
 
-## Orchestrator side (main chat)
+## Orchestrator side
+
+The orchestrator role is held by the background AGENT O for PHASE 1–4 on the no-playtest path, and
+by the main chat elsewhere (PHASE 3's playtest round, and the inline fallback when the
+Agent/Workflow tools are unavailable).
 
 - **Workflow path (primary)**: the workflow's return value carries each agent's schema-validated
   result object — read fields directly, nothing to parse. **Agent-tool fallback**: parse the block

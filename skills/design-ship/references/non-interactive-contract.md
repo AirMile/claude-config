@@ -42,10 +42,10 @@ be run standalone; you are not running it standalone.
     **kill it before returning**. Never leak background processes.
 11. **ToolSearch** — only load the deferred tools you actually use. Do **not** load
     `TaskCreate`/`TaskUpdate` (rule 1) or `EnterPlanMode` (rule 2).
-12. **Board live signal** — first action after reading your workflow: write
-    `.project/session/active-{feature}.json` (main repo) with your phase verb —
-    `{"feature":"{feature}","skill":"{build|content|check}","startedAt":"{ISO}"}` — so the backlog
-    board badge follows the pipeline. Do **not** remove it on exit; design-ship owns cleanup.
+12. **Board live signal** — first action after reading your workflow: write the board's live signal
+    with your phase verb — `echo '{"skill":"{build|content|check}"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}`
+    (the script resolves the main checkout itself, safe from any cwd) — so the backlog board badge
+    follows the pipeline. Do **not** remove it on exit; design-ship owns cleanup.
 13. **Memory WRITE** — **do** keep your workflow's domain `.project/` writes: block inventory +
     `design.*` sync + tokenDrift cleanup (build), backlog stage/contentStatus writes, glossary
     terms (content). Those are your single-writer duty. **Never** write `status: "DONE"`,

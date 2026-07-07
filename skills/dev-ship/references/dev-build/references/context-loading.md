@@ -232,7 +232,7 @@ Output: `TEST-DEPS: ok | patched ({list}) | skipped`.
 **Signal active feature**:
 
 ```bash
-echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+echo '{"skill":"build"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}
 ```
 
 **Display** feature overview:

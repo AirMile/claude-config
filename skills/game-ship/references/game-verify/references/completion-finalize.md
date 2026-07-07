@@ -94,23 +94,31 @@ Recorded in test results.
    Feature ready for integration.
    ```
 
-2. **Parallel sync** (feature.json + backlog + project.json + project-context.json):
+2. **3-file sync** (feature.json + backlog + project.json + project-context.json):
 
-   Read in parallel (skip if not exists):
-   - `.project/features/{feature-name}/feature.json`
-   - `.project/backlog.json`
-   - `.project/project.json`
-   - `.project/project-context.json`
+   `node ~/.claude/scripts/completion-sync.js` owns this whole sync — it computes every derived
+   field (`finalStatus`, session pass/fail/skip/fixes counts, per-REQ `evaluation`) and structurally
+   never writes the backlog's refactor-owned keys (`shipped`/`shippedAt`/`shippedSha` — see
+   `shared/BACKLOG.md` Lifecycle Protocol; this includes preserving `transition: "shipping"`, the
+   game-ship run marker, exactly like dev-verify's sync). You supply only judgment:
 
-   Mutate in memory:
+   ```bash
+   echo '{
+     "pipeline": "game",
+     "requirements": [{ "id": "REQ-001", "verdict": "PASS" }],
+     "checklist": { "T-001": "PASS" },
+     "fixSync": ["..."],
+     "observations": ["..."],
+     "verificationCheckpoint": { "gaps": [], "mismatches": [], "adjustments": "none" },
+     "componentSync": [{ "name": "player-controller", "src": ["..."], "test": ["..."] }]
+   }' | node ~/.claude/scripts/completion-sync.js sync {feature-name}
+   ```
 
-   **feature.json**: `status` → `"DONE"`, `requirements[].status` → `"PASS"` / `"FAIL"` / `"BLOCKED"` / `"UNCLEAR"` per item (BLOCKED/UNCLEAR include `evidence` string), `tests.checklist[].status` → update per item with evidence. Add/update `tests` section: `finalStatus` (`"PASSED"` all PASS / `"FAILED"` ≥1 FAIL / `"PARTIAL"` ≥1 BLOCKED or UNCLEAR, 0 FAIL), `sessions[]` (push `{ date, pass, fail, fixes }`), `fixSync`, `verificationCheckpoint` (gaps, mismatches, adjustments). Add `observations[]` if user reported out-of-scope issues. Do NOT overwrite other sections.
-
-   **Backlog** (see `shared/BACKLOG.md → Lifecycle Protocol → Write`): set `.status = "DONE"`, remove `transition`, `data.updated` → current date.
-
-   **project.json**: Feature status → `"DONE"`. Merge new packages if relevant.
-
-   **project-context.json**: On fixes in PHASE 3: update `architecture.components[]` — merge modified files to component `src`/`test`, confirm `status: "done"`.
+   `requirements[]`/`checklist` follow the same shape as dev-verify (see
+   `dev-verify/references/completion-sync.md § Step 3`). `componentSync` only when PHASE 3 fixes
+   touched `architecture.components[]`. Exit `6` (validation failed, nothing written) or `7` (no
+   backlog match, feature.json written) fall back to authoring the mutations by hand per the
+   script's header.
 
    **Learning Extraction** — append to `project-context.json#learnings[]` per [shared/LEARNING-EXTRACTION.md § Writer Append Protocol](../../shared/LEARNING-EXTRACTION.md) (schema, relevance filter, two-stage dedup). game-verify source mapping — read the just-written `feature.json`:
    - `tests.fixSync[]` and `tests.sessions[].fixes` → type `pitfall`, source `extracted` (bugs with root causes)
@@ -118,17 +126,12 @@ Recorded in test results.
 
    `build.decisions[]` is mapped by game-build (single writer) — do not re-map here.
 
-   Write in parallel:
-   - Write `feature.json`
-   - Edit `.project/backlog.json`
-   - Write `project.json`
-   - Write `project-context.json` (if context/architecture/learnings changed)
-
 3. **Scoped auto-commit** — follow [shared/SCOPED-COMMIT.md](../../shared/SCOPED-COMMIT.md). game-verify deltas:
    - **Baseline**: status form — `.project/session/pre-skill-status.txt`.
    - **OVERLAP policy**: interactive. **Fallback**: `git add -A`.
    - **Commit**: `test({feature}): verified - all {N} items pass` with body `Playtest verification complete.` / `- Fixed: {list of fixes}` / `- Tests added: {count}`.
-   - **Cleanup**: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+   - **Cleanup**: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt` plus
+     `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature-name}`
 
 ## Output
 

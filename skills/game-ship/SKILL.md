@@ -29,7 +29,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.5.0
+  version: 0.6.0
   category: game
 ---
 
@@ -37,8 +37,10 @@ metadata:
 
 Runs the full Godot gamedev pipeline — **define → build → GUT auto-verify → human playtest → refactor** —
 in one chat. Heavy work runs in isolated inline agents (context stays clean); only human interaction
-(define choices, the live playtest) happens in the main chat. `game-ship` is the **standalone** game
-pipeline: it carries its own vendored copies of the four phase workflows under
+(define choices, the live playtest) happens in the main chat; the autonomous PHASE 1–4 stretch runs
+in one background orchestrator agent (AGENT O) so the define-heavy main chat wakes once. `game-ship`
+is the **standalone** game pipeline: it carries its own vendored copies of the four phase workflows
+under
 `references/game-{define,build,verify,refactor}/` and drives them internally — there are no separate
 `/game-define`…`/game-refactor` skills anymore.
 
@@ -62,13 +64,17 @@ pipeline: it carries its own vendored copies of the four phase workflows under
   (`typeof args === "string" ? JSON.parse(args) : args`) — a runtime may deliver `args` as a JSON
   string. The Agent-tool path in each `agent-*.md` is the **fallback** (model override only there —
   it cannot set effort).
+- **Workflow-in-workflow nesting is forbidden, but a background agent may call the Workflow tool** —
+  that is what makes AGENT O (below) possible: it is a background `Agent` that itself launches the
+  PHASE 1+2 and PHASE 4 workflows.
 
-  | Agent                 | Model    | Effort   | Why                                                                   |
-  | --------------------- | -------- | -------- | --------------------------------------------------------------------- |
-  | AGENT 1 build         | `sonnet` | `high`   | contract-driven TDD — feature.json + tests bound the work             |
-  | AGENT 2 verify        | `opus`   | `high`   | the one independent adversarial GUT judgment; backstops build         |
-  | AGENT 3 refactor      | `sonnet` | `medium` | GUT test-guarded (revert-on-red), low risk                            |
-  | AGENT F fix (PHASE 3) | `sonnet` | `high`   | plan-bound fixes; the round gate did the thinking (Opus in plan mode) |
+  | Agent                 | Model    | Effort   | Why                                                                                        |
+  | --------------------- | -------- | -------- | ------------------------------------------------------------------------------------------ |
+  | AGENT O orchestrator  | `sonnet` | n/a      | Agent tool, not Workflow — mechanical routing; judgment lives in the workflows it launches |
+  | AGENT 1 build         | `sonnet` | `high`   | contract-driven TDD — feature.json + tests bound the work                                  |
+  | AGENT 2 verify        | `opus`   | `high`   | the one independent adversarial GUT judgment; backstops build                              |
+  | AGENT 3 refactor      | `sonnet` | `medium` | GUT test-guarded (revert-on-red), low risk                                                 |
+  | AGENT F fix (PHASE 3) | `sonnet` | `high`   | plan-bound fixes; the round gate did the thinking (Opus in plan mode)                      |
 
 > Full rationale (two-touchpoint model, playtest 85/15, why fresh verify contexts, checkpoint
 > durability, `.project/` sharing, prompt-by-pointer): `references/design-rationale.md`.
@@ -80,13 +86,16 @@ pipeline: it carries its own vendored copies of the four phase workflows under
 `completed` at the end. During context compaction the task list remains visible.
 
 **Durable checkpoint (pause/resume across sessions)** — beyond the compaction-safe `TaskCreate` list,
-the orchestrator mirrors the run to `.project/session/ship-{feature}.json` at every phase boundary via
-`ship-checkpoint.js` (use `pipeline: "game"`; **only the main chat writes it** — subagents never touch
-it, contract rule 1). Schema, write points 0–5, and the board's **parked** row:
-`shared/SHIP-CHECKPOINT.md`; resume detection, fast-path direct-resume, and orphan-cleanup:
-`shared/SHIP-RESUME.md`. This skill follows both — the per-phase field patches below are the only
-checkpoint detail restated here. Note the PHASE 2→3 boundary is a **deliberate handoff stop** (park +
-fresh-session resume into the playtest — see the green branch).
+the run is mirrored to `.project/session/ship-{feature}.json` at every phase boundary via
+`ship-checkpoint.js` (use `pipeline: "game"`). **Exactly one designated writer at a time**: the main
+chat owns the checkpoint by default, transfers ownership to the background orchestrator agent
+(AGENT O) at write point 1b, and regains it when AGENT O's final write clears the `orchestrator`
+marker (worker subagents never touch it — contract rule 1). Schema, write points 0–5 (including 1b),
+and the board's **parked** row: `shared/SHIP-CHECKPOINT.md`; resume detection, fast-path
+direct-resume, and orphan-cleanup: `shared/SHIP-RESUME.md`. This skill follows both — the per-phase
+field patches below are the only checkpoint detail restated here. Note the PHASE 2→3 boundary is a
+**deliberate handoff stop**: park, then a fresh-session resume into the playtest (see AGENT O's
+`parked` return) when playtest items remain.
 
 1. PHASE 0: Define + Classify + Auto-derive technique plan
 2. PHASE 1: Build (AGENT 1)
@@ -148,163 +157,91 @@ into each PHASE 1/2/4 agent's **pointer file** — so no agent re-bootstraps its
 chat is the context-hub. Each `agent-*.md` § Spawn documents the pointer-file template that carries
 this slice.
 
-### PHASE 1+2: Build (AGENT 1) → GUT auto-verify (AGENT 2) — Workflow 1
+### PHASE 1–4: Background orchestrator (AGENT O)
 
 > **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`. Rewrite the board live-signal:
-> `echo '{"feature":"{feature}","skill":"build","startedAt":"{ISO}"}' > .project/session/active-{feature}.json`
-> (the agents' copied workflows keep it fresh during their runs), and **update the checkpoint**
-> (`shared/SHIP-CHECKPOINT.md` atomic write): `phase: "PHASE 1"`, `completedPhases: ["PHASE 0"]`.
+> `echo '{"skill":"build"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}`,
+> and **update the checkpoint** (`shared/SHIP-CHECKPOINT.md` atomic write): `phase: "PHASE 1"`,
+> `completedPhases: ["PHASE 0"]`.
 > Read `.claude/skills/game-ship/references/agent-build.md` and
 > `.claude/skills/game-ship/references/agent-verify.md` (their **§ Spawn → Pointer file** templates
-> only — do **not** read `non-interactive-contract.md` or the `references/prompts/*` bodies; the
-> agents read those themselves). **Write each pointer + SHIP_CONTEXT-slice file** —
-> `.project/session/ship-prompts/{feature}-build.txt` and `-verify.txt` — keeping the literal
-> `{worktreePath}` placeholder in the verify file (the script fills it), and pass the **paths**
-> (never inline). Then launch:
-> `Workflow({scriptPath: ".claude/skills/game-ship/references/workflows/ship-game-phase12.js", args: {feature, buildPromptPath, verifyPromptPath, resume}})`
-> — `resume` is `null` on a fresh run, or the **green** results `{build, verify}` from the
-> checkpoint on a Resume (the script short-circuits green results and re-runs anything failed).
-> **Immediately after launch**, write the returned `runId` + `activeWorkflow: "phase12"` + the
-> prompt-file **paths** as `prompts` to the checkpoint (so a mid-workflow crash is resumable via
-> `resumeFromRunId`; the prompt files persist for reassembly).
+> only — do **not** read `non-interactive-contract.md` or the `references/prompts/*` bodies). **Write
+> each pointer + SHIP_CONTEXT-slice file** — `.project/session/ship-prompts/{feature}-build.txt` and
+> `-verify.txt` — keeping the literal `{worktreePath}` placeholder in the verify file, and pass the
+> **paths** (never inline). This stays main-chat work: the main chat holds `SHIP_CONTEXT` (including
+> the resolved `{godot_executable}`) in memory from PHASE 0; AGENT O never re-bootstraps it.
+>
+> **Write point 1b**: patch `{"orchestrator":{"status":"running","startedAt":"{ISO}"}}` via
+> `ship-checkpoint.js` — this is your **last** checkpoint write before spawning; from here AGENT O
+> holds the write token. Spawn per
+> `.claude/skills/game-ship/references/agent-orchestrator.md § Spawn`, passing the two pointer paths
+> above. **End the turn** with a one-liner ("Shipping `{feature}` in the background — I'll report
+> when it returns.") — no further tool calls.
+>
+> **On wake** (task-notification with AGENT O's result): per `agent-orchestrator.md`'s Wake
+> handling, branch on `status`:
+>
+> - **`"complete"`** → proceed to PHASE 5.
+> - **`"parked"`** (playtest items remain) → print the handoff message below — no further tool calls.
+>   PHASE 3/4/5 run in a fresh session. Emit it in the runtime language (LANGUAGE.md); this template
+>   is the English source:
+>   ```
+>   PHASE 1+2 green — {testsTotal} tests pass, {N} playtest items remain.
+>   To keep this chat cheap the run stops here; the checkpoint is ready to resume.
+>
+>   → Run /clear (or open a new chat), then: /game-ship {feature}
+>     You land directly in the playtest round (worktree + game window are relaunched automatically).
+>
+>   The board shows this run as parked (⏸) with the same resume button.
+>   Prefer to continue here instead? Say so and I'll run PHASE 3 in this session.
+>   ```
+>   **Same-session escape hatch**: if the user replies "continue here" (or equivalent), read
+>   `.claude/skills/game-ship/references/prompts/orchestrator.md` and execute it inline in this chat
+>   yourself instead — re-arm the live signal first; you hold the write token throughout.
+> - **`"failed"`** → print, depending on `failedPhase`, then proceed to PHASE 5's failure path:
+>   - `"build"`: "Build failed at `{build.failedAt}`, worktree intact at `{build.worktreePath}` — run
+>     `/game-debug {feature}`, or re-run `/game-ship {feature}` to resume."
+>   - `"verify"`: "GUT auto-verify failed at `{verify.failedAt}`, worktree intact — run
+>     `/game-debug {feature}`, or re-run `/game-ship {feature}` to resume."
+>
+> **Fallback** (Agent tool unavailable): read
+> `.claude/skills/game-ship/references/prompts/orchestrator.md` and execute it inline in this chat
+> yourself — same contract, main chat holds the write token throughout.
 
-The workflow runs both agents sequentially in isolated contexts (model/effort matrix in § Design) and
-returns one structured object — no result-block parsing. AGENT 1 creates the worktree, builds
-test-first (RED-GREEN) with the GUT regression gate + `playtest_scene.tscn`, and commits but **never
-merges**; AGENT 2 verifies the COVERED GUT items in a **fresh context** (adversarial), reusing the
-build worktree (warm `.godot` cache), stops **before the playtest and finalize**, and never merges.
-The script **skips verify when build fails**. Full agent behaviour: `agent-build.md` / `agent-verify.md`.
+AGENT O runs both agents sequentially in isolated contexts (model/effort matrix in § Design),
+launches PHASE 4's refactor/finalize when no playtest items remain, and returns exactly once. Full
+mechanics: `references/prompts/orchestrator.md`. Full agent behaviour: `agent-build.md` /
+`agent-verify.md` / `agent-refactor.md`.
 
-On the workflow return, first **update the checkpoint** (clear
-`activeWorkflow`/`workflowRunId`/`prompts`, merge the returned `build`/`verify` objects into
-`results`), then branch:
-
-**Empty-input safety net** (rare, check first): the script normalizes `args` (§ Design), so the
-string-delivery failure is handled at the source. If an agent _still_ reports no/`undefined` input
-(`testsTotal: 0`, no worktree created), retry once via the Agent-tool fallback below before routing
-anywhere. Only a genuine code/test failure follows the branches below.
-
-- `status: green` → mark PHASE 1 **and** PHASE 2 `completed`; checkpoint `phase: "PHASE 3"`,
-  `completedPhases += ["PHASE 1", "PHASE 2"]`. **Re-read `.project/` from disk.**
-  `verify.remainingManualItems` is authoritative for PHASE 3, and it decides how PHASE 3 begins:
-  - **`remainingManualItems` empty** (the GUT-covered case — no interactive work) → continue inline
-    into PHASE 3 (Step 1 enter worktree + Step 3 completion). No handoff: there is nothing to justify
-    a session break.
-  - **`remainingManualItems` non-empty** → **hand off to a fresh session (token break).** PHASE 3 is
-    an interactive main-chat phase; running the live playtest on top of the whole build+verify
-    transcript is expensive, so park the run and let the user resume it cheaply:
-    1. The checkpoint already carries `phase: "PHASE 3"` (just written) — the fast-path direct resume
-       (SHIP-CHECKPOINT.md) will route a fresh `/game-ship {feature}` straight into the playtest round.
-    2. `rm -f .project/session/active-{feature}.json` so the board renders this run as a **parked**
-       row with the `/game-ship {feature}` resume button (a checkpoint with no live signal = parked).
-    3. Leave the PHASE 3 task `pending` and **end the turn** with the handoff message below — no
-       further tool calls. PHASE 3/4/5 run in the fresh session. Emit it in the runtime language
-       (LANGUAGE.md); this template is the English source:
-       ```
-       PHASE 1+2 green — {testsTotal} tests pass, {N} playtest items remain.
-       To keep this chat cheap the run stops here; the checkpoint is ready to resume.
-
-       → Run /clear (or open a new chat), then: /game-ship {feature}
-         You land directly in the playtest round (worktree + game window are relaunched automatically).
-
-       The board shows this run as parked (⏸) with the same resume button.
-       Prefer to continue here instead? Say so and I'll run PHASE 3 in this session.
-       ```
-    - **Same-session escape hatch**: if the user replies "continue here" (or equivalent), skip the
-      handoff — re-arm the live signal and run PHASE 3 inline per the section below.
-- `failedPhase: "build"` → leave PHASE 1 `in_progress`; checkpoint `status: "failed"`, skip to
-  PHASE 5: "Build failed at `{build.failedAt}`, worktree intact at `{build.worktreePath}` — run
-  `/game-debug {feature}`, or re-run `/game-ship {feature}` to resume."
-- `failedPhase: "verify"` → mark PHASE 1 `completed`, leave PHASE 2 `in_progress`; checkpoint
-  `status: "failed"`, `completedPhases += ["PHASE 1"]`, skip to PHASE 5: "GUT auto-verify failed at
-  `{verify.failedAt}`, worktree intact — run `/game-debug {feature}`, or re-run `/game-ship {feature}`
-  to resume." Do not finalize.
-
-**Fallback** (Workflow tool unavailable): spawn AGENT 1 then AGENT 2 sequentially via the Agent
-tool per the Spawn sections in `agent-build.md` / `agent-verify.md` (models per the § Design
-matrix, effort not settable), rebuild the verify-slice + worktree path in the main chat between
-the two spawns, and parse the `SHIP_*_RESULT` blocks. On a **Resume**, skip any spawn whose result
-is already in the checkpoint's `results` (`resumeFromRunId` does not apply to the Agent-tool path).
-
-### PHASE 3: Human playtest + Completion (MAIN CHAT)
+### PHASE 3: Human playtest + Completion (MAIN CHAT — fresh-session playtest round)
 
 > **Todo**: mark PHASE 3 → `in_progress` (PHASE 1+2 were already flipped on the workflow return).
-> Rewrite the board live-signal with `skill: "test"` (same `active-{feature}.json` write as PHASE 1),
-> and update the checkpoint `phase: "PHASE 3"`.
-> **Worktree path guard (PHASE 3 + 4):** cwd is now inside the worktree, and `.project/session/` is
-> worktree-local (not symlinked). The checkpoint is written via `ship-checkpoint.js`, which resolves
-> main_root itself — safe from any cwd. But the `active-{feature}.json` **live-signal** is a plain
-> write: target the **main checkout's** `.project/session/` (per `shared/DEVINFO.md § Active Feature
-Signal` worktree caveat), else the board reads the wrong (worktree-local) copy.
-> With non-empty `remainingManualItems` you normally
-> arrive here **from a fresh session** (the green branch's handoff parked the run) via the reference's
-> **Resume entry** note — re-enter the worktree + relaunch the game window first — or from the
-> same-session **escape hatch** (the user chose to continue here). Either way re-arm the live signal,
-> then proceed.
-> Read `.claude/skills/game-ship/references/phase-3-playtest.md` and follow it. If AGENT 2 returned
-> `remainingManualItems` (non-empty) → run the live playtest walkthrough then the completion (DONE
-> write). If empty → execute Step 1 (enter worktree) then Step 3 (Completion — the completion-sync
-> DONE write only); skip only Step 2 (the playtest walkthrough).
+> Rewrite the board live-signal: `echo '{"skill":"test"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}`
+> (cwd-in-worktree safe — the script resolves main-root itself, same as the checkpoint write), and
+> update the checkpoint `phase: "PHASE 3"`.
+> You arrive here with non-empty `remainingManualItems`, normally **from a fresh session** (AGENT O's
+> `parked` return handed off) via the reference's **Resume entry** note — re-enter the worktree +
+> relaunch the game window first — or from the same-session **escape hatch** (the user chose to
+> continue here instead of parking). Either way re-arm the live signal, then proceed: Read
+> `.claude/skills/game-ship/references/phase-3-playtest.md` and run the live playtest walkthrough
+> then the completion (DONE write).
 
 The playtest runs in the main chat so `AskUserQuestion` and the live game window (via
 `mcp__godot-mcp__run_project` on `playtest_scene.tscn`) reach the real user. The reference owns the
 full routing — item-by-item walkthrough + interview close → findings ledger (checkpoint) →
 conditional round-level fix-plan gate (mirrors PHASE 0's gate) → fix dispatch via
 `references/workflows/ship-game-fix.js` + inline mix → re-check round → GUT regression re-run. On
-all-green (or empty) complete the feature (DONE write) and **stay in the worktree**; finalize/merge
-runs at the end of PHASE 4 so refactor commits land on the feature branch. **No refactor/finalize
-until failed items pass.**
-
-### PHASE 4: Refactor (AGENT 3) + Finalize/merge — Workflow 2
-
-> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`; update the checkpoint
-> `phase: "PHASE 4"`, `completedPhases += ["PHASE 3"]` (the feature is DONE and verified, still on
-> the feature branch in the worktree — not yet merged). Refactor always runs (auto-derived lenses);
-> skip straight to the finalize step below **only** if the `--no-refactor` escape hatch was set.
-> **Before spawning**: (a) capture the revert anchor
-> `preRefactorSha = git -C {worktreePath} rev-parse HEAD` and write it to the checkpoint; (b) run the
-> TEAM_MODE + PR-state detection from completion-finalize's **PHASE Finalize** block and set
-> `finalizeRoute: merge | halt` (`merge` on the solo/`MERGED` rows, `halt` on the open-PR / team rows)
-> — this decides whether AGENT 3 does the shipped completion writes.
-> Otherwise rewrite the board live-signal with `skill: "refactor"` (same `active-{feature}.json`
-> write as PHASE 1), then Read `.claude/skills/game-ship/references/agent-refactor.md` — its
-> **§ Spawn → Pointer file** template only; the `prompts/*` body is read by the agent.
-> Rebuild the **refactor-slice** from the post-verify `.project/` (shared into the worktree via
-> symlinks — built files + fresh learnings), **write the pointer + slice file** (carrying the
-> worktree path + `finalizeRoute`) under `.project/session/ship-prompts/`
-> and pass the **path** (never inline — see PHASE 1+2), then launch:
-> `Workflow({scriptPath: ".claude/skills/game-ship/references/workflows/ship-game-phase4.js", args: {feature, refactorPromptPath, resume}})`
-> — with `refactorPromptPath: null` only when the `--no-refactor` escape hatch was set, and
-> `resume` = `null` fresh or the **completed** result `{refactor}` from the checkpoint on a
-> Resume (a failed refactor re-runs). `ship-game-phase4.js` normalizes `args` like
-> `ship-game-phase12.js`; the same PHASE 1+2 empty-input safety net applies if the agent still
-> reports no input.
-> **Immediately after launch** write the returned `runId` +
-> `activeWorkflow: "phase4"` + the prompt-file **path** as `prompts` to the checkpoint. On return:
-> clear `activeWorkflow`/`workflowRunId`/`prompts`, merge `refactor` into `results`. If
-> `refactor.status: failed` → revert the branch (`git -C {worktreePath} reset --hard {preRefactorSha}`,
-> non-fatal, record for the report). **Then finalize** — run completion-finalize's **PHASE Finalize**
-> block (solo → merge + worktree cleanup; open PR / team → halt and leave the worktree). It also owns
-> the **merge-route postconditions**: post-merge archive reconcile + self-heal, `shippedSha` re-stamp,
-> and state auto-push (its § Post-merge reconcile). Only after finalize (or halt): checkpoint
-> `phase: "PHASE 5"`, `completedPhases += ["PHASE 4"]`, **re-read `.project/` from disk**.
-
-The workflow runs AGENT 3 (pre-merge, inside `worktree-{feature}` on the feature branch) running
-`game-refactor` on this single feature with the **auto-derived lenses**, applying only high-confidence
-findings, GUT test-guarded (revert-on-red) — no pre-build intensity toggle. `refactor.status: failed`
-is **non-fatal** — revert the branch to `preRefactorSha` and still finalize the verified feature;
-surface the failure for manual follow-up.
-**Guard** — never finalize before the refactor workflow returns; never skip finalize because refactor
-failed. The finalize step above runs on both the `applied|clean` and the reverted-`failed` path.
-
-**Fallback** (Workflow tool unavailable): spawn AGENT 3 via the Agent tool per
-`agent-refactor.md` (model per the § Design matrix) and parse the `SHIP_REFACTOR_RESULT` block.
+all-green complete the feature (DONE write) and **stay in the worktree**; finalize/merge runs at the
+end of PHASE 4 so refactor commits land on the feature branch. **No refactor/finalize until failed
+items pass.** Once complete, spawn AGENT O per `references/agent-orchestrator.md § Spawn` (no
+build/verify pointer paths needed — the checkpoint's `phase: "PHASE 3"` with a resolved playtest
+ledger routes AGENT O straight into PHASE 4) and handle its wake as described in § PHASE 1–4 above.
 
 ### PHASE 5: Report
 
 > **Todo**: mark the phases that actually ran → `completed` (on a failure-jump, leave the failed
 > phase `in_progress` and never mark a skipped phase `completed`), PHASE 5 → `in_progress`.
-> **Board cleanup** (every exit path, success or failure): `rm -f .project/session/active-{feature}.json`,
+> **Board cleanup** (every exit path, success or failure): `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`,
 > and if the feature still exists in `backlog.json#features[]` with `transition: "shipping"`, remove
 > that `transition`. **On full success the feature is no longer in `features[]` at all** — refactor's
 > completion-batch shipped it and moved it to `backlog-archive.json`, verified by PHASE 4's post-merge
@@ -318,7 +255,9 @@ failed. The finalize step above runs on both the `applied|clean` and the reverte
 
 Print the ship summary (ASCII table): feature, build test counts, GUT auto-verify results, playtest
 outcomes, refactor result, and the collected `autoDecisions[]` (choices the agents auto-made in
-non-interactive mode) for your review.
+non-interactive mode) for your review. On the no-playtest path the fields come from AGENT O's
+`SHIP_ORCH_RESULT` plus the checkpoint's `results`; on the playtest path they come from the
+in-context PHASE 3 walkthrough plus `results`.
 
 ```
 SHIP COMPLETE: {feature}

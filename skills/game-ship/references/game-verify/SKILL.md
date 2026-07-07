@@ -313,7 +313,7 @@ If there are no logical cross-requirement combinations → skip, no output.
 
    ```bash
    mkdir -p .project/session
-   echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}","waiting":"playtest"}' > .project/session/active-{feature-name}.json
+   echo '{"skill":"test","waiting":"playtest"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}
    ```
 
    (The end-of-PHASE-0 baseline write below rewrites this file **without** `waiting` once
@@ -389,7 +389,7 @@ Feedback: received
 ```bash
 mkdir -p .project/session
 git status --porcelain | sort > .project/session/pre-skill-status.txt
-echo '{"feature":"{feature-name}","skill":"test","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+echo '{"skill":"test"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}
 ```
 
 ### PHASE 1: Parse Feedback

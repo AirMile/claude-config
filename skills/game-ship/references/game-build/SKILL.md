@@ -320,7 +320,7 @@ mkdir -p .project/session
 # Cleanup stale session state from previous crashed runs (>1 day old)
 find .project/session -maxdepth 1 \( -name "active-*.json" -o -name "pre-skill-*.txt" \) -mtime +1 -delete 2>/dev/null
 git status --porcelain | sort > .project/session/pre-skill-status.txt
-echo '{"feature":"{feature-name}","skill":"build","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+echo '{"skill":"build"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}
 ```
 
 ### PHASE 1: Technique Mapping

@@ -10,7 +10,7 @@ so the board flags this feature amber (paused on the user — see `shared/DEVINF
 Feature Signal`):
 
 ```bash
-echo '{"feature":"{feature}","skill":"verify","startedAt":"{ISO}","waiting":"manual-tests"}' > .project/session/active-{feature}.json
+echo '{"skill":"verify","waiting":"manual-tests"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}
 ```
 
 After the last item is answered (all Pass/Fail/Skip/Defer collected), rewrite it **without**

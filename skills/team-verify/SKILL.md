@@ -159,7 +159,7 @@ Verify teammate code delivery. Detects available context (feature.json with requ
 7. **Signal active feature** (after feature name is determined):
 
    ```bash
-   echo '{"feature":"{feature-name}","skill":"team-verify","startedAt":"{ISO timestamp}"}' > .project/session/active-{feature-name}.json
+   echo '{"skill":"team-verify"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}
    ```
 
 8. **Load stack & project context** (for agent prompts):
@@ -527,7 +527,8 @@ Use AskUserQuestion:
    - **OVERLAP policy**: interactive.
    - **Fallback**: stage known codebase skill-output files only (acceptance test files, source files modified during verification). `.project/` is local-only — never stage it.
    - **Commit**: `git commit -m "test({feature}): {pass}/{total} requirements verified"`
-   - **Cleanup**: `rm -f .project/session/pre-skill-status.txt .project/session/active-{feature-name}.json /tmp/current-status.txt`
+   - **Cleanup**: `rm -f .project/session/pre-skill-status.txt /tmp/current-status.txt` plus
+     `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature-name}`
 
 #### Step 2: Teammate Feedback
 

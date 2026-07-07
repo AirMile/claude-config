@@ -3,17 +3,18 @@
 Spawn one subagent that runs `dev-refactor` on the single just-verified feature, **inside
 `worktree-{feature}` on the feature branch (pre-merge)**, with the lenses **auto-derived in PHASE 0**
 from the feature's signals. Skip this agent entirely only when the `--no-refactor` escape hatch was
-set. Its commits land on the feature branch; the main chat merges (or attaches them to the PR) right
-after this agent returns.
+set. Its commits land on the feature branch; the ship orchestrator merges (or attaches them to the
+PR) right after this agent returns.
 
 The full agent instruction body is the **static** file
-`.claude/skills/dev-ship/references/prompts/refactor.md` — the agent reads it itself. The main chat
-writes only a small **pointer + context** file (below); it does **not** read `prompts/refactor.md`
-or `non-interactive-contract.md`.
+`.claude/skills/dev-ship/references/prompts/refactor.md` — the agent reads it itself. The
+orchestrator (AGENT O on the no-manual path, the main chat otherwise) writes only a small
+**pointer + context** file (below); it does **not** read `prompts/refactor.md` or
+`non-interactive-contract.md`.
 
 ## Spawn
 
-**Primary (Workflow)**: the main chat writes the pointer file below to
+**Primary (Workflow)**: the orchestrator writes the pointer file below to
 `.project/session/ship-prompts/{feature}-refactor.txt` and passes its path as
 `args.refactorPromptPath` to `references/workflows/ship-phase4.js` (or `null` when the
 `--no-refactor` escape hatch was set), which has the agent read the file and runs it with
@@ -24,7 +25,7 @@ result against `REFACTOR_SCHEMA`.
 **Fallback (Agent tool, when Workflow is unavailable)**: spawn via the `Agent` tool with
 `subagent_type: "general-purpose"` and `model: "sonnet"` (effort is not settable).
 
-### Pointer file (what the main chat writes — the ONLY assembled text)
+### Pointer file (what the orchestrator writes — the ONLY assembled text)
 
 Build the refactor-slice from the **post-verify** `.project/` (shared via worktree symlinks — built
 files + fresh learnings), and list the auto-derived lenses + `securityLight` flag from `SHIP_PLAN`:

@@ -1,0 +1,14 @@
+{
+  "merges": [
+    {
+      "feature": "grouped-feature",
+      "type": "pitfall",
+      "summary": "Consolidated: auth session/token/endpoint/database pitfalls across the group"
+    },
+    {
+      "feature": "small-group",
+      "type": "pattern",
+      "summary": "Consolidated: small-group perf pattern notes"
+    }
+  ]
+}

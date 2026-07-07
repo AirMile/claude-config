@@ -148,7 +148,7 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 3. **Create project folder + signal active feature** — **skip in the game-ship context**: game-ship's
    Step 2a already did the `mkdir -p .project/features/{feature-name}` + the `active-{feature-name}.json`
    live-signal write **before** entering plan mode (writes are blocked once inside). Do not repeat them.
-   (The standalone form would run `mkdir` + `echo '{...}' > active-{feature-name}.json` itself.)
+   (The standalone form would run `mkdir` + `node ~/.claude/scripts/ship-checkpoint.js signal {feature-name}` itself.)
 
    All `.project/` and `architecture-baseline.md` writes are **deferred to game-ship's gate-accept**
    (Step 4b) — PHASE 0→3 only read and author the in-memory draft, and plan mode blocks them anyway.
