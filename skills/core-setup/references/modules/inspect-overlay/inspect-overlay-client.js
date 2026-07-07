@@ -18,6 +18,8 @@ if (window.__inspectOverlayActive) {
     [];
   var MAX_PINS = 20;
   var lastClickedElement = null;
+  var lastHoverEl = null;
+  var lastHoverSuffix = "";
 
   // --- Region select state ---
   var isDragging = false;
@@ -45,12 +47,31 @@ if (window.__inspectOverlayActive) {
     "border-radius:3px;display:none;white-space:pre;max-width:90vw;overflow:hidden;";
   document.body.appendChild(label);
 
+  // --- Active-mode indicator (bottom-center pill, click to exit) ---
+  var indicator = document.createElement("div");
+  indicator.id = "__inspect-indicator";
+  indicator.textContent = "Inspect ✕";
+  indicator.title = "Click or Cmd/Ctrl+. to exit inspect mode";
+  indicator.style.cssText =
+    "position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:99999;" +
+    "background:#4a90d9;color:#fff;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;" +
+    "padding:8px 14px;border-radius:999px;cursor:pointer;display:none;" +
+    "box-shadow:0 2px 8px rgba(0,0,0,0.25);user-select:none;";
+  indicator.addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (inspectActive) toggleInspect();
+  });
+  document.body.appendChild(indicator);
+
   // --- Freeze style (disables hover transitions/animations in inspect mode) ---
+  // The indicator pill is exempted so it stays clickable while everything
+  // else has pointer-events disabled.
   var freezeStyle = document.createElement("style");
   freezeStyle.textContent =
     "body.__inspect-active *,body.__inspect-active *::before,body.__inspect-active *::after" +
     "{transition:none!important;animation-play-state:paused!important;" +
-    "pointer-events:none!important}";
+    "pointer-events:none!important}" +
+    "body.__inspect-active #__inspect-indicator{pointer-events:auto!important}";
   document.head.appendChild(freezeStyle);
 
   // --- Element lookup (pointer-events are disabled, so use elementFromPoint) ---
@@ -62,10 +83,11 @@ if (window.__inspectOverlayActive) {
   }
 
   // --- Parent highlight (dashed border showing parent container) ---
+  // Border color set per-hover (adaptive tint, see below).
   var parentHighlight = document.createElement("div");
   parentHighlight.style.cssText =
     "position:fixed;pointer-events:none;z-index:99996;" +
-    "border:1px dashed rgba(255,107,107,0.4);display:none;border-radius:2px;";
+    "border:1px dashed;display:none;border-radius:2px;";
   document.body.appendChild(parentHighlight);
 
   // --- Region select box ---
@@ -76,6 +98,190 @@ if (window.__inspectOverlayActive) {
     "border:1px dashed #4a90d9;background:rgba(74,144,217,0.08);" +
     "display:none;";
   document.body.appendChild(selectionBox);
+
+  // --- Adaptive tint (light/dark variant of the same hue, picked by backdrop luminance) ---
+  // mix-blend-mode:difference guarantees contrast but inverts hue against light
+  // backgrounds (the common case): "green" padding renders purple-ish, "purple"
+  // gap renders olive-green. Sampling the actual backdrop and picking a
+  // darker/lighter variant of the SAME hue keeps colors recognizable while
+  // still adapting for readability.
+  function relLuminance(rgbStr) {
+    var m = rgbStr && rgbStr.match(/rgba?\(([^)]+)\)/);
+    if (!m) return null;
+    var parts = m[1].split(",").map(parseFloat);
+    if (parts.length > 3 && parts[3] === 0) return null; // transparent — keep walking up
+    return 0.2126 * parts[0] + 0.7152 * parts[1] + 0.0722 * parts[2];
+  }
+
+  function getEffectiveBg(el) {
+    var node = el;
+    while (node && node !== document.documentElement) {
+      var lum = relLuminance(window.getComputedStyle(node).backgroundColor);
+      if (lum !== null) return lum;
+      node = node.parentElement;
+    }
+    return 255; // no explicit bg found anywhere — assume light (page default)
+  }
+
+  function pickTint(el, onLight, onDark) {
+    return getEffectiveBg(el) > 140 ? onLight : onDark;
+  }
+
+  var PAD_ON_LIGHT = "rgba(46,125,50,0.35)";
+  var PAD_ON_DARK = "rgba(165,214,146,0.4)";
+  var MARGIN_ON_LIGHT = "rgba(191,111,32,0.35)";
+  var MARGIN_ON_DARK = "rgba(250,200,140,0.4)";
+  var GAP_ON_LIGHT = "rgba(106,27,154,0.3)";
+  var GAP_ON_DARK = "rgba(206,147,216,0.35)";
+
+  // --- Value badge (opaque px-value label; shared style with the gap badge) ---
+  // Zones already adapt their tint to the backdrop (see above), but a badge
+  // stays fully opaque regardless — the exact pixel value must always be
+  // legible, with no dependency on background heuristics at all.
+  var BADGE_STYLE =
+    "background:#333;color:#fff;font:10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;" +
+    "padding:1px 4px;border-radius:3px;white-space:nowrap;pointer-events:none;";
+  var MIN_BADGE_THICKNESS = 12;
+
+  function makeValueBadge() {
+    var badge = document.createElement("span");
+    badge.style.cssText =
+      "position:fixed;z-index:99999;display:none;" + BADGE_STYLE;
+    document.body.appendChild(badge);
+    return badge;
+  }
+
+  // thickness = the dimension the badge reports (h for top/bottom zones, w for left/right)
+  function placeBadge(badge, x, y, w, h, thickness) {
+    if (thickness < MIN_BADGE_THICKNESS) {
+      badge.style.display = "none";
+      return;
+    }
+    badge.textContent = Math.round(thickness) + "";
+    badge.style.display = "block";
+    badge.style.left = x + w / 2 + "px";
+    badge.style.top = y + h / 2 + "px";
+    badge.style.transform = "translate(-50%,-50%)";
+  }
+
+  // --- Box-model zones (DevTools-style: padding green, margin orange) ---
+  // Background is set per-hover in showBoxModel() (adaptive tint), not here.
+  function makeBoxZones(idPrefix) {
+    var zones = [];
+    var badges = [];
+    for (var i = 0; i < 4; i++) {
+      var z = document.createElement("div");
+      z.id = idPrefix + i;
+      z.style.cssText =
+        "position:fixed;pointer-events:none;z-index:99995;display:none;";
+      document.body.appendChild(z);
+      zones.push(z);
+      badges.push(makeValueBadge());
+    }
+    return { zones: zones, badges: badges };
+  }
+  var paddingBox = makeBoxZones("__inspect-pad-");
+  var marginBox = makeBoxZones("__inspect-margin-");
+  var paddingZones = paddingBox.zones;
+  var paddingBadges = paddingBox.badges;
+  var marginZones = marginBox.zones;
+  var marginBadges = marginBox.badges;
+
+  function placeZone(zone, x, y, w, h) {
+    if (w < 0.5 || h < 0.5) {
+      zone.style.display = "none";
+      return;
+    }
+    zone.style.display = "block";
+    zone.style.left = x + "px";
+    zone.style.top = y + "px";
+    zone.style.width = w + "px";
+    zone.style.height = h + "px";
+  }
+
+  function hideBoxModel() {
+    for (var i = 0; i < 4; i++) {
+      paddingZones[i].style.display = "none";
+      paddingBadges[i].style.display = "none";
+      marginZones[i].style.display = "none";
+      marginBadges[i].style.display = "none";
+    }
+  }
+
+  function showBoxModel(el, rect) {
+    // Padding sits over el's own backdrop; margin sits over the parent's.
+    var padColor = pickTint(el, PAD_ON_LIGHT, PAD_ON_DARK);
+    var marginColor = pickTint(
+      el.parentElement || el,
+      MARGIN_ON_LIGHT,
+      MARGIN_ON_DARK,
+    );
+    for (var zi = 0; zi < 4; zi++) {
+      paddingZones[zi].style.background = padColor;
+      marginZones[zi].style.background = marginColor;
+    }
+    var cs = window.getComputedStyle(el);
+    var pt = parseFloat(cs.paddingTop) || 0;
+    var pb = parseFloat(cs.paddingBottom) || 0;
+    var pl = parseFloat(cs.paddingLeft) || 0;
+    var pr = parseFloat(cs.paddingRight) || 0;
+    var bt = parseFloat(cs.borderTopWidth) || 0;
+    var bb = parseFloat(cs.borderBottomWidth) || 0;
+    var bl = parseFloat(cs.borderLeftWidth) || 0;
+    var br = parseFloat(cs.borderRightWidth) || 0;
+    // Inner border box (padding zones sit inside it)
+    var x0 = rect.left + bl;
+    var y0 = rect.top + bt;
+    var iw = rect.width - bl - br;
+    var ih = rect.height - bt - bb;
+    placeZone(paddingZones[0], x0, y0, iw, pt);
+    placeBadge(paddingBadges[0], x0, y0, iw, pt, pt);
+    placeZone(paddingZones[1], x0, y0 + ih - pb, iw, pb);
+    placeBadge(paddingBadges[1], x0, y0 + ih - pb, iw, pb, pb);
+    placeZone(paddingZones[2], x0, y0 + pt, pl, ih - pt - pb);
+    placeBadge(paddingBadges[2], x0, y0 + pt, pl, ih - pt - pb, pl);
+    placeZone(paddingZones[3], x0 + iw - pr, y0 + pt, pr, ih - pt - pb);
+    placeBadge(paddingBadges[3], x0 + iw - pr, y0 + pt, pr, ih - pt - pb, pr);
+    // Margin zones sit outside the border box (negative margins are skipped)
+    var mt = parseFloat(cs.marginTop) || 0;
+    var mb = parseFloat(cs.marginBottom) || 0;
+    var ml = parseFloat(cs.marginLeft) || 0;
+    var mr = parseFloat(cs.marginRight) || 0;
+    placeZone(
+      marginZones[0],
+      rect.left - ml,
+      rect.top - mt,
+      rect.width + ml + mr,
+      mt,
+    );
+    placeBadge(
+      marginBadges[0],
+      rect.left - ml,
+      rect.top - mt,
+      rect.width + ml + mr,
+      mt,
+      mt,
+    );
+    placeZone(
+      marginZones[1],
+      rect.left - ml,
+      rect.bottom,
+      rect.width + ml + mr,
+      mb,
+    );
+    placeBadge(
+      marginBadges[1],
+      rect.left - ml,
+      rect.bottom,
+      rect.width + ml + mr,
+      mb,
+      mb,
+    );
+    placeZone(marginZones[2], rect.left - ml, rect.top, ml, rect.height);
+    placeBadge(marginBadges[2], rect.left - ml, rect.top, ml, rect.height, ml);
+    placeZone(marginZones[3], rect.right, rect.top, mr, rect.height);
+    placeBadge(marginBadges[3], rect.right, rect.top, mr, rect.height, mr);
+  }
 
   // --- Region candidate highlights (pool pattern) ---
   var candidatePool = [];
@@ -129,13 +335,16 @@ if (window.__inspectOverlayActive) {
     if (inspectActive) {
       document.body.classList.add("__inspect-active");
       document.body.style.userSelect = "none";
+      indicator.style.display = "block";
     } else {
+      indicator.style.display = "none";
       cancelRegionSelect();
       document.body.classList.remove("__inspect-active");
       clearPins();
       highlight.style.display = "none";
       label.style.display = "none";
       hideGapIndicators();
+      hideBoxModel();
       parentHighlight.style.display = "none";
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
@@ -154,7 +363,16 @@ if (window.__inspectOverlayActive) {
       var inspectable = el.closest("[data-inspector-relative-path]");
       if (inspectable) return inspectable;
     }
-    return el.closest("[class]") || el;
+    // Inspect mode puts __inspect-active on <body>, so a classed-ancestor
+    // climb from an unclassed element must never land on body/html.
+    var classed = el.closest("[class]");
+    if (
+      classed &&
+      classed !== document.body &&
+      classed !== document.documentElement
+    )
+      return classed;
+    return el;
   }
 
   // --- Build component name for tooltip ---
@@ -173,30 +391,206 @@ if (window.__inspectOverlayActive) {
         })
         .join("");
     }
-    // Degraded mode: tag + first 3 classes
+    // Degraded mode: same selector as the clipboard ref (id / classes / nth)
+    return getDegradedSelector(el);
+  }
+
+  // --- Accessible name (used by both ref modes) ---
+  function getAccessibleName(el) {
+    var name =
+      el.getAttribute("aria-label") ||
+      el.getAttribute("title") ||
+      el.getAttribute("alt") ||
+      el.getAttribute("placeholder") ||
+      el.textContent ||
+      "";
+    name = name.replace(/\s+/g, " ").trim().replace(/"/g, "");
+    if (name.length > 40) name = name.substring(0, 40) + "…";
+    return name;
+  }
+
+  // --- CSS attribute-value escaping for querySelectorAll ---
+  function cssAttrEscape(v) {
+    return v.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  }
+
+  // --- Instance index among siblings sharing the same source line (Full mode) ---
+  function getInstanceInfo(el, path, line) {
+    var sel =
+      '[data-inspector-relative-path="' +
+      cssAttrEscape(path) +
+      '"][data-inspector-line="' +
+      cssAttrEscape(line) +
+      '"]';
+    var all = document.querySelectorAll(sel);
+    if (all.length < 2) return null;
+    for (var i = 0; i < all.length; i++) {
+      if (all[i] === el) return { index: i + 1, total: all.length };
+    }
+    return null;
+  }
+
+  // --- Nearest ancestor with its own data-inspector ref (Full mode call-site) ---
+  function getFullAncestorRef(el) {
+    var parent = el.parentElement;
+    if (!parent) return null;
+    var ancestor = parent.closest("[data-inspector-relative-path]");
+    if (!ancestor) return null;
+    var path = ancestor.getAttribute("data-inspector-relative-path");
+    var line = ancestor.getAttribute("data-inspector-line");
+    return { path: path, ref: path + ":" + line };
+  }
+
+  // --- Icon-ish inner target descriptor (svg/img/i inside the resolved element) ---
+  // Prefer a specific icon-name class ("lucide-trash") over the generic family
+  // token ("lucide") when both are present on the same element.
+  var ICON_NAME_RE = /^(?:lucide|fa[srb]?|feather|tabler|bi|mdi|icon)-[\w-]+$/i;
+  var ICON_FAMILY_RE = /^(?:lucide|fa[srb]?|feather|tabler|bi|mdi|icon)$/i;
+
+  function matchIconClass(cls) {
+    var tokens = cls.trim().split(/\s+/).filter(Boolean);
+    for (var i = 0; i < tokens.length; i++) {
+      if (ICON_NAME_RE.test(tokens[i])) return tokens[i];
+    }
+    for (var i = 0; i < tokens.length; i++) {
+      if (ICON_FAMILY_RE.test(tokens[i])) return tokens[i];
+    }
+    return null;
+  }
+
+  function describeInnerTarget(raw, resolved) {
+    if (!raw || raw === resolved) return "";
+    var node = raw;
+    while (node && node !== resolved && node !== document.documentElement) {
+      if (node.nodeType === 1) {
+        var tag = node.tagName.toLowerCase();
+        if (tag === "path" || tag === "use") {
+          var svgAncestor = node.closest("svg");
+          if (svgAncestor) {
+            node = svgAncestor;
+            tag = "svg";
+          }
+        }
+        var cls = node.getAttribute("class") || "";
+        var iconMatch = matchIconClass(cls);
+        var dataIcon = node.getAttribute("data-icon");
+        var ariaLabel = node.getAttribute("aria-label");
+        var isIconTag = tag === "svg" || tag === "img" || tag === "i";
+
+        if (isIconTag || iconMatch || dataIcon || ariaLabel) {
+          if (iconMatch) return tag + "." + iconMatch;
+          if (dataIcon) return tag + '[data-icon="' + dataIcon + '"]';
+          if (tag === "svg") {
+            var useEl = node.querySelector("use");
+            var href =
+              useEl &&
+              (useEl.getAttribute("href") || useEl.getAttribute("xlink:href"));
+            if (href) return "svg" + href.replace(/^[^#]*/, "");
+          }
+          if (ariaLabel)
+            return tag + ' "' + ariaLabel.trim().substring(0, 30) + '"';
+          if (tag === "img") {
+            var alt = node.getAttribute("alt");
+            return tag + (alt ? ' "' + alt.substring(0, 30) + '"' : "");
+          }
+          return tag;
+        }
+      }
+      node = node.parentElement;
+    }
+    return "";
+  }
+
+  // --- Degraded-mode selector: id, else tag + up to 3 classes + nth among siblings ---
+  function getDegradedSelector(el) {
     var tag = el.tagName.toLowerCase();
-    var cls =
-      el.className && typeof el.className === "string"
-        ? "." + el.className.trim().split(/\s+/).slice(0, 3).join(".")
-        : "";
-    return tag + cls;
+    if (el.id) return tag + "#" + el.id;
+    var clsAttr = el.getAttribute("class") || "";
+    var classes = clsAttr.trim().split(/\s+/).filter(Boolean).slice(0, 3);
+    var selfCls = classes.join(".");
+    var base = tag + (selfCls ? "." + selfCls : "");
+    var parent = el.parentElement;
+    if (parent) {
+      var siblings = parent.children;
+      var matchIndex = -1;
+      var matchCount = 0;
+      for (var i = 0; i < siblings.length; i++) {
+        var sib = siblings[i];
+        if (sib.tagName.toLowerCase() !== tag) continue;
+        var sibCls = (sib.getAttribute("class") || "")
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 3)
+          .join(".");
+        if (sibCls === selfCls) {
+          matchCount++;
+          if (sib === el) matchIndex = matchCount;
+        }
+      }
+      if (matchCount > 1) base += ":nth-of-type(" + matchIndex + ")";
+    }
+    return base;
+  }
+
+  // --- Degraded-mode ancestor anchor: id, landmark, or first classed ancestor ---
+  var LANDMARK_TAG_RE = /^(main|nav|header|footer|aside|form)$/;
+
+  function getDegradedAnchor(el) {
+    var node = el.parentElement;
+    var hops = 0;
+    var fallback = "";
+    while (node && node !== document.body && hops < 8) {
+      if (node.id) return "#" + node.id;
+      var tag = node.tagName.toLowerCase();
+      var role = node.getAttribute("role");
+      var ariaLabel = node.getAttribute("aria-label");
+      if (LANDMARK_TAG_RE.test(tag) || role) {
+        if (ariaLabel)
+          return tag + ' "' + ariaLabel.trim().substring(0, 30) + '"';
+        return tag;
+      }
+      if (!fallback && node.getAttribute("class")) {
+        // Reuse the selector builder so a colliding ancestor (e.g. two
+        // identical icon buttons) still gets disambiguated via nth-of-type.
+        fallback = getDegradedSelector(node);
+      }
+      node = node.parentElement;
+      hops++;
+    }
+    return fallback;
   }
 
   // --- Build reference string ---
-  function buildRef(el) {
+  // rawTarget: the element under the pointer before findInspectable() climbed
+  // to the nearest inspectable ancestor — used to describe icons/inner targets.
+  function buildRef(el, rawTarget) {
     var path = el.getAttribute("data-inspector-relative-path");
+    var name = getAccessibleName(el);
+    var inner = describeInnerTarget(rawTarget, el);
+
     if (path) {
       var line = el.getAttribute("data-inspector-line");
       var col = el.getAttribute("data-inspector-column");
-      return path + ":" + line + (col ? ":" + col : "");
+      var ref = path + ":" + line + (col ? ":" + col : "");
+      if (name) ref += ' "' + name + '"';
+      var instance = getInstanceInfo(el, path, line);
+      if (instance) ref += " #" + instance.index + "/" + instance.total;
+      var ancestor = getFullAncestorRef(el);
+      if (ancestor && (ancestor.path !== path || instance)) {
+        ref += " — in " + ancestor.ref;
+      }
+      if (inner) ref += " > " + inner;
+      return ref;
     }
-    var tag = el.tagName.toLowerCase();
-    var cls =
-      el.className && typeof el.className === "string"
-        ? "." + el.className.trim().split(/\s+/).slice(0, 3).join(".")
-        : "";
-    var text = (el.textContent || "").trim().substring(0, 30);
-    return tag + cls + (text ? ' "' + text + '"' : "");
+
+    var ref = getDegradedSelector(el);
+    if (name) ref += ' "' + name + '"';
+    // An id is already page-unique — skip the ancestor anchor, it's just noise.
+    var anchor = el.id ? "" : getDegradedAnchor(el);
+    if (anchor) ref += " — in " + anchor;
+    if (inner) ref += " > " + inner;
+    return ref;
   }
 
   // --- Style extraction ---
@@ -369,13 +763,11 @@ if (window.__inspectOverlayActive) {
     if (index < gapPool.length) return gapPool[index];
     var bar = document.createElement("div");
     bar.style.cssText =
-      "position:fixed;pointer-events:none;z-index:99997;display:none;" +
-      "background:rgba(255,107,107,0.15);";
+      "position:fixed;pointer-events:none;z-index:99997;display:none;";
     var lbl = document.createElement("span");
     lbl.style.cssText =
       "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);" +
-      "font:10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;" +
-      "color:rgba(255,107,107,0.8);pointer-events:none;white-space:nowrap;";
+      BADGE_STYLE;
     bar.appendChild(lbl);
     document.body.appendChild(bar);
     gapPool.push({ bar: bar, label: lbl });
@@ -387,7 +779,7 @@ if (window.__inspectOverlayActive) {
     var el = document.createElement("div");
     el.style.cssText =
       "position:fixed;pointer-events:none;z-index:99996;" +
-      "border:1px dashed rgba(255,107,107,0.35);display:none;border-radius:2px;";
+      "border:1px dashed;display:none;border-radius:2px;";
     document.body.appendChild(el);
     childHighlightPool.push(el);
     return childHighlightPool[index];
@@ -404,9 +796,10 @@ if (window.__inspectOverlayActive) {
     childHighlightUsed = 0;
   }
 
-  function showGap(x, y, w, h, gap) {
+  function showGap(x, y, w, h, gap, color) {
     var ind = getGapIndicator(gapPoolUsed++);
     ind.bar.style.display = "block";
+    ind.bar.style.background = color;
     ind.bar.style.left = x + "px";
     ind.bar.style.top = y + "px";
     ind.bar.style.width = w + "px";
@@ -446,10 +839,12 @@ if (window.__inspectOverlayActive) {
       hideGapIndicators();
       return;
     }
+    var gapColor = pickTint(parentEl, GAP_ON_LIGHT, GAP_ON_DARK);
     // Show dashed border around each child
     for (var i = 0; i < rects.length; i++) {
       var chl = getChildHighlight(childHighlightUsed++);
       chl.style.display = "block";
+      chl.style.borderColor = gapColor;
       chl.style.top = rects[i].top + "px";
       chl.style.left = rects[i].left + "px";
       chl.style.width = rects[i].width + "px";
@@ -488,7 +883,7 @@ if (window.__inspectOverlayActive) {
         if (gap > 0) {
           var t = Math.min(row[c].top, row[c + 1].top);
           var b = Math.max(row[c].bottom, row[c + 1].bottom);
-          showGap(row[c].right, t, gap, b - t, gap);
+          showGap(row[c].right, t, gap, b - t, gap, gapColor);
         }
       }
     }
@@ -514,7 +909,7 @@ if (window.__inspectOverlayActive) {
           minL = Math.min(minL, rows[r + 1][c].left);
           maxR = Math.max(maxR, rows[r + 1][c].right);
         }
-        showGap(minL, thisBottom, maxR - minL, gap, gap);
+        showGap(minL, thisBottom, maxR - minL, gap, gap, gapColor);
       }
     }
     // Hide unused indicators
@@ -706,8 +1101,8 @@ if (window.__inspectOverlayActive) {
   }
 
   // --- Clipboard builder ---
-  function buildClipboardText(el) {
-    return "[" + buildRef(el) + "]";
+  function buildClipboardText(el, rawTarget) {
+    return "[" + buildRef(el, rawTarget) + "]";
   }
 
   function formatMultiClipboard(items) {
@@ -761,6 +1156,8 @@ if (window.__inspectOverlayActive) {
 
   function onMouseDown(e) {
     if (!inspectActive) return;
+    // Let the exit-pill receive its own click (no drag/region-select start)
+    if (e.target === indicator) return;
     e.preventDefault();
     window.getSelection().removeAllRanges();
     if (e.button === 0) {
@@ -788,6 +1185,7 @@ if (window.__inspectOverlayActive) {
         highlight.style.display = "none";
         label.style.display = "none";
         hideGapIndicators();
+        hideBoxModel();
         parentHighlight.style.display = "none";
       }
     }
@@ -803,6 +1201,7 @@ if (window.__inspectOverlayActive) {
       highlight.style.display = "none";
       label.style.display = "none";
       hideGapIndicators();
+      hideBoxModel();
       parentHighlight.style.display = "none";
       return;
     }
@@ -812,6 +1211,7 @@ if (window.__inspectOverlayActive) {
     highlight.style.left = rect.left + "px";
     highlight.style.width = rect.width + "px";
     highlight.style.height = rect.height + "px";
+    showBoxModel(el, rect);
 
     // Gap indicators: try element's own children first, then walk up ancestors
     showChildGaps(el);
@@ -831,6 +1231,11 @@ if (window.__inspectOverlayActive) {
         if (gapPoolUsed > 0) {
           var ancRect = ancestor.getBoundingClientRect();
           parentHighlight.style.display = "block";
+          parentHighlight.style.borderColor = pickTint(
+            ancestor,
+            GAP_ON_LIGHT,
+            GAP_ON_DARK,
+          );
           parentHighlight.style.top = ancRect.top + "px";
           parentHighlight.style.left = ancRect.left + "px";
           parentHighlight.style.width = ancRect.width + "px";
@@ -841,8 +1246,23 @@ if (window.__inspectOverlayActive) {
       }
     }
 
+    // Instance suffix (e.g. " #3/7") — recomputed only when the hover target changes
+    if (el !== lastHoverEl) {
+      lastHoverEl = el;
+      var hoverPath = el.getAttribute("data-inspector-relative-path");
+      if (hoverPath) {
+        var hoverLine = el.getAttribute("data-inspector-line");
+        var hoverInstance = getInstanceInfo(el, hoverPath, hoverLine);
+        lastHoverSuffix = hoverInstance
+          ? " #" + hoverInstance.index + "/" + hoverInstance.total
+          : "";
+      } else {
+        lastHoverSuffix = "";
+      }
+    }
+
     var styles = extractStyles(el);
-    var name = escapeHtml(buildComponentName(el));
+    var name = escapeHtml(buildComponentName(el) + lastHoverSuffix);
     var size = escapeHtml(buildLabelLine3(el, styles));
     var debug = escapeHtml(buildLabelDebug(el));
     var parent = escapeHtml(buildLabelParent(el));
@@ -879,7 +1299,8 @@ if (window.__inspectOverlayActive) {
       e.stopPropagation();
       return;
     }
-    var el = findInspectable(elementAtPoint(e.clientX, e.clientY));
+    var raw = elementAtPoint(e.clientX, e.clientY);
+    var el = findInspectable(raw);
     if (!el) return;
     e.preventDefault();
     e.stopPropagation();
@@ -907,8 +1328,8 @@ if (window.__inspectOverlayActive) {
     // Regular click: clear pins, remember element, copy single element
     clearPins();
     lastClickedElement = el;
-    var ref = buildRef(el);
-    var clipText = buildClipboardText(el);
+    var ref = buildRef(el, raw);
+    var clipText = buildClipboardText(el, raw);
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard
@@ -927,14 +1348,13 @@ if (window.__inspectOverlayActive) {
   function onTouchEnd(e) {
     if (!inspectActive) return;
     var t = e.changedTouches && e.changedTouches[0];
-    var el = findInspectable(
-      t ? elementAtPoint(t.clientX, t.clientY) : e.target,
-    );
+    var raw = t ? elementAtPoint(t.clientX, t.clientY) : e.target;
+    var el = findInspectable(raw);
     if (!el) return;
     e.preventDefault();
 
-    var ref = buildRef(el);
-    var clipText = buildClipboardText(el);
+    var ref = buildRef(el, raw);
+    var clipText = buildClipboardText(el, raw);
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard
@@ -963,6 +1383,7 @@ if (window.__inspectOverlayActive) {
   if (inspectActive) {
     document.body.classList.add("__inspect-active");
     document.body.style.userSelect = "none";
+    indicator.style.display = "block";
   }
 
   // Restore pin state after HMR (filter removed elements)
@@ -983,6 +1404,7 @@ if (window.__inspectOverlayActive) {
     highlight.remove();
     parentHighlight.remove();
     label.remove();
+    indicator.remove();
     selectionBox.remove();
     freezeStyle.remove();
     for (var i = 0; i < gapPool.length; i++) {
@@ -994,8 +1416,16 @@ if (window.__inspectOverlayActive) {
     for (var i = 0; i < candidatePool.length; i++) {
       candidatePool[i].remove();
     }
+    for (var i = 0; i < 4; i++) {
+      paddingZones[i].remove();
+      paddingBadges[i].remove();
+      marginZones[i].remove();
+      marginBadges[i].remove();
+    }
     isDragging = false;
     dragPending = false;
+    lastHoverEl = null;
+    lastHoverSuffix = "";
     document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("selectstart", onSelectStart);
     document.removeEventListener("mousedown", onMouseDown, true);
@@ -1023,6 +1453,8 @@ if (window.__inspectOverlayActive) {
 
     import.meta.hot.on("vite:afterUpdate", function () {
       hasDataAttrs = !!document.querySelector("[data-inspector-relative-path]");
+      lastHoverEl = null;
+      lastHoverSuffix = "";
     });
   }
 

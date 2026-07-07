@@ -15,7 +15,7 @@ No `installed-not-configured` state: inspect-overlay is a dev-only inject withou
 
 ### Mode Selection (Full vs Degraded)
 
-The overlay always runs the same vanilla-JS client. The difference is whether each element carries `data-inspector-*` attrs (Babel-injected) for **exact `file:line` refs** (Full), or whether refs fall back to **`tag.class "text"`** (Degraded).
+The overlay always runs the same vanilla-JS client. The difference is whether each element carries `data-inspector-*` attrs (Babel-injected) for **exact `file:line` refs** (Full), or whether refs fall back to a **CSS-selector-style ref** (Degraded, id → classes+nth → anchor).
 
 | Framework                         | Available modes | Default                       |
 | --------------------------------- | --------------- | ----------------------------- |
@@ -23,7 +23,23 @@ The overlay always runs the same vanilla-JS client. The difference is whether ea
 | Next.js + React                   | Full / Degraded | Ask (Full disables Turbopack) |
 | Plain JS / static HTML / no React | Degraded only   | Degraded                      |
 
-Degraded refs look like `[button.btn.btn-primary "Save"]` — Claude grep's once on the classes/text to find source. Full refs look like `[src/components/Button.tsx:42:3]` — Claude reads the file directly. Both are wrapped in `[…]` for paste-context clarity.
+### Ref format
+
+Both modes wrap the ref in `[…]` for paste-context clarity, and append the same optional segments so a ref always pinpoints one specific element — not just a source line or a CSS class that many elements share:
+
+```
+Full:     [<path>:<line>[:<col>] ["<name>"] [#<i>/<N>] [— in <ancestorPath>:<line>] [> <innerTarget>]
+Degraded: [<tag>[#id | .c1.c2.c3][:nth-of-type(k)] ["<name>"] [— in <anchor>] [> <innerTarget>]
+```
+
+- **`"<name>"`** — accessible name (`aria-label`/`title`/`alt`/`placeholder`/text), capped at 40 chars.
+- **`#<i>/<N>`** (Full only) — instance index when the same source line renders more than once (`.map()` lists).
+- **`— in <ancestor>`** — nearest distinguishing ancestor (a different component's call site in Full, or an id/landmark/classed ancestor in Degraded) — answers "which button" when the element itself is reused or repeated. Omitted when the element already has its own id (Degraded) — an id is already page-unique.
+- **`> <innerTarget>`** — when the clicked point is an icon/image nested inside the resolved element (e.g. an `<svg>` from an icon library with no data-attrs), this pinpoints which icon, e.g. `svg.lucide-trash`.
+
+Examples — Full: `[src/pages/Settings.tsx:102:8 "API Keys" #3/7]`, `[src/ui/Button.tsx:12:4 "Delete" — in src/pages/Settings.tsx:88 > svg.lucide-trash]`. Degraded: `[button#save-btn "Save"]`, `[button.icon-btn:nth-of-type(2) "Delete row" — in #settings-panel > svg.fa-trash]`.
+
+Known limitation: shadow DOM is out of scope — `elementFromPoint` returns the shadow host, and `data-inspector-*` attrs don't pierce shadow roots.
 
 ### Dev Server Status
 
@@ -178,7 +194,7 @@ If declined: degraded mode — skip loader, overlay works without file:line refs
 
 Applies to: static HTML pages, vanilla-TS Vite templates, Vite/SvelteKit/Nuxt/Solid/Qwik projects without React, and anything else where you control an `index.html` (or root layout) and don't have a Babel/JSX pipeline. For Vite-without-React (Vue, Svelte, Solid, vanilla TS, etc.), use this path instead of the Vite + React path above.
 
-Always **Degraded mode** — refs look like `[button.btn.primary "Save"]` (tag + max 3 classes + 30 chars text), wrapped in `[…]`.
+Always **Degraded mode** — refs look like `[button#save-btn "Save"]` or `[button.icon-btn:nth-of-type(2) "Delete row" — in #settings-panel]`, wrapped in `[…]`. See § Ref format above.
 
 Detection: `package.json` lacks `next`, `vite` may or may not be present, no `@vitejs/plugin-react`. An `index.html` exists at project root (or in `public/`, `src/`, depending on bundler).
 
@@ -220,16 +236,16 @@ Detection: `package.json` lacks `next`, `vite` may or may not be present, no `@v
 
 ### Verify Degraded Mode
 
-Open the page, press Ctrl+Shift+X / Cmd+Shift+X, click any element. Toast should appear with `Copied: <tag>.<class> "<text>"`. If no toast → check the browser console for the script-load (404 means the path is wrong, CORS means it's served from the wrong origin).
+Open the page, press Ctrl+. (Win/Linux) / Cmd+. (Mac), click any element. Toast should appear with `Copied: <ref>` (see § Ref format above). If no toast → check the browser console for the script-load (404 means the path is wrong, CORS means it's served from the wrong origin).
 
 ## Post-Setup Report
 
 Report overlay status:
 
 - Mode: Full (Babel) or Degraded
-- Controls: Ctrl+Shift+X (Win/Linux) or Cmd+Shift+X (Mac) to toggle
+- Controls: Ctrl+. (Win/Linux) or Cmd+. (Mac) to toggle; while active, a bottom-center "Inspect ✕" pill shows the mode is on — click it to exit
 - Server URL: tunnel URL if cloudflared running, else `localhost:<detected-port>` (5173 for Vite default, 3000 for Next.js default, user-chosen for plain JS)
-- Clipboard format: refs are wrapped in `[…]` — single click copies `[src/Button.tsx:42]` (Full) or `[button.btn "Save"]` (Degraded); multi-pin wraps each ref in its own brackets within the `--- 1/N ---` block
+- Clipboard format: see § Ref format above — refs are wrapped in `[…]` and disambiguate reused components, repeated `.map()` items, and icons within buttons; multi-pin wraps each ref in its own brackets within the `--- 1/N ---` block
 
 Setup complete. Overlay is active — user can inspect elements and paste references into chat.
 
