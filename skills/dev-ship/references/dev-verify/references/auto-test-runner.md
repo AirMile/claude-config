@@ -19,7 +19,16 @@ Execute these steps for each non-COVERED AUTO item:
    - Builder tests live in a top-level `test/` or `__tests__/` directory → write `test/integration/{feature}.integration.test.{ext}`.
    - No existing builder tests → default to `test/integration/{feature}.integration.test.js`.
 
-3. For acceptance items (source: "acceptance"): write tests using the project's test framework (vitest/jest/node:test — check package.json).
+3. For acceptance items (source: "acceptance") **or category-coverage items** (source:
+   "category-coverage", title `"{category} coverage missing for {REQ.id}"`): write tests using the
+   project's test framework (vitest/jest/node:test — check package.json).
+
+   Category branch (category-coverage items only — acceptance items skip this and always use the
+   example-based path below): `edge`/`boundary` → write a property-based test instead of a single
+   example — `test.prop()`/`it.prop()` from `@fast-check/vitest`, with the same mandatory pinned
+   seed as `tdd.md` § Property-based testing (`{ seed: 4242, numRuns: ... }`); this backfills the
+   property-testing rule onto category-gap items the same way it already applies during build.
+   `happy` category (and all acceptance items) keep the example-based path below.
 
    Path decision (check existing builder-test locations first):
    - A colocated builder test already covers the same unit AND owns heavy shared mocks (fake timers, navigation containers, native-module mocks) → append the acceptance `describe` block to that existing file and reuse its mocks. A new sibling file can change the runner's scheduling and leak shared timers across files (e.g. React Navigation animation timers), breaking unrelated tests.
@@ -32,6 +41,21 @@ Execute these steps for each non-COVERED AUTO item:
 4. For BROWSER items: write a Playwright runner spec in `src/app/_test/{feature}.spec.ts` (or the project's established Playwright test dir — check `playwright.config.ts`).
    Runner availability check: `npx playwright --version 2>/dev/null`.
    Available → write spec with `expect(page)` assertions. For a11y criteria: use `toMatchAriaSnapshot()`. For visual criteria: use `toHaveScreenshot()`.
+
+   Failure-artifact config (once per project): if `playwright.config.ts` has no `use.trace`/
+   `use.screenshot` set, add `use: { trace: 'retain-on-failure', screenshot: 'only-on-failure' }` —
+   never overwrite an existing choice. `retain-on-failure` (not `on-first-retry`) is the right
+   default here since this config has no `retries` set, so `on-first-retry` would never fire.
+
+   Named steps: wrap each checklist `steps[]` entry in `await test.step('{step text}', async () => {
+... })` so a FAIL cites the specific failing step by name, and its trace (default under
+   `test-results/`) can be attached in the fix-loop report.
+
+   Auth reuse: if the spec's steps start from an authenticated state, check for/create a captured
+   session at `playwright/.auth/{role}.json` — log in once, `await context.storageState({ path:
+'playwright/.auth/{role}.json' })` — then load it via `test.use({ storageState:
+'playwright/.auth/{role}.json' })` instead of repeating the login UI steps in this spec.
+
    Run via background Bash per workflow.md PHASE 1 execution rules.
    Runner not available → run `/core-setup playwright` to install, then retry. On persistent failure → mark as TOOL_ERROR.
 

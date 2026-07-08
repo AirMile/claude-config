@@ -20,27 +20,28 @@ Loaded by the AUTO agent in PHASE 1 when writing test specs. Not needed for init
 | Toast/notification    | trigger action, wait_for(text), snapshot (check notification)                                       |
 | Cookie/consent banner | wait_for(text: "Accept"/"OK"/"I agree", timeout: 3s), click dismiss, snapshot (verify banner gone)  |
 
-**A11Y patterns** (axe-core injection):
+**A11Y patterns** (`@axe-core/playwright`, `npm i -D @axe-core/playwright`):
 
-Inject axe-core before any A11Y scan:
+Run a scan via `AxeBuilder` — no CDN injection, no pinned version, runs against the real `page`:
 
-```js
-evaluate(() => {
-  const s = document.createElement("script");
-  s.src = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js";
-  document.head.appendChild(s);
-  return new Promise((r) => (s.onload = r));
-});
+```ts
+import { AxeBuilder } from "@axe-core/playwright";
+
+const results = await new AxeBuilder({ page })
+  .withTags(["wcag2a", "wcag2aa"])
+  // .exclude('{known-issue-selector}') — optional, for accepted known issues
+  .analyze();
+expect(results.violations).toEqual([]);
 ```
 
-| Pattern            | Steps                                                                          |
-| ------------------ | ------------------------------------------------------------------------------ |
-| axe-core scan      | navigate, inject axe, evaluate(() => axe.run()), check violations              |
-| Heading hierarchy  | navigate, snapshot, verify h1→h2→h3 order                                      |
-| ARIA labels        | navigate, snapshot, verify interactive elements have accessible names          |
-| Color contrast     | navigate, inject axe, evaluate(() => axe.run({ runOnly: ['color-contrast'] })) |
-| Keyboard tab order | press_key Tab × N, snapshot per focus, verify logical order                    |
-| Form labels        | navigate, snapshot, verify all inputs have associated labels                   |
+| Pattern            | Steps                                                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| axe-core scan      | navigate, `new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()`, check violations            |
+| Heading hierarchy  | navigate, snapshot, verify h1→h2→h3 order                                                                   |
+| ARIA labels        | navigate, snapshot, verify interactive elements have accessible names                                       |
+| Color contrast     | navigate, `new AxeBuilder({ page }).withTags(['wcag2a']).analyze()`, filter violations for `color-contrast` |
+| Keyboard tab order | press_key Tab × N, snapshot per focus, verify logical order                                                 |
+| Form labels        | navigate, snapshot, verify all inputs have associated labels                                                |
 
 **CLI patterns** (bash commands):
 

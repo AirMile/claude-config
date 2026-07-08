@@ -12,7 +12,15 @@ Loaded from PHASE 0 step 9 when ≥1 MANUAL, AUTO/BROWSER, or live-server AUTO/C
 2. Probe the default port (e.g. `curl -sf http://localhost:3000 -o /dev/null`):
    - **Miss** → proceed to item 3 (launch).
    - **Hit** → do NOT silently reuse. Verify the running server is the worktree project (process cwd via `lsof -p <pid> | grep cwd` / `pwdx <pid>`, or its git HEAD vs the worktree branch). Confirmed worktree → reuse the URL, skip launch. Main or another project serving → kill it or launch from the worktree on a free port. Never run MANUAL tests against a server with unverified branch identity.
-3. Otherwise start via `Bash` with `run_in_background: true`. Use the `Monitor` tool to stream the background process's output until a `Local:` / `ready` / `listening on` line appears, then extract the URL. Timeout 30s → graceful fallback.
+3. Otherwise start via `Bash` with `run_in_background: true`. If the URL is already known (fixed
+   port from `feature.json`/`project.json`/the default probed in step 2), poll it directly:
+   `curl -sf {url} -o /dev/null`, retry every 1-2s — 2xx/3xx/4xx all count as "server up" (same
+   readiness contract as Playwright's own `webServer` config). This is more robust than matching
+   ready-line wording, which varies by framework/version and silently breaks detection with no
+   fallback but the timeout. If the port is dynamic and the URL is only known once the process
+   prints it (e.g. an auto-assigned port), fall back to the `Monitor`-based scan for a `Local:` /
+   `ready` / `listening on` line to extract the URL, then switch to URL-polling to confirm
+   readiness. Timeout 30s (either path) → graceful fallback.
 4. Store `{devServerUrl, devServerPid}` on the live signal so PHASE 6 / PHASE Finalize can stop the
    process: `echo '{"skill":"verify","devServerUrl":"{url}","devServerPid":{pid}}' | node ~/.claude/scripts/ship-checkpoint.js signal {name}`
    (replace-wholesale, same as every other signal write — re-send `skill` and any other fields you
