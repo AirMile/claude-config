@@ -83,6 +83,7 @@ SECURITY:
 - XSS: .innerHTML =, dangerouslySetInnerHTML, document.write
 - Deserialization: pickle.loads on untrusted data
 - GitHub Actions: ${{ github.event. in run: commands
+- Server Actions ('use server' functions) without an auth/session check before the mutation — directly POST-able public endpoints, easy to miss
 
 CLARITY & QUALITY:
 - Control-flow smells: nested 3+ levels, ternary chains (a ? x : b ? y), dense one-liners → early returns / if-else / guards / lookup table
@@ -90,8 +91,9 @@ CLARITY & QUALITY:
 - Dead code / unused exports
 - Unnecessary comments (WHAT instead of WHY, task-references, narrating)
 - Redundant state (state that can be derived)
+- useEffect used to derive or reset state from props (e.g. `useEffect(() => setX(compute(props)), [props])`) — compute during render instead, or reset via a `key` prop on the component
 - Stringly-typed code where constants/enums exist
-- Error-handling smells: over-defensive try/catch around code that can't fail, OR silent swallowing (catch {}, `?? ""` that hides missing data)
+- Error-handling smells: over-defensive try/catch around code that can't fail, OR silent swallowing (catch {}, `?? ""` that hides missing data); floating promises — async calls without await, void, or .catch (silently dropped rejections, race conditions)
 - Leaky abstractions / internal details exposed
 - CODING-RULES.md violations — General + TypeScript + Testing sections (R007-R009, T001-T203, TST001-TST203)
 - Deviations from .project/conventions.md (only when the header lists it) → tag [MED|CONV] or [LOW|CONV]
@@ -156,6 +158,7 @@ LENS: Security
 
 Scan for (trace data flows from input to sink — don't just pattern-match):
 - AuthN/AuthZ: new routes/handlers without auth or permission check; IDOR (user-supplied id → direct object access without ownership validation)
+- Server Actions ('use server' functions) without an auth/session check before the mutation — these are directly POST-able public endpoints with no visible route surface, so a "new routes/handlers" scan alone can miss them
 - Secrets: hardcoded tokens/keys/passwords; secrets in logs or error messages; secrets in client-bundled code (CODING-RULES R008)
 - Input flows: user input reaching SQL/shell/file paths/HTML/redirects without validation or sanitization; mass assignment (req.body spread into model/update)
 - Crypto & randomness: md5/sha1 for passwords, Math.random for tokens/ids, homemade crypto, missing constant-time comparison for secrets
