@@ -89,6 +89,57 @@ if (!isset($_SESSION['user'])) {
 }
 ```
 
+### Next.js Server Actions
+
+```typescript
+// VULNERABLE: 'use server' function mutates without re-checking ownership
+"use server";
+export async function deletePost(postId: string) {
+  await db.post.delete({ where: { id: postId } }); // no session/ownership check
+}
+
+// SAFE: authenticate, then verify ownership before the mutation
+("use server");
+export async function deletePost(postId: string) {
+  const session = await auth();
+  const post = await db.post.findUnique({ where: { id: postId } });
+  if (!session || post.authorId !== session.user.id)
+    throw new Error("Unauthorized");
+  await db.post.delete({ where: { id: postId } });
+}
+```
+
+Server Actions are directly POST-able from the client with no visible route/middleware surface —
+treat every `'use server'` function like a public-facing API endpoint.
+
+### JWT Validation
+
+```typescript
+// VULNERABLE: no algorithm allow-list — susceptible to algorithm-confusion / alg:"none" bypass
+const payload = jwt.verify(token, secret);
+const { payload } = await jwtVerify(session, encodedKey);
+
+// SAFE: explicit algorithm allow-list
+const { payload } = await jwtVerify(session, encodedKey, {
+  algorithms: ["HS256"],
+});
+```
+
+### Excessive Data Exposure (unfiltered return)
+
+```typescript
+// VULNERABLE: correctly authorized, but returns the full DB row to the client
+("use server");
+export async function getUser(id: string) {
+  const session = await auth();
+  if (session.user.id !== id) throw new Error("Unauthorized");
+  return await db.user.findUnique({ where: { id } }); // leaks password hash, internal fields, etc.
+}
+
+// SAFE: shape the return value to a minimal DTO
+return { id: user.id, name: user.name, email: user.email };
+```
+
 ## Grep Patterns to Use
 
 Search for these patterns using the Grep tool:
@@ -108,6 +159,13 @@ Access-Control-Allow-Origin.*\*|cors\(\{.*origin.*true
 
 # Missing middleware (check routes without auth)
 app\.(get|post|put|delete|patch)\(.*\)|@app\.route|Route::(get|post)
+
+# Next.js Server Actions — flag files with 'use server' where a db/mutation call has no preceding
+# session/auth()/ownership check in the same function body
+['"]use server['"]
+
+# JWT verification without an algorithm allow-list
+jwtVerify\(|jwt\.verify\(
 ```
 
 ## Scanning Process
@@ -116,21 +174,27 @@ app\.(get|post|put|delete|patch)\(.*\)|@app\.route|Route::(get|post)
 2. **Plan scan** - Identify high-risk files (controllers, routes, API handlers)
 3. **Execute searches** - Use Grep to find patterns
 4. **Analyze context** - Read matched files to verify vulnerabilities
-5. **Assess severity** - CRITICAL/HIGH/MEDIUM/LOW based on exploitability
-6. **Generate output** - Structured findings with score
+5. **Audit `'use server'` files** (Next.js) - for each match: validate args, re-authorize
+   (session/auth check), verify resource ownership, check the return value is a filtered DTO (not a
+   raw DB record), confirm DB access goes through a DAL rather than an inline query
+6. **Assess severity** - CRITICAL/HIGH/MEDIUM/LOW based on exploitability
+7. **Generate output** - Structured findings with score
 
 ## Severity Guidelines
 
-| Issue Type                              | Severity | Confidence |
-| --------------------------------------- | -------- | ---------- |
-| IDOR on sensitive data (PII, financial) | CRITICAL | 95%        |
-| Path traversal to arbitrary files       | CRITICAL | 95%        |
-| SSRF to internal services               | CRITICAL | 90%        |
-| Missing auth on admin endpoints         | HIGH     | 90%        |
-| CORS wildcard on authenticated API      | HIGH     | 85%        |
-| IDOR on non-sensitive data              | MEDIUM   | 80%        |
-| Missing function-level access control   | MEDIUM   | 75%        |
-| Potential SSRF (needs verification)     | LOW      | 60%        |
+| Issue Type                                              | Severity | Confidence |
+| ------------------------------------------------------- | -------- | ---------- |
+| IDOR on sensitive data (PII, financial)                 | CRITICAL | 95%        |
+| Path traversal to arbitrary files                       | CRITICAL | 95%        |
+| SSRF to internal services                               | CRITICAL | 90%        |
+| JWT verification without algorithm allow-list           | CRITICAL | 90%        |
+| Server Action mutation without auth/ownership check     | HIGH     | 90%        |
+| Missing auth on admin endpoints                         | HIGH     | 90%        |
+| CORS wildcard on authenticated API                      | HIGH     | 85%        |
+| IDOR on non-sensitive data                              | MEDIUM   | 80%        |
+| Missing function-level access control                   | MEDIUM   | 75%        |
+| Excessive data exposure (unfiltered DB record returned) | MEDIUM   | 70%        |
+| Potential SSRF (needs verification)                     | LOW      | 60%        |
 
 ## Output Format
 
@@ -196,4 +260,7 @@ Return your findings in this exact structure:
 - CWE-22: Path Traversal
 - CWE-918: Server-Side Request Forgery (SSRF)
 - CWE-942: Permissive Cross-domain Policy (CORS)
+- CWE-347: Improper Verification of Cryptographic Signature (JWT algorithm bypass)
+- CWE-213: Exposure of Sensitive Information Due to Incompatible Policies
+- CWE-200: Exposure of Sensitive Information to an Unauthorized Actor
 ```

@@ -146,9 +146,35 @@ db.users.find({ $where: userInput });
 db.users.find({ username: String(req.body.username) });
 ```
 
+### Unvalidated Input Reaching a Sink
+
+```typescript
+// VULNERABLE: raw input flows straight into a sink with no schema validation anywhere in the file
+"use server";
+export async function createPost(formData: FormData) {
+  await db.post.create({ data: { title: formData.get("title") } }); // no .safeParse()/.parse()
+}
+
+// SAFE: validate at the boundary before the value reaches the sink
+const schema = z.object({ title: z.string().min(1).max(200) });
+export async function createPost(formData: FormData) {
+  const parsed = schema.safeParse({ title: formData.get("title") });
+  if (!parsed.success) throw new Error("Invalid input");
+  await db.post.create({ data: { title: parsed.data.title } });
+}
+```
+
+All inputs (FormData, query parameters, headers) must be validated and treated as untrusted before
+reaching a DB/mutation call — this is the precursor anti-pattern to the tainted-sink patterns above:
+input reaches the sink with no validation boundary in between, not just an unsafely-built query.
+
 ## Grep Patterns to Use
 
 ```
+# Unvalidated input reaching a sink — flag files where formData/req.body/req.query feeds a
+# db/query/exec call with no .safeParse(/.parse( (zod/yup) anywhere in the file
+formData\.get\(|req\.body|req\.query
+
 # SQL Injection
 SELECT.*FROM.*\+|SELECT.*FROM.*\$\{|execute\(.*\+|query\(.*\+|query\(`.*\$\{
 
@@ -171,22 +197,27 @@ render_template_string|Template\(.*\)\.render|from_string\(|eval\(|new Function
 2. **Identify high-risk files** - Controllers, API handlers, database models, views
 3. **Execute pattern searches** - Use Grep for injection patterns
 4. **Trace data flow** - Verify user input reaches vulnerable sink
-5. **Assess severity** - Based on injection type and data sensitivity
-6. **Generate output** - Structured findings with fix recommendations
+5. **Check for a validation boundary** - for `'use server'`/route-handler files reading
+   `formData`/`req.body`/`req.query`, confirm a `.safeParse(`/`.parse(` call sits between the input
+   and any db/query/exec call in the same file; its absence is a finding on its own, independent of
+   whether the sink itself is otherwise safely parameterized
+6. **Assess severity** - Based on injection type and data sensitivity
+7. **Generate output** - Structured findings with fix recommendations
 
 ## Severity Guidelines
 
-| Issue Type                           | Severity | Confidence |
-| ------------------------------------ | -------- | ---------- |
-| SQL injection (direct concatenation) | CRITICAL | 98%        |
-| Command injection with user input    | CRITICAL | 98%        |
-| Stored XSS                           | CRITICAL | 95%        |
-| Template injection (SSTI)            | CRITICAL | 95%        |
-| Reflected XSS                        | HIGH     | 90%        |
-| DOM XSS (innerHTML)                  | HIGH     | 85%        |
-| NoSQL injection                      | HIGH     | 85%        |
-| Second-order SQL injection           | MEDIUM   | 70%        |
-| Potential XSS (needs context)        | LOW      | 60%        |
+| Issue Type                                                     | Severity | Confidence |
+| -------------------------------------------------------------- | -------- | ---------- |
+| SQL injection (direct concatenation)                           | CRITICAL | 98%        |
+| Command injection with user input                              | CRITICAL | 98%        |
+| Stored XSS                                                     | CRITICAL | 95%        |
+| Template injection (SSTI)                                      | CRITICAL | 95%        |
+| Reflected XSS                                                  | HIGH     | 90%        |
+| DOM XSS (innerHTML)                                            | HIGH     | 85%        |
+| NoSQL injection                                                | HIGH     | 85%        |
+| Second-order SQL injection                                     | MEDIUM   | 70%        |
+| Unvalidated input reaches a sink (no safeParse/parse boundary) | MEDIUM   | 65%        |
+| Potential XSS (needs context)                                  | LOW      | 60%        |
 
 ## Output Format
 
