@@ -11,15 +11,21 @@ Shared reference for dev-ship's verify phase PHASE 5d (measurement) and dev-ship
 Detect package manager + test framework from `package.json`:
 
 ```bash
-node -e "const p=require('./package.json'); const d={...p.dependencies,...p.devDependencies}; console.log(d.vitest?'vitest':d.jest?'jest':d.mocha?'mocha':'unknown')"
+node -e "const p=require('./package.json'); const d={...p.dependencies,...p.devDependencies}; const t=p.scripts&&p.scripts.test||''; console.log(d.vitest?'vitest':d.jest?'jest':d.mocha?'mocha':t.includes('node --test')?'node:test':'unknown')"
 ```
 
-| Framework | Stryker runner-package           |
-| --------- | -------------------------------- |
-| vitest    | `@stryker-mutator/vitest-runner` |
-| jest      | `@stryker-mutator/jest-runner`   |
-| mocha     | `@stryker-mutator/mocha-runner`  |
-| unknown   | skip mutation step + log reason  |
+| Framework | Stryker runner-package           | Config                                       |
+| --------- | -------------------------------- | -------------------------------------------- |
+| vitest    | `@stryker-mutator/vitest-runner` |                                              |
+| jest      | `@stryker-mutator/jest-runner`   |                                              |
+| mocha     | `@stryker-mutator/mocha-runner`  |                                              |
+| node:test | `@stryker-mutator/tap-runner`    | `testRunner: "tap"`, `tap.testFiles: [glob]` |
+| unknown   | skip mutation step + log reason  |                                              |
+
+**node:test caveat:** on Node ≥23 `node --test` defaults to the human-readable `spec` reporter, not
+TAP — plain `node --test` in `scripts.test` does **not** emit TAP on its own. tap-runner works anyway
+because it invokes tests with its own default `nodeArgs`, which force the tap reporter regardless of
+what `scripts.test` says.
 
 **No package install in this step.** If the runner is missing: log `mutationScore: { skipped: true, reason: "stryker not installed" }` and continue. Installation belongs in `/core-setup` or a separate user action.
 
@@ -34,12 +40,19 @@ npx stryker run \
   --reporters json,clear-text \
   --jsonReporter.fileName .project/features/{feature-name}/stryker-report.json \
   --concurrency 2 \
-  --timeoutMS 10000
+  --timeoutMS 10000 \
+  --ignoreStatic \
+  --coverageAnalysis perTest
 ```
 
 - `--incremental` keeps previous results cached in `reports/stryker-incremental.json` — repeated runs are fast (<30s on small features).
 - `--mutate` limits the scope to the feature files. No full-codebase scan.
 - `--concurrency 2` keeps it within the agentic CPU/token budget.
+- `--ignoreStatic` skips mutants only executed at module load (never exercised by a test anyway).
+  `--coverageAnalysis perTest` is already Stryker's own default — passed explicitly as a guard against
+  a project config that overrides it, since `ignoreStatic` requires per-test coverage analysis to
+  work. No-op on the vitest runner (it ignores `coverageAnalysis` and always uses its own value) —
+  harmless there, active on jest/mocha/tap.
 - Wall-clock target: <2 min on ≤10 files. If exceeded: log timeout and skip this step.
 
 ---
@@ -158,7 +171,7 @@ Run before "Initialize change tracking" in `apply-rollback.md`:
 
 1. Read `feature.json#tests.mutationScore.score` as baseline. Missing → flag baseline = null.
 2. Detect runner. Skipped → log warning, continue without the gate.
-3. Run Stryker incremental **with `--force`** to ignore the stale cache from the pre-refactor code state: `npx stryker run --incremental --force --mutate "{files}" --reporters json --jsonReporter.fileName .project/features/{feature-name}/stryker-preflight.json --concurrency 2`. The `--force` ensures the baseline comparison happens against the current code state, not against a snapshot from verify. Write to a separate report file (`stryker-preflight.json`) so verify's `stryker-report.json` stays intact.
+3. Run Stryker incremental **with `--force`** to ignore the stale cache from the pre-refactor code state: `npx stryker run --incremental --force --mutate "{files}" --reporters json --jsonReporter.fileName .project/features/{feature-name}/stryker-preflight.json --concurrency 2 --ignoreStatic --coverageAnalysis perTest`. The `--force` ensures the baseline comparison happens against the current code state, not against a snapshot from verify. Write to a separate report file (`stryker-preflight.json`) so verify's `stryker-report.json` stays intact.
 4. Parse `score`. Compare:
 
    | Condition                                      | Action                                                                                                                    |
