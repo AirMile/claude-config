@@ -146,15 +146,46 @@ For Jest: same pattern with `jest.resetModules()`.
 
 **`happy` category stays example-based.** A concrete example reads better as a specification of the golden path. Reserve property-based for the generalizing criteria.
 
-**Setup.** One-time: `npm i -D fast-check @fast-check/vitest`. The `@fast-check/vitest` bridge provides `test.prop()` and `it.prop()` with vitest-compatible modifiers.
+**Setup.** One-time: `npm i -D fast-check`. `fast-check` alone is the runner-agnostic base — the
+runner-specific bridge packages below (`@fast-check/vitest`, `@fast-check/jest`) are optional sugar,
+add whichever matches the project's test framework.
 
-**Form 1 — Full property test (replaces the example for edge/boundary REQs):**
+**Core form — `fc.assert(fc.property(...))`, works in any runner** (replaces the example for
+edge/boundary REQs):
 
 ```typescript
-import { test, fc } from "@fast-check/vitest";
+import fc from "fast-check";
+import { test, expect } from "vitest"; // or your runner's test/expect
 
 // REQ-005 (category: boundary): cart-total is commutative over item order
-test.prop({ items: fc.array(fc.record({ id: fc.uuid(), price: fc.nat() })) })(
+test("when items added in any order, then cart-total is identical", () => {
+  fc.assert(
+    fc.property(
+      fc.array(fc.record({ id: fc.uuid(), price: fc.nat() })),
+      (items) => {
+        const a = createCart();
+        items.forEach((i) => a.add(i));
+        const b = createCart();
+        [...items].reverse().forEach((i) => b.add(i));
+        return a.total === b.total;
+      },
+    ),
+    { seed: 4242, numRuns: 500 },
+  );
+});
+```
+
+**Bridge sugar (optional).** If the project already uses vitest or Jest, `test.prop()`/`it.prop()`
+reads slightly lighter than wrapping `fc.assert(fc.property(...))` by hand:
+
+```typescript
+// @fast-check/vitest (npm i -D @fast-check/vitest) — or @fast-check/jest, identical shape, for Jest
+import { test, fc } from "@fast-check/vitest";
+
+test.prop(
+  { items: fc.array(fc.record({ id: fc.uuid(), price: fc.nat() })) },
+  { seed: 4242 },
+)(
   "when items added in any order, then cart-total is identical",
   ({ items }) => {
     const a = createCart();
@@ -166,22 +197,37 @@ test.prop({ items: fc.array(fc.record({ id: fc.uuid(), price: fc.nat() })) })(
 );
 ```
 
-**Form 2 — One-shot random inside a classic `test()`** (lighter adoption when full-prop feels like overkill):
+**node:test / Deno** (no bridge package needed — same core form):
 
 ```typescript
-test("display-name contains first-name for arbitrary user", ({ g }) => {
-  const user = {
-    firstName: g(fc.string),
-    lastName: g(fc.string),
-    age: g(fc.integer, { min: 0, max: 120 }),
-  };
-  expect(computeDisplayName(user)).toContain(user.firstName);
+// node:test — run via `node --test`
+const test = require("node:test");
+const assert = require("node:assert");
+const fc = require("fast-check");
+
+test("cart-total is commutative over item order", () => {
+  fc.assert(
+    fc.property(
+      fc.array(fc.record({ id: fc.uuid(), price: fc.nat() })),
+      (items) => {
+        /* ... */
+      },
+    ),
+    { seed: 4242 },
+  );
 });
 ```
 
-**Seed-pinning is mandatory.** Otherwise every run is different and debugging becomes hell. Two options:
+```typescript
+// Deno
+Deno.test("cart-total is commutative over item order", () => {
+  fc.assert(fc.property(/* ... */), { seed: 4242 });
+});
+```
 
-- **Per-test seed** (preferred for specific REQs): `test.prop([...], { seed: 4242, numRuns: 500 })`
+**Seed-pinning is mandatory** for every form above. Otherwise every run is different and debugging becomes hell. Two options:
+
+- **Per-call seed** (preferred for specific REQs): pass `{ seed: 4242, numRuns: 500 }` as the last arg to `fc.assert(...)` (core form) or `test.prop([...], { seed, numRuns })` (bridge sugar).
 - **Global** (in `test/setup.ts`): `fc.configureGlobal({ seed: Number(process.env.FC_SEED) || 12345 })`
 
 On a counterexample, fast-check logs the seed + shrink path — pin that seed permanently in a regression test to cover the minimal counterexample for good.
@@ -198,4 +244,5 @@ On a counterexample, fast-check logs the seed + shrink path — pin that seed pe
 
 - [Mocking guidelines](references/mocking.md) — when to mock and when not to, DI patterns
 - [Interface design](references/interface-design.md) — deep modules, testability rules
-- [@fast-check/vitest docs](https://github.com/dubzzz/fast-check/tree/main/packages/vitest) — generators, seeds, async properties
+- [fast-check docs](https://fast-check.dev/) — core `fc.assert`/`fc.property` API, generators, seeds, async properties
+- [@fast-check/vitest docs](https://github.com/dubzzz/fast-check/tree/main/packages/vitest) — optional vitest bridge sugar

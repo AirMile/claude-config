@@ -137,20 +137,29 @@ Including acceptance tests from earlier `/dev-verify` runs (`test/acceptance/*.t
 
 Compute the set of source files changed since baseline and run linter only on those. `tsc --noEmit` always runs globally (no scope possible):
 
+Run Biome and ESLint **independently** when both are present — dual-linting, not either/or. Biome
+covers format + base rules at native speed but its type-aware rules are nursery-only; ESLint's
+`recommendedTypeCheckedOnly` (the _Only_ variant, not `recommendedTypeChecked` — it omits the
+non-type-aware rules Biome already covers, so the two don't duplicate/conflict) is what typescript-eslint's
+own docs recommend pairing with a native-speed linter for full type-aware coverage (e.g.
+`no-floating-promises`). This recommendation comes from typescript-eslint's docs — Biome's own docs
+position Biome as an ESLint _replacement_, not a complement, so don't assume both projects endorse
+the pairing.
+
 ```bash
 PRE_SHA=$(cat "$REPO/.project/session/pre-skill-sha.txt")
 SCOPED=$(git -C "$REPO" diff --name-only "$PRE_SHA" HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' 2>/dev/null)
 [ -z "$SCOPED" ] && SCOPED=$(git -C "$REPO" diff --name-only "$PRE_SHA" -- '*.ts' '*.tsx' '*.js' '*.jsx')
 
-# Detect linter from package.json (biome → eslint → none). Skip if no SCOPED files.
+# Detect linters from package.json — run both independently if both are present.
 if [ -n "$SCOPED" ]; then
-  if node -e "const d=require('$REPO/package.json'); const all={...d.dependencies,...d.devDependencies}; if(!('@biomejs/biome' in all)) process.exit(1)" 2>/dev/null; then
-    npx biome check --write $SCOPED 2>&1 | tail -3
-  elif node -e "const d=require('$REPO/package.json'); const all={...d.dependencies,...d.devDependencies}; if(!('eslint' in all)) process.exit(1)" 2>/dev/null; then
-    npx eslint --fix $SCOPED 2>&1 | tail -5
-  else
-    echo "LINT: skipped (no biome or eslint in package.json)"
-  fi
+  HAS_BIOME=0; HAS_ESLINT=0
+  node -e "const d=require('$REPO/package.json'); const all={...d.dependencies,...d.devDependencies}; if(!('@biomejs/biome' in all)) process.exit(1)" 2>/dev/null && HAS_BIOME=1
+  node -e "const d=require('$REPO/package.json'); const all={...d.dependencies,...d.devDependencies}; if(!('eslint' in all)) process.exit(1)" 2>/dev/null && HAS_ESLINT=1
+
+  [ "$HAS_BIOME" = "1" ] && npx biome check --write $SCOPED 2>&1 | tail -3
+  [ "$HAS_ESLINT" = "1" ] && npx eslint --fix $SCOPED 2>&1 | tail -5
+  [ "$HAS_BIOME" = "0" ] && [ "$HAS_ESLINT" = "0" ] && echo "LINT: skipped (no biome or eslint in package.json)"
 fi
 npx tsc --noEmit 2>&1 | head -20
 ```
