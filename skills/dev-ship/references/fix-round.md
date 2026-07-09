@@ -49,8 +49,8 @@ protect:
    A finding whose root cause is still unclear after reviewing the ledger evidence does **not** get a
    guessed fix: run `references/debug-round.md` Steps 4–5 (Explore investigation + research) for that
    finding inside this same plan-mode session, then design its fix from that evidence. This is the
-   same machinery the § Re-check ladder forces after 2 failed rounds — here it runs proactively,
-   before a first guess is even attempted.
+   same machinery the § Re-check ladder escalates to on a first batch-fix failure — here it runs
+   proactively, before a first guess is even attempted.
 
 2. **Group findings into file-disjoint groups** — two findings share a group only if grouping them
    doesn't help; two findings that touch overlapping files **must** be grouped together (a single
@@ -153,52 +153,45 @@ Rewrite the live signal **with** `waiting: "manual-tests"`. Walk **only the item
 round touched** — Steps B–E of `manual-interview-walkthrough.md` (no new interview close; that only
 runs once per full walkthrough).
 
+This re-check covers the **first-ever** fix attempt for each item (the batch dispatch above, which
+can cover several findings from the same walkthrough in one gate — that batching is the reason a
+plain fix-round exists at all: don't park once per finding). What happens next is a **deterministic
+park-first ladder**, not a menu — the item's `debugTier` field (`manual.items[].debugTier`,
+upserted the same way as the rest of the ledger) is the single progress marker; there is no
+`failedRounds`-style repeat-count gate on this side of the ladder (dev-ship). `debugTier` moves
+strictly forward: absent → `"light"` → `"heavy"` → resolved (accepted or parked-open) — see
+`shared/DEBUG-LADDER.md` for the full tier table (dev vs. game — game-ship keeps its own
+`failedRounds`-based ladder unchanged).
+
 - **Pass** → update `manual.items[].verdict` to `"pass"`; done with this item.
-- **Trivial nitpick** surfaces (cosmetic MEASURABLE, obvious) → an inline **polish loop**: no gate, no
-  plan mode, iterate directly in the main chat until the user is satisfied (this is the old
-  Tweak/iterate-mode behaviour, now scoped specifically to post-dispatch polish — not a substitute for
-  the round gate on anything substantial).
-- **Substantial new finding, or still failing** → append it to the ledger now (this write happens
-  outside plan mode — we are back in the main-chat re-check step, not the gate) via
-  `ship-checkpoint.js item {feature} manual`, incrementing that item's `failedRounds` (starts at 0;
-  the same upsert call — no script change) — this counter, not self-estimated confidence, drives the
-  mechanical ladder below (`shared/DEBUG-LADDER.md`'s "every failed round escalates one tier" made
-  literal). Then present **one** `AskUserQuestion` rather than looping automatically — repeated rounds
-  burn main-chat context fast, and the user should choose how to spend the next one:
+- **Cosmetic tweak** (MEASURABLE, obvious, ≤1-2 files — the same skip-condition
+  `dev-verify/references/fix-loop.md § Plan-mode gate` uses) → an inline **polish loop**: no gate, no
+  plan mode, iterate directly in the main chat until the user is satisfied. No park, no `debugTier`
+  set — this never enters the debug ladder.
+- **Anything else that's tweak-class AND every other open finding this round is also tweak-class**
+  (never when any open finding is `fail`-class — see the Fail-never-to-todo policy in
+  `phase-3-manual-finalize.md § Findings ledger + routing`) → one `AskUserQuestion`, the only choice
+  point on this path:
+  1. **"Park — debug in a fresh chat"** (recommended) → same park mechanics as below.
+  2. **"Defer to backlog todo"** → route each remaining finding to `/project-todo`, then proceed to
+     the regression re-check and completion on the verified scope.
+- **Otherwise (any `fail`-class finding, or a substantial tweak with a `fail` sibling this round)**
+  → always park, no question asked:
+  1. Patch the ledger item: `debugTier: "light"` (via
+     `ship-checkpoint.js item {feature} manual` — this write happens outside plan mode, we're back in
+     the main-chat re-check step, not the gate).
+  2. `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`.
+  3. Print the park/handoff template from `SKILL.md § PHASE 1–4` with `/dev-ship {feature}` as the
+     resume command. **End the turn.**
+  4. A fresh session resumes via `phase-3-manual-finalize.md § Resume entry`'s `debugTier: "light"`
+     branch, landing directly in `references/debug-round.md` for this item. Other items in the ledger
+     are unaffected and keep progressing normally (a later resume walks each open item to wherever its
+     own `debugTier` says it is).
 
-  **`failedRounds == 1`:**
+`debug-round.md` (light) and `debug-round-heavy.md` own their **own** re-check + escalation from
+here — a light-round failure parks itself straight to `debugTier: "heavy"` (no return trip through
+this section), and a heavy-round failure is the hard ceiling (accept-or-park, no further tier). This
+section only ever fires once per item, for the initial batch attempt.
 
-  1. **"Park — continue in a fresh chat"** (recommended). The ledger is already persistent:
-     `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`, patch
-     `manual.pendingRound: true`, print the park/handoff template from `SKILL.md § PHASE 1–4` with
-     `/dev-ship {feature}` as the resume command, **end the turn**. A fresh session resumes via
-     `phase-3-manual-finalize.md § Resume entry`'s `manual.pendingRound` bullet, landing directly in
-     `§ Hoisted bookkeeping` for the next round (re-check already ran here — it does not re-run).
-  2. **"Another round in this chat"** → go back to `§ Hoisted bookkeeping` for a new round (not in
-     plan mode now, so its writes execute immediately, per the "not in plan mode yet" case there).
-  3. **"Escalate — debug round"** → Read `references/debug-round.md` and run it in full for this item
-     (Explore investigation + Context7 research in plan mode + a single evidence-backed fix plan). Other
-     items in the ledger are unaffected and keep progressing normally.
-  4. **"Defer to backlog todo"** — offered **only** when every open finding in this round is
-     `tweak`-class (never when any is `fail` — see the Fail-never-to-todo policy in
-     `phase-3-manual-finalize.md § Findings ledger + routing`): route each remaining finding to
-     `/project-todo`, then proceed to the regression re-check and completion on the verified scope.
-
-  **`failedRounds == 2`:** same four options, but option 3 ("Escalate — debug round") is now the
-  **recommended** one — do not keep offering a plain repeat round as the default once a round has
-  already failed twice with no new evidence.
-
-  **`failedRounds >= 3`** (hard ceiling, mirrors `dev-verify/references/fix-loop.md`'s max-3):
-  option 2 ("Another round in this chat") is **no longer offered** for this item — repeating the same
-  tier a third time burns a round without new information. Options collapse to:
-
-  1. **"Debug round"** (recommended) — as above, but if `references/debug-round.md` has already run
-     once for this item and failed again, its own park step (Step 8) is tier 3: it hands off to
-     `/dev-debug {feature}` directly, with the ledger's evidence pre-filled.
-  2. **"Park — continue in a fresh chat"** — same mechanics as `failedRounds == 1` option 1.
-
-  (`"Defer to backlog todo"` stays available under the same tweak-only condition at every
-  `failedRounds` level.)
-
-Once every item is Pass (or explicitly Skip/Defer) and no round is in flight, return to
+Once every item is Pass (or explicitly Skip/Defer/Accepted) and no round is in flight, return to
 `phase-3-manual-finalize.md § Regression re-check`.

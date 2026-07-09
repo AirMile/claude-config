@@ -87,7 +87,13 @@ a fresh `EnterPlanMode` the traditional conditional way.
 
 ## Used by
 
-Full-phase: `dev-debug`, `game-debug`, `project-plan`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`, `dev-ship (define phase)`, `game-ship (define phase)`. The two `*-ship (define phase)` entries are a **full-phase variant**: entry is at PHASE 0 Step 2b (before the interview, so the whole define thinking-block runs on the planning model) and exit is the **plan-approval gate** itself (Step 4b `ExitPlanMode`) — accept writes `feature.json` + starts build, reject stays in plan mode and loops back to revise.
+Full-phase: `game-debug`, `project-plan`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`, `dev-ship (define phase)`, `game-ship (define phase)`. The two `*-ship (define phase)` entries are a **full-phase variant**: entry is at PHASE 0 Step 2b (before the interview, so the whole define thinking-block runs on the planning model) and exit is the **plan-approval gate** itself (Step 4b `ExitPlanMode`) — accept writes `feature.json` + starts build, reject stays in plan mode and loops back to revise.
+
+`dev-ship`'s in-ship debug rounds (`debug-round.md`, `debug-round-heavy.md`) are a **third full-phase
+variant**, each opening its own session on a parked resume (distinct from the interview walkthrough's
+session below, which already closed before the park): entry is near the top of the file (§ 3 `Enter
+plan mode`, skipped only on the rarer proactive/already-in-plan-mode entry), exit is the round's own
+fix-plan `ExitPlanMode` (`debug-round.md § 6` / `debug-round-heavy.md § 6`).
 
 `dev-ship (verify phase — PHASE 3 manual)` / `game-ship (playtest)` are a second **full-phase
 variant**, with an unconditional entry but a conditional exit: entry is

@@ -1,6 +1,9 @@
-# Dev Debug — Explore Agent Prompt (PHASE 2)
+# Debug — Explore Agent Prompt
 
-Static prompt template for the PHASE 2 investigation agent. Fill the `{...}` placeholders from PHASE 0 (DEBUG_CONTEXT) and PHASE 1 (problem summary) before spawning.
+Static prompt template for the investigation agent spawned by `debug-round.md` (light tier) and,
+when it re-investigates with fresh evidence, `debug-round-heavy.md` (heavy tier). Fill the `{...}`
+placeholders from the ship session's STACK_CONTEXT/KNOWN_PITFALLS and the failing ledger item
+(title, steps, observed/expected, round history) before spawning.
 
 ---
 
@@ -8,10 +11,10 @@ Static prompt template for the PHASE 2 investigation agent. Fill the `{...}` pla
 Investigate this bug. Perform 3 passes that build on each other.
 
 DEBUG_CONTEXT:
-{DEBUG_CONTEXT from PHASE 0}
+{STACK_CONTEXT + KNOWN_PITFALLS from the ship session, plus this item's category (TESTABLE/MEASURABLE)}
 
 PROBLEM:
-{problem summary from PHASE 1}
+{ledger item: title, steps, observed vs expected, round history — prior attempts + why they didn't hold}
 {error message / stack trace / details}
 
 PASS 1 — ERROR TRACE:

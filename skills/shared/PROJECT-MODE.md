@@ -27,7 +27,7 @@ Always read fresh per invoke — never cache across phases or skill-runs. The ba
 
 ### Mode-agnostic (no read needed)
 
-dev-ship, dev-debug, dev-learn, dev-security, core-commit (reads `commitConvention`, not `mode`), core-audit, content-rewrite, content-write, core-update, core-bootstrap.
+dev-ship, dev-learn, dev-security, core-commit (reads `commitConvention`, not `mode`), core-audit, content-rewrite, content-write, core-update, core-bootstrap.
 
 ### Mode-aware (branches on TEAM_MODE)
 

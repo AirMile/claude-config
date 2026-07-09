@@ -188,10 +188,12 @@ the pointer-file template that carries this slice.
 >   **Same-session escape hatch**: if the user replies "continue here" (or equivalent), continue
 >   with `orchestration.md § 4` (PHASE 3 completion) inline in this chat instead of parking.
 > - **`"failed"`** → print, depending on `failedPhase`, then proceed to PHASE 5's failure path:
->   - `"build"`: "Build failed at `{build.failedAt}`, worktree intact at `{build.worktreePath}` — run
->     `/dev-debug {feature}`, or re-run `/dev-ship {feature}` to resume."
->   - `"verify"`: "Auto-verify failed at `{verify.failedAt}`, worktree intact — run
->     `/dev-debug {feature}`, or re-run `/dev-ship {feature}` to resume."
+>   - `"build"`: "Build failed at `{build.failedAt}`, worktree intact at `{build.worktreePath}` —
+>     re-run `/dev-ship {feature}` to retry, or go straight to root-cause analysis via
+>     `references/debug-round-heavy.md` (non-ledger entry)."
+>   - `"verify"`: "Auto-verify failed at `{verify.failedAt}`, worktree intact — re-run
+>     `/dev-ship {feature}` to retry, or go straight to root-cause analysis via
+>     `references/debug-round-heavy.md` (non-ledger entry)."
 
 You run both agents sequentially in isolated contexts (model/effort matrix in § Design), launch
 PHASE 4's refactor/security/finalize when no manual items remain, and continue to PHASE 5. Full
@@ -274,4 +276,5 @@ preloads the relevant learnings via `shared/LEARNINGS-LOAD.md`.
 > **Todo**: mark PHASE 5 → `completed`.
 
 On any agent failure earlier in the flow, PHASE 5 still runs but reports the stop point and the
-recovery command (`/dev-debug {feature}`) instead of a green summary.
+recovery options (re-run `/dev-ship {feature}`, or `references/debug-round-heavy.md` directly)
+instead of a green summary.

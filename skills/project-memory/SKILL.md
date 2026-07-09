@@ -61,5 +61,5 @@ If a matching thinking doc looks central to the answer, offer to open it (the fi
 ## Notes
 
 - **Relevance, not recency**: ranking comes from `learnings-search.js` `scoreEntry()` — tag > feature > keyword, recency only as a tiebreak. An old but on-topic entry will surface; that is the point.
-- **No writes, no side effects**: if the user's question reveals a missing learning, note it in the answer — recording it is a separate `/dev-ship` or `/dev-debug` concern, not this skill's.
+- **No writes, no side effects**: if the user's question reveals a missing learning, note it in the answer — recording it is a separate `/dev-ship` concern, not this skill's.
 - **Token discipline**: cap each store's pull (learnings `--cap 12`; a handful of components/features/docs). The answer is a synthesis, not a transcript.

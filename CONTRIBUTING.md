@@ -19,8 +19,11 @@ Conventional commits: `feat(skill-name):`, `fix(skill-name):`, `docs:`, `refacto
 ## Dev/game pipeline sync
 
 For structural changes to dev-pipeline skills (`dev-define`, `dev-build`, `dev-verify`,
-`dev-debug`, `dev-refactor`): check whether the game-pipeline counterpart (`game-*`) needs
-the same change. Domain-specific content (Godot vs web, GUT vs browser) does not need to sync.
+`dev-refactor`, or dev-ship's in-ship debug rounds `debug-round.md`/`debug-round-heavy.md`): check
+whether the game-pipeline counterpart (`game-*`, `game-debug`) needs the same change. Note the
+asymmetry: dev's debug ladder lives inside dev-ship (no standalone skill); game's remains the
+standalone `game-debug` skill — sync the shared discipline (`DEBUG-LADDER.md`), not the shape.
+Domain-specific content (Godot vs web, GUT vs browser) does not need to sync.
 
 ## Shared infra
 

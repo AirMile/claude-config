@@ -17,29 +17,36 @@ last session handed off here — the deliberate token break after auto-verify le
 common case — or was interrupted), `results.verify` comes from
 the checkpoint (`ship-{feature}.json`), not from an in-context AGENT 2 return. Run **Step 1** (enter
 the worktree) and **Step 2** (launch the app via the App-launch rule) exactly as on the normal path,
-then route on the checkpoint's `manual` block:
+then route **per open item** in the following precedence order (highest first — check 1 before 2,
+2 before 3, and so on; a resume typically finds only one kind of open work, but if the ledger has
+several items at different stages, e.g. one still mid-dispatch while another already escalated,
+handle each via its own highest-matching bullet):
 
-- **No `manual` block, or `manual.items` shorter than `results.verify.remainingManualItems`** →
-  run the walkthrough (`manual-interview-walkthrough.md`), filtering `remainingManualItems` down to
-  the items **not yet present** in `manual.items` (already-verdicted items are not re-asked). The
-  walkthrough's Step A re-arms `active-{feature}.json` with `waiting: "manual-tests"`, so the board
-  flips the row from **parked** back to **waiting**.
-- **Ledger complete (`manual.items` covers every item, `manual.interviewDone: true`) but no
-  `manual.fixPlan`** → go straight to `§ Findings ledger + routing` below and re-enter the fix-plan
-  gate (the ledger is durable, so the walkthrough never re-runs — only the round's fix-plan draft was
-  lost, same as a rejected-and-abandoned plan would be).
-- **`manual.fixPlan` present and `activeWorkflow: "phase3fix"`** (a dispatch was in flight) → go to
-  `fix-round.md § Dispatch` and relaunch `ship-fix.js` with `resume` built from `manual.dispatch`
-  (cross-session) or `resumeFromRunId` (same session, per `shared/SHIP-RESUME.md`).
-- **`manual.fixPlan` present and dispatch complete (`manual.dispatch.allFixed` or all groups
-  terminal)** → go to `fix-round.md § Re-check`.
-- **`manual.pendingRound: true`** (a prior round's re-check found still-open findings and the user
-  chose to park instead of continuing — `fix-round.md § Re-check`'s park option) → clear the flag,
-  then go straight to `fix-round.md § Hoisted bookkeeping` for the next round. Re-check already ran
-  before parking — do not re-run it. **Exception**: items flagged `escalatedTo: "dev-debug"` skip fix
-  design entirely — walk them straight through re-check (`manual-interview-walkthrough.md` Steps B–E);
-  a pass clears the flag, a fail re-enters the ladder at the ceiling (the debug round already ran for
-  this item — see `references/debug-round.md`).
+1. **Item has `heavyRoundFailed: true`** (still open — cleared once resolved) → resume directly at
+   `debug-round-heavy.md § 8`'s re-check. The fix plan already exists; nothing to redesign.
+2. **Item has `debugTier: "heavy"`** (and not `heavyRoundFailed`) → go straight to
+   `references/debug-round-heavy.md § 1` for that item (`debug-round.md § 8` escalated it there).
+3. **Item has `debugTier: "light"`** → go straight to `references/debug-round.md § 1` for that item
+   (`fix-round.md § Re-check` parked it there) — its evidence is already durable in the ledger,
+   nothing is re-asked.
+4. **`manual.fixPlan` present and `activeWorkflow: "phase3fix"`** (a dispatch was in flight) → go to
+   `fix-round.md § Dispatch` and relaunch `ship-fix.js` with `resume` built from `manual.dispatch`
+   (cross-session) or `resumeFromRunId` (same session, per `shared/SHIP-RESUME.md`).
+5. **`manual.fixPlan` present, dispatch complete (`manual.dispatch.allFixed` or all groups
+   terminal), and ≥1 item from that round has no `verdict: "pass"` yet and no `debugTier` set** →
+   go to `fix-round.md § Re-check` for those still-open items (checks 1–3 already claimed any item
+   that re-check has already escalated on a prior pass — this bullet only fires for the ones it
+   hasn't reached yet).
+6. **Ledger complete (`manual.items` covers every item, `manual.interviewDone: true`) but no
+   `manual.fixPlan`** → go straight to `§ Findings ledger + routing` below and re-enter the fix-plan
+   gate (the ledger is durable, so the walkthrough never re-runs — only the round's fix-plan draft was
+   lost, same as a rejected-and-abandoned plan would be).
+7. **No `manual` block, or `manual.items` shorter than `results.verify.remainingManualItems`** →
+   run the walkthrough (`manual-interview-walkthrough.md`), filtering `remainingManualItems` down to
+   the items **not yet present** in `manual.items` (already-verdicted items are not re-asked). The
+   walkthrough's Step A re-arms `active-{feature}.json` with `waiting: "manual-tests"`, so the board
+   flips the row from **parked** back to **waiting**. (Vacuously lowest precedence — no item can have
+   a `debugTier` or verdict before the ledger exists.)
 
 Keep the checkpoint `phase: "PHASE 3"` throughout.
 

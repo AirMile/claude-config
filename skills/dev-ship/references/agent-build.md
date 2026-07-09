@@ -38,6 +38,7 @@ CONTEXT (build-slice of SHIP_CONTEXT):
    `SHIP_BUILD_RESULT_START/END` (robust — see non-interactive-contract.md).
 2. `status: failed` → leave PHASE 1 `in_progress` (do not mark it `completed`), skip to PHASE 5
    report: "Build failed at {failedAt},
-   worktree intact at {worktreePath} — run `/dev-debug {feature}`." AGENT 2 does not run.
+   worktree intact at {worktreePath} — re-run `/dev-ship {feature}` to retry, or go straight to
+   `references/debug-round-heavy.md` (non-ledger entry)." AGENT 2 does not run.
 3. `status: green` → **re-read `.project/` from disk**, carry `worktreePath` forward, continue to
    PHASE 2.

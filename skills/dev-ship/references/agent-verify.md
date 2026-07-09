@@ -39,7 +39,8 @@ CONTEXT (verify-slice of SHIP_CONTEXT; worktree path = {worktreePath}):
    directly. **Fallback path**: parse `SHIP_VERIFY_RESULT_START/END` (robust).
 2. `status: failed` → leave PHASE 2 `in_progress` (do not mark it `completed`), skip to PHASE 5:
    "Auto-verify failed at {failedAt},
-   worktree intact — run `/dev-debug {feature}`." Do not finalize.
+   worktree intact — re-run `/dev-ship {feature}` to retry, or go straight to
+   `references/debug-round-heavy.md` (non-ledger entry)." Do not finalize.
 3. `status: green` → **re-read `.project/` from disk**. `remainingManualItems` is **authoritative**
    for PHASE 3 (overrides the PHASE 0 advisory estimate). Continue to PHASE 3.
 

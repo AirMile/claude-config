@@ -239,8 +239,9 @@ surface for the whole plan. It always runs (no env-var opt-out).
      behaviour — no re-`EnterPlanMode`). Revise the in-memory draft, **re-asking only what the
      feedback touches** (e.g. reopen one design fork, adjust one requirement) — do not re-run the whole
      interview. Re-run Step 3 (reclassify) + Step 4 (re-derive) if the change affected them, rewrite
-     the plan file, and `ExitPlanMode` again. Loop until accepted (mirrors `dev-debug`'s
-     plan-rejection-revises pattern).
+     the plan file, and `ExitPlanMode` again. Loop until accepted (mirrors the same
+     plan-rejection-revises pattern used throughout the debug rounds — `debug-round.md`,
+     `debug-round-heavy.md`).
 
 **Resume note.** Same-session interruption between Step 2b and Accept: just continue (plan mode + the
 plan file persist in the session). Cross-session death re-runs the interview — see Step 0's

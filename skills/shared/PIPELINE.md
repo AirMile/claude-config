@@ -21,7 +21,7 @@ Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and
                                                ▼
                         /dev-ship (running define → build → verify → [refactor])
                                              │
-                                             └── /dev-debug
+                                             └── in-ship debug rounds (debug-round.md → debug-round-heavy.md)
 ```
 
 Standalone (dev): `/dev-security` (security audit).
@@ -61,10 +61,10 @@ Design items skip `defining/defined` — design captures pages/flows, Build gene
 
 | Item type            | Responsible skill                                                            | The other track must not                                |
 | -------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- |
-| FEATURE (data/logic) | dev-ship (define → build)                                                    | design-convert builds it                                 |
+| FEATURE (data/logic) | dev-ship (define → build)                                                    | design-convert builds it                                |
 | FEATURE (with UI)    | dev-ship (define → build, token-styled UI — functional + presentably styled) | dev-ship's build phase writes styled/designed UI        |
-| COMPONENT            | dev-ship (define → build, token-styled) → design-convert (optional layout)    | dev-ship's build phase writes styled/designed component |
-| PAGE                 | design-convert                                                                | dev-ship's build phase builds it                        |
+| COMPONENT            | dev-ship (define → build, token-styled) → design-convert (optional layout)   | dev-ship's build phase writes styled/designed component |
+| PAGE                 | design-convert                                                               | dev-ship's build phase builds it                        |
 | THEME                | design-tokens (incl. motion packs)                                           | —                                                       |
 
 **dev-ship's build phase** delivers: data layer, hooks, API, types, tests + token-styled UI (semantic HTML + design tokens). Pages and components are testable via `/dev-ship` (verify phase). `/design-convert` is optional for layout reshaping (sidebar/hero/grid).
@@ -82,7 +82,6 @@ Design items skip `defining/defined` — design captures pages/flows, Build gene
 | dev-ship (build phase)    | feature.json (defined)           | feature.json (code + tests) | defined        | built          |
 | dev-ship (verify phase)   | feature.json (built)             | feature.json (verified)     | built          | DONE           |
 | dev-ship (refactor phase) | feature.json (DONE)              | feature.json (DONE + ref)   | DONE           | DONE           |
-| dev-debug                 | error / symptom                  | fix applied                 | —              | —              |
 | dev-security              | —                                | security report + fixes     | —              | —              |
 
 ---
@@ -116,7 +115,7 @@ Not pipeline steps, but project-aware utilities. Callable standalone.
 | Skill          | Purpose                                             |
 | -------------- | --------------------------------------------------- |
 | project-add    | Register project + create symlinks to claude-config |
-| project-app    | Local backlog/dashboard server (localhost:9876)     |
+| project-app | Local backlog/dashboard server (localhost:9876)     |
 | core-pull      | Git pull + `.project/` sync + learning extraction   |
 | project-remove | Deregister project + cleanup                        |
 | project-tunnel | Dev server + Cloudflare Tunnel                      |

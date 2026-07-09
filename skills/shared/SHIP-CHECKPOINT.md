@@ -82,26 +82,42 @@ command). See `BACKLOG.md § Board rendering`.
                 manual-interview-walkthrough.md, fix-round.md.
                 round: 1-based counter, bumped before each fix-plan gate entry.
                 items: [{ id, title, verdict: "pass"|"fail"|"tweak"|"skip"|"defer", category,
-                          observed, expected, screenshot, source: "checklist"|"interview" }] —
+                          observed, expected, screenshot, source: "checklist"|"interview",
+                          debugTier: "light"|"heavy" (absent = not in the debug ladder),
+                          heavyRoundFailed: bool (absent otherwise),
+                          lightRoundNotes: string (absent unless debugTier reached "heavy") }] —
                         written one item at a time via `ship-checkpoint.js item {name} manual`,
                         which upserts by `id` (append if new, replace in place if the id already
-                        exists) — never re-send the full array yourself.
+                        exists) — never re-send the full array yourself. `debugTier` is dev-ship's
+                        park-first debug ladder progress marker (absent → "light" → "heavy" →
+                        resolved) — see `dev-ship/references/fix-round.md § Re-check`,
+                        `debug-round.md`, `debug-round-heavy.md`. It replaces a per-round
+                        repeat-count gate; each tier owns its own park/escalate, so there is no
+                        top-level `pendingRound` flag on this object (contrast `playtest` below,
+                        which still uses one — game-ship's ladder is unchanged). `lightRoundNotes`
+                        is written by `debug-round.md § 8` right before it parks to the heavy tier —
+                        the light round's investigation digest, hypothesis, fix attempted, and
+                        re-check observations, condensed to a string. A park ends the session, so
+                        this field (not in-context carryover) is the only thing `debug-round-heavy.md`
+                        has to reuse the light round's evidence rather than re-investigating from
+                        scratch.
                 interviewDone: bool — the "now that you see it" close has run.
                 fixPlan: the accepted round-gate appendix object (findings/groups/waves), or absent.
                 dispatch: { groups: { [groupId]: { status, itemsFixed, testsGreen, notes,
-                           autoDecisions } }, allFixed: bool } — merged in from ship-fix.js's return.
-                pendingRound: bool — set when a round's re-check found still-open findings and the
-                           user chose to park (fix-round.md § Re-check) rather than continue; a fresh
-                           session's Resume entry clears it and re-enters § Hoisted bookkeeping for
-                           the next round without re-running the re-check. Absent otherwise. */
+                           autoDecisions } }, allFixed: bool } — merged in from ship-fix.js's return. */
   },
   "playtest": {
-    /* game-ship PHASE 3 only: the same shape as `manual` above (round, items[], interviewDone,
+    /* game-ship PHASE 3 only: the base shape of `manual` above (round, items[], interviewDone,
                 fixPlan, dispatch), scoped separately because game-ship's ledger vocabulary differs
                 (playtest, not manual-test) — see phase-3-playtest.md, playtest-interview-walkthrough.md,
                 game-ship's fix-round.md. `dispatch.groups[id]`'s `itemsFixed`/`notes` describe GUT-test
-                results where the finding was TESTABLE. Never present together with `manual` — a
-                checkpoint is one pipeline at a time (`pipeline: "dev" | "design" | "game"`). */
+                results where the finding was TESTABLE. Unlike `manual`, `playtest` still uses a
+                top-level `pendingRound: bool` + a per-item `failedRounds` counter instead of
+                `debugTier`: game-ship's debug ladder still hands off to the standalone `/game-debug`
+                skill, so it keeps its original round-repeat-count shape (dev-ship's ladder was
+                folded inline, which is what motivated `debugTier` there). Never present together
+                with `manual` — a checkpoint is one pipeline at a time
+                (`pipeline: "dev" | "design" | "game"`). */
   }
 }
 ```

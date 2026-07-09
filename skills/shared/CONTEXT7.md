@@ -3,7 +3,7 @@
 Single source of truth for when and how skills query Context7
 (`mcp__context7__resolve-library-id` + `mcp__context7__query-docs`). Loaded on demand by any phase
 that hits a library-API decision point — build's TDD GREEN step, `dev-verify`'s fix-loop, `fix-round`'s
-plan-mode gate and debug-round, `dev-debug`/`game-debug` PHASE 4.
+plan-mode gate and debug-round, `dev-ship`'s `debug-round.md § 5` / `debug-round-heavy.md`, `game-debug` PHASE 4.
 
 ## When to research
 
@@ -12,7 +12,7 @@ plan-mode gate and debug-round, `dev-debug`/`game-debug` PHASE 4.
 - Error signature that implicates a dependency
 
 **Skip when** the root cause is purely internal logic — no external library in the causal chain.
-(Same condition as `dev-debug` PHASE 4.)
+(Same condition as `dev-ship`'s `debug-round.md § 5` / `game-debug` PHASE 4.)
 
 ## Cache order — check before any query
 

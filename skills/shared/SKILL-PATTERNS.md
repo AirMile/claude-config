@@ -384,7 +384,7 @@ PROJECT_CONTEXT_END
 - Skip sections that do not exist (show "not available")
 - Only pass learnings if relevant to the agent's task
 - Skills may add extra skill-specific sections AFTER the standard block
-- Existing skills (dev-debug, dev-ship's verify phase, dev-security) do not need to migrate immediately — this is opt-in for new skills and future refactors
+- Existing skills (dev-ship's verify phase, dev-security) do not need to migrate immediately — this is opt-in for new skills and future refactors
 
 **Context load helpers** — use these shared protocols instead of inline reads (single source of truth per file type):
 
@@ -435,11 +435,11 @@ Two sanctioned agents:
 
 **Rule:** Description must start with trigger conditions, not a workflow summary.
 
-| Good (✓)                                                                 | Bad (✗)                                                     |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| `Use when implementation done and acceptance tests must verify spec`     | `Adversarial verification — tests + fix loops`              |
-| `Use with /dev-debug when feature has reported bugs to root-cause`       | `Debug methodology with systematic root-cause analysis`     |
-| `Use with /project-brainstorm to expand idea via interactive techniques` | `Creatively expand ideas through interactive technique app` |
+| Good (✓)                                                                    | Bad (✗)                                                     |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `Use when implementation done and acceptance tests must verify spec`        | `Adversarial verification — tests + fix loops`              |
+| `Use with /game-debug when a Godot feature has reported bugs to root-cause` | `Debug methodology with systematic root-cause analysis`     |
+| `Use with /project-brainstorm to expand idea via interactive techniques`    | `Creatively expand ideas through interactive technique app` |
 
 **Why:** Workflow summaries make Claude think it already knows the skill, so it skips the rest of SKILL.md. Trigger conditions clarify _when_ the skill is chosen, not _what_ it does.
 

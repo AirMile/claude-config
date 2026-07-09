@@ -130,18 +130,21 @@ const resumedVerify =
 phase("Build");
 const build =
   resumedBuild ??
-  (await agent(`Read the file at ${A.buildPromptPath} and execute its full instructions as your task.`, {
-    label: "AGENT 1: build",
-    agentType: "general-purpose",
-    model: "sonnet",
-    effort: "high",
-    schema: BUILD_SCHEMA,
-  }));
+  (await agent(
+    `Read the file at ${A.buildPromptPath} and execute its full instructions as your task.`,
+    {
+      label: "AGENT 1: build",
+      agentType: "general-purpose",
+      model: "sonnet",
+      effort: "high",
+      schema: BUILD_SCHEMA,
+    },
+  ));
 if (resumedBuild)
   log(`build resumed from checkpoint: worktree ${build.worktreePath}`);
 
 if (!build || build.status !== "green") {
-  // Failed build: never run verify; the worktree stays intact for /dev-debug.
+  // Failed build: never run verify; the worktree stays intact for root-cause analysis (debug-round-heavy.md).
   return {
     status: "failed",
     failedPhase: "build",

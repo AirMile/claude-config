@@ -63,7 +63,8 @@ in the worktree; refactor commits in the worktree on the feature branch (pre-mer
 ## On failure
 
 Do not merge, leave the worktree intact, return `status: failed` with the stop point. The main chat
-reports it and suggests `/dev-debug {feature}`.
+reports it and suggests re-running `/dev-ship {feature}`, or going straight to
+`references/debug-round-heavy.md` (non-ledger entry).
 
 ## RESULT CONTRACT
 
