@@ -119,7 +119,7 @@ Props:    {props joined}
 States:   {states joined}
 ```
 
-**Visual review (optional).** If the project board server is running (`/project-viewer`), the spec is also viewable as a wireframe + read-only spec + editable open-questions form at:
+**Visual review (optional).** If the project board server is running (`/project-app`), the spec is also viewable as a wireframe + read-only spec + editable open-questions form at:
 
 ```
 http://localhost:9876/{project-dir}/review/{$TARGET}

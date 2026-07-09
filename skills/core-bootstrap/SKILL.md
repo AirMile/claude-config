@@ -3,7 +3,7 @@ name: core-bootstrap
 description: Bootstrap ~/.claude/ config, symlinks, and settings. Use with /core-bootstrap.
 metadata:
   author: claude-config
-  version: 1.3.0
+  version: 1.4.0
   category: core
 ---
 
@@ -532,6 +532,25 @@ foreach ($dir in @("agents","hooks","skills","scripts")) {
 
 ---
 
+## PHASE 2.5: Board background service
+
+Best-effort, silent, non-blocking — sets up the `/project-app` board's background service
+(keeps `serve-backlog.js` warm so the board is one click, no manual server start; see
+`project-app/SKILL.md`). A failure here (e.g. Node.js not installed yet) must never stop the
+rest of bootstrap — this is a nice-to-have, not a core-config requirement.
+
+> **Todo**: Read `.claude/skills/shared/APP-INSTALL-CHECK.md` and follow it.
+
+Runs after PHASE 2 so the `~/.claude/skills/...` symlinks/junctions it depends on already exist.
+No `AskUserQuestion` here — installed silently, outcome only surfaces in the PHASE 3 report
+(matches this repo owner's explicit preference: no extra prompt for this one).
+
+Store the outcome as `BOARD_SERVICE_STATUS`: `installed-now` (from `INSTALLED_NOW`),
+`already-installed` (from `ALREADY_INSTALLED`), or `skipped: <reason>` (from `SKIPPED:
+<reason>`) — for the PHASE 3 report row.
+
+---
+
 ## PHASE 3: Report
 
 Show ASCII table with outcome per item:
@@ -555,10 +574,16 @@ Bootstrap complete
  Permission mode            Bypass permissions
  Claude plan                Max 5x
  Paths (paths.local.yaml)   written
+ Board background service   installed
 ══════════════════════════════════════════════════════
 ```
 
 Statuses: `placed` · `already-exists` · `linked` · `error: <reason>`
+
+For the Board background service row: `installed` (from `BOARD_SERVICE_STATUS=installed-now`),
+`already installed` (from `already-installed`), or `skipped (<reason>)` (from `skipped: <reason>`
+— e.g. `skipped (Node.js not found)`). This never blocks the rest of the report or a `skipped`
+overall bootstrap outcome — it's its own independent row.
 
 For the Language row: show the chosen language, or the current value with `(already set)` suffix if `LANGUAGE_CHOICE=skip`. Read the current value via:
 

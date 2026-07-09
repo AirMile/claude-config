@@ -116,7 +116,7 @@ Not pipeline steps, but project-aware utilities. Callable standalone.
 | Skill          | Purpose                                             |
 | -------------- | --------------------------------------------------- |
 | project-add    | Register project + create symlinks to claude-config |
-| project-viewer | Local backlog/dashboard server (localhost:9876)     |
+| project-app    | Local backlog/dashboard server (localhost:9876)     |
 | core-pull      | Git pull + `.project/` sync + learning extraction   |
 | project-remove | Deregister project + cleanup                        |
 | project-tunnel | Dev server + Cloudflare Tunnel                      |

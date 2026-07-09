@@ -53,23 +53,23 @@ Pulls the latest claude-config and rebuilds composed global files. For setup wit
 
 Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL-PATTERNS.md`](skills/shared/SKILL-PATTERNS.md) for conventions and [`skills/shared/PIPELINE.md`](skills/shared/PIPELINE.md) for canonical pipeline diagrams.
 
-| Category    | Skills                                                                        |
-| ----------- | ----------------------------------------------------------------------------- |
-| `core`      | audit, bootstrap, commit, finalize, pull, setup, update                       |
-| `content`   | rewrite, write                                                                |
-| `dev`       | debug, learn, optimize, security, ship                                        |
-| `design`    | content, convert, ship, tokens                                                |
-| `game`      | debug, optimize, ship                                                         |
-| `marketing` | content, research, screenshots                                                |
-| `project`   | add, brainstorm, critique, plan, remove, research, seed, todo, tunnel, viewer |
-| `team`      | issues, outsource, review, verify                                             |
+| Category    | Skills                                                                     |
+| ----------- | -------------------------------------------------------------------------- |
+| `core`      | audit, bootstrap, commit, finalize, pull, setup, update                    |
+| `content`   | rewrite, write                                                             |
+| `dev`       | debug, learn, optimize, security, ship                                     |
+| `design`    | content, convert, ship, tokens                                             |
+| `game`      | debug, optimize, ship                                                      |
+| `marketing` | content, research, screenshots                                             |
+| `project`   | add, app, brainstorm, critique, plan, remove, research, seed, todo, tunnel |
+| `team`      | issues, outsource, review, verify                                          |
 
-| Pipeline    | Flow                                                                                                                                                                         |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dev`       | `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (define → build → verify → refactor) (+ `dev-debug` anywhere)                   |
-| `game`      | `project-seed` → `project-plan` → `game-ship` (define → build → GUT-verify → playtest → refactor) (+ `game-debug` anywhere, Godot 4.x / GUT)                                 |
-| `design`    | [`/design-tokens`] (incl. motion packs) → `design-convert` (spec / visual→code) & `design-content` (fill copy) feed `design-ship` (build → content → check as one flow, web) |
-| `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                                         |
+| Pipeline    | Flow                                                                                                                                                                          |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dev`       | `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (define → build → verify → refactor, in-ship park-first debug rounds on failure) |
+| `game`      | `project-seed` → `project-plan` → `game-ship` (define → build → GUT-verify → playtest → refactor) (+ `game-debug` anywhere, Godot 4.x / GUT)                                  |
+| `design`    | [`/design-tokens`] (incl. motion packs) → `design-convert` (spec / visual→code) & `design-content` (fill copy) feed `design-ship` (build → content → check as one flow, web)  |
+| `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                                          |
 
 Optional `/project-research` enriches the dev seed with market/tech/codebase context before backlog.
 
@@ -85,7 +85,7 @@ All runtime artifacts live in a gitignored `.project/` directory per project:
 | Dashboard | `.project/project.json`                     | Context, features, stack, endpoints, entities (schema: [`shared/DASHBOARD.md`](skills/shared/DASHBOARD.md))                                                                                                                                              |
 | Learnings | `.project/project-context.json#learnings[]` | Pull-based memory — Auto Memory deliberately disabled for token efficiency. Build/refactor skills append; consumers load via [`shared/LEARNINGS-LOAD.md`](skills/shared/LEARNINGS-LOAD.md) with scope (`component` / `architectural` / `pitfall-prefix`) |
 
-Run `/project-viewer` to serve all project backlogs and dashboards on `http://localhost:9876` — one local board across every project under `{projects_root}`. Stop with `/project-viewer stop`.
+Run `/project-app` to serve all project backlogs and dashboards on `http://localhost:9876` and open them in a standalone app window — no browser tab. Stop with `/project-app stop`. The board is also installable as a PWA (browser's "Install app" prompt) for a permanent Dock/Launchpad/Start icon; `/project-app install-app` (macOS + Windows) sets up a background process (LaunchAgent / Scheduled Task) that keeps the server always warm, so the installed PWA becomes the one app icon you ever need — no more running `/project-app` day-to-day. Getting the same backlog/dashboard _content_ onto a second machine is a separate, deliberate step (not real-time): see `/project-sync` push/pull over the `claude/state` branch.
 
 ## Inspect overlay
 

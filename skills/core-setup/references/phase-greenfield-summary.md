@@ -72,7 +72,7 @@ Tailor suggestions based on project type (Phase 2.3) **and** `backlog_started`. 
 **If `backlog_started = true`:**
 
 ```
-View your backlog:         http://localhost:9876
+View your backlog:         http://localhost:9876/{name}
 Work on first todo:        {top todo name} → {corresponding skill}
 ```
 

@@ -35,6 +35,14 @@ const PROJECTS_ROOT = path.resolve(
     platformDefault,
 );
 const PORT = parseInt(process.env.BACKLOG_PORT || "9876", 10);
+// A manually/ad-hoc-started server (project-app's fallback-open path, before
+// install-app sets up the background service) relies on stopping itself once
+// nobody is looking — 0 disables auto-shutdown (set by install-app's
+// LaunchAgent/Scheduled Task, which manages the server's lifecycle itself).
+const IDLE_SHUTDOWN_MS = parseInt(
+  process.env.BACKLOG_IDLE_SHUTDOWN_MS || "90000",
+  10,
+);
 const BACKLOG_PATH = ".project/backlog.json";
 const LEGACY_BACKLOG_PATH = ".project/backlog.html";
 const DASHBOARD_PATH = ".project/project.json";
@@ -47,6 +55,7 @@ const DASHBOARD_TEMPLATE_PATH = path.join(
 module.exports = {
   PROJECTS_ROOT,
   PORT,
+  IDLE_SHUTDOWN_MS,
   BACKLOG_PATH,
   LEGACY_BACKLOG_PATH,
   DASHBOARD_PATH,

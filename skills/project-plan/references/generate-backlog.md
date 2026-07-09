@@ -89,6 +89,6 @@ Server: http://localhost:9876/{project-dir}
 | P4       | {count}  |
 | Total    | {count}  |
 
-View backlog:  /project-viewer
+View backlog:  /project-app
 Start building: /{dev|game}-define {first-P1-feature}
 ```

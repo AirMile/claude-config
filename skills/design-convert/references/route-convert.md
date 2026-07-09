@@ -155,7 +155,7 @@ multiSelect: false
 
 On "Update existing component": skip PHASE 0.5 and go to PHASE 0.4b.
 
-**Visual review (optional).** Once the target name is resolved (after 0.5 for page scope, or from the scope selection for component scope), if the board server is running (`/project-viewer`) and the entity already exists in `project.json#design`, print its review URL as a plain `http://` URL on its own line so it renders clickable in the Claude Code chat:
+**Visual review (optional).** Once the target name is resolved (after 0.5 for page scope, or from the scope selection for component scope), if the board server is running (`/project-app`) and the entity already exists in `project.json#design`, print its review URL as a plain `http://` URL on its own line so it renders clickable in the Claude Code chat:
 
 ```
 http://localhost:9876/{project-dir}/review/{target-name}

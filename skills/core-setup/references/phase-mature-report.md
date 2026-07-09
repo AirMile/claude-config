@@ -67,6 +67,8 @@ Claude config: {settings.local.json + hook created | already present}
 Updated: {date}
 {if installed_in_session[] not empty}  Modules added: {installed_in_session[]}
 
+View your backlog: http://localhost:9876/{project-name}
+
 Next steps:
   • /core-pull              — incremental updates (sync state is on)
 {if no project-seed.md > 50 chars}  • /project-seed   — build the project concept

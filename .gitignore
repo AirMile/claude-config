@@ -28,3 +28,9 @@ personal/
 *.png
 *.jpeg
 *.jpg
+
+# ...except real source assets (PWA/app icons — served directly, not generated
+# test output), regenerable from favicon-backlog.svg via the install-launcher
+# reference doc but committed so a fresh clone serves them without that step.
+!skills/shared/references/icon-192.png
+!skills/shared/references/icon-512.png

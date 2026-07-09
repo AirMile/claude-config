@@ -5,6 +5,9 @@
 // Routes:
 //   /css/{file}.css               → static CSS files
 //   /js/{file}.js                 → static JS files
+//   /manifest.webmanifest         → PWA manifest (installable app icon)
+//   /sw.js                        → PWA service worker (scope "/")
+//   /icon-{192|512}.png           → PWA icon PNGs (manifest + apple-touch-icon)
 //   /                             → index with all projects
 //   /{project}                    → dashboard (main page)
 //   /{project}/save               → save dashboard (project.json)
@@ -26,6 +29,7 @@ const { execSync } = require("child_process");
 const {
   PROJECTS_ROOT,
   PORT,
+  IDLE_SHUTDOWN_MS,
   BACKLOG_PATH,
   DASHBOARD_PATH,
   TEMPLATE_PATH,
@@ -244,8 +248,33 @@ const themeHeadTags =
   '<script src="/lib/themes.js"></script>' +
   '<link rel="stylesheet" href="/css/theme-picker.css" />';
 
+// ── Idle auto-shutdown — project-app's fallback-open path starts this server
+// on demand (before install-app's background service exists) and expects it
+// to stop itself once nobody is looking, rather than lingering. Once
+// install-app is set up, BACKLOG_IDLE_SHUTDOWN_MS=0 disables this — the
+// LaunchAgent/Scheduled Task manages the server's lifecycle instead. Shuts
+// down only when there are zero open SSE connections (nobody has a
+// board/dashboard tab open) AND no request of any kind for
+// IDLE_SHUTDOWN_MS — the SSE count is the precise signal, the timer is just
+// a grace buffer against brief reconnects (e.g. navigating between pages). ──
+let lastActivityAt = Date.now();
+let activeSSEConnections = 0;
+
+if (IDLE_SHUTDOWN_MS > 0) {
+  setInterval(function () {
+    if (
+      activeSSEConnections === 0 &&
+      Date.now() - lastActivityAt > IDLE_SHUTDOWN_MS
+    ) {
+      console.log("\nIdle — no open tabs, shutting down.\n");
+      process.exit(0);
+    }
+  }, 15000);
+}
+
 http
   .createServer(function (req, res) {
+    lastActivityAt = Date.now();
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -260,7 +289,7 @@ http
     const url = new URL(req.url, "http://localhost:" + PORT);
     const parts = url.pathname.split("/").filter(Boolean);
 
-    // Health endpoint — lets project-viewer detect a server bound to a stale root
+    // Health endpoint — lets project-app detect a server bound to a stale root
     if (req.method === "GET" && url.pathname === "/__root") {
       res.writeHead(200, {
         "Content-Type": "application/json",
@@ -279,6 +308,48 @@ http
       if (fs.existsSync(file)) {
         res.writeHead(200, {
           "Content-Type": "image/svg+xml",
+          "Cache-Control": "no-cache",
+        });
+        res.end(fs.readFileSync(file, "utf8"));
+        return;
+      }
+    }
+
+    // PWA icon PNGs (top-level static) — real raster icons so Chrome's macOS/Windows
+    // PWA installer shows our icon instead of a generic/stock fallback
+    const iconMatch = url.pathname.match(/^\/(icon-\d+\.png)$/);
+    if (req.method === "GET" && iconMatch) {
+      const file = path.join(__dirname, iconMatch[1]);
+      if (fs.existsSync(file)) {
+        res.writeHead(200, {
+          "Content-Type": "image/png",
+          "Cache-Control": "no-cache",
+        });
+        res.end(fs.readFileSync(file));
+        return;
+      }
+    }
+
+    // PWA manifest (top-level static) — makes the origin installable
+    if (req.method === "GET" && url.pathname === "/manifest.webmanifest") {
+      const file = path.join(__dirname, "manifest.webmanifest");
+      if (fs.existsSync(file)) {
+        res.writeHead(200, {
+          "Content-Type": "application/manifest+json",
+          "Cache-Control": "no-cache",
+        });
+        res.end(fs.readFileSync(file, "utf8"));
+        return;
+      }
+    }
+
+    // Service worker (top-level static, scope "/" requires root-served)
+    if (req.method === "GET" && url.pathname === "/sw.js") {
+      const file = path.join(__dirname, "sw.js");
+      if (fs.existsSync(file)) {
+        res.writeHead(200, {
+          "Content-Type": "text/javascript; charset=utf-8",
+          "Service-Worker-Allowed": "/",
           "Cache-Control": "no-cache",
         });
         res.end(fs.readFileSync(file, "utf8"));
@@ -410,6 +481,7 @@ http
           Connection: "keep-alive",
         });
         res.write("data: connected\n\n");
+        activeSSEConnections++;
 
         const dashFile = path.join(projectPath, DASHBOARD_PATH);
         const sessionDir = path.join(projectPath, ".project/session");
@@ -473,6 +545,8 @@ http
 
         req.on("close", function () {
           clearInterval(poll);
+          activeSSEConnections--;
+          lastActivityAt = Date.now();
         });
         return;
       }
