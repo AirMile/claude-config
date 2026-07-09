@@ -31,7 +31,7 @@
 // Exit 0 = ok (including "no matches" — silent, matching the old loader contract).
 //   2 = usage error.  Reads only; never writes.
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -573,7 +573,20 @@ function parseFlags(argv) {
 
 // CLI entrypoint — guarded so learnings-write.js can import this module's
 // exports (tokenize, VOCAB, ...) without triggering this script's own CLI.
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+// realpathSync on argv[1] before comparing: import.meta.url is already
+// symlink-resolved by Node, but argv[1] is not — invoking this script via a
+// symlink (e.g. ~/.claude/scripts/... pointing into a separate config repo)
+// made the two URLs never match, so the CLI silently never ran (exit 0, no
+// output, no error — indistinguishable from a genuine "no matches" result).
+let invokedAsMain = false;
+try {
+  invokedAsMain =
+    process.argv[1] &&
+    import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+} catch {
+  invokedAsMain = false;
+}
+if (invokedAsMain) {
   const argv = process.argv.slice(2);
   if (argv.includes("--print-vocab")) {
     cmdPrintVocab();
