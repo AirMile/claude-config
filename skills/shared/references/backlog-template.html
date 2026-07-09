@@ -11,9 +11,8 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <script src="/lib/pwa-register.js" defer></script>
     <script src="/lib/themes.js"></script>
-    <script src="/lib/settings-modal.js"></script>
     <script src="/lib/collapse-store.js"></script>
-    <link rel="stylesheet" href="/css/backlog.css" />
+    <link rel="stylesheet" href="/css/backlog.css?v=6" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <link
@@ -39,8 +38,7 @@
     </script>
 
     <!-- Page structure -->
-    <div class="layout layout--no-sidebar">
-      <aside class="sidebar" id="sidebar"></aside>
+    <div class="layout">
       <main class="board-area">
         <nav class="top-nav">
           <input
@@ -49,9 +47,9 @@
             placeholder="Search..."
             oninput="render()"
           />
+          <div class="section-chips" id="section-chips"></div>
           <div class="type-pills" id="type-pills"></div>
           <div class="action-btns" id="action-btns"></div>
-          <div class="top-nav-toggle" id="team-mode-toggle-slot"></div>
         </nav>
         <div id="board"></div>
       </main>
@@ -139,23 +137,8 @@
 
       let _trackFilter = "ALL"; // "ALL" | "DESIGN" | "DEV"
 
-      // Wire up project settings modal (⚙ button auto-mounted by /lib/settings-modal.js)
-      if (window.SettingsModal) {
-        const _projectDir =
-          location.pathname.split("/").filter(Boolean)[0] || "";
-        window.SettingsModal.configure({
-          projectDir: _projectDir,
-          getMode: () => (data.team && data.team.mode) || "solo",
-          onSaved: (mode) => {
-            if (!data.team) data.team = {};
-            data.team.mode = mode;
-            render();
-          },
-        });
-        window.SettingsModal.mountToggle(
-          document.getElementById("team-mode-toggle-slot"),
-        );
-      }
+      // team.mode is read-only here (gates the outsource + batch buttons below).
+      // The solo/team toggle lives on the dashboard toolbar only.
 
       const STATUSES = ["TODO", "DEFINED", "DOING", "DONE"];
       const ARCHIVED_STATUSES = ["CANCELLED"];
@@ -699,7 +682,7 @@
           document.getElementById("search-input")?.value || ""
         ).toLowerCase();
 
-        let sidebarHtml = "";
+        let chipsHtml = "";
 
         // ─── renderSection ────────────────────────────────────────────
         function renderSection({
@@ -750,18 +733,6 @@
           header.className = "group-header";
           header.dataset.status = status;
 
-          let blockedSuffix = "";
-          if (status === "DEFINED") {
-            const blockedCount = items.filter((f) => {
-              const deps = f.dependencies || [];
-              return deps.some((dep) => !isDepResolved(dep));
-            }).length;
-            blockedSuffix =
-              blockedCount > 0
-                ? ` <span class="header-blocked-count">(${blockedCount} blocked)</span>`
-                : "";
-          }
-
           let batchBtnHtml = "";
           if (batchSkill && items.length > 0 && data.team?.mode !== "team") {
             const isDesignSection = batchSkill === "check";
@@ -784,7 +755,7 @@
                  </button>`
               : "";
 
-          header.innerHTML = `<h2>${esc(label)}${blockedSuffix}</h2>${batchBtnHtml}${addBtnHtml}`;
+          header.innerHTML = `<h2>${esc(label)}</h2>${batchBtnHtml}${addBtnHtml}`;
 
           header.addEventListener("click", (e) => {
             const addBtn = e.target.closest(".group-add-btn");
@@ -876,7 +847,7 @@
           section.appendChild(body);
           board.appendChild(section);
 
-          sidebarHtml += `<a href="#${sectionId}" class="sb-${status.toLowerCase()}" data-status="${status}">${esc(label)}</a>`;
+          chipsHtml += `<a href="#${sectionId}" class="sb-${status.toLowerCase()}" data-status="${status}">${esc(label)}</a>`;
         }
 
         // ─── Sections ─────────────────────────────────────────────────
@@ -932,31 +903,7 @@
 
           const header = document.createElement("div");
           header.className = "group-header group-header--inprogress";
-          const waitCount = items.filter(
-            (f) => getLiveSignal(f) && getLiveSignal(f).waiting,
-          ).length;
-          const parkedCount = items.filter(
-            (f) => getLiveSignal(f) && getLiveSignal(f).parked,
-          ).length;
-          const liveCount =
-            items.filter((f) => getLiveSignal(f)).length -
-            waitCount -
-            parkedCount;
-          const headerCounts =
-            [
-              liveCount
-                ? `<span class="header-live-count">${liveCount} live</span>`
-                : "",
-              waitCount
-                ? `<span class="header-wait-count">⏸ ${waitCount} input needed</span>`
-                : "",
-              parkedCount
-                ? `<span class="header-wait-count">⏸ ${parkedCount} parked</span>`
-                : "",
-            ]
-              .filter(Boolean)
-              .join(" · ") || "";
-          header.innerHTML = `<h2>In progress${headerCounts ? ` (${headerCounts})` : ""}</h2>`;
+          header.innerHTML = `<h2>In progress</h2>`;
           header.addEventListener("click", () => {
             section.classList.toggle("collapsed");
             setCollapsed(
@@ -972,7 +919,7 @@
           section.appendChild(body);
           board.appendChild(section);
 
-          sidebarHtml += `<a href="#inprogress-section" class="sb-inprogress">In progress</a>`;
+          chipsHtml += `<a href="#inprogress-section" class="sb-inprogress">In progress</a>`;
         })();
 
         sections.forEach(renderSection);
@@ -1013,7 +960,7 @@
 
           const header = document.createElement("div");
           header.className = "group-header";
-          header.innerHTML = `<h2>${esc("Parked")} <span class="header-wait-count">${items.length} · needs resume</span></h2>`;
+          header.innerHTML = `<h2>${esc("Parked")}</h2>`;
           header.addEventListener("click", () => {
             section.classList.toggle("collapsed");
             setCollapsed(
@@ -1029,7 +976,7 @@
           section.appendChild(body);
           board.appendChild(section);
 
-          sidebarHtml += `<a href="#parked-section" class="sb-parked" data-status="PARKED">${esc("Parked")}</a>`;
+          chipsHtml += `<a href="#parked-section" class="sb-parked" data-status="PARKED">${esc("Parked")}</a>`;
         })();
 
         // Archived (CANCELLED) section — collapsed by default
@@ -1062,14 +1009,14 @@
           archSection.appendChild(archBody);
           board.appendChild(archSection);
 
-          sidebarHtml += `<a href="#cancelled-section" class="sb-cancelled" data-status="CANCELLED" style="opacity:0.45;font-size:11px">${esc("Archived")} (${cancelledItems.length})</a>`;
+          chipsHtml += `<a href="#cancelled-section" class="sb-cancelled" data-status="CANCELLED" style="opacity:0.45;font-size:11px">${esc("Archived")} (${cancelledItems.length})</a>`;
         }
 
-        // Build sidebar
-        const sidebar = document.getElementById("sidebar");
-        if (sidebar) {
-          sidebar.innerHTML = sidebarHtml;
-          sidebar.onclick = (e) => {
+        // Build section chips
+        const chips = document.getElementById("section-chips");
+        if (chips) {
+          chips.innerHTML = chipsHtml;
+          chips.onclick = (e) => {
             const link = e.target.closest("a[data-status]");
             if (!link) return;
             const sectionId = link.getAttribute("href").slice(1);
@@ -1117,16 +1064,9 @@
       }
 
       function updateSidebarVisibility() {
-        const layoutEl = document.querySelector(".layout");
-        const sidebarEl = document.getElementById("sidebar");
-        if (!layoutEl || !sidebarEl) return;
-        const linkCount = sidebarEl.querySelectorAll("a").length;
-        const fitsViewport =
-          document.documentElement.scrollHeight <= window.innerHeight + 1;
-        layoutEl.classList.toggle(
-          "layout--no-sidebar",
-          linkCount <= 1 || fitsViewport,
-        );
+        const chips = document.getElementById("section-chips");
+        if (!chips) return;
+        chips.hidden = chips.querySelectorAll("a").length <= 1;
       }
 
       // ─── Row rendering ───────────────────────────────────────────────
@@ -1144,9 +1084,6 @@
           unresolvedDeps.forEach((dep) => {
             metaHtml += `<span class="dep-icon" title="Waiting for ${esc(dep)}">${esc(dep)}</span>`;
           });
-        }
-        if (f.auto && f.status !== "DONE") {
-          metaHtml += `<span class="auto-badge">AUTO</span>`;
         }
         const pendingGaps = Array.isArray(f.gaps)
           ? f.gaps.filter((g) => g.status === "pending").length
@@ -1216,16 +1153,16 @@
         // queued → cancel button (undo the copy) · idle → copy button
         const actionBtnHtml = isParked
           ? `<button class="row-copy-btn ${typeInfo.cls}" title="parked at ${esc(live.phase || "")} — copy to resume" data-cmd="${esc(parkedResumeCmd)}">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
              </button>`
           : live
             ? `<span class="row-live-dot" title="${isWaiting ? `waiting for input: ${esc(live.waiting)}` : `running: ${esc(live.skill || "")}`}"></span>`
             : isQueued
               ? `<button class="row-annuleer-btn" title="Cancel">
-              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 2l12 12M14 2L2 14"/></svg>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 2l12 12M14 2L2 14"/></svg>
              </button>`
               : `<button class="row-copy-btn ${typeInfo.cls}" title="${copyTitle}" data-cmd="${copyCmd || ""}">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
              </button>`;
 
         const progressLabelHtml = isParked
@@ -1604,7 +1541,7 @@
 
       // ─── Sidebar active state ───────────────────────────────────────
       function updateSidebarActive() {
-        const sidebar = document.getElementById("sidebar");
+        const sidebar = document.getElementById("section-chips");
         if (!sidebar) return;
         const links = sidebar.querySelectorAll("a[data-status]");
         const sections = document.querySelectorAll("section.group[id]");

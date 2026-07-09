@@ -13,8 +13,9 @@
     <script src="/lib/themes.js"></script>
     <script src="/lib/settings-modal.js"></script>
     <script src="/lib/collapse-store.js"></script>
-    <link rel="stylesheet" href="/css/dashboard.css?v=18" />
+    <link rel="stylesheet" href="/css/dashboard.css?v=22" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
+    <style id="sg-tokens-scope"></style>
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <link
       rel="stylesheet"
@@ -263,24 +264,6 @@
       </div>
     </div>
 
-    <!-- Styleguide overlay -->
-    <div id="styleguide-overlay" class="sg-overlay" hidden>
-      <style id="sg-tokens-scope"></style>
-      <button
-        class="sg-overlay-close-floating"
-        onclick="closeStyleguide()"
-        title="Close (Esc)"
-        aria-label="Close styleguide"
-      >
-        ✕
-      </button>
-      <div class="sg-overlay-body">
-        <div class="sg-overlay-inner" id="sg-overlay-inner">
-          <div class="sg-overlay-content" id="sg-overlay-content"></div>
-        </div>
-      </div>
-    </div>
-
     <script>
       // ─── Markdown ─────────────────────────────────────────
       function slugify(text) {
@@ -338,9 +321,9 @@
       const TABS = [
         { id: "features", label: "Features" },
         { id: "theme", label: "Design System" },
-        { id: "stack", label: "Stack" },
         { id: "seed", label: "Seed" },
-        { id: "config", label: "Config" },
+        { id: "stack", label: "Stack" },
+        { id: "config", label: "CLAUDE.md" },
       ];
 
       const EMPTY = {
@@ -896,7 +879,7 @@
           radii.find((r) => /md|base|default/i.test(r.token))?.value ||
           radii[1]?.value ||
           radii[0]?.value;
-        return `#sg-overlay-inner {
+        return `#sg-inline {
   --bg: var(--background, #0d1117);
   --surface: var(--card, #161b22);
   --surface-hover: var(--secondary, #1c2333);
@@ -916,96 +899,48 @@
 }`;
       }
 
-      function openStyleguide() {
+      let sgMode = getSingle("sgMode") === "dark" ? "dark" : null; // null = default (base tokens + light-override), "dark" = dark mode
+
+      function applyStyleguideTokens() {
         const t = data.theme;
-        const overlay = document.getElementById("styleguide-overlay");
-        if (!overlay) return;
-
-        // Scope and inject product CSS vars + dashboard-token alias bridge
         const scopeEl = document.getElementById("sg-tokens-scope");
-        if (scopeEl) {
-          const scoped = (s) =>
-            (typeof s === "string" ? s : "")
-              .replace(/:root\s*\{/g, "#sg-overlay-inner {")
-              .replace(/\.dark\s*\{/g, '#sg-overlay-inner[data-mode="dark"] {');
-
-          scopeEl.textContent =
-            scoped(t.cssVars) +
-            "\n" +
-            scoped((t.modes || {}).light || "") +
-            "\n" +
-            buildAliasCss(t);
+        const inner = document.getElementById("sg-inline");
+        if (!scopeEl) return;
+        if (!inner) {
+          scopeEl.textContent = "";
+          return;
         }
 
-        // Render full content (page-header with title/pack/mode-toggle is part of the render)
-        const contentEl = document.getElementById("sg-overlay-content");
-        try {
-          if (contentEl) contentEl.innerHTML = renderStyleguideFull(t);
-        } catch (err) {
-          console.error("renderStyleguideFull error:", err);
-          if (contentEl)
-            contentEl.innerHTML = `<p style="color:var(--danger,#e53);padding:24px">Render error: ${err.message}</p>`;
-        }
-
-        // Reset mode state on inner wrapper
-        const innerEl = document.getElementById("sg-overlay-inner");
-        if (innerEl) innerEl.removeAttribute("data-mode");
-
-        // Show with fade (void offsetHeight forces reflow so the transition fires)
-        overlay.hidden = false;
-        void overlay.offsetHeight;
-        overlay.classList.add("sg-overlay--open");
-        document.body.classList.add("sg-overlay-open");
-      }
-
-      function closeStyleguide() {
-        const overlay = document.getElementById("styleguide-overlay");
-        if (!overlay || overlay.hidden) return;
-        overlay.classList.remove("sg-overlay--open");
-        setTimeout(() => {
-          overlay.hidden = true;
-        }, 200);
-        document.body.classList.remove("sg-overlay-open");
-      }
-
-      function toggleStyleguideMode(btn) {
-        const t = data.theme;
-        const innerEl = document.getElementById("sg-overlay-inner");
-        const scopeEl = document.getElementById("sg-tokens-scope");
-        if (!innerEl || !scopeEl) return;
-
-        const isDark = innerEl.dataset.mode === "dark";
-        const nextMode = isDark ? "light" : "dark";
-        if (isDark) {
-          innerEl.removeAttribute("data-mode");
-        } else {
-          innerEl.dataset.mode = "dark";
-        }
-
-        // Update button label (btn may be the inline-onclick arg or fetched from DOM)
-        const modeBtn = btn || document.getElementById("sg-overlay-mode-btn");
-        if (modeBtn) {
-          modeBtn.textContent = isDark ? "Dark" : "Light";
-          modeBtn.classList.toggle("active-mode", !isDark);
-        }
-
-        // Re-inject tokens: base + mode override + alias bridge (same order as openStyleguide)
+        const mode = sgMode === "dark" ? "dark" : "light";
         const scoped = (s) =>
           (typeof s === "string" ? s : "")
-            .replace(/:root\s*\{/g, "#sg-overlay-inner {")
-            .replace(/\.dark\s*\{/g, '#sg-overlay-inner[data-mode="dark"] {');
+            .replace(/:root\s*\{/g, "#sg-inline {")
+            .replace(/\.dark\s*\{/g, '#sg-inline[data-mode="dark"] {');
 
         scopeEl.textContent =
           scoped(t.cssVars) +
           "\n" +
-          scoped((t.modes || {})[nextMode] || "") +
+          scoped((t.modes || {})[mode] || "") +
           "\n" +
           buildAliasCss(t);
 
-        // Sync colors-panels with the new mode
-        innerEl.querySelectorAll(".sg-mode-panel").forEach((p) => {
-          p.classList.toggle("active", p.dataset.modePanel === nextMode);
+        if (sgMode === "dark") inner.dataset.mode = "dark";
+        else inner.removeAttribute("data-mode");
+
+        const modeBtn = document.getElementById("sg-overlay-mode-btn");
+        if (modeBtn) {
+          modeBtn.textContent = sgMode === "dark" ? "Light" : "Dark";
+          modeBtn.classList.toggle("active-mode", sgMode === "dark");
+        }
+        inner.querySelectorAll(".sg-mode-panel").forEach((p) => {
+          p.classList.toggle("active", p.dataset.modePanel === mode);
         });
+      }
+
+      function toggleStyleguideMode() {
+        sgMode = sgMode === "dark" ? null : "dark";
+        setSingle("sgMode", sgMode);
+        applyStyleguideTokens();
       }
 
       function runAnimDemo(card, duration, easing) {
@@ -1030,14 +965,11 @@
       function renderTheme() {
         const t = data.theme;
         const colors = t.colors || {};
-        const typo = t.typography || {};
-        const families = typo.families || {};
-        const motion = t.motion || {};
-        const modes = t.modes || {};
+        const families = (t.typography || {}).families || {};
         const hasColors = Object.values(colors).some(
           (arr) => arr && arr.length,
         );
-        const hasModes = Object.keys(modes).length > 0;
+        const hasModes = Object.keys(t.modes || {}).length > 0;
         const hasData =
           hasColors || hasModes || families.heading || families.body;
         if (!hasData) {
@@ -1046,97 +978,7 @@
             <div class="empty-state"><p>No design tokens defined yet.</p>
             <p style="color:var(--text-dim)">Design tokens, modes, CSS variables — managed via <code>/design-tokens</code></p></div>`;
         }
-
-        // Pack badge
-        const pack = motion.pack || "";
-        const packLabels = {
-          apple: "Apple",
-          standard: "Standard",
-          subtle: "Subtle",
-          playful: "Playful",
-        };
-        const packLabel =
-          packLabels[pack] ||
-          (pack ? pack.charAt(0).toUpperCase() + pack.slice(1) : "");
-        const packBadge = packLabel
-          ? `<span class="sg-pack-badge sg-pack-badge--${esc(pack)}">${esc(packLabel)}</span>`
-          : "";
-
-        // Compact colors: 8 key swatches from first mode
-        const modeKeys = Object.keys(modes);
-        let compactColorsHtml = "";
-        if (modeKeys.length) {
-          const vars = parseModeVars(modes[modeKeys[0]], t);
-          const COMPACT_KEYS = [
-            "--background",
-            "--foreground",
-            "--primary",
-            "--primary-foreground",
-            "--secondary",
-            "--accent",
-            "--muted",
-            "--destructive",
-          ];
-          const vm = new Map(vars.map((v) => [v.token, v]));
-          const cv = COMPACT_KEYS.map((k) => vm.get(k))
-            .filter(Boolean)
-            .slice(0, 8);
-          if (cv.length) {
-            compactColorsHtml = `<div class="sg-section" data-collapse-key="sg:Colors"><div class="sg-section-title">Colors</div><div class="sg-palette">${cv.map((v) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(v.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(v.token)}</div><div class="sg-color-value">${esc(v.value)}</div></div></div>`).join("")}</div></div>`;
-          }
-        } else if (hasColors) {
-          const swatches = [
-            ...(colors.accent || []).slice(0, 4),
-            ...(colors.semantic || []).slice(0, 4),
-          ];
-          if (swatches.length) {
-            compactColorsHtml = `<div class="sg-section" data-collapse-key="sg:Colors"><div class="sg-section-title">Colors</div><div class="sg-palette">${swatches.map((c) => `<div class="sg-color"><div class="sg-color-swatch" style="background:${esc(c.value)}"></div><div class="sg-color-info"><div class="sg-color-token">${esc(c.token)}</div><div class="sg-color-value">${esc(c.value)}</div></div></div>`).join("")}</div></div>`;
-          }
-        }
-
-        // Type specimens
-        const specimenEntries = [
-          { label: "Heading", family: families.heading },
-          { label: "Body", family: families.body },
-          { label: "Mono", family: families.mono },
-        ].filter((e) => e.family);
-        const specimensHtml = specimenEntries.length
-          ? `<div class="sg-section" data-collapse-key="sg:Typography"><div class="sg-section-title">Typography</div><div class="sg-font-specimens">${specimenEntries.map((e) => `<div class="sg-font-card"><div class="sg-font-specimen" style="font-family:${esc(e.family)}">Aa</div><div class="sg-font-name">${esc(e.label)}</div><div class="sg-font-family">${esc(e.family)}</div></div>`).join("")}</div></div>`
-          : "";
-
-        // Compact radius (max 4)
-        const radii = (t.borderRadius || []).slice(0, 4);
-        const compactRadiusHtml = radii.length
-          ? `<div><div class="sg-section-title" style="margin-bottom:10px">Radius</div><div class="sg-radius-grid">${radii.map((r) => `<div class="sg-radius-item"><div class="sg-radius-box" style="border-radius:${esc(r.value)}"></div><div class="sg-radius-label">${esc(r.token)}<br>${esc(r.value)}</div></div>`).join("")}</div></div>`
-          : "";
-
-        // Compact durations
-        const durations = motion.durations || [];
-        const maxMs =
-          durations.reduce(
-            (m, d) => Math.max(m, parseInt(d.value) || 0),
-            500,
-          ) || 500;
-        const compactDurHtml = durations.length
-          ? `<div><div class="sg-section-title" style="margin-bottom:10px">Motion</div><div class="sg-spacing-scale">${durations.map((d) => `<div class="sg-spacing-row"><div class="sg-spacing-label">${esc(d.token)}</div><div class="sg-duration-bar" style="width:${Math.round(((parseInt(d.value) || 0) / maxMs) * 100)}%"></div><div class="sg-spacing-value">${esc(d.value)}</div></div>`).join("")}</div></div>`
-          : "";
-
-        const compactRowHtml =
-          compactRadiusHtml || compactDurHtml
-            ? `<div class="sg-compact-row">${compactRadiusHtml}${compactDurHtml}</div>`
-            : "";
-
-        return `
-          <div class="section-header">
-            <h2 style="display:inline">Design System</h2>
-            <span style="display:inline-flex;align-items:center;gap:8px;margin-left:10px;vertical-align:middle">
-              ${packBadge}
-              <button class="sg-open-btn" onclick="openStyleguide()">Open full styleguide ↗</button>
-            </span>
-          </div>
-          ${compactColorsHtml}
-          ${specimensHtml}
-          ${compactRowHtml}`;
+        return `<div class="sg-inline" id="sg-inline">${renderStyleguideFull(t)}</div>`;
       }
 
       function renderStack() {
@@ -2139,6 +1981,7 @@
             .join("");
         }
         applyCollapseState();
+        applyStyleguideTokens();
 
         sectionsEl.onclick = (e) => {
           const modeTab = e.target.closest(".sg-mode-tab");
@@ -2290,10 +2133,6 @@
         }
       });
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") {
-          closeStyleguide();
-          return;
-        }
         if (e.key === "Enter" || e.key === " ") {
           const row = document.activeElement?.closest?.(
             ".fm-file-row[data-path]",
@@ -2304,20 +2143,17 @@
           }
         }
       });
-      // One-time: delegated clicks inside styleguide overlay
-      document
-        .getElementById("sg-overlay-content")
-        ?.addEventListener("click", (e) => {
-          const card = e.target.closest(".sg-anim-demo-card");
-          if (card) {
-            runAnimDemo(
-              card,
-              card.dataset.dur || null,
-              card.dataset.ease || null,
-            );
-            return;
-          }
-        });
+      // Delegated clicks for the inline styleguide's animation demo cards
+      document.addEventListener("click", (e) => {
+        const card = e.target.closest("#sg-inline .sg-anim-demo-card");
+        if (card) {
+          runAnimDemo(
+            card,
+            card.dataset.dur || null,
+            card.dataset.ease || null,
+          );
+        }
+      });
       render();
 
       window.addEventListener("hashchange", () => {

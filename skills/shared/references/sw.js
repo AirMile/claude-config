@@ -11,7 +11,7 @@
 // already versioned (e.g. dashboard.css's own `?v=N` query bust is usually
 // enough — this is the backstop for assets that aren't, or for when that
 // bump gets forgotten).
-const CACHE_NAME = "board-static-v2";
+const CACHE_NAME = "board-static-v9";
 
 const STATIC_PATTERN = /^\/(css|js|lib)\/[\w-]+\.(css|js)$/;
 const FAVICON_PATTERN = /^\/favicon-[\w-]+\.svg$/;

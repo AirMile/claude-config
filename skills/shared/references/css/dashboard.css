@@ -64,6 +64,8 @@ body {
 .layout {
   display: flex;
   align-items: flex-start;
+  max-width: 1560px;
+  margin: 0 auto;
 }
 
 /* Sidebar */
@@ -171,6 +173,12 @@ body {
   padding: 24px 32px;
   border-bottom: 1px solid var(--border);
   scroll-margin-top: 48px;
+}
+
+/* Design System section: the inline styleguide provides its own padding and
+   fills the section edge-to-edge instead of sitting inset as a card. */
+#theme.dash-section {
+  padding: 0;
 }
 
 .dash-section:last-child {
@@ -1745,100 +1753,6 @@ hr.divider {
   color: var(--text-muted);
 }
 
-.sg-open-btn {
-  padding: 3px 10px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--accent);
-  cursor: pointer;
-  border-radius: 6px;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 500;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.sg-open-btn:hover {
-  background: var(--accent-tint);
-  border-color: var(--accent);
-}
-
-/* Compact row: radius + duration side by side */
-.sg-compact-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 8px;
-}
-
-@media (max-width: 640px) {
-  .sg-compact-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ─── Styleguide fullscreen overlay ─────────────────── */
-body.sg-overlay-open {
-  overflow: hidden;
-}
-
-.sg-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10001;
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s ease;
-}
-
-/* display:flex overrides [hidden]'s display:none — restore it explicitly */
-.sg-overlay[hidden] {
-  display: none;
-}
-
-.sg-overlay--open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.sg-overlay-close-floating {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1010;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(15, 17, 21, 0.72);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.3),
-    0 1px 3px rgba(0, 0, 0, 0.2);
-  transition:
-    transform 150ms ease,
-    background 150ms ease;
-}
-
-.sg-overlay-close-floating:hover {
-  transform: scale(1.08);
-  background: rgba(248, 81, 73, 0.85);
-}
-
 .sg-page-header {
   display: flex;
   align-items: center;
@@ -1864,40 +1778,38 @@ body.sg-overlay-open {
   gap: 12px;
 }
 
+/* Dashboard chrome, not product content — hardcoded to the app shell's own
+   dark palette so it stays legible regardless of the product's own token
+   values (which can be arbitrary or incomplete, e.g. a near-black accent). */
 .sg-page-mode-btn {
-  background: var(--surface-hover);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-product, 6px);
+  background: #1c2333;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  border-radius: 6px;
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .sg-page-mode-btn:hover {
-  background: var(--accent);
-  color: var(--bg);
+  border-color: #58a6ff;
+  color: #58a6ff;
 }
 
 .sg-page-mode-btn.active-mode {
-  background: var(--accent);
-  color: var(--bg);
+  background: #1c2333;
+  color: #58a6ff;
+  border-color: #58a6ff;
 }
 
-.sg-overlay-body {
-  flex: 1;
-  overflow-y: auto;
-  scrollbar-color: var(--border) transparent;
-}
-
-.sg-overlay-content {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 32px 24px 80px;
+.sg-inline {
+  padding: 24px 32px 48px;
+  color: var(--text);
 }
 
 /* ─── Motion: axes sparkline ────────────────────────── */
@@ -2245,7 +2157,7 @@ body.sg-overlay-open {
 
 .feat-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 12px;
 }
 

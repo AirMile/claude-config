@@ -24,20 +24,20 @@ function getNavBarHtml(projectDir, activePage) {
   const projectName = projectDir;
 
   const backHtml =
-    '<a href="/" class="pn-back">&larr; Projects</a><span class="pn-sep">/</span>';
+    '<a href="/" class="pn-back" title="Projects" aria-label="Back to projects">&larr;</a>';
 
   return `
 <style>
   body { padding-top: 48px !important; }
-  #project-nav { position:fixed; top:0; left:0; right:0; height:48px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; z-index:9999; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; padding:0 20px; }
+  #project-nav { position:fixed; top:0; left:0; right:0; height:48px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; z-index:9999; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; padding:0 20px; }
   #project-nav a { text-decoration:none; transition:all 0.15s; }
-  #project-nav .pn-back { color:var(--text-muted); }
-  #project-nav .pn-back:hover { color:var(--accent); }
-  #project-nav .pn-sep { color:var(--border); margin:0 8px; }
-  #project-nav .pn-tabs { display:flex; gap:4px; }
-  #project-nav .pn-tab { color:var(--text-muted); padding:6px 14px; border-bottom:2px solid transparent; }
-  #project-nav .pn-tab:hover { color:var(--text); }
-  #project-nav .pn-tab.active { color:var(--text); border-bottom-color:var(--accent); }
+  #project-nav .pn-back { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; color:var(--text-muted, #8b949e); background:rgba(255,255,255,0.04); border:1px solid var(--border, #30363d); border-radius:10px; font-size:16px; }
+  #project-nav .pn-back:hover { color:var(--text, #e6edf3); background:rgba(255,255,255,0.08); border-color:var(--text-dim, #6e7681); }
+  #project-nav .pn-tabs { display:flex; align-items:center; gap:2px; background:rgba(255,255,255,0.04); border:1px solid var(--border, #30363d); border-radius:10px; padding:3px; }
+  #project-nav .pn-tab { color:var(--text-muted, #8b949e); padding:6px 16px; border-radius:7px; font-size:13px; font-weight:500; border:1px solid transparent; }
+  #project-nav .pn-tab:hover { color:var(--text, #e6edf3); background:rgba(255,255,255,0.07); }
+  #project-nav .pn-tab.active { color:var(--accent, #58a6ff); background:color-mix(in srgb, var(--accent, #58a6ff) 18%, transparent); border-color:color-mix(in srgb, var(--accent, #58a6ff) 40%, transparent); }
+  #project-nav .pn-tab.active:hover { background:color-mix(in srgb, var(--accent, #58a6ff) 18%, transparent); }
   #project-nav .pn-name { color:var(--text); font-weight:600; margin-left:auto; white-space:nowrap; }
 </style>
 <nav id="project-nav">

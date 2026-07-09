@@ -26,7 +26,6 @@
   --p2: #eb8909;
   --p3: #246fe0;
   --p4: #8b949e;
-  --sidebar-w: 170px;
 }
 
 * {
@@ -69,48 +68,41 @@ body {
   align-items: flex-start;
 }
 
-/* ── Sidebar ── */
+/* ── Section chips (jump-links, replace the old sidebar) ── */
 
-.sidebar {
-  width: var(--sidebar-w);
-  flex-shrink: 0;
-  position: sticky;
-  top: 48px;
-  height: calc(100vh - 48px);
-  overflow-y: auto;
-  border-right: 1px solid var(--border);
-  padding: 55px 0 0 0;
+.section-chips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.layout--no-sidebar .sidebar a {
-  visibility: hidden;
-}
-
-.sidebar a {
+.section-chips a {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 12px;
   color: var(--text-muted);
   text-decoration: none;
+  white-space: nowrap;
   transition: all 0.12s;
-  border-left: 3px solid transparent;
-  line-height: 1.3;
 }
 
-.sidebar a:hover {
+.section-chips a:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.section-chips a.active {
   color: var(--text);
   background: var(--surface);
+  border-color: var(--accent);
 }
 
-.sidebar a.active {
-  color: var(--text);
-  background: var(--surface);
-}
-
-.sidebar a .sb-count {
-  margin-left: auto;
+.section-chips a .sb-count {
   font-size: 11px;
   background: var(--surface-hover);
   padding: 0 5px;
@@ -120,17 +112,17 @@ body {
   text-align: center;
 }
 
-.sidebar a.sb-todo {
-  border-left-color: var(--todo);
+.section-chips a.sb-todo {
+  border-color: var(--todo);
 }
-.sidebar a.sb-defined {
-  border-left-color: var(--defined);
+.section-chips a.sb-defined {
+  border-color: var(--defined);
 }
-.sidebar a.sb-doing {
-  border-left-color: var(--doing);
+.section-chips a.sb-doing {
+  border-color: var(--doing);
 }
-.sidebar a.sb-done {
-  border-left-color: var(--done);
+.section-chips a.sb-done {
+  border-color: var(--done);
 }
 
 /* ── Board area ── */
@@ -138,6 +130,9 @@ body {
 .board-area {
   flex: 1;
   min-width: 0;
+  max-width: 1240px;
+  margin: 0 auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -153,18 +148,7 @@ body {
   gap: 4px;
   padding: 0 32px 0 22px;
   background: var(--bg);
-  border-bottom: 1px solid var(--border);
   height: 55px;
-}
-
-.top-nav::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 1px;
-  background: var(--border);
 }
 
 .top-nav-btn {
@@ -276,7 +260,10 @@ body {
 }
 
 .group {
-  border-bottom: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 28px;
+  background: var(--surface);
 }
 
 .group-header {
@@ -291,6 +278,7 @@ body {
   top: 103px;
   z-index: 5;
   border-bottom: 1px solid var(--border);
+  border-radius: 12px 12px 0 0;
 }
 
 .group-header:hover {
@@ -396,31 +384,7 @@ body {
 
 .group.collapsed .group-header {
   border-bottom: none;
-}
-
-.group-header[data-status="TODO"] {
-  border-left: 3px solid var(--todo);
-}
-.group-header[data-status="DEFINED"] {
-  border-left: 3px solid var(--defined);
-}
-.group-header[data-status="DOING"] {
-  border-left: 3px solid var(--doing);
-}
-.group-header[data-status="DONE"] {
-  border-left: 3px solid var(--done);
-}
-.group-header[data-status="TODO"] h2 {
-  color: var(--todo);
-}
-.group-header[data-status="DEFINED"] h2 {
-  color: var(--defined);
-}
-.group-header[data-status="DOING"] h2 {
-  color: var(--doing);
-}
-.group-header[data-status="DONE"] h2 {
-  color: var(--done);
+  border-radius: 12px;
 }
 
 /* ── Phase groups ── */
@@ -494,8 +458,8 @@ body {
 }
 
 .row-copy-btn {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -520,8 +484,8 @@ body {
 }
 
 .row-annuleer-btn {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -545,48 +509,29 @@ body {
   ) !important;
 }
 
-.row--active {
-  border-left: 2px solid var(--accent);
-}
-.row--active .row-name {
-  color: var(--accent);
-}
-
 .row-transition-label {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.3px;
   text-transform: lowercase;
-  color: var(--accent);
+  color: var(--text-muted);
   flex-shrink: 0;
   opacity: 0.8;
 }
 
 /* Queued: command copied, waiting for a skill to pick it up */
-.row--queued {
-  border-left-color: var(--text-dim);
-}
-.row--queued .row-name {
-  color: var(--text);
-}
 .row-transition-label--queued {
   color: var(--text-dim);
   opacity: 0.9;
 }
 
 /* Live: a skill is actually running on this feature right now */
-.row--live {
-  border-left: 2px solid var(--doing, #58a6ff);
-}
-.row--live .row-name {
-  color: var(--doing, #58a6ff);
-}
 .row-live-label {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: lowercase;
-  color: var(--doing, #58a6ff);
+  color: var(--text-muted);
   flex-shrink: 0;
   animation: live-pulse 1.6s ease-in-out infinite;
 }
@@ -603,7 +548,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--doing, #58a6ff);
+  background: var(--text-muted);
   animation: live-pulse 1.6s ease-in-out infinite;
 }
 @keyframes live-pulse {
@@ -623,15 +568,8 @@ body {
 }
 
 /* Waiting: the skill is live but paused for user input (manual tests,
-   playtest, ship review). Amber + static — a pause, not activity. */
-.row--waiting {
-  border-left-color: var(--warn, #d29922);
-}
-.row--waiting .row-name {
-  color: var(--warn, #d29922);
-}
+   playtest, ship review). Static — a pause, not activity. */
 .row--waiting .row-live-label {
-  color: var(--warn, #d29922);
   animation: none;
 }
 .row--waiting .row-live-dot::before {
@@ -640,34 +578,18 @@ body {
   height: auto;
   border-radius: 0;
   background: none;
-  color: var(--warn, #d29922);
+  color: var(--text-muted);
   font-size: 11px;
   line-height: 1;
   animation: none;
 }
-.header-wait-count {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--warn, #d29922);
-}
-
 /* Parked: a ship checkpoint (ship-*.json) survives session death with no live
-   signal — the run is dormant, resumable from a fresh chat. Reuses the amber
+   signal — the run is dormant, resumable from a fresh chat. Reuses the
    waiting look (row--waiting) but slightly dimmed to read as paused-not-active,
    and its action is a copy button (resume command), not a live dot. */
 .row--parked .row-name,
 .row--parked .row-live-label {
   opacity: 0.82;
-}
-
-/* In progress section header */
-.group-header--inprogress h2 {
-  color: var(--doing, #58a6ff);
-}
-.header-live-count {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
 }
 
 .row-name {
@@ -1308,17 +1230,6 @@ body {
   white-space: nowrap;
 }
 
-.auto-badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--accent);
-  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
-  letter-spacing: 0.3px;
-}
-
 .refactor-badge {
   font-size: 10px;
   font-weight: 600;
@@ -1639,15 +1550,6 @@ body {
   white-space: nowrap;
 }
 
-/* ── Blocked count in section header ── */
-
-.header-blocked-count {
-  font-size: 12px;
-  font-weight: 400;
-  opacity: 0.7;
-  color: var(--danger);
-}
-
 /* ── Row actions menu ── */
 
 .row-menu-wrap {
@@ -1723,7 +1625,6 @@ body {
 }
 
 .group--archived .group-header {
-  border-left-color: var(--text-dim);
   opacity: 0.6;
 }
 
@@ -1736,49 +1637,38 @@ body {
   opacity: 0.6;
 }
 
-/* ── Responsive: sidebar krimpt op smaller viewport ── */
-
-@media (max-width: 1024px) {
-  :root {
-    --sidebar-w: 140px;
-  }
-  .sidebar a {
-    padding: 6px 12px;
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 768px) {
-  :root {
-    --sidebar-w: 110px;
-  }
-  .sidebar a {
-    padding: 5px 10px;
-    font-size: 11px;
-  }
-  .sidebar a .sb-count {
-    font-size: 10px;
-    min-width: 16px;
-    padding: 0 4px;
-  }
-}
-
-@media (max-width: 500px) {
-  .sidebar {
-    display: none;
-  }
-}
-
-/* ── Responsive: description op tweede regel ── */
+/* ── Responsive: top nav wraps, description op tweede regel ── */
 
 @media (max-width: 700px) {
+  /* .top-nav has a fixed height on desktop; on narrow screens the wrapping
+     .section-chips would overflow it. Let the whole bar wrap instead: search
+     claims row 1, chips + pills + actions share row 2. */
+  .top-nav {
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding: 8px 16px 10px;
+  }
+  .top-nav-search {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+  .section-chips {
+    flex: 1 1 auto;
+  }
+  .type-pills,
+  .action-btns {
+    margin-left: 0;
+  }
+
   .row-summary {
     flex-wrap: wrap;
     row-gap: 4px;
   }
   .row-name {
     max-width: none;
-    flex-shrink: 1;
+    flex-basis: 0;
+    flex-grow: 1;
   }
   .row-desc {
     order: 99;
@@ -1811,10 +1701,4 @@ body {
 .card-outsource-btn:hover {
   background: var(--accent, #6366f1);
   color: #fff;
-}
-
-.top-nav-toggle {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
 }
