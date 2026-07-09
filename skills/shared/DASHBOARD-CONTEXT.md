@@ -58,6 +58,8 @@ The dashboard server's `populateFromProject()` merges this file into the unified
 }
 ```
 
+> **Dev-track note**: `/dev-ship` no longer maintains this descriptive component graph (`layers`/`dataFlow`/`components[]`/diagram) — it was write-heavy dashboard bookkeeping that no dev-ship read path consumed. `/dev-ship` still writes `architecture.routes[]` (below — used to prevent duplicate routes during build) and `context`/`learnings`. `/game-ship` still maintains the full component-first model described here (scene/signal graph is genuinely useful for Godot projects); this section remains its schema reference.
+
 ### Component-first model
 
 The component is the atomic unit. All data per component lives in one object — no fuzzy matching needed.
@@ -135,10 +137,10 @@ classDef external fill:#1c2128,stroke:#30363d,color:#8b949e
 
 ### Skills that write architecture
 
-| Skill        | What it writes                                                                                                                                                                | When            |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| `/dev-ship`  | Initial `layers` + `components` + `dataFlow` (define phase), then `components` status → done with `src`, `test`, `connects_to`, `endpoints`, `entities` (build/verify phases) | During ship run |
-| `/core-pull` | Sync full `architecture` section on pull                                                                                                                                      | On context sync |
+| Skill        | What it writes                                                                                                                                       | When            |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `/game-ship` | Initial `layers` + `components` + `dataFlow` (define phase), then `components` status → done with `src`, `test`, `connects_to` (build/verify phases) | During ship run |
+| `/core-pull` | Sync full `architecture` section on pull                                                                                                             | On context sync |
 
 **Write strategy:**
 
@@ -282,7 +284,7 @@ Skills that consume thinking-output (such as `/dev-ship`, define phase) read dir
 
 | Section        | Written by                                                           | When                                                                   |
 | -------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `architecture` | `/dev-ship`, `/game-ship`                                            | On architecture definition / after build                               |
+| `architecture` | `/dev-ship` (`routes[]` only), `/game-ship` (full component graph)   | On architecture definition / after build                               |
 | `context`      | `/core-setup`, `/dev-ship`, `/game-ship`                             | On build/refactor (structure, routing, patterns)                       |
 | `learnings`    | `/dev-ship`, `/game-ship`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred), teammate/legacy code (synced) |
 

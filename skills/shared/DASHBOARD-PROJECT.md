@@ -347,24 +347,6 @@ Contains team-repo awareness fields. The `mode` field is the explicit toggle; al
 
 See § Features under "Merge strategy per section": canonical data lives in `.project/backlog.json` + `.project/archive/backlog-archive.json`. Schema of a feature object: [BACKLOG.md](BACKLOG.md) § Data structure. The dashboard shipped-showcase shows archived/`shipped: true` features only.
 
-### recentChanges
-
-Small shipped items (type CHANGE/BUG/PAGE/COMPONENT/etc) that did not go through the full feature pipeline. Promoted via `/dev-ship`'s refactor phase (small-items path) after a lightweight convention check.
-
-```json
-[
-  {
-    "name": "fix-button-spacing",
-    "type": "CHANGE",
-    "description": "Button padding inconsistent on mobile",
-    "shipped": true,
-    "shippedAt": "2026-02-25"
-  }
-]
-```
-
-Dashboard shows `recentChanges[]` as a compact strip below the features grid.
-
 ### optimization_runs
 
 Append-only log of `/dev-optimize` and `/game-optimize` runs. One entry per completed run. Serves as history for the dashboard — not for live state (that lives in `.project/optimize/{run-id}/`).
@@ -426,9 +408,9 @@ No deletion, no update — append only. For live status of a running run: see `.
 | Section             | Written by                                                                   | When                                     |
 | ------------------- | ---------------------------------------------------------------------------- | ---------------------------------------- |
 | `seed`              | `/project-seed`, `/project-brainstorm`, `/project-critique`, `/project-plan` | On seed creation/iteration/plan          |
-| `design`            | `/design-convert`, `/design-tokens`                                           | On design spec/page build/theme creation |
+| `design`            | `/design-convert`, `/design-tokens`                                          | On design spec/page build/theme creation |
 | `theme`             | `/design-tokens`                                                             | After theme create/update                |
-| `stack`             | `/core-setup`, `/project-plan`, `/dev-ship`, `/design-convert`                | On detection/new deps                    |
+| `stack`             | `/core-setup`, `/project-plan`, `/dev-ship`, `/design-convert`               | On detection/new deps                    |
 | `data`              | `/dev-ship`, `/game-ship`                                                    | On entity definition                     |
 | `endpoints`         | `/dev-ship`                                                                  | On API definition / after build          |
 | `optimization_runs` | `/dev-optimize`, `/game-optimize`                                            | On run completion (PHASE 6)              |
@@ -442,9 +424,9 @@ For the `project-context.json` writer table see [DASHBOARD-CONTEXT.md](DASHBOARD
 | Skill                       | project.json                                   | project-context.json                                              | When                              |
 | --------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- | --------------------------------- |
 | `/core-setup`               | `stack` (full)                                 | `context` (initial)                                               | After project generation          |
-| `/dev-ship`                 | `data.entities`, `endpoints`, `stack.packages` | `context`, `architecture`, `learnings` (write)                    | Ship run (define→refactor phases) |
-| `/design-convert`            | `design` (pages, flows, principles)            | —                                                                 | On each run                       |
-| `/design-convert`            | `stack.packages`, `design.pages`               | —                                                                 | After completion sync             |
+| `/dev-ship`                 | `data.entities`, `endpoints`, `stack.packages` | `context`, `architecture.routes[]`, `learnings` (write)           | Ship run (define→refactor phases) |
+| `/design-convert`           | `design` (pages, flows, principles)            | —                                                                 | On each run                       |
+| `/design-convert`           | `stack.packages`, `design.pages`               | —                                                                 | After completion sync             |
 | `/design-tokens`            | `design.principles`                            | —                                                                 | After completion                  |
 | `/game-ship`                | `data.entities`, `stack.packages`              | `context`, `architecture`, `learnings` (write)                    | Ship run (define→refactor phases) |
 | `/team-verify`              | `stack.packages`, `endpoints`, `data.entities` | `architecture` (write)                                            | PHASE 7 completion                |

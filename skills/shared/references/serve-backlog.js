@@ -1067,9 +1067,15 @@ http
           try {
             const backlogData = readBacklogData(projectPath);
             if (backlogData) {
-              const f = (backlogData.features || []).find(
-                (x) => x.name === featureName,
+              // Shipped dev-track features move out of backlog.json into the
+              // archive (see shared/BACKLOG.md § Archiving) — merge them back
+              // in so a shipped feature's shippedAt/shippedSha/summary still
+              // reach the detail view instead of silently disappearing.
+              const mergedFeatures = mergeArchivedFeatures(
+                projectPath,
+                backlogData.features || [],
               );
+              const f = mergedFeatures.find((x) => x.name === featureName);
               if (f) {
                 if (!result) result = { name: featureName };
                 if (!result.type) result.type = f.type;
@@ -1079,6 +1085,7 @@ http
                 result.shipped = f.shipped;
                 if (f.shippedAt) result.shippedAt = f.shippedAt;
                 if (f.shippedSha) result.shippedSha = f.shippedSha;
+                if (f.summary) result.summary = f.summary;
                 if (f.audit)
                   result.audit = { ...f.audit, ...(result.audit || {}) };
               }

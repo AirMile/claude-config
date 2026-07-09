@@ -31,7 +31,6 @@ echo '{
   "verificationCheckpoint": { "gaps": [], "mismatches": [], "adjustments": "none" },
   "acceptanceTestFile": "tests/acceptance/....spec.ts",
   "seedPages": [{ "name": "admin-settings", "routePattern": "app/admin/settings/page.tsx" }],
-  "componentSync": [{ "name": "auth", "src": ["..."], "test": ["..."] }],
   "designComponent": "Button"
 }' | node ~/.claude/scripts/completion-sync.js sync {feature-name}
 ```
@@ -41,7 +40,7 @@ Field notes:
 - `requirements[]`: one entry per non-`REMOVED` requirement, `verdict` ∈ `PASS|FAIL|BLOCKED|UNCLEAR`
   (BLOCKED/UNCLEAR need `evidence`); score fields optional.
 - `checklist`: `{ "<checklist-id>": "PASS"|"FAIL"|"skip" }` for every `tests.checklist[]` item.
-- `componentSync`/`designComponent`: only when PHASE 4 touched components / `IS_COMPONENT_VERIFY = true`.
+- `designComponent`: only when PHASE 4 touched components / `IS_COMPONENT_VERIFY = true` (updates `project.json#design.components[]` — the design-track inventory, unrelated to the architecture map).
 
 Exit codes: `0` full sync · `6` validation failed before any write (missing/unknown verdict, or a
 forbidden key anywhere in the payload) — fall back to hand-authoring; > **Todo**: Read

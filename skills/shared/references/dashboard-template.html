@@ -6,13 +6,16 @@
     <meta name="color-scheme" content="dark light" />
     <title>Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="/favicon-dashboard.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0d1117" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <script src="/lib/pwa-register.js" defer></script>
     <script src="/lib/themes.js"></script>
     <script src="/lib/settings-modal.js"></script>
     <script src="/lib/collapse-store.js"></script>
-    <link rel="stylesheet" href="/css/dashboard.css?v=16" />
+    <link rel="stylesheet" href="/css/dashboard.css?v=18" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
@@ -28,10 +31,6 @@
         "seed": {
           "name": "Example Project",
           "content": "# Example Project\n\nA sample project to demonstrate the dashboard.\n\n## Core Concept\n\nThis is a demo of the project dashboard with all sections.\n\n## Target audience\n\nDevelopers and designers.\n\n## Scope\n\nIn scope: dashboard UI. Out of scope: production deployment."
-        },
-        "architecture": {
-          "diagram": "graph TD\n  Client[Browser Client] --> Gateway[API Gateway]\n  Gateway --> Auth[Auth Service]\n  Gateway --> App[App Service]\n  App --> DB[(PostgreSQL)]\n  App --> Cache[(Redis Cache)]\n  Auth --> DB\n  App --> Queue[Message Queue]\n  Queue --> Worker[Background Worker]\n  Worker --> DB",
-          "description": "## Overview\n\nThe system follows a service-oriented architecture with a central API gateway.\n\n## Components\n\n- **API Gateway** — Routing, rate limiting, request validation\n- **Auth Service** — JWT authentication, session management\n- **App Service** — Core business logic\n- **Background Worker** — Async tasks via message queue"
         },
         "theme": {
           "colors": {
@@ -199,27 +198,6 @@
             { "name": "stripe", "version": "^14.0", "purpose": "Payments" }
           ]
         },
-        "data": {
-          "entities": [
-            {
-              "name": "User",
-              "fields": [
-                { "name": "id", "type": "uuid", "key": "PK" },
-                { "name": "email", "type": "string", "key": "unique" }
-              ],
-              "relations": [{ "target": "Order", "type": "1:N" }]
-            }
-          ]
-        },
-        "endpoints": [
-          {
-            "method": "POST",
-            "path": "/api/auth/login",
-            "auth": false,
-            "status": "done",
-            "description": "JWT login with email/password"
-          }
-        ],
         "features": [
           {
             "name": "user-auth",
@@ -263,24 +241,6 @@
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
-
-    <!-- Diagram Lightbox -->
-    <div class="diagram-lightbox" id="diagram-lightbox">
-      <div class="diagram-lightbox-toolbar">
-        <span class="diagram-lightbox-hint"
-          >Scroll to zoom &middot; Drag to pan</span
-        >
-        <button class="diagram-lightbox-close" onclick="closeDiagramLightbox()">
-          &times;
-        </button>
-      </div>
-      <div class="diagram-lightbox-viewport" id="diagram-lightbox-viewport">
-        <div
-          class="diagram-lightbox-content"
-          id="diagram-lightbox-content"
-        ></div>
-      </div>
-    </div>
 
     <!-- Feature detail modal -->
     <div
@@ -377,8 +337,6 @@
 
       const TABS = [
         { id: "features", label: "Features" },
-        { id: "architecture", label: "Architecture" },
-        { id: "learnings", label: "Knowledge" },
         { id: "theme", label: "Design System" },
         { id: "stack", label: "Stack" },
         { id: "seed", label: "Seed" },
@@ -389,15 +347,6 @@
         seed: {
           name: "",
           content: "",
-        },
-        architecture: {
-          diagram: "",
-          description: "",
-        },
-        design: {
-          pages: [],
-          flows: [],
-          principles: [],
         },
         theme: {
           colors: { main: [], accent: [], semantic: [] },
@@ -421,8 +370,6 @@
           hosting: "",
           packages: [],
         },
-        data: { entities: [] },
-        endpoints: [],
       };
 
       // Ensure all sections exist
@@ -567,113 +514,6 @@
         }
       });
 
-      // ─── Diagram Lightbox (pan & zoom) ─────────────────────
-      (function () {
-        const lb = document.getElementById("diagram-lightbox");
-        const vp = document.getElementById("diagram-lightbox-viewport");
-        const ct = document.getElementById("diagram-lightbox-content");
-        let scale = 1,
-          tx = 0,
-          ty = 0,
-          dragging = false,
-          startX,
-          startY;
-
-        function apply() {
-          ct.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
-        }
-
-        window.openDiagramLightbox = function () {
-          const src = document.querySelector("#arch-diagram svg");
-          if (!src) return;
-          ct.innerHTML = "";
-          const clone = src.cloneNode(true);
-          const origId = src.getAttribute("id") || "arch-mermaid";
-          const newId = origId + "-lb";
-          clone.setAttribute("id", newId);
-          clone.querySelectorAll("style").forEach((s) => {
-            s.textContent = s.textContent.replaceAll("#" + origId, "#" + newId);
-          });
-          const vb = clone.getAttribute("viewBox");
-          if (vb) {
-            const [, , w, h] = vb.split(/\s+/).map(Number);
-            clone.setAttribute("width", w);
-            clone.setAttribute("height", h);
-          }
-          clone.style.maxWidth = "none";
-          ct.appendChild(clone);
-          lb.classList.add("active");
-          document.body.style.overflow = "hidden";
-          // fit diagram to viewport with padding
-          const vpRect = vp.getBoundingClientRect();
-          const pad = 40;
-          const svgW =
-            clone.getBoundingClientRect().width ||
-            parseFloat(clone.getAttribute("width"));
-          const svgH =
-            clone.getBoundingClientRect().height ||
-            parseFloat(clone.getAttribute("height"));
-          scale = Math.min(
-            (vpRect.width - pad * 2) / svgW,
-            (vpRect.height - pad * 2) / svgH,
-            1,
-          );
-          tx = (vpRect.width - svgW * scale) / 2;
-          ty = (vpRect.height - svgH * scale) / 2;
-          apply();
-        };
-
-        window.closeDiagramLightbox = function () {
-          lb.classList.remove("active");
-          document.body.style.overflow = "";
-        };
-
-        lb.addEventListener("click", (e) => {
-          if (e.target === lb || e.target === vp) closeDiagramLightbox();
-        });
-
-        document.addEventListener("keydown", (e) => {
-          if (e.key === "Escape" && lb.classList.contains("active"))
-            closeDiagramLightbox();
-        });
-
-        vp.addEventListener(
-          "wheel",
-          (e) => {
-            e.preventDefault();
-            const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-            const rect = vp.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
-            tx = mx - factor * (mx - tx);
-            ty = my - factor * (my - ty);
-            scale *= factor;
-            apply();
-          },
-          { passive: false },
-        );
-
-        vp.addEventListener("mousedown", (e) => {
-          if (e.button !== 0) return;
-          dragging = true;
-          startX = e.clientX - tx;
-          startY = e.clientY - ty;
-          vp.style.cursor = "grabbing";
-        });
-
-        window.addEventListener("mousemove", (e) => {
-          if (!dragging) return;
-          tx = e.clientX - startX;
-          ty = e.clientY - startY;
-          apply();
-        });
-
-        window.addEventListener("mouseup", () => {
-          dragging = false;
-          vp.style.cursor = "grab";
-        });
-      })();
-
       // ─── Section Renderers ──────────────────────────────────
 
       function renderSeed() {
@@ -693,656 +533,6 @@
             <button class="header-icon-btn" onclick="editSeed()" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           </div>
           <div class="seed-content">${md(c.content)}</div>`;
-      }
-
-      let _diagramRenderId = 0;
-      let _diagramShowAll = localStorage.getItem("diagram-scope") !== "built";
-
-      function filterDiagram(src, showAll) {
-        if (showAll) return src;
-        const lines = src.split("\n");
-        const planned = new Set();
-        for (const l of lines) {
-          const m = l.match(/^\s*(\w+)[\[({].*:::planned/);
-          if (m) planned.add(m[1]);
-        }
-        if (!planned.size) return src;
-        // pass 1: remove planned nodes and their connections
-        const filtered = lines.filter((l) => {
-          if (/^\s*(classDef|graph|flowchart)\s/.test(l)) return true;
-          if (/^\s*subgraph\s/.test(l) || /^\s*end\s*$/.test(l)) return true;
-          for (const id of planned) {
-            if (new RegExp("^\\s*" + id + "[\\[({]").test(l)) return false;
-          }
-          if (/-->|---|\.-|==>/.test(l)) {
-            for (const id of planned) {
-              if (new RegExp("(^|\\s)" + id + "(\\s|$|[\\[(-])").test(l))
-                return false;
-            }
-          }
-          return true;
-        });
-        // pass 2: remove empty subgraphs
-        const result = [];
-        let i = 0;
-        while (i < filtered.length) {
-          if (/^\s*subgraph\s/.test(filtered[i])) {
-            let j = i + 1;
-            while (j < filtered.length && !/^\s*end\s*$/.test(filtered[j])) j++;
-            let hasContent = false;
-            for (let k = i + 1; k < j; k++) {
-              if (filtered[k].trim()) {
-                hasContent = true;
-                break;
-              }
-            }
-            if (hasContent) {
-              for (let k = i; k <= j; k++) result.push(filtered[k]);
-            }
-            i = j + 1;
-          } else {
-            result.push(filtered[i]);
-            i++;
-          }
-        }
-        return result.join("\n");
-      }
-
-      // ─── Code Cards ────────────────────────────────────
-
-      function buildCodeCards() {
-        const a = data.architecture || {};
-        const components = a.components;
-        if (!components || !components.length) return null;
-
-        const reverseMap = {};
-        components.forEach((c) => {
-          (c.connects_to || []).forEach((edge) => {
-            if (!reverseMap[edge.to]) reverseMap[edge.to] = [];
-            reverseMap[edge.to].push({ name: c.name, type: edge.type });
-          });
-        });
-
-        return components.map((c) => ({
-          name: c.name,
-          description: c.description || "",
-          feature: c.feature || "",
-          src: c.src || [],
-          test: c.test || [],
-          status: c.status || "done",
-          group: c.layer || "Other",
-          endpoints: (c.endpoints || []).map((p) => {
-            const parts = p.trim().split(/\s+/);
-            const hasMethod =
-              /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/i.test(parts[0]);
-            return {
-              method: hasMethod ? parts[0].toUpperCase() : "GET",
-              path: hasMethod ? parts.slice(1).join(" ") : p,
-            };
-          }),
-          entities: (c.entities || []).map((e) => ({ name: e })),
-          connections: {
-            to: (c.connects_to || []).map((e) => ({
-              name: e.to,
-              type: e.type,
-            })),
-            from: reverseMap[c.name] || [],
-          },
-        }));
-      }
-
-      function toggleCard(card) {
-        const wasExpanded = card.classList.contains("expanded");
-
-        // Single pass: collapse others + clear highlights
-        document.querySelectorAll(".code-card").forEach((c) => {
-          if (c !== card) c.classList.remove("expanded");
-          c.classList.remove(
-            "code-card-dimmed",
-            "code-card-connected",
-            "code-card-connected--to",
-            "code-card-connected--from",
-          );
-        });
-
-        card.classList.toggle("expanded");
-        setSingle(
-          "expandedCard",
-          card.classList.contains("expanded") ? card.dataset.component : null,
-        );
-
-        if (!wasExpanded) {
-          const connTo = new Set(
-            (card.dataset.connTo || "").split(",").filter(Boolean),
-          );
-          const connFrom = new Set(
-            (card.dataset.connFrom || "").split(",").filter(Boolean),
-          );
-
-          if (connTo.size || connFrom.size) {
-            document.querySelectorAll(".code-card").forEach((c) => {
-              if (c === card) return;
-              const name = c.dataset.component;
-              if (connTo.has(name)) {
-                c.classList.add(
-                  "code-card-connected",
-                  "code-card-connected--to",
-                );
-              } else if (connFrom.has(name)) {
-                c.classList.add(
-                  "code-card-connected",
-                  "code-card-connected--from",
-                );
-              } else {
-                c.classList.add("code-card-dimmed");
-              }
-            });
-          }
-        }
-      }
-
-      let _archDiagramRendered = false;
-      function toggleArchDiagram() {
-        const el = document.getElementById("arch-diagram");
-        const btn = document.querySelector(".arch-diagram-toggle");
-        if (!el) return;
-        const hidden = el.classList.toggle("architecture-diagram--hidden");
-        if (btn) btn.classList.toggle("active", !hidden);
-        setCollapsed("arch-diagram", hidden);
-        if (!hidden && !_archDiagramRendered) {
-          const a = data.architecture || {};
-          if (a.diagram) {
-            renderMermaidDiagram(a.diagram);
-            _archDiagramRendered = true;
-          }
-        }
-      }
-
-      function highlightCard(chip) {
-        const target = chip.dataset.target;
-        if (!target) return;
-        const card = document.querySelector(
-          `.code-card[data-component="${target}"]`,
-        );
-        if (!card) {
-          chip.classList.add("code-card-conn--dead");
-          chip.title = "No card found for this component";
-          return;
-        }
-        card.scrollIntoView({ behavior: "smooth", block: "center" });
-        if (!card.classList.contains("expanded")) {
-          toggleCard(card);
-        }
-      }
-
-      function openFileInVSCode(filePath, el) {
-        const url =
-          location.pathname.replace(/\/$/, "") +
-          "/open/" +
-          encodeURIComponent(filePath).replace(/%2F/g, "/");
-        openInVSCode(url, el);
-      }
-
-      function applyCodeCardFilter(showAll) {
-        document.querySelectorAll(".code-card").forEach((card) => {
-          card.classList.toggle(
-            "code-card-hidden",
-            !showAll && card.dataset.status === "planned",
-          );
-        });
-        document.querySelectorAll(".code-cards-group").forEach((group) => {
-          const visible = group.querySelectorAll(
-            ".code-card:not(.code-card-hidden)",
-          );
-          group.style.display = visible.length ? "" : "none";
-        });
-      }
-
-      const MAX_CONN_PER_DIR = 4;
-
-      function renderConnChip(item, dir) {
-        const typeBadge = item.type
-          ? `<span class="code-card-conn-type">${esc(item.type)}</span>`
-          : "";
-        return `<span class="code-card-conn code-card-conn--${dir}" data-target="${esc(item.name.toLowerCase())}" onclick="highlightCard(this)">${esc(item.name)}${typeBadge}</span>`;
-      }
-
-      function renderConnGroup(items, dir, label) {
-        if (!items.length) return "";
-        const visible = items.slice(0, MAX_CONN_PER_DIR);
-        const hidden = items.length - visible.length;
-        return `<div class="code-card-conn-group">
-          <span class="code-card-conn-label">${label}</span>
-          <div class="code-card-conn-chips">
-            ${visible.map((n) => renderConnChip(n, dir)).join("")}
-            ${
-              hidden > 0
-                ? `<span class="code-card-conn code-card-conn--more" onclick="this.nextElementSibling.style.display='contents';this.remove()">+${hidden}</span><span style="display:none">${items
-                    .slice(MAX_CONN_PER_DIR)
-                    .map((n) => renderConnChip(n, dir))
-                    .join("")}</span>`
-                : ""
-            }
-          </div>
-        </div>`;
-      }
-
-      function renderFileChip(path, isTest) {
-        return `<span class="code-card-file${isTest ? " code-card-file--test" : ""}" data-path="${esc(path)}" onclick="openFileInVSCode(this.dataset.path, this)">${esc(path.split("/").pop())}</span>`;
-      }
-
-      function renderCodeCardsGrid(cards) {
-        const grouped = {};
-        cards.forEach((c) => {
-          if (!grouped[c.group]) grouped[c.group] = [];
-          grouped[c.group].push(c);
-        });
-
-        const layers = (data.architecture || {}).layers || [];
-        const layerOrder = {};
-        layers.forEach((l) => (layerOrder[l.name] = l.order || 99));
-
-        const sortedGroups = Object.keys(grouped).sort((a, b) => {
-          if (a === "Other") return 1;
-          if (b === "Other") return -1;
-          const oa = layerOrder[a];
-          const ob = layerOrder[b];
-          if (oa !== undefined && ob !== undefined) return oa - ob;
-          if (oa !== undefined) return -1;
-          if (ob !== undefined) return 1;
-          return a.localeCompare(b);
-        });
-
-        return `<div class="code-cards" id="code-cards">${sortedGroups
-          .map(
-            (groupName) => `
-          <div class="code-cards-group">
-            ${groupName === "Overig" ? "" : `<h3 class="code-cards-group-title">${esc(groupName)}</h3>`}
-            <div class="code-cards-grid">
-              ${grouped[groupName].map((c) => renderCodeCard(c)).join("")}
-            </div>
-          </div>`,
-          )
-          .join("")}</div>`;
-      }
-
-      function renderCodeCard(c) {
-        const counts = [];
-        if (c.src.length)
-          counts.push(
-            `<span title="${c.src.length} source file${c.src.length > 1 ? "s" : ""}">${c.src.length} src</span>`,
-          );
-        if (c.test.length)
-          counts.push(
-            `<span title="${c.test.length} test${c.test.length > 1 ? "s" : ""}">${c.test.length} tst</span>`,
-          );
-        if (c.endpoints.length)
-          counts.push(
-            `<span title="${c.endpoints.length} endpoint${c.endpoints.length > 1 ? "s" : ""}">${c.endpoints.length} ep</span>`,
-          );
-
-        const conn = c.connections || { to: [], from: [] };
-        const hasConn = conn.to.length || conn.from.length;
-
-        const hasDetail =
-          c.src.length ||
-          c.test.length ||
-          c.endpoints.length ||
-          c.entities.length ||
-          hasConn;
-
-        const connectionsHtml = hasConn
-          ? `<div class="code-card-section"><h4>Connections</h4><div class="code-card-connections">
-              ${renderConnGroup(conn.from, "from", "Receives from")}
-              ${renderConnGroup(conn.to, "to", "Sends to")}
-            </div></div>`
-          : "";
-
-        const filesHtml =
-          c.src.length || c.test.length
-            ? `<div class="code-card-section"><h4>Files</h4><div class="code-card-files">
-              ${c.src.map((f) => renderFileChip(f, false)).join("")}
-              ${c.test.map((f) => renderFileChip(f, true)).join("")}
-            </div></div>`
-            : "";
-
-        const endpointsHtml = c.endpoints.length
-          ? `<div class="code-card-section"><h4>Endpoints</h4><div class="code-card-endpoints">
-              ${c.endpoints.map((ep) => `<div class="code-card-endpoint"><span class="badge badge-${(ep.method || "get").toLowerCase()}">${esc(ep.method || "GET")}</span> ${esc(ep.path)}</div>`).join("")}
-            </div></div>`
-          : "";
-
-        const entitiesHtml = c.entities.length
-          ? `<div class="code-card-section"><h4>Entities</h4><div class="code-card-entities">
-              ${c.entities.map((e) => `<span class="code-card-entity">${esc(e.name)}</span>`).join("")}
-            </div></div>`
-          : "";
-
-        const connToLower = conn.to.map((e) => e.name.toLowerCase()).join(",");
-        const connFromLower = conn.from
-          .map((e) => e.name.toLowerCase())
-          .join(",");
-
-        return `
-          <div class="code-card" data-status="${esc(c.status)}" data-component="${esc(c.name.toLowerCase())}" data-conn-to="${esc(connToLower)}" data-conn-from="${esc(connFromLower)}">
-            <div class="code-card-header" onclick="toggleCard(this.closest('.code-card'))">
-              <span class="code-card-status" data-status="${esc(c.status)}"></span>
-              <span class="code-card-name">${esc(c.name)}</span>
-              ${c.feature ? `<span class="code-card-feature">${esc(c.feature)}</span>` : ""}
-              <span class="code-card-counts">${counts.join("")}</span>
-              ${hasDetail ? `<span class="code-card-chevron">&#x203A;</span>` : ""}
-            </div>
-            ${c.description ? `<div class="code-card-desc">${esc(c.description)}</div>` : ""}
-            ${hasDetail ? `<div class="code-card-detail">${connectionsHtml}${filesHtml}${endpointsHtml}${entitiesHtml}</div>` : ""}
-          </div>`;
-      }
-
-      function renderMermaidDiagram(diagramSrc) {
-        const el = document.getElementById("arch-diagram");
-        if (!el || !diagramSrc) return;
-        const filtered = filterDiagram(diagramSrc, _diagramShowAll);
-        el.innerHTML = "";
-        const id = "arch-mermaid-" + ++_diagramRenderId;
-        mermaid
-          .render(id, filtered)
-          .then(({ svg }) => {
-            el.innerHTML = svg;
-            el.style.cursor = "pointer";
-            el.title = "Click to open fullscreen";
-            el.onclick = () => openDiagramLightbox();
-          })
-          .catch((err) => {
-            el.innerHTML = `<div class="architecture-error">Diagram error: ${esc(err.message || String(err))}</div>`;
-          });
-      }
-
-      function toggleDiagramScope(showAll) {
-        _diagramShowAll = showAll;
-        localStorage.setItem("diagram-scope", showAll ? "all" : "built");
-        document
-          .querySelectorAll(".arch-toggle button")
-          .forEach((b) => b.classList.remove("active"));
-        document
-          .querySelector(
-            `.arch-toggle button[data-scope="${showAll ? "all" : "built"}"]`,
-          )
-          ?.classList.add("active");
-        const a = data.architecture || {};
-        if (a.diagram) renderMermaidDiagram(a.diagram);
-        applyCodeCardFilter(showAll);
-      }
-
-      function renderArchitecture() {
-        const a = data.architecture || {};
-        const hasDiagram = a.diagram && a.diagram.trim();
-        const cards = buildCodeCards();
-        const hasCards = !!cards;
-        const hasPlanned =
-          hasCards && cards.some((c) => c.status === "planned");
-
-        if (!hasCards && !hasDiagram) {
-          return `
-            <div class="section-header"><h2>Architecture</h2></div>
-            <div class="empty-state"><p>No components defined yet.</p>
-            <p style="color:var(--text-dim)">Filled by <code>/dev-ship</code></p></div>`;
-        }
-
-        // Toolbar: filter toggle + optional diagram toggle
-        const filterToggle = hasPlanned
-          ? `<div class="arch-toggle">
-              <button data-scope="all" class="${_diagramShowAll ? "active" : ""}" onclick="toggleDiagramScope(true)">All</button>
-              <button data-scope="built" class="${!_diagramShowAll ? "active" : ""}" onclick="toggleDiagramScope(false)">Built</button>
-            </div>`
-          : "";
-
-        const diagramToggle =
-          hasDiagram && hasCards
-            ? `<button class="arch-diagram-toggle" onclick="toggleArchDiagram()">Diagram</button>`
-            : "";
-
-        const splitClass =
-          filterToggle && diagramToggle ? " arch-toolbar--split" : "";
-        const toolbarHtml =
-          filterToggle || diagramToggle
-            ? `<div class="arch-toolbar${splitClass}">${filterToggle}${diagramToggle}</div>`
-            : "";
-
-        // Diagram: hidden by default when cards exist
-        const diagramHidden = hasCards;
-        const diagramHtml = hasDiagram
-          ? `<div class="architecture-diagram${diagramHidden ? " architecture-diagram--hidden" : ""}" id="arch-diagram"></div>`
-          : "";
-
-        const dataFlowHtml =
-          a.dataFlow && hasCards
-            ? `<div class="code-cards-dataflow">
-                <div class="code-cards-dataflow-label">Data flow</div>
-                ${a.dataFlow
-                  .split(/\.\s+(?=[A-Z])/)
-                  .map((s) => s.replace(/\.\s*$/, "").trim())
-                  .filter(Boolean)
-                  .map((s) => {
-                    const m = s.match(/^([^:]{1,24}):\s*(.*)$/);
-                    return `<div class="code-cards-dataflow-line">${
-                      m ? `<strong>${esc(m[1])}:</strong> ${esc(m[2])}` : esc(s)
-                    }</div>`;
-                  })
-                  .join("")}
-              </div>`
-            : "";
-
-        let descHtml = "";
-
-        if (hasDiagram) {
-          setTimeout(() => renderMermaidDiagram(a.diagram), 0);
-        }
-
-        // Sub-sections: Routes, Components flat, API, Entities
-        function archSubSection(label, count, bodyHtml) {
-          if (!count) return "";
-          const id = "arch-sub-" + label.toLowerCase().replace(/\s+/g, "-");
-          return `
-            <div class="arch-subsection">
-              <div class="arch-subsection-header" data-collapse-key="${id}" onclick="(function(el){
-                var body=el.nextElementSibling;
-                var open=el.classList.toggle('collapsed');
-                body.style.display=open?'none':'';
-                setCollapsed(el.dataset.collapseKey,open);
-              })(this)">
-                <span class="arch-subsection-label">${esc(label)}</span>
-              </div>
-              <div class="arch-subsection-body">${bodyHtml}</div>
-            </div>`;
-        }
-
-        const routes = a.routes || [];
-        const localUrl = data.localUrl || "";
-        const normalizeAuth = (v) => {
-          if (v === true) return "user";
-          if (v === false || v == null) return "public";
-          return v;
-        };
-        const routesHtml = routes.length
-          ? routes
-              .map((r) => {
-                const auth = normalizeAuth(r.auth);
-                const badge =
-                  auth !== "public"
-                    ? `<span class="route-auth-badge route-auth-badge--${auth}">${auth}</span>`
-                    : "";
-                const path = r.path || r.name || "";
-                const protectedCls =
-                  auth === "admin"
-                    ? " arch-row--admin"
-                    : auth !== "public"
-                      ? " arch-row--protected"
-                      : "";
-                const pathHtml = localUrl
-                  ? `<a class="arch-row-path" href="${esc(localUrl)}${esc(path)}" target="_blank" rel="noopener">${esc(path)}</a>`
-                  : `<span class="arch-row-path arch-row-path--static">${esc(path)}</span>`;
-                return `
-            <div class="arch-row arch-row--route${protectedCls}">
-              ${pathHtml}
-              <span class="arch-row-meta">${esc(r.purpose || r.description || "")}</span>
-              <span class="arch-row-badge-slot">${badge}</span>
-            </div>`;
-              })
-              .join("")
-          : "";
-
-        const components = a.components || [];
-        const componentsHtml = components.length
-          ? components
-              .map(
-                (c) => `
-            <div class="arch-row">
-              <span class="arch-row-name">${esc(c.name)}</span>
-              ${c.layer ? `<span class="arch-badge-layer">${esc(c.layer)}</span>` : ""}
-              <span class="arch-row-meta">${esc(c.description || "")}</span>
-            </div>`,
-              )
-              .join("")
-          : "";
-
-        const endpoints = (data.endpoints || []).filter(
-          (e) => e.path && e.path !== "NONE" && e.method && e.method !== "NONE",
-        );
-        const methodColor = {
-          GET: "var(--done)",
-          POST: "var(--accent)",
-          PUT: "var(--defined)",
-          PATCH: "var(--defined)",
-          DELETE: "var(--danger)",
-        };
-        const apiHtml = endpoints.length
-          ? endpoints
-              .map((e) => {
-                const auth = normalizeAuth(e.auth);
-                const badge =
-                  auth !== "public"
-                    ? `<span class="route-auth-badge route-auth-badge--${auth}">${auth}</span>`
-                    : "";
-                const protectedCls =
-                  auth !== "public" ? " arch-row--protected" : "";
-                return `
-            <div class="arch-row${protectedCls}">
-              <span style="font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10px;font-weight:700;width:46px;flex-shrink:0;color:${methodColor[e.method] || "var(--text-dim)"}">${esc(e.method || "")}</span>
-              <span class="arch-row-path">${esc(e.path || "")}</span>
-              <span class="arch-row-meta">${esc(e.description || "")}</span>
-              ${badge}
-            </div>`;
-              })
-              .join("")
-          : "";
-
-        const entities =
-          data.data && data.data.entities ? data.data.entities : [];
-        const entitiesHtml = entities.length
-          ? entities
-              .map(
-                (e) => `
-            <div class="arch-row">
-              <span class="arch-row-name">${esc(e.name)}</span>
-              <span class="arch-row-meta" style="font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:10px">${(
-                e.fields || []
-              )
-                .map((f) => {
-                  const fn = typeof f === "string" ? f : f.name;
-                  const ft = typeof f === "string" ? null : f.type;
-                  return esc(fn + (ft ? ":" + ft : ""));
-                })
-                .join(", ")}</span>
-            </div>`,
-              )
-              .join("")
-          : "";
-
-        const designFlows = (data.design || {}).flows || [];
-        const flowsArchHtml = designFlows.length
-          ? designFlows
-              .map(
-                (f, i) => `
-            <div class="flow-card" id="arch-flow-${i}">
-              <div class="flow-header" onclick="document.getElementById('arch-flow-${i}').classList.toggle('flow-open')">
-                <svg class="flow-chevron" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span class="flow-name">${esc(f.name)}</span>
-                ${f.description || f.notes ? `<span class="flow-desc-inline">${esc(f.description || f.notes || "")}</span>` : ""}
-              </div>
-              <div class="flow-body">
-                ${f.steps && f.steps.length ? `<ol class="flow-steps">${f.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` : ""}
-              </div>
-            </div>`,
-              )
-              .join("")
-          : "";
-
-        const subSectionsHtml = [
-          archSubSection("Routes", routes.length, routesHtml),
-          archSubSection("Components", components.length, componentsHtml),
-          archSubSection("API", endpoints.length, apiHtml),
-          archSubSection("Entities", entities.length, entitiesHtml),
-          archSubSection("Flows", designFlows.length, flowsArchHtml),
-        ].join("");
-
-        return `
-          <div class="section-header">
-            <h2>Architecture</h2>
-          </div>
-          ${toolbarHtml}
-          ${subSectionsHtml}
-          ${dataFlowHtml}
-          ${diagramHtml}
-          ${descHtml}`;
-      }
-
-      function editArchitecture() {
-        const a = data.architecture || {};
-        const compJson = a.components
-          ? JSON.stringify(a.components, null, 2)
-          : "";
-        const layersJson = a.layers ? JSON.stringify(a.layers, null, 2) : "";
-        openModal(
-          "Edit components",
-          `
-          <label>Data Flow</label>
-          <input id="f-arch-dataflow" type="text" value="${esc(a.dataFlow || "")}" placeholder="Request → API → Service → Database" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-size:13px" />
-          <label>Layers (JSON)</label>
-          <textarea id="f-arch-layers" rows="4" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"name":"API Laag","order":1}]'>${esc(layersJson)}</textarea>
-          <label>Components (JSON)</label>
-          <textarea id="f-arch-components" rows="16" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5" placeholder='[{"name":"...","layer":"...","status":"done","connects_to":[{"to":"OtherComponent","type":"calls"}]}]'>${esc(compJson)}</textarea>
-          <label>Mermaid Diagram (optional)</label>
-          <textarea id="f-arch-diagram" rows="6" style="font-family:var(--font-mono,'JetBrains Mono','Fira Code',monospace);font-size:12px;line-height:1.5">${esc(a.diagram || "")}</textarea>
-        `,
-          {
-            wide: true,
-            onSave() {
-              data.architecture = data.architecture || {};
-              data.architecture.dataFlow = document
-                .getElementById("f-arch-dataflow")
-                .value.trim();
-              const lv = document.getElementById("f-arch-layers").value.trim();
-              if (lv) {
-                try {
-                  data.architecture.layers = JSON.parse(lv);
-                } catch (e) {
-                  /* keep existing */
-                }
-              }
-              const cv = document
-                .getElementById("f-arch-components")
-                .value.trim();
-              if (cv) {
-                try {
-                  data.architecture.components = JSON.parse(cv);
-                } catch (e) {
-                  /* keep existing */
-                }
-              }
-              data.architecture.diagram =
-                document.getElementById("f-arch-diagram").value.trim() || "";
-            },
-          },
-        );
       }
 
       // ─── Styleguide helpers ────────────────────────────────
@@ -1735,7 +925,7 @@
         const scopeEl = document.getElementById("sg-tokens-scope");
         if (scopeEl) {
           const scoped = (s) =>
-            (s || "")
+            (typeof s === "string" ? s : "")
               .replace(/:root\s*\{/g, "#sg-overlay-inner {")
               .replace(/\.dark\s*\{/g, '#sg-overlay-inner[data-mode="dark"] {');
 
@@ -1801,7 +991,7 @@
 
         // Re-inject tokens: base + mode override + alias bridge (same order as openStyleguide)
         const scoped = (s) =>
-          (s || "")
+          (typeof s === "string" ? s : "")
             .replace(/:root\s*\{/g, "#sg-overlay-inner {")
             .replace(/\.dark\s*\{/g, '#sg-overlay-inner[data-mode="dark"] {');
 
@@ -2335,6 +1525,27 @@
       function buildDevDetailHtml(detail) {
         let html = "";
 
+        // Summary — the short, human-readable headline for this feature
+        if (detail.summary) {
+          html += `<p class="fm-summary">${esc(detail.summary)}</p>`;
+        }
+
+        const reqs = detail.requirements || [];
+        if (reqs.length) {
+          const rows = reqs
+            .map((r) => {
+              return `<div class="fm-req-row">
+                <span class="fm-req-id">${esc(r.id)}</span>
+                <div class="fm-req-body">
+                  <span class="fm-req-desc">${esc(r.description)}</span>
+                </div>
+                ${r.category ? `<span class="fm-req-cat">${esc(r.category)}</span>` : ""}
+              </div>`;
+            })
+            .join("");
+          html += `<div class="fm-section"><h4>Requirements (${reqs.length})</h4><div class="fm-reqs">${rows}</div></div>`;
+        }
+
         const files = detail.files || [];
         if (files.length) {
           const icons = { create: "+", modify: "~", delete: "−" };
@@ -2366,31 +1577,15 @@
           html += `</div></div>`;
         }
 
-        const reqs = detail.requirements || [];
-        if (reqs.length) {
-          const hasStatus = reqs.some(
-            (r) => r.status && r.status !== "pending",
-          );
-          const rows = reqs
-            .map((r) => {
-              const statusCls =
-                r.status === "PASS"
-                  ? " fm-req-status--pass"
-                  : r.status === "FAIL"
-                    ? " fm-req-status--fail"
-                    : "";
-              return `<div class="fm-req-row">
-                <span class="fm-req-id">${esc(r.id)}</span>
-                <div class="fm-req-body">
-                  <span class="fm-req-desc">${esc(r.description)}</span>
-                  ${r.technique ? `<span class="fm-req-tech">${esc(r.technique)}</span>` : ""}
-                </div>
-                ${r.category ? `<span class="fm-req-cat">${esc(r.category)}</span>` : ""}
-                ${hasStatus && r.status && r.status !== "pending" ? `<span class="fm-req-status${statusCls}">${esc(r.status.toUpperCase())}</span>` : ""}
-              </div>`;
-            })
-            .join("");
-          html += `<div class="fm-section"><h4>Requirements (${reqs.length})</h4><div class="fm-reqs">${rows}</div></div>`;
+        // Ship metadata — date, commit
+        if (detail.shippedAt || detail.shippedSha) {
+          const shaShort = detail.shippedSha
+            ? esc(detail.shippedSha.slice(0, 7))
+            : "";
+          html += `<div class="fm-section fm-ship-meta" style="display:flex;gap:14px;flex-wrap:wrap;color:var(--text-dim);font-size:12px">
+            ${detail.shippedAt ? `<span>${esc(detail.shippedAt)}</span>` : ""}
+            ${shaShort ? `<span title="${esc(detail.shippedSha)}">${shaShort}</span>` : ""}
+          </div>`;
         }
 
         return html;
@@ -2425,53 +1620,6 @@
         body.innerHTML = detail
           ? buildFeatureDetailHtml(detail)
           : '<p style="color:var(--text-dim)">No feature.json found.</p>';
-      }
-
-      async function toggleDashFeature(summaryEl, name) {
-        const rowEl = summaryEl.closest(".feat-row");
-        if (!rowEl) return;
-        const expandEl = rowEl.querySelector(".feat-expand");
-        const isOpen = rowEl.classList.contains("expanded");
-        if (isOpen) {
-          rowEl.classList.remove("expanded");
-          expandEl.style.display = "none";
-          return;
-        }
-        rowEl.classList.add("expanded");
-        expandEl.style.display = "block";
-        if (expandEl.dataset.loaded) return;
-
-        expandEl.innerHTML =
-          '<div style="padding:12px 0 4px;color:var(--text-dim);font-size:12px">Loading…</div>';
-        let detail = featureDetailCache[name];
-        if (!detail) {
-          try {
-            const base = location.pathname
-              .replace(/\/dashboard\/?$/, "")
-              .replace(/\/+$/, "");
-            const res = await fetch(
-              base + "/feature/" + encodeURIComponent(name),
-            );
-            if (res.ok) {
-              detail = await res.json();
-              featureDetailCache[name] = detail;
-            }
-          } catch {}
-        }
-        if (
-          detail &&
-          (detail.summary ||
-            detail.files ||
-            detail.requirements ||
-            detail.build)
-        ) {
-          expandEl.innerHTML = buildFeatureDetailHtml(detail);
-          expandEl.dataset.loaded = "1";
-        } else {
-          expandEl.innerHTML =
-            '<div style="padding:8px 0;color:var(--text-dim);font-size:12px">No detail available.</div>';
-          expandEl.dataset.loaded = "1";
-        }
       }
 
       async function toggleFileDiffRow(row) {
@@ -2694,15 +1842,16 @@
               ? "feat-row feat-row--design"
               : "feat-row";
             return `
-            <div class="${rowClass}">
-              <div class="feat-row-summary" onclick="toggleDashFeature(this,'${esc(f.name)}')">
-                ${thumbHtml}
+            <div class="${rowClass}" onclick="openFeatureModal('${esc(f.name)}')">
+              ${thumbHtml}
+              <div class="feat-card-body">
                 <span class="feat-name">${esc(f.name)}</span>
-                ${f.description ? `<span class="feat-desc">${esc(f.description)}</span>` : ""}
-                <span class="feat-type">${esc(f.type || "FEATURE")}</span>
-                ${dateStr ? `<span class="feat-date">${esc(dateStr)}</span>` : ""}
+                ${f.summary || f.description ? `<span class="feat-desc">${esc(f.summary || f.description)}</span>` : ""}
+                <div class="feat-card-footer">
+                  <span class="feat-type">${esc(f.type || "FEATURE")}</span>
+                  ${dateStr ? `<span class="feat-date">${esc(dateStr)}</span>` : ""}
+                </div>
               </div>
-              <div class="feat-expand" style="display:none"></div>
             </div>`;
           })
           .join("");
@@ -2749,159 +1898,6 @@
           <div class="feat-list">${rowsHtml}</div>`;
       }
 
-      function learningRow(l, archived) {
-        const title = l.title || l.summary || "—";
-        const detail = l.detail || "";
-        const hasDetail = !!detail;
-        const tags = Array.isArray(l.tags) ? l.tags : [];
-        const tagChips = tags
-          .map((t) => `<span class="learnings-tag-chip">#${esc(t)}</span>`)
-          .join("");
-        const dataTags = tags.map((t) => esc(t)).join(" ");
-        return `<div class="learnings-row${hasDetail ? " learnings-row--expandable" : ""}${archived ? " learnings-row--archived" : ""}" data-ltype="${esc(l.type || "")}" data-ltags="${dataTags}"${hasDetail ? ` onclick="this.classList.toggle('is-open')"` : ""}>
-          <div class="learnings-row-head">
-            <span class="learnings-date">${esc(l.date || "")}</span>
-            <span class="learnings-title">${esc(title)}${tagChips ? ` <span class="learnings-tags">${tagChips}</span>` : ""}${archived ? ` <span class="learnings-archived-badge">archived</span>` : ""}</span>
-            ${l.feature ? `<span class="learnings-feature-tag">${esc(l.feature)}</span>` : ""}
-            ${hasDetail ? `<span class="learnings-caret">›</span>` : ""}
-          </div>
-          ${hasDetail ? `<div class="learnings-detail">${esc(detail)}</div>` : ""}
-        </div>`;
-      }
-
-      function filterLearnings(el, kind, value) {
-        const bar = el.closest(".learnings-filterbar");
-        bar
-          .querySelectorAll(`[data-filter-kind="${kind}"]`)
-          .forEach((b) => b.classList.remove("is-active"));
-        el.classList.add("is-active");
-        window._lf = window._lf || { type: "all", tag: "all" };
-        window._lf[kind] = value;
-        const f = window._lf;
-        document
-          .querySelectorAll("#learnings .learnings-row[data-ltype]")
-          .forEach((row) => {
-            const typeOk = f.type === "all" || row.dataset.ltype === f.type;
-            const tagOk =
-              f.tag === "all" ||
-              (" " + row.dataset.ltags + " ").includes(" " + f.tag + " ");
-            row.style.display = typeOk && tagOk ? "" : "none";
-          });
-      }
-
-      function renderLearnings() {
-        window._lf = { type: "all", tag: "all" };
-        const all = (data.learnings || [])
-          .slice()
-          .sort((a, b) => (a.date < b.date ? 1 : -1));
-        const archivedAll = (data.learningsArchive || [])
-          .slice()
-          .sort((a, b) => (a.date < b.date ? 1 : -1));
-        const groups = [
-          {
-            type: "pattern",
-            label: "Patterns",
-            desc: "Architectural decisions",
-          },
-          { type: "pitfall", label: "Pitfalls", desc: "Bewezen bugs" },
-          {
-            type: "observation",
-            label: "Observations",
-            desc: "Cross-feature inferences",
-          },
-        ];
-
-        // Filter bar: type toggles + every tag present across active + archive.
-        const allTags = Array.from(
-          new Set(
-            [...all, ...archivedAll].flatMap((l) =>
-              Array.isArray(l.tags) ? l.tags : [],
-            ),
-          ),
-        ).sort();
-        const filterBar =
-          all.length || archivedAll.length
-            ? `<div class="learnings-filterbar">
-                <button class="learnings-filter-btn is-active" data-filter-kind="type" onclick="filterLearnings(this,'type','all')">All types</button>
-                ${groups
-                  .filter((g) =>
-                    [...all, ...archivedAll].some((l) => l.type === g.type),
-                  )
-                  .map(
-                    (g) =>
-                      `<button class="learnings-filter-btn" data-filter-kind="type" onclick="filterLearnings(this,'type','${g.type}')">${g.label}</button>`,
-                  )
-                  .join("")}
-                ${
-                  allTags.length
-                    ? `<span class="learnings-filter-sep"></span>
-                       <button class="learnings-filter-btn is-active" data-filter-kind="tag" onclick="filterLearnings(this,'tag','all')">All tags</button>` +
-                      allTags
-                        .map(
-                          (t) =>
-                            `<button class="learnings-filter-btn" data-filter-kind="tag" onclick="filterLearnings(this,'tag','${esc(t)}')">#${esc(t)}</button>`,
-                        )
-                        .join("")
-                    : ""
-                }
-              </div>`
-            : "";
-
-        const learningsSections =
-          filterBar +
-          groups
-            .map((g) => {
-              const items = all.filter((l) => l.type === g.type);
-              if (!items.length) return "";
-              const rows = items.map((l) => learningRow(l, false)).join("");
-              return `<div class="learnings-group learnings-group--${g.type}" data-collapse-key="learnings:${esc(g.label)}">
-              <h3>${g.label} <span class="learnings-group-desc">${g.desc}</span></h3>
-              ${rows}
-            </div>`;
-            })
-            .join("");
-
-        // Archived learnings: consolidation cold-storage, browsable but collapsed.
-        const archivedSection = archivedAll.length
-          ? `<div class="learnings-group learnings-group--archived" data-collapse-key="learnings:Archived">
-              <h3>Archived <span class="learnings-group-desc">Consolidated out — searchable via /project-memory</span></h3>
-              ${archivedAll.map((l) => learningRow(l, true)).join("")}
-            </div>`
-          : "";
-
-        // Principles vanuit data.design
-        const d = data.design || {};
-        const principles = d.principles || [];
-
-        const principlesSection = principles.length
-          ? `<div class="learnings-group learnings-group--principles" data-collapse-key="learnings:Principles">
-              <h3>Principles</h3>
-              ${principles
-                .map(
-                  (p) => `
-              <div class="learnings-row" style="display:flex;align-items:baseline;gap:16px">
-                <span class="learnings-summary" style="font-weight:500;color:var(--text);white-space:nowrap;flex-shrink:0">${esc(p.name)}</span>
-                <span class="learnings-summary" style="flex:1">${esc(p.description || "")}</span>
-              </div>`,
-                )
-                .join("")}
-            </div>`
-          : "";
-
-        const hasContent = all.length || archivedSection || principlesSection;
-
-        return `
-          <div class="section-header">
-            <h2>Knowledge</h2>
-          </div>
-          ${
-            hasContent
-              ? `${learningsSections}${archivedSection}${principlesSection}`
-              : `<div class="empty-state"><p>No knowledge captured yet.</p><p style="color:var(--text-dim)">Automatically filled by <code>/dev-ship</code> or <code>/game-ship</code></p></div>`
-          }
-        `;
-      }
-
       function navigateToFeature(name) {
         if (!name) return;
         openFeatureModal(name);
@@ -2910,10 +1906,8 @@
       const renderers = {
         features: renderFeatures,
         seed: renderSeed,
-        architecture: renderArchitecture,
         stack: renderStack,
         theme: renderTheme,
-        learnings: renderLearnings,
         config: renderConfig,
       };
 
@@ -2934,50 +1928,6 @@
                 desc: f.description || "",
               });
           });
-
-        const arch = data.architecture || {};
-        (arch.components || []).forEach((c) => {
-          if (hit(c.name) || hit(c.description))
-            results.push({
-              section: "Architecture",
-              anchor: "#architecture",
-              type: "component",
-              name: c.name,
-              desc: c.description || "",
-            });
-        });
-        (arch.routes || []).forEach((r) => {
-          const label = r.path || r.name || "";
-          if (hit(label) || hit(r.description))
-            results.push({
-              section: "Architecture",
-              anchor: "#architecture",
-              type: "route",
-              name: label,
-              desc: r.description || "",
-            });
-        });
-        (arch.endpoints || []).forEach((e) => {
-          const label = e.method ? `${e.method} ${e.path}` : e.path || "";
-          if (hit(label) || hit(e.description))
-            results.push({
-              section: "Architecture",
-              anchor: "#architecture",
-              type: "endpoint",
-              name: label,
-              desc: e.description || "",
-            });
-        });
-        (arch.entities || []).forEach((e) => {
-          if (hit(e.name) || hit(e.description))
-            results.push({
-              section: "Architecture",
-              anchor: "#architecture",
-              type: "entity",
-              name: e.name,
-              desc: e.description || "",
-            });
-        });
 
         const stack = data.stack || {};
         ["framework", "language", "styling", "db", "auth", "hosting"].forEach(
@@ -3000,39 +1950,6 @@
               anchor: "#stack",
               type: "package",
               name,
-              desc: p.description || "",
-            });
-        });
-
-        (data.learnings || []).forEach((l) => {
-          if (hit(l.summary) || hit(l.feature))
-            results.push({
-              section: "Knowledge",
-              anchor: "#learnings",
-              type: l.type || "learning",
-              name: l.summary || "",
-              desc: l.feature || "",
-            });
-        });
-
-        const design = data.design || {};
-        (design.flows || []).forEach((f) => {
-          if (hit(f.name) || hit(f.description))
-            results.push({
-              section: "Knowledge",
-              anchor: "#learnings",
-              type: "flow",
-              name: f.name,
-              desc: f.description || "",
-            });
-        });
-        (design.principles || []).forEach((p) => {
-          if (hit(p.name) || hit(p.description))
-            results.push({
-              section: "Knowledge",
-              anchor: "#learnings",
-              type: "principle",
-              name: p.name,
               desc: p.description || "",
             });
         });
@@ -3150,7 +2067,6 @@
         }
 
         // Determine which sections to show (skip empty optional ones)
-        const d = data.design || {};
         const th = data.theme || {};
         const tc = th.colors && !Array.isArray(th.colors) ? th.colors : {};
         const hasTheme =
@@ -3161,17 +2077,6 @@
             th.typography.sizes &&
             th.typography.sizes.length) ||
           th.cssVars;
-        const hasLearnings =
-          (data.learnings || []).length > 0 ||
-          (d.flows && d.flows.length) ||
-          (d.principles && d.principles.length);
-        const a = data.architecture || {};
-        const hasArchitecture =
-          (a.routes && a.routes.length) ||
-          (a.components && a.components.length) ||
-          (a.endpoints && a.endpoints.length) ||
-          (a.entities && a.entities.length) ||
-          (a.diagram && a.diagram.trim());
         const hasStack = !!(
           data.stack &&
           (data.stack.framework || data.stack.language)
@@ -3180,8 +2085,6 @@
         const hasFeatures = (data.features || []).some((f) => f.shipped);
         const hiddenSections = {};
         if (!hasTheme) hiddenSections.theme = true;
-        if (!hasLearnings) hiddenSections.learnings = true;
-        if (!hasArchitecture) hiddenSections.architecture = true;
         if (!hasStack) hiddenSections.stack = true;
         if (!hasSeed) hiddenSections.seed = true;
         if (!hasFeatures) hiddenSections.features = true;
@@ -3256,17 +2159,6 @@
             return;
           }
           if (e.target.closest("button, a, input, select, textarea")) return;
-          const learningsH3 = e.target.closest(".learnings-group > h3");
-          if (learningsH3) {
-            const el = learningsH3.parentElement;
-            el.classList.toggle("collapsed");
-            setCollapsed(
-              el.dataset.collapseKey ||
-                "learnings:" + learningsH3.textContent.trim(),
-              el.classList.contains("collapsed"),
-            );
-            return;
-          }
           const sgTitle = e.target.closest(".sg-section > .sg-section-title");
           if (sgTitle) {
             const el = sgTitle.parentElement;
@@ -3352,18 +2244,6 @@
           );
         });
 
-        // Learnings groups (default open; Archived defaults collapsed)
-        document
-          .querySelectorAll("[data-collapse-key^='learnings:']")
-          .forEach((el) => {
-            const defaultCollapsed =
-              el.dataset.collapseKey === "learnings:Archived";
-            el.classList.toggle(
-              "collapsed",
-              isCollapsed(el.dataset.collapseKey, defaultCollapsed),
-            );
-          });
-
         // Styleguide sections (default open)
         document
           .querySelectorAll("[data-collapse-key^='sg:']")
@@ -3373,51 +2253,6 @@
               isCollapsed(el.dataset.collapseKey, false),
             );
           });
-
-        // Architecture sub-sections (default open)
-        document
-          .querySelectorAll(".arch-subsection-header[data-collapse-key]")
-          .forEach((header) => {
-            const shouldCollapse = isCollapsed(
-              header.dataset.collapseKey,
-              false,
-            );
-            const isCurrentlyCollapsed = header.classList.contains("collapsed");
-            if (shouldCollapse !== isCurrentlyCollapsed) {
-              header.classList.toggle("collapsed", shouldCollapse);
-              const body = header.nextElementSibling;
-              if (body) body.style.display = shouldCollapse ? "none" : "";
-            }
-          });
-
-        // Architecture diagram (default: hidden when cards exist, shown otherwise)
-        const archDiagramEl = document.getElementById("arch-diagram");
-        if (archDiagramEl) {
-          const key = "arch-diagram";
-          if (key in loadAll()) {
-            const wantHidden = isCollapsed(key, false);
-            const isHidden = archDiagramEl.classList.contains(
-              "architecture-diagram--hidden",
-            );
-            if (wantHidden !== isHidden) {
-              archDiagramEl.classList.toggle(
-                "architecture-diagram--hidden",
-                wantHidden,
-              );
-              const btn = document.querySelector(".arch-diagram-toggle");
-              if (btn) btn.classList.toggle("active", !wantHidden);
-            }
-          }
-        }
-
-        // Code card single-selection (default none expanded)
-        const expandedComponent = getSingle("expandedCard");
-        if (expandedComponent) {
-          const card = document.querySelector(
-            `.code-card[data-component="${CSS.escape(expandedComponent)}"]`,
-          );
-          if (card && !card.classList.contains("expanded")) toggleCard(card);
-        }
       }
 
       function updateSidebarVisibility() {
@@ -3434,22 +2269,6 @@
       }
 
       // ─── Init ───────────────────────────────────────────────
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: "dark",
-        themeVariables: {
-          darkMode: true,
-          background: "#161b22",
-          primaryColor: "#58a6ff",
-          primaryTextColor: "#c9d1d9",
-          primaryBorderColor: "#30363d",
-          lineColor: "#586069",
-          secondaryColor: "#1c2128",
-          tertiaryColor: "#161b22",
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-        },
-      });
       let _sidebarResizeT;
       window.addEventListener("resize", () => {
         clearTimeout(_sidebarResizeT);

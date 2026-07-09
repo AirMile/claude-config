@@ -70,13 +70,15 @@ Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
 Follow `shared/SYNC.md` 3-File Sync Pattern. Read backlog.json + project.json + project-context.json in parallel (see `shared/BACKLOG.md § Writing` for the legacy backlog.html migration rule).
 
-**Backlog**: per feature (CLEAN/REFACTORED) — set `f.refactor="REFACTORED"`, `f.shipped=true`, `f.shippedAt`, `f.shippedSha=$(git rev-parse HEAD)` (the PHASE 4 refactor commit), remove `transition`, set `data.updated`. These six mutations are **one atomic unit** — never write `f.refactor` without also writing `f.shipped`/`f.shippedAt`/`f.shippedSha` in the same file write. ROLLED_BACK: `f.refactor="ROLLED_BACK"`, remove `transition`, set `data.updated` — do NOT set shipped.
+**Backlog**: per feature (CLEAN/REFACTORED) — set `f.refactor="REFACTORED"`, `f.shipped=true`, `f.shippedAt`, `f.shippedSha=$(git rev-parse HEAD)` (the PHASE 4 refactor commit), `f.summary` (see below), remove `transition`, set `data.updated`. These mutations are **one atomic unit** — never write `f.refactor` without also writing `f.shipped`/`f.shippedAt`/`f.shippedSha`/`f.summary` in the same file write. ROLLED_BACK: `f.refactor="ROLLED_BACK"`, remove `transition`, set `data.updated` — do NOT set shipped or summary.
+
+**`f.summary`** (≤200 chars, human-readable — what shipped and why it's worth remembering; this is the dashboard card headline): base it on `f.description`, then fold in the single most notable `APPLY` entry from `feature.json#build.decisions[]` or `#refactor.decisions[]` if one exists (pick by cross-cutting relevance, same bar as the pitfall criteria in Step 2). No notable decision → `f.summary = f.description` verbatim. Example: `JWT-login met refresh-tokens — httpOnly cookie i.p.v. localStorage (XSS-risico)`.
 
 **Backlog archive** (CLEAN/REFACTORED dev-track features only): after setting the shipped flags, remove each shipped feature object from `backlog.json#features[]` and append it (with all shipped fields) to `.project/archive/backlog-archive.json` — shape `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`. Create `.project/archive/` and the scaffold if absent; dedup on `name` before appending. ROLLED_BACK features are NOT archived (consistent with the feature-dir rule in step 5); PAGE/COMPONENT items also stay (design-track exception — see `shared/BACKLOG.md § Archiving`). The dashboard shipped-showcase reads the archive via the server — archived features are no longer in `backlog.json`.
 
-**Dashboard**: merge changed packages/endpoints/entities. Small-items mode: add to `recentChanges[]`.
+**Dashboard**: merge changed packages/endpoints/entities.
 
-**Context sync** (only if structural changes: files renamed/moved/extracted, patterns fundamentally changed): update `context.structure`, `context.patterns`, `context.updated`, `architecture.components` (see `shared/DASHBOARD.md` for edge types). Log `context: {N} updates` or `context: no updates needed`.
+**Context sync** (only if structural changes: files renamed/moved/extracted, patterns fundamentally changed): update `context.structure`, `context.patterns`, `context.updated`. Log `context: {N} updates` or `context: no updates needed`.
 
 **Write order**: Write `.project/archive/backlog-archive.json` first (only if features were archived) — then, once that succeeds, write `backlog.json`, `project.json`, and `project-context.json` in parallel. This ordering matters: if the run is interrupted, the failure mode is a feature present in _both_ files (healable duplicate — see Step 3b self-heal) rather than a feature missing from both.
 
@@ -85,7 +87,7 @@ Follow `shared/SYNC.md` 3-File Sync Pattern. Read backlog.json + project.json + 
 After the parallel writes complete, verify each CLEAN/REFACTORED feature from this run:
 
 1. Re-read `backlog.json#features[]` — feature must **not** be present (removed by archive step).
-2. Re-read `backlog-archive.json#archived[]` — feature must be present with `shipped: true`, `shippedAt`, and `shippedSha`.
+2. Re-read `backlog-archive.json#archived[]` — feature must be present with `shipped: true`, `shippedAt`, `shippedSha`, and a non-empty `summary`.
 3. `f.refactor === "REFACTORED"` iff `f.shipped === true` — never one without the other.
 4. Feature-dir check (post-Step-5): `.project/features/archive/{shippedAt}-{name}/` must exist.
 
@@ -95,7 +97,7 @@ After the parallel writes complete, verify each CLEAN/REFACTORED feature from th
 
 **On invariant failure — self-heal:**
 
-- Missing `shipped` fields on an already-written `f.refactor`: re-write the backlog entry with the full atomic set (shipped + shippedAt + shippedSha + remove from features[] + append to archive).
+- Missing `shipped` fields (or missing `summary`) on an already-written `f.refactor`: re-write the backlog entry with the full atomic set (shipped + shippedAt + shippedSha + summary — fallback `summary = f.description` if the decisions-based derivation was skipped — + remove from features[] + append to archive).
 - Feature still in `backlog.json#features[]` but present in archive: remove it from features[] and rewrite backlog.json.
 - Feature removed from `backlog.json#features[]` but absent from `backlog-archive.json#archived[]` (archive write failed or was skipped after the backlog write): reconstruct the archive entry from the still-present `feature.json` (shipped fields + status) and append it. A completed run always ends archive-only — never missing from both.
 - Feature-dir not yet moved (Step 5 ran before check): run the mv again (idempotent).

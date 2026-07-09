@@ -42,6 +42,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
       "date": "2026-01-15|null",
       "auto": "true|null",
       "refactor": "REFACTORED|ROLLED_BACK|null",
+      "summary": "<=200 chars, human-readable — set at ship time, see § Shipped summary",
       "audit": {
         "buildScreenshot": "<path>",
         "buildSmokeStatus": "PASS|FAIL|SKIPPED",
@@ -211,7 +212,11 @@ TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refac
 
 **Optional fields on CANCELLED items**: `cancelledReason` (one-line why, set by skill-driven cancellations) and `cancelledAt` (`YYYY-MM-DD`, set by the dev/game Impact-Check cancellation flows). UI cancellations omit both. Archived features (see § Archiving) can also carry `status: "CANCELLED"` — history stays, flagged.
 
-`/dev-ship`'s refactor phase is the **promotion trigger** for dev-cards: after CLEAN or REFACTORED it sets `f.shipped = true` + `f.shippedAt` + `f.shippedSha`, then **moves the feature object to the archive** (see § Archiving). Shipped items leave the backlog data and appear on the Dashboard via the archive.
+`/dev-ship`'s refactor phase is the **promotion trigger** for dev-cards: after CLEAN or REFACTORED it sets `f.shipped = true` + `f.shippedAt` + `f.shippedSha` + `f.summary`, then **moves the feature object to the archive** (see § Archiving). Shipped items leave the backlog data and appear on the Dashboard via the archive.
+
+## Shipped summary (`f.summary`)
+
+Written once, at the same atomic write as `f.shipped` — never edited afterwards. This is the dashboard shipped-card headline (see `shared/DASHBOARD-PROJECT.md § Shipped showcase`): a ≤200-char human-readable line covering what shipped and why it's worth remembering, derived from `f.description` folded with the single most notable `APPLY` decision from `feature.json#build.decisions[]` / `#refactor.decisions[]` (see `dev-ship/references/dev-refactor/references/completion-batch.md § Step 3`). No notable decision, or a small item without a `feature.json` pipeline → `f.summary = f.description` verbatim. The full decision/observation detail behind the headline stays in `feature.json` — the dashboard card-detail view reads it live from there, not from a copy on the backlog entry.
 
 ## Archiving (shipped dev-track features)
 

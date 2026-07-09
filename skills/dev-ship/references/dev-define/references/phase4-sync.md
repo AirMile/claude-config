@@ -22,13 +22,6 @@
 ## Mutations on `project-context.json` (see `shared/DASHBOARD.md`)
 
 - **Routes** in `architecture.routes[]`: for each new page route in this feature → check on `path` → new: push `{ path, purpose, feature: "<feature-name>" }` + `auth` field only if project has auth → existing: update `purpose` if changed. Skip for non-frontend features (pure API/utility).
-- **Architecture**: generate/update `architecture` section if project has multiple components/modules. **Follow the component-first model from `shared/DASHBOARD.md`**:
-  - `layers`: optional — define layers with `{ name, order }` if project uses explicit layer naming (e.g. API Layer order 1, Data Layer order 3). Skip if project does not use this.
-  - `dataFlow`: one-line summary of the request flow
-  - `components`: per component `{ name, layer, description, status, connects_to }`. New feature components → `status: "planned"`. Existing built components → `status: "done"`. External services → `status: "external"`. `connects_to`: array of typed edges `{ to, type }` where `type` is one of `calls` | `reads` | `writes` | `depends_on` (see `shared/DASHBOARD.md` Edge fields for mapping)
-  - Merge strategy: check if component `name` already exists → no: push → yes: merge (overwrite status, merge `connects_to[]` with dedup on `to+type` combination)
-  - Mermaid diagram: generate `.project/architecture.mmd` only when the feature adds ≥3 new components AND introduces ≥2 cross-component edges (`calls` / `reads` / `writes` / `depends_on`) that are not obvious from the textual `components[]` list. Otherwise skip — the JSON is the source of truth.
-  - Skip the entire Architecture mutation for a single-file feature without architectural impact.
 - **Context**:
   - `context.structure`: scan `feature.files[]` for new top-level directories under `src/` (e.g. `src/components/onboarding/`, `src/lib/payments/`). For each new directory not yet in `context.structure`: add a new line with path + 1-line description of the feature purpose.
   - `context.routing`: source is `feature.architecture.routes[]`. For each entry with `action: "CREATE"`: add `{path} → {file}` line. Entries with `action: "MODIFY"` leave `context.routing` unchanged (route already exists).

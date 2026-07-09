@@ -17,7 +17,7 @@ The project dashboard is an interactive UI (served by `{skills_path}/shared/refe
 | `seed`, single source of truth, `project-seed.md`                   | DASHBOARD-PROJECT.md § seed                             |
 | `stack`, `data` (entities), `endpoints`, `localUrl`                 | DASHBOARD-PROJECT.md § Section schemas                  |
 | `team` (mode, commitConvention, ticketPrefix, tracker)              | DASHBOARD-PROJECT.md § team                             |
-| `features` (derived — canonical in backlog.json), `recentChanges`   | DASHBOARD-PROJECT.md § features + BACKLOG.md            |
+| `features` (derived — canonical in backlog.json), `summary`         | DASHBOARD-PROJECT.md § features + BACKLOG.md            |
 | § `optimization_runs` (schema + append strategy)                    | DASHBOARD-PROJECT.md § optimization_runs                |
 | § Design Section (pages, flows, principles, components)             | DASHBOARD-PROJECT.md § Design Section                   |
 | `design` schema + scope/appliesTo                                   | DASHBOARD-PROJECT.md § design schema / § Design Section |

@@ -251,8 +251,6 @@ Add to completion report when ≥1 update: `Page deps: {N} PAGEs updated ({comma
 
 **Context**: update `context.structure` (overwrite), `context.routing` (overwrite), `context.patterns` (merge), `context.updated`. Skip if no structural impact.
 
-**Architecture** (follow component-first model from `shared/DASHBOARD.md`): update `architecture.components[]` — built components `status: "planned"` → `"done"`, fill `description` (short functional description, max 200 chars — what does this component do?), `src`, `test`, `connects_to` (typed edges `{ to, type }` from actual imports and runtime IO — `calls` for function/HTTP calls, `reads`/`writes` for DB or state IO, `depends_on` for pure library/config dependencies), `endpoints` (e.g. `"POST /api/auth/login"`), `entities` (used model names), `feature` (current feature name). New components that emerged during the build: push with all fields including `feature`. Skip if no structural impact.
-
 **Routes** (`architecture.routes[]`): confirm routes that were actually implemented during the build — verify `auth` field matches the actual middleware/guard (`"public" | "user" | "admin"`), update `purpose` if the page can now be described better. New routes that emerged during the build: push `{ path, purpose, auth, feature }`. Endpoints in `endpoints[]` with actual auth check: migrate `auth: false` → `"public"` and `auth: true` → `"user"` (or `"admin"` for role check).
 
 **Sub-component Reuse-Discovery** (frontend projects only):
@@ -271,7 +269,7 @@ Follow [Discovery — Reuse-Discovery](.claude/skills/shared/SKILL-PATTERNS.md#r
 
 All with `source: "extracted"`. Only write if decisions or resolved blockers are present — no empty entries.
 
-**Atomic write rule**: collect all `project-context.json` mutations (components, context.patterns, learnings) in the current context first — don't write until all mutations for PHASE 3A are determined — then issue a **single Write** (or at most 2 Edits for non-overlapping regions) right before closing PHASE 3A. Do NOT issue separate Edit calls per section — each hook-fire and round-trip adds ~15s.
+**Atomic write rule**: collect all `project-context.json` mutations (context.patterns, learnings) in the current context first — don't write until all mutations for PHASE 3A are determined — then issue a **single Write** (or at most 2 Edits for non-overlapping regions) right before closing PHASE 3A. Do NOT issue separate Edit calls per section — each hook-fire and round-trip adds ~15s.
 
 ### PHASE 3B: Scoped Commit
 
@@ -311,7 +309,7 @@ Files created: {count} | modified: {count}
 Next steps:{ (start in a NEW chat — worktree auto-detected)}
   1. /dev-verify {feature}   → hybrid acceptance verification{ (auto-finalizes worktree on green)}
   2. /dev-refactor {feature} → optional polish after verify
-  ?. /dev-debug              → only on unexpected build failures
+  ?. /dev-ship {feature}     → re-run on unexpected build failures (routes to root-cause analysis if it recurs)
 ```
 
 When worktree active: also append `  ?. /core-finalize {feature} → recovery only — when verify was skipped or interrupted` and `💡 Worktree: {worktree_path}`.

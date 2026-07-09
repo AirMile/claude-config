@@ -67,11 +67,11 @@ Merge per section — always check for existing entries before push:
 
 Read `.project/project-context.json` (or create with `{}`). Merge per section:
 
-| Section        | Merge logic                                                                                                                                                                                                                            |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `context`      | Update structure/routing/patterns individually (only when impacted)                                                                                                                                                                    |
-| `architecture` | Follow component-first model from `shared/DASHBOARD.md` (only when impacted). Update `components[]` (status, src, test). Merge `connects_to[]` on `to+type` combination (typed edges). Diagram optional → `.project/architecture.mmd`. |
-| `learnings`    | Schema + two-stage dedup (exact-tuple shortcut → Jaccard ≥ 0.55): `LEARNING-WRITE.md § Writer Append Protocol`. New: push with required `source` field → existing: skip (append-only).                                                 |
+| Section        | Merge logic                                                                                                                                                                                                                                                                 |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context`      | Update structure/routing/patterns individually (only when impacted)                                                                                                                                                                                                         |
+| `architecture` | `routes[]` only — check on `path`; new: push `{ path, purpose, auth, feature }`; existing: update `purpose`/`auth` if changed. No generic components/dataFlow/diagram sync in this base protocol — a skill that needs that describes it as its own skill-specific mutation. |
+| `learnings`    | Schema + two-stage dedup (exact-tuple shortcut → Jaccard ≥ 0.55): `LEARNING-WRITE.md § Writer Append Protocol`. New: push with required `source` field → existing: skip (append-only).                                                                                      |
 
 **project-seed.md** (only for concept-writing skills):
 

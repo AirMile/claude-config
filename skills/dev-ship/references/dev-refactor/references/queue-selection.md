@@ -52,6 +52,6 @@ Present scope selection via **AskUserQuestion**:
 - PHASE 2: skip
 - PHASE 3: combined approval for all items that pass the check: "X items: CLEAN. Mark as shipped?" (one AskUserQuestion, default = Yes)
 - PHASE 4: skip — no code edits for light check (only code edits if Quality-lens has HIGH findings, then normal apply flow)
-- PHASE 5: write `shipped = true`, `shippedAt`, append to `project.json.recentChanges[]`
+- PHASE 5: write `shipped = true`, `shippedAt`, `summary = f.description` (small items have no build/refactor decisions to draw from — the description is the summary)
 
 > Whole-codebase passes are out of scope for this skill — use `/simplify` or `/code-review` for ad-hoc non-feature-bound refactoring.
