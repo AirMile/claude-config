@@ -102,6 +102,13 @@ fixing:
   output above, editor Output-log lines, any `push_error` messages. The fix round consumes it, and
   after repeated failed rounds the debug round does (`fix-round.md § Re-check` ladder →
   `references/debug-round.md`). Still collect-only — do not fix anything here.
+- **Split off out-of-item findings** — apply `shared/FEEDBACK-CATEGORIZATION.md § Scope check`. If
+  what's reported goes beyond this item's own `expected` text, don't fold it into this item's
+  evidence: judge this item on the on-topic remainder, and record the off-topic part as a new ledger
+  item now (next sequential `PT-N` id) via the same `ship-checkpoint.js item {feature} playtest`
+  upsert Step E already uses — in-scope stays a blocking fail, out-of-scope routes to
+  `/project-todo` per the Fail-never-to-todo policy's net-new-capability carve-out
+  (`phase-3-playtest.md § Findings ledger + routing`).
 
 Record the category (TESTABLE / MEASURABLE) alongside the finding. Then move to the next item — the
 fix routing lives in `phase-3-playtest.md § Findings ledger + routing`, not here.

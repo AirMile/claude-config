@@ -160,9 +160,11 @@ new interview close; that only runs once per full walkthrough).
   plan mode, iterate directly in the main chat until the user is satisfied (this is the old
   Tweak/iterate-mode behaviour, now scoped specifically to post-dispatch polish — not a substitute for
   the round gate on anything substantial).
-- **Substantial new finding, or still failing** → append it to the ledger now (this write happens
-  outside plan mode — we are back in the main-chat re-check step, not the gate) via
-  `ship-checkpoint.js item {feature} playtest`, incrementing that item's `failedRounds` (starts at 0;
+- **Still failing on its own `expected` text** (the scope check in
+  `playtest-interview-walkthrough.md § Step D` already split off anything unrelated as its own
+  ledger item) → append it to the ledger now (this write happens outside plan mode — we are back in
+  the main-chat re-check step, not the gate) via `ship-checkpoint.js item {feature} playtest`,
+  incrementing that item's `failedRounds` (starts at 0;
   the same upsert call — no script change) — this counter, not self-estimated confidence, drives the
   mechanical ladder below (`shared/DEBUG-LADDER.md`'s "every failed round escalates one tier" made
   literal). Then present **one** `AskUserQuestion` rather than looping automatically — repeated rounds
@@ -203,4 +205,6 @@ new interview close; that only runs once per full walkthrough).
   `failedRounds` level.)
 
 Once every item is Pass (or explicitly Skip/Defer) and no round is in flight, return to
-`phase-3-playtest.md § Findings ledger + routing` for the regression re-check.
+`phase-3-playtest.md § Findings ledger + routing` for the regression re-check. If the scope check
+split off a new item that hasn't been through a round-gate pass yet, that item is not yet resolved —
+return to `§ Round gate` for it instead.

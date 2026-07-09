@@ -22,6 +22,37 @@ as TESTABLE or MEASURABLE and route accordingly.
 **How to fix, once categorized:** follow `shared/DEBUG-LADDER.md` — MEASURABLE is a tier-1 direct fix;
 TESTABLE is tier-2 (confirm the cause with evidence before editing). A failed round escalates a tier.
 
+## Scope check — before categorizing, is this even about the item under test?
+
+Applies whenever live feedback is captured mid-item (`manual-interview-walkthrough.md § Step D` /
+`playtest-interview-walkthrough.md § Step D`, reused verbatim by every re-check:
+`fix-round.md § Re-check`, `debug-round.md § 8`, `debug-round-heavy.md § 8`, and their game-ship
+equivalents). A re-check after a fix commonly finds the fixed part now working, but surfaces
+something else adjacent while the app/game happens to be open. Before folding a Fail/Tweak
+observation into the current item's evidence, check whether it is actually about that item's own
+`expected` text.
+
+- **On-topic** (the observation is about the same expected behaviour, even if only partially
+  resolved) → capture as this item's own evidence as usual; the tier-escalation ladder in
+  `shared/DEBUG-LADDER.md` applies to it normally — a failed fix round for THIS defect escalates
+  one tier.
+- **Off-topic** (a distinct capability or defect — same triage as the closing interview's
+  net-new-capability branch, just discovered mid-item instead of at the end of the walkthrough) →
+  split it off instead of folding it into this item's verdict:
+  1. Judge the CURRENT item purely on the on-topic remainder of what was reported.
+  2. File the off-topic observation as its **own** new ledger item (fresh id, own
+     verdict/category/observed/expected, no `debugTier`/`failedRounds` yet — it starts its own
+     escalation lifecycle from scratch; it does not inherit or consume the current item's tier/round
+     count).
+  3. Classify the new item: **in-scope** (this feature's diff plausibly causes or should cover it) →
+     it now blocks completion like any other fail, and gets picked up by the next round-gate pass.
+     **Out-of-scope** (pre-existing/tangential — this feature didn't cause it) → route to
+     `/project-todo` instead (same policy as the closing-interview's net-new-capability branch); it
+     does not block completion.
+
+Default to your own judgement (same as the round gate already does for closing-interview findings);
+ask one `AskUserQuestion` only if genuinely ambiguous whether something is in- or out-of-scope.
+
 ## Dev-verify's fourth category: SPEC
 
 `dev-verify`'s fix-loop adds a **SPEC** category — an acceptance criterion the implementation does not

@@ -83,11 +83,14 @@ Write one fix plan for this item — no 3-agent fan-out. `ExitPlanMode` is the g
 Re-check via `manual-interview-walkthrough.md` Steps B–E for this one item (no new interview close).
 
 - **Pass** → clear the item's `debugTier`, set `verdict: "pass"`. Return to
-  `fix-round.md § Re-check` for any remaining items, or straight to the regression re-check if this
+  `fix-round.md § Re-check` for any remaining items already mid-round, back to
+  `phase-3-manual-finalize.md § Findings ledger + routing` if the scope check below split off a new
+  item that hasn't been through a round-gate pass yet, or straight to the regression re-check if this
   was the last open item.
 - **Cosmetic tweak surfaces** (MEASURABLE, obvious, ≤1-2 files) → inline polish loop right here —
   no park, no new tier. Same skip-condition as `fix-round.md § Re-check`'s cosmetic branch.
-- **Still failing, or a substantial new finding** → this light round's one evidence-backed attempt
+- **Still failing on its own `expected` text** (the scope check in `manual-interview-walkthrough.md
+  § Step D` already split off anything unrelated) → this light round's one evidence-backed attempt
   didn't hold — escalate to the heavy tier:
   1. **Before parking**, write this round's evidence to the ledger item — a park ends the session, so
      nothing held only in-context survives it. Patch the item: `debugTier: "heavy"`, and

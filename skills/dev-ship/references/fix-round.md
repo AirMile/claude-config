@@ -163,6 +163,10 @@ strictly forward: absent → `"light"` → `"heavy"` → resolved (accepted or p
 `shared/DEBUG-LADDER.md` for the full tier table (dev vs. game — game-ship keeps its own
 `failedRounds`-based ladder unchanged).
 
+**Before judging Pass/Cosmetic/Otherwise below**, apply `shared/FEEDBACK-CATEGORIZATION.md § Scope
+check` — split off anything not about this item's own `expected` text into its own ledger item first
+(dev-ship mechanics: `manual-interview-walkthrough.md § Step D`).
+
 - **Pass** → update `manual.items[].verdict` to `"pass"`; done with this item.
 - **Cosmetic tweak** (MEASURABLE, obvious, ≤1-2 files — the same skip-condition
   `dev-verify/references/fix-loop.md § Plan-mode gate` uses) → an inline **polish loop**: no gate, no
@@ -194,4 +198,6 @@ this section), and a heavy-round failure is the hard ceiling (accept-or-park, no
 section only ever fires once per item, for the initial batch attempt.
 
 Once every item is Pass (or explicitly Skip/Defer/Accepted) and no round is in flight, return to
-`phase-3-manual-finalize.md § Regression re-check`.
+`phase-3-manual-finalize.md § Regression re-check`. If the scope check split off a new item that
+hasn't been through a round-gate pass yet, that item is not yet resolved — return to `§ Round gate`
+for it instead.

@@ -174,8 +174,10 @@ re-check` already covers the whole PHASE 3 scope once, right before completion.
 **Re-check**: `manual-interview-walkthrough.md` Steps B–E for this one item (no new interview close).
 
 - **Pass** → clear the item's `debugTier`, set `verdict: "pass"`. Return to
-  `fix-round.md § Re-check` for any remaining items, or straight to the regression re-check if this
-  was the last open item.
+  `fix-round.md § Re-check` for any remaining items already mid-round, back to
+  `phase-3-manual-finalize.md § Findings ledger + routing` if the scope check in
+  `manual-interview-walkthrough.md § Step D` split off a new item that hasn't been through a
+  round-gate pass yet, or straight to the regression re-check if this was the last open item.
 - **Cosmetic tweak surfaces** → inline polish loop in this same chat (app is already running,
   plan mode already closed) — no new round, no park.
 - **Still failing** → this is the hard ceiling; no further automated tier exists. Patch the item
