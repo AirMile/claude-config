@@ -77,6 +77,8 @@ test("visual baseline dark — {slug}", async ({ browser }) => {
 First run: `npx playwright test ... --update-snapshots` (create baseline in `.project/playwright-runs/__screenshots__/`).
 Subsequent rounds (2, 3): baseline already present → run without `--update-snapshots` → FAIL on pixel regression or aria structure change.
 
+Note: the pixel/aria baseline is generated from the code's own output, so on the audit path (and copy mode with ground truth) it is a **structural-regression guard only** — it cannot catch a wrong design value that was already present when the baseline was created. That is what 3.2c is for.
+
 Runner FAIL = discrepancy found → treat as fix target alongside Vision findings.
 Runner not available → skip runner, continue with Vision-only sanity check.
 
@@ -146,6 +148,25 @@ Code quality:  [PASS | [N] violations]
   [- arbitrary color: bg-[#2D3748] → bg-surface-dark (H101)]
   [- missing alt: <img> in HeroSection:14 (R002)]
 ```
+
+### 3.2c Exact per-section value check (audit + copy with ground truth)
+
+Thumbnail vision (3.2) cannot catch a wrong-but-plausible value — a card `background-color: #141414` where the design specifies `#00111e` looks fine in a thumbnail. When per-section ground truth exists, compare computed styles directly instead of relying on vision alone.
+
+**Runs when** `$SECTION_GROUND_TRUTH` is set (audit path, see `convert-audit.md`) OR `$EXTRACTED_STYLES` is set (copy mode with `figma-mcp` / `figma-rest` / `url` ground truth — see `convert-mode-copy.md § Verification Thresholds`). Skip otherwise (inspiration/sketch, or copy mode that fell back to vision estimation).
+
+1. On the rendered localhost page, per section (audit: `$AUDIT_SECTIONS[].domSelector`; copy: the element-type selectors from the fidelity table) extract computed styles with the `getComputedStyle` snippet from `convert-mode-copy.md § 1.0`, scoped to the section node.
+2. Compare against ground truth: `background-color`, `color`, `border-radius`, key spacing (`padding`/`gap`), `font-size`/`font-weight`.
+   - **Color:** normalize to rgb; exact match required, ≤2/255 per-channel rounding tolerance.
+   - **Spacing / radius:** exact px, ≤1px tolerance.
+3. Any divergence is an **exact-value MISMATCH** — add to the ROUND assessment (treat as higher-priority than vision findings, since it is a confirmed ground-truth divergence, not a judgment call) and fix in 3.3, within the existing 3-round cap:
+
+```
+Exact-value check:  [PASS | [N] mismatches]
+  [- CardSection background-color: #141414 → #00111e (Figma)  file:line]
+```
+
+This makes the loop non-self-referential for these properties: the compare target is the design's exact value, not the code's own baseline (contrast with the Playwright pixel baseline in 3.2, which compares against the code's own prior screenshot).
 
 ### 3.3 Fix and Re-check
 

@@ -106,6 +106,7 @@ If "Adjust": ask which values to change, update, re-confirm.
 - Use exact text content from the fidelity table — never paraphrase, never substitute placeholder copy.
 - Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently. Exception `figma-mcp`: assets were already exported via `download_assets` in 1.0 — reference the local `$EXTRACTED_ASSETS` paths, no TODO needed.
 - Use the exact `font-family` with its fallback stack. If a Google Font is recognized: note the required import in the Generation Summary.
+- Figma sources (`figma-mcp`/`figma-rest`): Figma-emitted code is a **value source, not a code source**. Never copy absolute pixel offsets (`left-[92.33px]`) — reconstruct element groups with flex/grid + gap (visual result identical, code responsive). Replace data-URI SVG gradients with equivalent CSS gradients. Repeated visual patterns (buttons, cards, badges) become one shared component even when the file has no Figma components.
 - Gold standard: `../examples/PricingPage-1to1.tsx`.
 
 ## Verification Thresholds (applied in PHASE 3)

@@ -107,6 +107,7 @@ If "Adjust": ask which mappings to change, update, re-confirm.
 - Use only theme tokens (from project.json) and standard Tailwind classes. Match source layout and structure, not visual details. No arbitrary values.
 - Inject `$INSPIRATION_BRIEF` into the generation prompt as a header: `ADOPT: {list} / DEVIATE: {list} / INTENT: {line}` — adopted aspects guide structure and feel; deviations override source traits.
 - Content: when `SEED_CONTEXT.present`, draw headings, labels, and CTA copy from the seed concept so the result reads as the actual product — never generic placeholder text.
+- Figma sources (`figma-mcp`/`figma-rest`): Figma-emitted code is a **value source, not a code source**. Never copy absolute pixel offsets — reconstruct element groups with flex/grid + gap. Repeated visual patterns (buttons, cards, badges) become one shared component even when the file has no Figma components.
 - Gold standard: `../examples/PricingPage-inspiration.tsx` (zero arbitrary values).
 
 ## Verification Thresholds (applied in PHASE 3)

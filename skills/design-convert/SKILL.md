@@ -1,6 +1,6 @@
 ---
 name: design-convert
-description: Design-spec management, visual→code conversion (sketch/Figma/URL/screenshot — web), and game .tscn codegen. Web spec→code build/ship runs via /design-ship. Use with /design-convert, or auto-triggers on PAGE/COMPONENT backlog tasks with transition "designing" or "converting".
+description: Use with /design-convert — visual→code (sketch/Figma/URL/screenshot) or design-spec management.
 argument-hint: "[name|file-path|url|sketch]"
 reads:
   [
@@ -17,7 +17,7 @@ reads:
 writes: [devinfo.handoff, devinfo.tokenDrift, project.design, backlog.status]
 metadata:
   author: claude-config
-  version: 3.1.0
+  version: 3.5.0
   category: design
 ---
 
