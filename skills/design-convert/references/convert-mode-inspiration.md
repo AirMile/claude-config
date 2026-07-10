@@ -61,6 +61,8 @@ Store as `$INSPIRATION_BRIEF = { adopt: [], deviate: [], intent: "" }`.
 
 Extract visual properties from the source image and map them to the closest theme tokens (from project.json), **biased by the brief**: adopted aspects map source → token; non-adopted aspects take pure theme defaults with no source influence.
 
+**If `$INPUT_SOURCE = "figma-mcp"`:** feed the Source column with exact values from `get_variable_defs` / `get_design_context` (exact hex, px, font weights — no "~approx." estimates). The mapping logic is unchanged: each source value maps to the closest project token. When Figma variables carry semantic names (e.g. `brand/primary`), use them to disambiguate the target token. If `get_variable_defs` returns empty (common in agency files without variables): map from the exact values in `get_design_context` — not an error. For `$INPUT_SOURCE = "figma-rest"`: same procedure, with exact values read from the node-tree JSON captured in 0.1.
+
 ```
 TOKEN MAPPING
 ════════════════════════════════════════════════════════════

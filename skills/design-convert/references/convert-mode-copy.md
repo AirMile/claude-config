@@ -10,9 +10,21 @@ Theme is **optional**. If `project.json → theme` is populated: use it only for
 
 Copy-mode counterpart to token mapping: capture exact source values instead of mapping to tokens.
 
-### 1.0 Ground-Truth Extraction (`$INPUT_SOURCE = "url"` only)
+### 1.0 Ground-Truth Extraction (`$INPUT_SOURCE = "url"`, `"figma-mcp"`, or `"figma-rest"`)
 
-When the source is a live URL, extract computed styles instead of estimating from pixels. The browser session from PHASE 0.1 is closed — re-open the URL.
+**For `$INPUT_SOURCE = "figma-mcp"`:** extract ground truth via the Figma MCP instead of browser eval:
+
+1. `get_design_context` on the node link → code representation with exact values (colors, spacing, typography, radii, shadows). Parse into `$EXTRACTED_STYLES`.
+2. `get_variable_defs` on the node link → the variables/styles backing those values (token names + values). Merge into `$EXTRACTED_STYLES` — keep the variable names, they inform naming in codegen.
+3. Assets: `download_assets` (PNG/JPG/SVG, max 20 nodes per call) → save under `public/` (or the framework's static dir) and record paths as `$EXTRACTED_ASSETS`.
+
+`get_variable_defs` returning empty is **normal** — agency files often use raw fills without Figma variables. Not an error: `get_design_context` already carries the exact values; proceed without variable names.
+
+**For `$INPUT_SOURCE = "figma-rest"`:** same as figma-mcp, but read exact values (fills, typography, layout, radii, effects) from the node-tree JSON captured in 0.1 (`.project/tmp/source-node.json`) → `$EXTRACTED_STYLES`, labeled `computed`. Assets: `GET /v1/images/{key}?ids={asset-node-ids}&format=png|svg` per asset node → `$EXTRACTED_ASSETS`.
+
+MCP values are labeled `computed` in the fidelity table. Skip the browser-eval sequence below.
+
+**For `$INPUT_SOURCE = "url"`:** extract computed styles instead of estimating from pixels. The browser session from PHASE 0.1 is closed — re-open the URL.
 
 Prefer `navigate` + `javascript_tool` (Claude-in-Chrome) when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md` for the tool-loading ritual. Fall back to the `playwright-cli` sequence below otherwise:
 
@@ -28,11 +40,11 @@ Store the results as `$EXTRACTED_STYLES` (computed values per element type) and 
 
 **Other input sources — fall back to vision estimation:**
 
-| `$INPUT_SOURCE` | Why no extraction                                                                       | Action                                                |
-| --------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `design-tool`   | Figma/Canva render to `<canvas>` — computed styles describe the tool UI, not the design | Estimate from the screenshot; mark values `estimated` |
-| `file`          | Static image — no DOM available                                                         | Estimate from the image; mark values `estimated`      |
-| `chat-image`    | Static image — no DOM available                                                         | Estimate from the image; mark values `estimated`      |
+| `$INPUT_SOURCE` | Why no extraction                                                                                                                                                             | Action                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `design-tool`   | Figma/Canva render to `<canvas>` — computed styles describe the tool UI, not the design. Only applies when the figma MCP is unavailable (otherwise the source is `figma-mcp`) | Estimate from the screenshot; mark values `estimated` |
+| `file`          | Static image — no DOM available                                                                                                                                               | Estimate from the image; mark values `estimated`      |
+| `chat-image`    | Static image — no DOM available                                                                                                                                               | Estimate from the image; mark values `estimated`      |
 
 ### 1.1 Fidelity Table
 
@@ -92,7 +104,7 @@ If "Adjust": ask which values to change, update, re-confirm.
 
 - Use exact arbitrary Tailwind values from the fidelity table: `bg-[#FF5733]`, `text-[17px]`, `rounded-[12px]` — when no standard class matches exactly. Visual fidelity beats class purity.
 - Use exact text content from the fidelity table — never paraphrase, never substitute placeholder copy.
-- Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently.
+- Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently. Exception `figma-mcp`: assets were already exported via `download_assets` in 1.0 — reference the local `$EXTRACTED_ASSETS` paths, no TODO needed.
 - Use the exact `font-family` with its fallback stack. If a Google Font is recognized: note the required import in the Generation Summary.
 - Gold standard: `../examples/PricingPage-1to1.tsx`.
 

@@ -37,13 +37,14 @@ Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/
 
 Determine the input type from the argument or conversation:
 
-| Input                                             | Detection                                  | Action                                                                                              |
-| ------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Figma/Canva URL (`figma.com`, `canva.com`)        | URL contains `figma.com` or `canva.com`    | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "design-tool"` |
-| File path (`/home/...`, `C:\...`, `.png`, `.jpg`) | Contains path separator or image extension | Read file with Read tool (multimodal); set `$INPUT_SOURCE = "file"`                                 |
-| URL (`http://`, `https://`)                       | Starts with protocol                       | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "url"`         |
-| Image in chat                                     | No path/URL, image data present            | Analyze directly from conversation; set `$INPUT_SOURCE = "chat-image"`                              |
-| None                                              | No argument, no image                      | Ask user (see below)                                                                                |
+| Input                                             | Detection                                              | Action                                                                                              |
+| ------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Figma URL, MCP connected                          | URL contains `figma.com` AND figma MCP tools available | MCP capture (see "For Figma URLs (MCP)" below); set `$INPUT_SOURCE = "figma-mcp"`                   |
+| Figma/Canva URL (`figma.com`, `canva.com`)        | URL contains `figma.com` or `canva.com` — no figma MCP | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "design-tool"` |
+| File path (`/home/...`, `C:\...`, `.png`, `.jpg`) | Contains path separator or image extension             | Read file with Read tool (multimodal); set `$INPUT_SOURCE = "file"`                                 |
+| URL (`http://`, `https://`)                       | Starts with protocol                                   | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "url"`         |
+| Image in chat                                     | No path/URL, image data present                        | Analyze directly from conversation; set `$INPUT_SOURCE = "chat-image"`                              |
+| None                                              | No argument, no image                                  | Ask user (see below)                                                                                |
 
 **No input provided:**
 
@@ -52,11 +53,44 @@ header: "Visual Input"
 question: "What do you want to convert? Paste a screenshot, provide a file path, a website URL, or a Figma/Canva share link."
 options:
   - label: "I'll paste a screenshot or image", description: "Paste wireframe, sketch, or screenshot in the next message"
-  - label: "Figma or Canva link", description: "Share link from Figma or Canva — captured via Playwright"
+  - label: "Figma or Canva link", description: "Share link from Figma (via figma MCP when connected) or Canva (via Playwright)"
   - label: "File path", description: "Path to screenshot, export, or image file"
   - label: "Website URL", description: "URL of a live website to capture and convert"
 multiSelect: false
 ```
+
+**For Figma URLs (MCP):** requires the remote Figma MCP server (`mcp.figma.com`) to be connected — check that `mcp__figma__*` tools are available (load via ToolSearch if deferred). If unavailable, do NOT degrade silently — follow the fallback ladder: REST API (still ground truth) beats screenshot estimation. Check whether a Figma API token is available (`$FIGMA_TOKEN` env var), then ask:
+
+```yaml
+header: "Figma MCP"
+question: "The Figma MCP server is not connected. How to proceed?"
+options:
+  - label: "Fix the connection first (Recommended)", description: "Stop here — run /mcp to (re)authenticate figma, then re-run this conversion"
+  - label: "REST API fallback", description: "Exact values via api.figma.com — ground truth without MCP" # include only when $FIGMA_TOKEN was found
+  - label: "Screenshot fallback", description: "Vision estimation — values will be marked 'estimated'. Best source: a frame PNG exported from Figma (right-click frame → Export)"
+multiSelect: false
+```
+
+On "Fix the connection first": exit the skill. On "REST API fallback": follow the REST procedure below. On "Screenshot fallback": ask the user to export the frame as PNG and provide the file path (pixel-perfect, preferred); only if they can't, fall back to the design-tool row (Playwright capture of figma.com — last resort, canvas rendering is unreliable).
+
+**REST API fallback (`$INPUT_SOURCE = "figma-rest"`):** parse the file key and node id from the URL — `figma.com/design/{key}/...?node-id={id}` (the id uses `-` in URLs, `:` in API calls).
+
+```
+curl -sH "X-Figma-Token: $FIGMA_TOKEN" "https://api.figma.com/v1/images/{key}?ids={id}&format=png&scale=2"
+  → returns JSON with an image URL — download it to .project/tmp/source-capture.png → Read it → $SOURCE_IMAGE
+curl -sH "X-Figma-Token: $FIGMA_TOKEN" "https://api.figma.com/v1/files/{key}/nodes?ids={id}" > .project/tmp/source-node.json
+  → node tree with exact fills, typography, layout → $SOURCE_STRUCTURE
+```
+
+Downstream, `figma-rest` behaves like `figma-mcp`: 0.2 derives structure from `$SOURCE_STRUCTURE`, and the mode files (PHASE 1) take ground-truth values (labeled `computed`) from the node-tree JSON instead of `get_design_context` / `get_variable_defs`.
+
+**Do not offer `.fig` file parsing as a fallback** — the format is a proprietary binary (fig-kiwi); community parsers are reverse-engineered and break on format updates. A user who can export `.fig` can also export a frame PNG or create an API token.
+
+1. The link must target a specific frame (`node-id` param in the URL). If it points to a whole file/canvas: ask the user for a frame link (right-click frame → _Copy link to selection_).
+2. `get_screenshot` on the node link → save to `.project/tmp/source-capture.png` → Read it. This becomes `$SOURCE_IMAGE`.
+3. `get_metadata` on the same link → store the sparse XML layer outline (frame names, positions, sizes) as `$SOURCE_STRUCTURE` — used in 0.2.
+
+The MCP path provides ground-truth design data downstream: the mode files (PHASE 1) read exact values via `get_design_context` / `get_variable_defs` instead of estimating from pixels — this removes the vision-estimation burden, so the route runs reliably on Sonnet.
 
 **For URLs:** Navigate with Playwright CLI, wait 3 seconds for render, take full-page screenshot. This captured screenshot becomes the source image for all subsequent phases.
 
@@ -115,6 +149,8 @@ Motion intent: [detected motion/animation cues — note what is present:
 
 ════════════════════════════════════════════════════════════
 ```
+
+**If `$INPUT_SOURCE = "figma-mcp"` or `"figma-rest"`:** derive `Sections`, `Layout`, and `Sizing` from `$SOURCE_STRUCTURE` (layer names, positions, dimensions) instead of estimating from pixels; use the screenshot for colors, typography character, and fidelity assessment. Figma sources are typically `high` fidelity.
 
 Store fidelity as `$FIDELITY` (low | medium | high).
 
@@ -195,6 +231,8 @@ Check `.project/project.json` → `theme` section. Apply the **Theme Requirement
 Theme: [Available | Not available]
 Mode:  [1:1 copy | Inspiration | Sketch → high-fi (fidelity: {$FIDELITY})]
 ```
+
+**Motion default:** if `theme.motion` is populated (durations/easings/pack, managed via `/design-tokens`), it is the default motion language for codegen — `$MOTION_INTENT` from the source supplements it but never overrides pack conventions. Design-tool sources rarely encode motion, so the pack is what keeps animation consistent across converted pages. If `theme.motion` is empty and the source or user intent implies animated output: recommend running `/design-tokens` (Motion Pack) once before converting — do not invent per-page motion values.
 
 **Dark-mode fallback:** if `$ANALYSIS` dark mode is `dark only` or `both visible` AND `theme.modes.dark` is missing AND `$MODE` ≠ copy:
 
@@ -328,6 +366,8 @@ State components:
 
 ════════════════════════════════════════════════════════════
 ```
+
+**Template reuse check:** if an already-converted page implements the same section structure (e.g. sibling pages generated from one design template — sector/product variants), plan the run as **reuse + content variation**: import that page's section components and vary only content/assets. Note in the plan when the remaining siblings would be better served by `/design-content` than by full conversions. Never regenerate near-identical components side by side.
 
 ### 2.2 Generate Code
 
