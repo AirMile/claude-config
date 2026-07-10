@@ -31,6 +31,27 @@ current_root=$(git rev-parse --show-toplevel)
 
 If `current_root != main_root`: already in a worktree → **skip auto-create**, continue skill's PHASE 0 on current branch.
 
+#### Step 1b: Dirty-work guard
+
+`git worktree add` branches from the last **commit**, not the working tree — any uncommitted change on `$DEFAULT` is silently absent from the new worktree's base. Before creating, check for that:
+
+```bash
+DIRTY_COUNT=$(git -C "$main_root" status --porcelain | wc -l | tr -d ' ')
+```
+
+`DIRTY_COUNT = 0` → skip silently, continue to Step 2.
+
+`DIRTY_COUNT > 0` → AskUserQuestion:
+
+- header: "Uncommitted work"
+- question: "`$main_root` has {DIRTY_COUNT} uncommitted change(s) that would NOT be included in the new worktree (it branches from the last commit). How do you want to proceed?"
+- options:
+  - "Work directly on {default branch} (Recommended if this run continues that work)" — skip auto-create entirely, continue the skill's PHASE 0 on the current branch, no worktree
+  - "Commit first, then create the worktree" — stop here; user commits, then re-run
+  - "Create the worktree anyway (uncommitted work stays behind, unaffected)" — only sensible when the dirty changes are unrelated to this run; proceed to Step 2
+
+Do not silently proceed past a nonzero `DIRTY_COUNT` — an unattended worktree-add here can leave two divergent copies of in-progress work with no signal to the user that it happened.
+
 #### Step 2: Collision check
 
 Check whether a worktree/branch already exists for this feature:
