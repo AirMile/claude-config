@@ -84,8 +84,17 @@ Spacing:
   ~16px sections      → spacing-4 (16px)
   ~32px large gaps    → spacing-8 (32px)
 
+{If $INTERACTION_SPEC is set and "Motion & interaction feel" was adopted:}
+Interactions:
+  Source interaction                    → Choreography token
+  card hover scale(1.04) + lift         → surface.tilt
+  section entrance fade+rise, stagger   → list.stagger-reveal
+  badge fade-in on hover                → (no pack equivalent — keep explicit delta)
+
 ════════════════════════════════════════════════════════════
 ```
+
+**Interaction mapping** (only when `$INTERACTION_SPEC` is set): map each row to the nearest `theme.motion.choreography` entry — the pack vocabulary keeps converted pages consistent. Rows with no pack equivalent keep their explicit delta (the documented-spec exception in route-convert 0.6). If "Motion & interaction feel" was **not** adopted in Q1: drop `$INTERACTION_SPEC` and use pack defaults only — adopting the source's motion is the user's call, same as any other trait.
 
 ### 1.2 Confirm Mapping
 
@@ -108,6 +117,7 @@ If "Adjust": ask which mappings to change, update, re-confirm.
 - Inject `$INSPIRATION_BRIEF` into the generation prompt as a header: `ADOPT: {list} / DEVIATE: {list} / INTENT: {line}` — adopted aspects guide structure and feel; deviations override source traits.
 - Content: when `SEED_CONTEXT.present`, draw headings, labels, and CTA copy from the seed concept so the result reads as the actual product — never generic placeholder text.
 - Figma sources (`figma-mcp`/`figma-rest`): Figma-emitted code is a **value source, not a code source**. Never copy absolute pixel offsets — reconstruct element groups with flex/grid + gap. Repeated visual patterns (buttons, cards, badges) become one shared component even when the file has no Figma components.
+- Interactions: implement the confirmed interaction mapping via choreography tokens / pack CSS vars — implementation patterns in `convert-generate-template.md § Motion`. Explicit deltas (no-equivalent rows) are the one sanctioned exception to the no-arbitrary-values rule, scoped to motion properties only.
 - Gold standard: `../examples/PricingPage-inspiration.tsx` (zero arbitrary values).
 
 ## Verification Thresholds (applied in PHASE 3)

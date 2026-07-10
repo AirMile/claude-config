@@ -6,6 +6,12 @@ Prefer Claude-in-Chrome (`navigate` + `computer` + `read_console_messages`) for 
 
 Thresholds come from the loaded `convert-mode-{$MODE}.md → Verification Thresholds`: `$VERIFY_PIXEL_RATIO` (copy 0.01, inspiration/sketch 0.03). Default to `0.03` when no mode file is loaded (patch fast-path).
 
+### Scope selection
+
+- **Generation scopes** (copy/sketch/inspiration) and **patch**: run the full procedure below.
+- **`$SCOPE = audit`, value-level**: light pass — 3.0, 3.1, then a single round of 3.2 steps 1–4 (render + console) plus **3.2c** re-checking the patched properties. Skip the runner pixel/aria baseline and the vision-comparison rounds: the "source" is a set of per-property edits, not one screenshot — 3.2c against `$SECTION_GROUND_TRUTH` is the real check here.
+- **`$SCOPE = audit` after a structural-mismatch escalation** (convert-audit.md Step C/D): the light pass plus a **section-presence check** — full-page screenshot, confirm each `$PATCH_SECTIONS` work item landed (added sections render, reordered sections in the intended order, retired sections gone). Findings are fixed and re-checked within the same 3-round cap.
+
 ### 3.0 Pre-flight
 
 Check for a live local Chrome (`tabs_context_mcp`) or, as fallback, Playwright CLI available: `playwright-cli --version`. If neither is available: skip with message `"No browser available — open the page manually to verify."`, proceed to PHASE 4.
@@ -73,6 +79,25 @@ test("visual baseline dark — {slug}", async ({ browser }) => {
   await ctx.close();
 });
 ```
+
+If `$ANALYSIS` Responsive shows multiple viewports: add a mobile variant (codegen emitted responsive prefixes — guard them):
+
+```typescript
+test("visual baseline mobile — {slug}", async ({ browser }) => {
+  const ctx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+  });
+  const page = await ctx.newPage();
+  await page.goto("{url}");
+  await page.waitForLoadState("networkidle");
+  await expect(page).toHaveScreenshot("convert-{slug}-mobile.png", {
+    maxDiffPixelRatio: { $VERIFY_PIXEL_RATIO },
+  });
+  await ctx.close();
+});
+```
+
+Vision-compare the mobile screenshot against the source's mobile frame only when the source actually has one; otherwise the mobile run is a regression + overflow guard only (no design to match it against).
 
 First run: `npx playwright test ... --update-snapshots` (create baseline in `.project/playwright-runs/__screenshots__/`).
 Subsequent rounds (2, 3): baseline already present → run without `--update-snapshots` → FAIL on pixel regression or aria structure change.
@@ -153,7 +178,7 @@ Code quality:  [PASS | [N] violations]
 
 Thumbnail vision (3.2) cannot catch a wrong-but-plausible value — a card `background-color: #141414` where the design specifies `#00111e` looks fine in a thumbnail. When per-section ground truth exists, compare computed styles directly instead of relying on vision alone.
 
-**Runs when** `$SECTION_GROUND_TRUTH` is set (audit path, see `convert-audit.md`) OR `$EXTRACTED_STYLES` is set (copy mode with `figma-mcp` / `figma-rest` / `url` ground truth — see `convert-mode-copy.md § Verification Thresholds`). Skip otherwise (inspiration/sketch, or copy mode that fell back to vision estimation).
+**Runs when** `$SECTION_GROUND_TRUTH` is set (audit path, see `convert-audit.md`) OR `$EXTRACTED_STYLES` is set (copy mode with `figma-mcp` / `figma-rest` / `figma-make` / `url` ground truth — see `convert-mode-copy.md § Verification Thresholds`). Skip otherwise (inspiration/sketch, or copy mode that fell back to vision estimation).
 
 1. On the rendered localhost page, per section (audit: `$AUDIT_SECTIONS[].domSelector`; copy: the element-type selectors from the fidelity table) extract computed styles with the `getComputedStyle` snippet from `convert-mode-copy.md § 1.0`, scoped to the section node.
 2. Compare against ground truth: `background-color`, `color`, `border-radius`, key spacing (`padding`/`gap`), `font-size`/`font-weight`.
@@ -167,6 +192,26 @@ Exact-value check:  [PASS | [N] mismatches]
 ```
 
 This makes the loop non-self-referential for these properties: the compare target is the design's exact value, not the code's own baseline (contrast with the Playwright pixel baseline in 3.2, which compares against the code's own prior screenshot).
+
+### 3.2d Interaction check (when `$INTERACTION_SPEC` is set)
+
+Static screenshots can't tell whether an interaction fires — verify positively, per `$INTERACTION_SPEC` row, on the rendered localhost page. Follow `shared/PLAYWRIGHT.md § Use Cases: Interaction State Capture` (Claude-in-Chrome preferred, `playwright-cli` fallback):
+
+1. **Drive the trigger**: `hover` → hover-delta sequence on the row's element; `scroll-into-view` → scroll the section in, then run the animation inventory; `focus`/`press` → focus the element / read `active:` styles.
+2. **Compare against the spec's `expected:` line** — a plain string compare, no conversion reasoning here: the eval's computed values (transform matrix, `transition-duration`, `transition-timing-function`) must equal the row's precomputed `expected` strings (filled during capture, `convert-interactions.md` Step 4). Fallback for rows without an `expected` line: transform as matrix equivalent (`scale(1.04)` ↔ `matrix(1.04, 0, 0, 1.04, 0, 0)`), duration/easing from the baseline computed `transition`.
+   - **Copy mode**: exact match required (spec ground truth — same status as 3.2c colors).
+   - **Inspiration/sketch**: assert the mapped choreography effect fires (an effect of the right kind and direction); exact `expected` match only for explicit-delta rows.
+   - Sibling rows: one hover, read both elements.
+3. **Hover-state screenshot** per interactive pattern (one representative element) as vision-sanity — overlay/color effects that don't show in computed transforms.
+4. `estimated` rows: presence-check only (does _an_ effect fire) — never fail exact values that were never ground truth.
+
+Mismatches join the ROUND assessment at 3.2c priority (confirmed spec divergence, not a judgment call) and are fixed in 3.3 within the 3-round cap:
+
+```
+Interaction check:  [PASS | [N] mismatches]
+  [- Sector card hover: expected scale(1.04), computed matrix(1.02,…) — SectorGrid.tsx:41]
+  [- Section entrance: no animation fired on scroll-into-view — missing IntersectionObserver wiring]
+```
 
 ### 3.3 Fix and Re-check
 

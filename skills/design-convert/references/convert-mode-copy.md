@@ -10,7 +10,7 @@ Theme is **optional**. If `project.json → theme` is populated: use it only for
 
 Copy-mode counterpart to token mapping: capture exact source values instead of mapping to tokens.
 
-### 1.0 Ground-Truth Extraction (`$INPUT_SOURCE = "url"`, `"figma-mcp"`, or `"figma-rest"`)
+### 1.0 Ground-Truth Extraction (`$INPUT_SOURCE = "url"`, `"figma-mcp"`, `"figma-rest"`, or `"figma-make"`)
 
 **For `$INPUT_SOURCE = "figma-mcp"`:** extract ground truth via the Figma MCP instead of browser eval:
 
@@ -24,7 +24,7 @@ Copy-mode counterpart to token mapping: capture exact source values instead of m
 
 MCP values are labeled `computed` in the fidelity table. Skip the browser-eval sequence below.
 
-**For `$INPUT_SOURCE = "url"`:** extract computed styles instead of estimating from pixels. The browser session from PHASE 0.1 is closed — re-open the URL.
+**For `$INPUT_SOURCE = "url"` or `"figma-make"`:** extract computed styles instead of estimating from pixels. The browser session from PHASE 0.1 is closed — re-open the URL. For `figma-make` this must run via Claude-in-Chrome (the preview needs the user's logged-in session — see route-convert 0.1).
 
 Prefer `navigate` + `javascript_tool` (Claude-in-Chrome) when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md` for the tool-loading ritual. Fall back to the `playwright-cli` sequence below otherwise:
 
@@ -85,6 +85,8 @@ Assets:
 
 `Source` column: `computed` (ground-truth extraction) or `estimated` (vision). Mixed tables are normal when extraction partially failed.
 
+**Interactions:** if `$INTERACTION_SPEC` is set (interaction capture in route-convert 0.2), present the INTERACTIONS table (`convert-interactions.md` Step 4) directly below the fidelity table — the 1.2 confirm covers both.
+
 ### 1.2 Confirm
 
 ```yaml
@@ -98,7 +100,7 @@ multiSelect: false
 
 If "Adjust": ask which values to change, update, re-confirm.
 
-> **Todo**: Use the `ExitPlanMode` tool once the extraction is confirmed — present SOURCE ANALYSIS + FIDELITY EXTRACTION as the plan output. After user approval, all remaining phases (codegen, verification, completion) run in Sonnet. Do NOT re-enter plan mode later in this run. Skip this exit if plan mode is no longer active (patch path already exited) or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
+> **Todo**: Use the `ExitPlanMode` tool once the extraction is confirmed — present SOURCE ANALYSIS + FIDELITY EXTRACTION (+ INTERACTIONS when captured) as the plan output. After user approval, all remaining phases (codegen, verification, completion) run in Sonnet. Do NOT re-enter plan mode later in this run. Skip this exit if plan mode is no longer active (patch path already exited) or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
 
 ## Codegen Rules (applied in PHASE 2.2)
 
@@ -107,6 +109,7 @@ If "Adjust": ask which values to change, update, re-confirm.
 - Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently. Exception `figma-mcp`: assets were already exported via `download_assets` in 1.0 — reference the local `$EXTRACTED_ASSETS` paths, no TODO needed.
 - Use the exact `font-family` with its fallback stack. If a Google Font is recognized: note the required import in the Generation Summary.
 - Figma sources (`figma-mcp`/`figma-rest`): Figma-emitted code is a **value source, not a code source**. Never copy absolute pixel offsets (`left-[92.33px]`) — reconstruct element groups with flex/grid + gap (visual result identical, code responsive). Replace data-URI SVG gradients with equivalent CSS gradients. Repeated visual patterns (buttons, cards, badges) become one shared component even when the file has no Figma components.
+- `$INTERACTION_SPEC` rows with `source: spec-text` or `observed` are ground truth — implement with exact values: arbitrary easing (`ease-[cubic-bezier(0.25,0.46,0.45,0.94)]`), exact scale/translate/duration values. Implementation patterns (sibling-dimming, scroll entrances, `prefers-reduced-motion` wrapper): `convert-generate-template.md § Motion`.
 - Gold standard: `../examples/PricingPage-1to1.tsx`.
 
 ## Verification Thresholds (applied in PHASE 3)
@@ -114,3 +117,4 @@ If "Adjust": ask which values to change, update, re-confirm.
 - `$VERIFY_PIXEL_RATIO = 0.01` (strict — copy mode promises pixel accuracy).
 - Early stop requires Vision match quality **High**. **Medium** is acceptable only at round 3, with remaining discrepancies listed.
 - If `$EXTRACTED_STYLES` exists: run the same `eval` extraction snippet against the localhost page and compare against the fidelity table — flag any element whose computed values diverge.
+- If `$INTERACTION_SPEC` is set: the 3.2d interaction check runs **exact** — computed transform (matrix-equivalent), duration, and easing must match the spec values.

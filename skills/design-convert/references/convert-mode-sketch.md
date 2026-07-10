@@ -26,6 +26,8 @@ Before mapping, determine which properties from `$ANALYSIS` are **authoritative*
 
 Extract visual properties from the source image (applying the fidelity filter) and map them to the closest theme tokens (from project.json). Use the same TOKEN MAPPING table format as inspiration mode: per category (Colors, Typography, Spacing) a `Source → Theme Token` table. For `tokens only` properties the Source column reads `(filtered — tokens only)`.
 
+If `$INTERACTION_SPEC` is set (e.g. the user pasted an interaction spec alongside the sketch): add the Interactions mapping category, same rules as inspiration mode — map to `theme.motion.choreography` tokens, keep explicit deltas only where the pack has no equivalent.
+
 ### 1.2 Confirm Mapping
 
 ```yaml

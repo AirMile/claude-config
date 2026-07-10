@@ -37,14 +37,15 @@ Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/
 
 Determine the input type from the argument or conversation:
 
-| Input                                             | Detection                                              | Action                                                                                              |
-| ------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Figma URL, MCP connected                          | URL contains `figma.com` AND figma MCP tools available | MCP capture (see "For Figma URLs (MCP)" below); set `$INPUT_SOURCE = "figma-mcp"`                   |
-| Figma/Canva URL (`figma.com`, `canva.com`)        | URL contains `figma.com` or `canva.com` — no figma MCP | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "design-tool"` |
-| File path (`/home/...`, `C:\...`, `.png`, `.jpg`) | Contains path separator or image extension             | Read file with Read tool (multimodal); set `$INPUT_SOURCE = "file"`                                 |
-| URL (`http://`, `https://`)                       | Starts with protocol                                   | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "url"`         |
-| Image in chat                                     | No path/URL, image data present                        | Analyze directly from conversation; set `$INPUT_SOURCE = "chat-image"`                              |
-| None                                              | No argument, no image                                  | Ask user (see below)                                                                                |
+| Input                                             | Detection                                                    | Action                                                                                              |
+| ------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Figma Make URL                                    | URL contains `figma.com/make/` — check before the rows below | Live-preview capture (see "For Figma Make URLs" below); set `$INPUT_SOURCE = "figma-make"`          |
+| Figma URL, MCP connected                          | URL contains `figma.com` AND figma MCP tools available       | MCP capture (see "For Figma URLs (MCP)" below); set `$INPUT_SOURCE = "figma-mcp"`                   |
+| Figma/Canva URL (`figma.com`, `canva.com`)        | URL contains `figma.com` or `canva.com` — no figma MCP       | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "design-tool"` |
+| File path (`/home/...`, `C:\...`, `.png`, `.jpg`) | Contains path separator or image extension                   | Read file with Read tool (multimodal); set `$INPUT_SOURCE = "file"`                                 |
+| URL (`http://`, `https://`)                       | Starts with protocol                                         | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "url"`         |
+| Image in chat                                     | No path/URL, image data present                              | Analyze directly from conversation; set `$INPUT_SOURCE = "chat-image"`                              |
+| None                                              | No argument, no image                                        | Ask user (see below)                                                                                |
 
 **No input provided:**
 
@@ -53,9 +54,9 @@ header: "Visual Input"
 question: "What do you want to convert? Paste a screenshot, provide a file path, a website URL, or a Figma/Canva share link."
 options:
   - label: "I'll paste a screenshot or image", description: "Paste wireframe, sketch, or screenshot in the next message"
-  - label: "Figma or Canva link", description: "Share link from Figma (via figma MCP when connected) or Canva (via Playwright)"
+  - label: "Figma, Figma Make or Canva link", description: "Share link from Figma (via figma MCP when connected), Figma Make (live preview), or Canva (via Playwright)"
   - label: "File path", description: "Path to screenshot, export, or image file"
-  - label: "Website URL", description: "URL of a live website to capture and convert"
+  - label: "Website URL", description: "URL of a live website or published prototype (e.g. *.figma.site) — interactions are captured live"
 multiSelect: false
 ```
 
@@ -86,9 +87,16 @@ Downstream, `figma-rest` behaves like `figma-mcp`: 0.2 derives structure from `$
 
 **Do not offer `.fig` file parsing as a fallback** — the format is a proprietary binary (fig-kiwi); community parsers are reverse-engineered and break on format updates. A user who can export `.fig` can also export a frame PNG or create an API token.
 
-1. The link must target a specific frame (`node-id` param in the URL). If it points to a whole file/canvas: ask the user for a frame link (right-click frame → _Copy link to selection_). If the frame name suggests a draft or duplicate (contains "V2", "test", "copy"/"kopie", "old", or the metadata shows sibling frames with near-identical names): confirm with the user that this frame is the final version before proceeding.
-2. `get_screenshot` on the node link → save to `.project/tmp/source-capture.png` → Read it. This becomes `$SOURCE_IMAGE`.
-3. `get_metadata` on the same link → store the sparse XML layer outline (frame names, positions, sizes) as `$SOURCE_STRUCTURE` — used in 0.2.
+**For Figma Make URLs (`$INPUT_SOURCE = "figma-make"`):** Make files are not design canvases — the Figma MCP canvas tools (`get_metadata` / `get_design_context`) do not work on them. The preview **is** real DOM, and the interaction spec typically lives as text in the Make chat panel. Do not route these through the MCP or design-tool paths.
+
+1. Capture the live preview via Claude-in-Chrome (the user's logged-in Chrome session — Make previews require auth): load tools per `shared/CLAUDE-IN-CHROME.md`, `navigate` to the URL, wait for the preview to render, screenshot → `.project/tmp/source-capture.png` → Read it → `$SOURCE_IMAGE`. If Claude-in-Chrome is unavailable: ask the user to publish the Make preview (Share → Publish) and provide the published URL (then treat as a normal `url` source), or to export a full-page screenshot (`file` fallback, vision-estimated values).
+2. Downstream, `figma-make` behaves like `url`: the preview DOM is ground truth — copy mode's § 1.0 computed-style extraction applies (`$EXTRACTED_STYLES` labeled `computed`), run through the same Claude-in-Chrome session.
+3. Ask once (optional, recommended): _"Paste the Make spec / chat description of the interactions, if there is one — it becomes interaction ground truth."_ Store the pasted text; `convert-interactions.md` Step 1 (loaded in 0.2) parses it.
+4. If the user offers Make-generated code (copy/download): treat it as a **value source, not a code source** — same rule as Figma-emitted code in the mode files' codegen rules.
+
+5. The link must target a specific frame (`node-id` param in the URL). If it points to a whole file/canvas: ask the user for a frame link (right-click frame → _Copy link to selection_). If the frame name suggests a draft or duplicate (contains "V2", "test", "copy"/"kopie", "old", or the metadata shows sibling frames with near-identical names): confirm with the user that this frame is the final version before proceeding.
+6. `get_screenshot` on the node link → save to `.project/tmp/source-capture.png` → Read it. This becomes `$SOURCE_IMAGE`.
+7. `get_metadata` on the same link → store the sparse XML layer outline (frame names, positions, sizes) as `$SOURCE_STRUCTURE` — used in 0.2.
    If `get_metadata` overflows the token limit and the tool dumps the outline to a file (common on full-page frames): store the file path as `$SOURCE_STRUCTURE_FILE` and Read it when needed — do NOT substitute a single whole-frame `get_design_context` (that collapses every section's fills into one result and loses per-section ground truth). The audit path (see `references/convert-audit.md`) reads this dump to harvest per-section child node-ids and calls `get_design_context` per section.
 
 The MCP path provides ground-truth design data downstream: the mode files (PHASE 1) read exact values via `get_design_context` / `get_variable_defs` instead of estimating from pixels — this removes the vision-estimation burden, so the route runs reliably on Sonnet.
@@ -163,6 +171,12 @@ Hygiene:    [components: yes|none · naming: semantic|generic · variables: yes|
 - `components: none`: the file does not mark repeated elements — codegen must identify and dedupe repeated visual patterns itself (see the mode file's codegen rules).
 
 Store fidelity as `$FIDELITY` (low | medium | high).
+
+**Interaction probe (real-DOM sources):** when `$INPUT_SOURCE ∈ {url, figma-make}`, run the Candidate Discovery eval from `shared/PLAYWRIGHT.md § Use Cases: Interaction State Capture` against the (still open, or re-opened) source page. `hits > 0` counts as an interaction cue below — this is what catches an interactive page when the user shared only a link and said nothing about interactions. Static sources: skip the probe (no DOM to scan).
+
+**Interaction capture (conditional):** when any interaction cue fires — the probe above found `hits > 0` · `$INPUT_SOURCE = "figma-make"` · the user provided/pasted written interaction documentation · `$MOTION_INTENT` includes hover-variant frames or labeled/animated elements · the user explicitly asks for interactions to be converted:
+
+> **Todo**: Read '.claude/skills/design-convert/references/convert-interactions.md' — capture a structured `$INTERACTION_SPEC` (spec-text parsing, live observation for real-DOM sources, or vision estimation). No cue fired → skip that file entirely; `$MOTION_INTENT` stays a loose supplement and motion follows the pack (0.6), unchanged.
 
 ### 0.25 Target Page Identity Check
 
@@ -323,7 +337,12 @@ Theme: [Available | Not available]
 Mode:  [1:1 copy | Inspiration | Sketch → high-fi (fidelity: {$FIDELITY})]
 ```
 
-**Motion default:** if `theme.motion` is populated (durations/easings/pack, managed via `/design-tokens`), it is the default motion language for codegen — `$MOTION_INTENT` from the source supplements it but never overrides pack conventions. Design-tool sources rarely encode motion, so the pack is what keeps animation consistent across converted pages. If `theme.motion` is empty and the source or user intent implies animated output: recommend running `/design-tokens` (Motion Pack) once before converting — do not invent per-page motion values.
+**Motion default:** if `theme.motion` is populated (durations/easings/pack, managed via `/design-tokens`), it is the default motion language for codegen. Two levels of source motion, treated differently:
+
+- **Documented interaction spec** (`$INTERACTION_SPEC` rows with `source: spec-text` or `observed` — exact scales, durations, easings): this is **ground truth**, same status as an exact color from Figma. Copy mode reproduces the values exactly; inspiration/sketch map each interaction to the nearest pack choreography token and keep the explicit delta only where the pack has no equivalent.
+- **Vague motion vibes** (`$MOTION_INTENT` string, or `$INTERACTION_SPEC` rows marked `estimated`): supplements the pack but never overrides pack conventions — the pack is what keeps animation consistent across converted pages.
+
+If `theme.motion` is empty and the source or user intent implies animated output: recommend running `/design-tokens` (Motion Pack) once before converting — do not invent per-page motion values. Exception: a documented interaction spec is implementable without a pack (its values are explicit); note in the Generation Summary that a pack would make future pages consistent with it.
 
 **Dark-mode fallback:** if `$ANALYSIS` dark mode is `dark only` or `both visible` AND `theme.modes.dark` is missing AND `$MODE` ≠ copy:
 
@@ -501,7 +520,7 @@ States:     [✓ state components generated: [loading|error|empty] | — no stat
 
 > **Todo**: Read '.claude/skills/design-convert/references/convert-verification-loop.md'
 
-**Known gap:** that file's round-based screenshot-diff loop is written for generation scopes (copy/sketch/inspiration), where "does the render match the source image" is the right question. For `$SCOPE = audit` — especially after a structural-mismatch escalation (convert-audit.md Step C/D) — the more useful check is closer to a smoke-test (does it render, no console errors, do the changed sections show what was intended) than a pixel-diff loop, since the "source" being matched against is no longer one screenshot but a set of per-section edits. Until this file gets a scope-aware branch, use judgment: run its procedure as-is for generation scopes, and a lighter Playwright render-and-eyeball pass for audit/structural scopes.
+The loop is scope-aware (see its § Scope selection): generation scopes (copy/sketch/inspiration) run the full round-based screenshot-diff loop; `$SCOPE = audit` runs a lighter pass (render + console + 3.2c exact-value re-check — no pixel-diff rounds), and structural-audit adds a section-presence check.
 
 ---
 

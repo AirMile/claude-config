@@ -38,7 +38,7 @@ Render the live page (reuse `convert-patch-detection.md` Step 2 conventions — 
 Compare, per section: `background-color`, `color`, `border-radius`, key spacing (`padding`/`gap`), `font-size`/`font-weight`, exact text content, image `src`.
 
 - **Color:** normalize both sides to rgb; exact match required (allow ≤2/255 per-channel rounding delta only). `#141414` vs `#00111e` is a large delta → MISMATCH.
-- **Text:** trimmed exact string compare.
+- **Text:** trimmed exact string compare. **Content-fill guard:** check the backlog feature first — if the page went through `/design-content` (feature has `contentStatus: "filled"`, or `contentStatus` was reset by a re-convert after a fill): the code's copy was _deliberately rewritten_ and Figma's text is the outdated side. Report text differences as `ℹ INFO (copy intentionally rewritten)` instead of `✗ MISMATCH`, and exclude them from the default `$PATCH_SECTIONS` — the user can still opt individual ones in via Step D's "Select which to fix". Without that signal, exact compare applies as-is.
 - **Spacing / radius:** exact px, ≤1px rounding tolerance.
 
 Emit the report inline (same convention as PATCH ANALYSIS / FIDELITY EXTRACTION — no file written):

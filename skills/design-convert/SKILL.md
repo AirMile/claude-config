@@ -17,7 +17,7 @@ reads:
 writes: [devinfo.handoff, devinfo.tokenDrift, project.design, backlog.status]
 metadata:
   author: claude-config
-  version: 3.5.0
+  version: 3.6.1
   category: design
 ---
 
@@ -26,7 +26,7 @@ metadata:
 One skill, two routes:
 
 1. **Design route** — manages project design specification (pages, user flows, design principles, components) in `.project/project.json → design`, or generates a Claude Design brief. Modes: Capture, Brief, Build. **Build is game-only**: it emits Godot `.tscn` via `render-godot.md`; **web spec→code build now runs via `/design-ship`** (build → content → check), so the Build action redirects web targets there.
-2. **Convert route** — converts visual input (sketch, wireframe, Figma/Canva, screenshot, URL, pasted image) into working code using project tokens (web, interactive). Modes: Sketch → high-fi, 1:1 copy, Inspiration. Each mode loads its own procedure file (`references/convert-mode-{mode}.md`) after mode selection.
+2. **Convert route** — converts visual input (sketch, wireframe, Figma/Canva, Figma Make, screenshot, URL, pasted image) into working code using project tokens (web, interactive — including hover/scroll interactions via `$INTERACTION_SPEC` capture). Modes: Sketch → high-fi, 1:1 copy, Inspiration. Each mode loads its own procedure file (`references/convert-mode-{mode}.md`) after mode selection.
 
 The router below classifies the argument and dispatches to the appropriate route reference file. Each route file is only loaded in sessions where it is needed.
 
@@ -227,4 +227,4 @@ TSX codegen (spec management itself is identical). When `$DOMAIN === "native"`: 
 - Always run PHASE 0 before dispatching
 - Never skip handoff detection
 - Never guess $ROUTE — follow the classification steps exactly
-- Never load both route files in the same session, except via the Design Mode A → "Convert from sketch/mockup" dispatch (that switch loads `route-convert.md` and abandons the Design state machine). Any other simultaneous load is forbidden.
+- Never load both route files in the same session, except via the Design route's convert dispatches — Mode A → "Convert from sketch/mockup", or Mode C → "Convert visual input" / "Other" convert (each loads `route-convert.md` and abandons the Design state machine). Any other simultaneous load is forbidden.

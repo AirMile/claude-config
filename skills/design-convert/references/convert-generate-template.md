@@ -40,7 +40,14 @@ If `theme.modes.dark` is missing: no `dark:` classes — do not add them specula
 
 **Motion / transitions:**
 
-Check `theme.motion.pack` in `project.json`. Store as `$MOTION_PACK`.
+**If `$INTERACTION_SPEC` is non-empty** (interaction capture ran, table confirmed in PHASE 1): implement every row. The pack rules below then apply only to elements the spec doesn't cover.
+
+- Value fidelity per mode: copy = exact values (`ease-[cubic-bezier(...)]`, exact scales/durations); inspiration/sketch = the confirmed choreography-token mapping, explicit deltas only for no-equivalent rows.
+- **Sibling effects in pure CSS, no JS state**: put `group/{name}` on the shared container — dim/scale all children on container hover, restore the hovered child with its own `hover:` override. Example (hovered card 1.04, siblings 0.97): container `group/grid`, every card `transition-transform group-hover/grid:scale-[0.97] hover:!scale-[1.04]`. Reach for `:has()` only when the effect can't be expressed with group/peer.
+- **Scroll-triggered entrances**: prefer the pack's `entrance.*` choreography (CSS `@keyframes` emitted by `/design-tokens`); otherwise a minimal IntersectionObserver hook that toggles one class — no animation library unless already in `package.json`.
+- `hover`/`focus`/`press` rows map to `hover:`/`focus-visible:`/`active:` variants; `leave` rows are the transition back — same `transition-*` classes cover both directions, no separate handling unless the spec gives asymmetric timings.
+
+Everything below is the **fallback for uncovered elements and runs without a spec**. Check `theme.motion.pack` in `project.json`. Store as `$MOTION_PACK`.
 
 - If `$MOTION_PACK` is empty or `"none"`: no transition classes beyond `transition-colors` on interactive elements.
 - If `$MOTION_PACK` is `"subtle"`: add `transition-transform duration-fast ease-[var(--ease-expo-out)]` + hover `translateY(-1px)` / active `scale(0.98)` on cards and buttons.

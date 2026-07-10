@@ -10,8 +10,8 @@ Update `.project/session/devinfo.json`:
     "from": "design-convert",
     "to": null,
     "data": {
-      "inputType": "screenshot | url | image",
-      "mode": "copy | inspiration",
+      "inputType": "screenshot | url | image | figma-mcp | figma-rest | figma-make",
+      "mode": "copy | inspiration | sketch",
       "pageFile": "[page file path]",
       "components": ["[list of created component files]"],
       "verificationRounds": 2,
@@ -19,7 +19,8 @@ Update `.project/session/devinfo.json`:
       "framework": "[detected framework]",
       "theme": "[.project/project.json#theme or null]",
       "scope": "page | component | patch | audit",
-      "auditFixes": "[N — only present when scope = audit]"
+      "auditFixes": "[N — only present when scope = audit]",
+      "interactions": "[N implemented — only present when $INTERACTION_SPEC was set]"
     }
   }
 }
@@ -73,6 +74,13 @@ Only when page scope AND this run created a **new** page (`$TARGET_PAGE_CONFIRME
    ```
 4. **"Add the link"**: append one entry to the links array — `label` from the Figma frame name (§0.1/0.25), `href` the new route. A single, surgical edit — not a broader nav restructure, and not a redesign of existing entries. The edited nav file falls inside `§4.5b`'s baseline diff, so it's included in the scoped commit automatically.
 5. **"Skip"**: leave as-is, no further prompting this run.
+
+### 4.2c Interaction Persistence (only when `$INTERACTION_SPEC` was set)
+
+Persist what fits the existing design-spec schema — nothing else (`shared/DASHBOARD-PROJECT.md`; key-level merge, never auto-delete):
+
+- Rows whose confirmed mapping is a **choreography token** → write into the entity's existing slots: `design.components[].motion{onHover|onPress|onEnter|onExit|onSuccess|onError}` for component-level interactions, `design.pages[].transitions{sectionReveal}` for page-level scroll entrances. One token per slot; if a slot is already set and differs, keep the existing value and note it in the report (the spec is OVERWRITE-owned by `/design-tokens` conventions — don't fight it from here).
+- Rows with **explicit custom values** (no token equivalent) stay run-scoped: they live in the generated code and the devinfo `interactions` count — deliberately no new schema field (a future `interactions[]` schema extension is the audit-scope's problem, not this run's).
 
 ### 4.3 Gap-Discovery
 
@@ -178,6 +186,7 @@ Source:       [file path | URL | pasted image]
 Mode:         [1:1 copy | Inspiration | Sketch → high-fi]
 Framework:    [detected framework]
 Verification: [N] rounds, [High | Medium | Low] match
+Interactions: [[N] implemented, interaction check [PASS | N mismatches remaining] | omit line when no $INTERACTION_SPEC]
 Code quality: [PASS | [N] violations fixed]
 Gaps:         [N linked | M created | K pending | "none"]
 Bans checked: [N forbidden patterns enforced | "none active"]

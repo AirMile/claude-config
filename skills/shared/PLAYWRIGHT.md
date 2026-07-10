@@ -339,6 +339,96 @@ playwright-cli close
 
 ---
 
+## Use Cases: Interaction State Capture
+
+Capture what an interaction _does_ — hover/focus/scroll-triggered style deltas and running animations — as ground truth for conversion (`design-convert` interaction spec) or positive interaction verification. Complements the reduced-motion check (which only asserts animations _stop_); this asserts they _fire_.
+
+### Candidate Discovery
+
+One eval that answers both "does this page have interactions at all?" (probe: check `hits > 0`) and "which elements should I hover?" (the returned rows). Scans computed styles for non-default transitions/animations, dedupes repeated patterns by tag+class:
+
+```javascript
+// playwright-cli eval "..."
+() => {
+  const seen = new Map();
+  Array.from(document.querySelectorAll("body *"))
+    .slice(0, 800)
+    .forEach((el) => {
+      const s = getComputedStyle(el);
+      const hasTransition =
+        s.transitionDuration.split(",").some((d) => parseFloat(d) > 0) &&
+        s.transitionProperty !== "none";
+      const hasAnimation = s.animationName !== "none";
+      if (!hasTransition && !hasAnimation) return;
+      const key = el.tagName + "." + (el.className?.toString?.() || "");
+      const entry = seen.get(key);
+      if (entry) {
+        entry.count++;
+        return;
+      }
+      seen.set(key, {
+        tag: el.tagName.toLowerCase(),
+        class: (el.className?.toString?.() || "").slice(0, 60),
+        transition: hasTransition ? s.transition.slice(0, 120) : null,
+        animation: hasAnimation ? s.animationName : null,
+        count: 1,
+      });
+    });
+  return {
+    hits: seen.size,
+    candidates: Array.from(seen.values()).slice(0, 20),
+  };
+};
+```
+
+Each candidate row's tag+class is the selector hint for the hover-delta sequence below; `count > 1` marks a repeated pattern (probe one representative). Note: this finds CSS-declared motion — JS-only interactions (IntersectionObserver entrances that have not fired yet, mouse-tracking effects) need the Animation Inventory + scroll step below.
+
+### Hover Delta Sequence
+
+Per interactive element: read computed baseline → hover → wait for the transition to settle → read again → diff.
+
+```
+playwright-cli open [url]
+playwright-cli eval "() => { const el = document.querySelector('[sel]'); const s = getComputedStyle(el); return { transform: s.transform, opacity: s.opacity, boxShadow: s.boxShadow, background: s.backgroundColor, transition: s.transition }; }"
+playwright-cli run-code "async page => { await page.hover('[sel]'); await page.waitForTimeout(600); }"   ← settle ≥ longest transition-duration
+playwright-cli eval "() => { const el = document.querySelector('[sel]'); const s = getComputedStyle(el); return { transform: s.transform, opacity: s.opacity, boxShadow: s.boxShadow, background: s.backgroundColor }; }"
+playwright-cli screenshot --filename=.project/tmp/hover-[name].png            ← optional vision-sanity shot while hover is held
+```
+
+Claude-in-Chrome equivalent: `javascript_tool` for both evals, `computer` (mouse move to element center) for the hover, `computer` screenshot for the sanity shot.
+
+**Reading the delta:**
+
+- `transform` returns a **matrix**, not the authored value: `scale(1.04)` reads as `matrix(1.04, 0, 0, 1.04, 0, 0)`; `translateY(-2px)` as `matrix(1, 0, 0, 1, 0, -2)`. Compare against the matrix equivalent, never the authored string.
+- Timing ground truth comes from the _baseline_ read: `transition` carries duration + `transition-timing-function` (authored `cubic-bezier(...)` values survive into computed style).
+- Sibling effects (hovering A changes B): read B in both evals too — one hover, multiple element reads.
+
+### Animation Inventory
+
+Enumerate running/registered animations (entrance choreography, keyframes) via the Web Animations API:
+
+```javascript
+// playwright-cli eval "..."
+() =>
+  document.getAnimations().map((a) => ({
+    name: a.animationName || a.id || "(transition)",
+    target:
+      a.effect?.target?.tagName + "." + (a.effect?.target?.className || ""),
+    duration: a.effect?.getTiming().duration,
+    easing: a.effect?.getTiming().easing,
+    state: a.playState,
+  }));
+```
+
+Scroll-triggered entrances: `run-code "async page => { await page.locator('[sel]').scrollIntoViewIfNeeded(); await page.waitForTimeout(300); }"` first, then run the inventory — animations registered by an IntersectionObserver only exist after the section entered the viewport.
+
+### Constraints
+
+- Hover state drops the moment the mouse moves — take the screenshot inside the same `run-code` block or immediately after the hover call, before any other navigation/eval that resets pointer state.
+- `getAnimations()` misses already-finished one-shot entrance animations — run the inventory on a fresh `open`/`goto`, not after the page has been idle.
+
+---
+
 ## Use Cases: Performance Measurement
 
 ### Core Web Vitals via PerformanceObserver

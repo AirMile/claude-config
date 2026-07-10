@@ -224,8 +224,13 @@ question: "No design spec found. What do you want to do?"
 options:
   - label: "Create (Recommended)", description: "New design spec with guided setup"
   - label: "Import", description: "Extract design from existing codebase"
+  - label: "Convert visual input", description: "Screenshot, Figma/Make link, or website URL → working code"
 multiSelect: false
 ```
+
+"Convert visual input" → load the Convert route without `$CONVERT_TARGET` — its PHASE 0.1 "No input provided" question collects the source itself:
+
+> **Todo**: Read `.claude/skills/design-convert/references/route-convert.md`
 
 ### If design section HAS DATA:
 
@@ -256,7 +261,7 @@ options:
 multiSelect: false
 ```
 
-"Other" options: "Convert from sketch/mockup" — set `$CONVERT_TARGET` if a PAGE/COMPONENT name is provided or selected, then:
+"Other" options: "Convert from sketch/mockup or URL" — a PAGE/COMPONENT name is **optional**: set `$CONVERT_TARGET` when one is provided or selected; without one the Convert route's PHASE 0.1 asks for the visual input itself. Then:
 
 > **Todo**: Read `.claude/skills/design-convert/references/route-convert.md`
 
