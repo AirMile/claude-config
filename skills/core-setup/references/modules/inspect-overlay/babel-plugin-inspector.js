@@ -8,8 +8,18 @@ module.exports = function inspectPlugin({ types: t }) {
     visitor: {
       JSXOpeningElement(path, state) {
         const name = path.node.name;
-        // Only intrinsic elements (lowercase HTML tags like div, span, button)
-        if (!t.isJSXIdentifier(name) || /^[A-Z]/.test(name.name)) return;
+        // Host-rendering elements only:
+        //  - intrinsic identifier: <div>, <span>, <button>
+        //  - member expression with a lowercase tail: <motion.div>, <styled.a>
+        //    (motion/styled-components forward unknown DOM props, incl. data-*,
+        //    onto the underlying host element, so tagging these still resolves)
+        let isHost = false;
+        if (t.isJSXIdentifier(name)) {
+          isHost = !/^[A-Z]/.test(name.name);
+        } else if (t.isJSXMemberExpression(name)) {
+          isHost = t.isJSXIdentifier(name.property) && /^[a-z]/.test(name.property.name);
+        }
+        if (!isHost) return;
 
         const { filename } = state;
         if (!filename || !path.node.loc) return;

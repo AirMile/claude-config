@@ -39,6 +39,8 @@ Degraded: [<tag>[#id | .c1.c2.c3][:nth-of-type(k)] ["<name>"] [— in <anchor>] 
 
 Examples — Full: `[src/pages/Settings.tsx:102:8 "API Keys" #3/7]`, `[src/ui/Button.tsx:12:4 "Delete" — in src/pages/Settings.tsx:88 > svg.lucide-trash]`. Degraded: `[button#save-btn "Save"]`, `[button.icon-btn:nth-of-type(2) "Delete row" — in #settings-panel > svg.fa-trash]`.
 
+Full-mode tagging covers host-rendering JSX: intrinsic lowercase tags (`<div>`) and member-expression tags with a lowercase tail (`<motion.div>`, `<styled.a>`) — `motion`/`styled-components` forward unknown DOM props, including `data-*`, onto the real host element, so these resolve too. Plain capitalized component elements (`<Card>`, `<Accordion.Item>`) are never tagged directly — they render no host DOM of their own; the ref instead points at the host element inside that component's own source (e.g. a `motion.div` inside `hover-card.tsx`), with `— in <ancestorPath>` giving the callsite context.
+
 Known limitation: shadow DOM is out of scope — `elementFromPoint` returns the shadow host, and `data-inspector-*` attrs don't pierce shadow roots.
 
 ### Dev Server Status
