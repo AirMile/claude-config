@@ -249,7 +249,8 @@ Report overlay status:
 - Server URL: tunnel URL if cloudflared running, else `localhost:<detected-port>` (5173 for Vite default, 3000 for Next.js default, user-chosen for plain JS)
 - Clipboard format: see § Ref format above — refs are wrapped in `[…]` and disambiguate reused components, repeated `.map()` items, and icons within buttons; multi-pin wraps each ref in its own brackets within the `--- 1/N ---` block
 
-Setup complete. Overlay is active — user can inspect elements and paste references into chat.
+Setup complete. Overlay is active — user can inspect elements and paste references into chat; a
+pasted ref auto-routes to the `dev-inspect` skill (theme-aware edit + screenshot-verify).
 
 ## Teardown
 

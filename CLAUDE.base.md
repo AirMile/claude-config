@@ -16,6 +16,7 @@ Explanation Level: Intermediate
 - **Verify structural edits** — after layout/DOM/position/responsive changes, use `browser_snapshot` to verify. Skip for cosmetic-only edits.
 - **Verify data first** — before building UI on a data source, read the actual shape/availability.
 - **Screenshot-verify** — when user shares a screenshot with edit instructions, take a Playwright screenshot of the current state, compare, make edits, and re-screenshot to verify.
+- **Inspect refs → /dev-inspect** — a pasted bracketed element ref (`[src/components/Button.tsx:42 …]`, `[button.icon-btn:nth-of-type(2) …]`, or `--- 1/N ---` multi-blocks from the inspect overlay) plus an edit request: invoke the `dev-inspect` skill — don't edit ad hoc.
 
 **Optional hook** — add to project `.claude/settings.json` for auto type-checking:
 `{ "hooks": { "postToolUse": [{ "matcher": "Edit|Write", "command": "npx tsc --noEmit --pretty 2>&1 | head -20" }] } }`

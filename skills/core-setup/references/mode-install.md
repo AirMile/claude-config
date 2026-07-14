@@ -116,8 +116,8 @@ Check whether the overlay is already installed:
 header: "Inspect overlay"
 question: >
   Visual inspector for element-picking in the browser — useful during iterative
-  UI work (Ctrl+Shift+X to activate, click element → copies reference to chat).
-  Do you want to set this up?
+  UI work (Ctrl+. to activate, click element → copies a reference that /dev-inspect
+  picks up in chat). Do you want to set this up?
 options:
   # When not installed:
   - label: "Skip (Recommended)", description: "Skip, continue to next step"
@@ -142,7 +142,7 @@ Follow the guide for the detected framework. After completion show controls:
 ✓ Inspect overlay {installed | removed}.
 
 Controls (on install only):
-  Ctrl+Shift+X / Cmd+Shift+X    toggle on/off
+  Ctrl+. / Cmd+.                 toggle on/off
   Click                          select element → copy ref
   Shift+Click                    pin multiple elements
   Drag                           select region

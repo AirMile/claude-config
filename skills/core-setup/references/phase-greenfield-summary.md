@@ -19,7 +19,7 @@ Useful commands:
 
 ```
 Dev tools:
-  Inspect overlay         → Cmd+Shift+X (Mac) / Ctrl+Shift+X (Win/Linux) to toggle
+  Inspect overlay         → Cmd+. (Mac) / Ctrl+. (Win/Linux) to toggle; paste a ref → /dev-inspect
 ```
 
 For Next.js Babel full mode, also add: `Note: Turbopack disabled (Babel full mode for exact file:line refs).`

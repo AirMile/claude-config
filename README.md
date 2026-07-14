@@ -57,7 +57,7 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 | ----------- | ---------------------------------------------------------------------------------------- |
 | `core`      | audit, bootstrap, commit, finalize, orchestrate, pull, setup, update                     |
 | `content`   | rewrite, write                                                                           |
-| `dev`       | learn, optimize, security, ship, tweak                                                   |
+| `dev`       | inspect, learn, optimize, security, ship, tweak                                          |
 | `design`    | content, convert, ship, tokens                                                           |
 | `game`      | debug, optimize, ship, tweak                                                             |
 | `marketing` | content, research, screenshots                                                           |
@@ -91,7 +91,7 @@ Run `/project-app` to serve all project backlogs and dashboards on `http://local
 
 ## Inspect overlay
 
-A dev-only visual element-picker: click any element in the browser to copy a bracketed reference like `[src/components/Button.tsx:42]`, then paste it into Claude. Cuts the "find this component" round-trip out of frontend iteration. Works on **Vite + React**, **Next.js**, and **plain JS / static HTML** (any DOM).
+A dev-only visual element-picker: click any element in the browser to copy a bracketed reference like `[src/components/Button.tsx:42]`, then paste it into Claude — `/dev-inspect` picks it up automatically (theme-aware edit + screenshot-verify; commit afterwards via `/core-commit`). Cuts the "find this component" round-trip out of frontend iteration. Works on **Vite + React**, **Next.js**, and **plain JS / static HTML** (any DOM).
 
 **Install** (per project):
 
@@ -103,15 +103,15 @@ Adds the overlay files to your project root and `.gitignore`, wires up the plugi
 
 **Use** — keyboard-driven, no on-screen toggle:
 
-| Action                                     | Result                                               |
-| ------------------------------------------ | ---------------------------------------------------- |
-| **Cmd+Shift+X** (macOS) / **Ctrl+Shift+X** | Toggle inspect mode on/off                           |
-| Hover                                      | Highlights the element under your cursor             |
-| Click                                      | Copies `[src/components/Button.tsx:42]` to clipboard |
-| Shift+Click                                | Pin multiple elements (copies all refs together)     |
-| Drag                                       | Select a region — copies refs for everything inside  |
-| Ctrl+Z                                     | Unpin the last selected element                      |
-| Escape                                     | Clear pins / exit inspect mode                       |
+| Action                         | Result                                               |
+| ------------------------------ | ---------------------------------------------------- |
+| **Cmd+.** (macOS) / **Ctrl+.** | Toggle inspect mode on/off                           |
+| Hover                          | Highlights the element under your cursor             |
+| Click                          | Copies `[src/components/Button.tsx:42]` to clipboard |
+| Shift+Click                    | Pin multiple elements (copies all refs together)     |
+| Drag                           | Select a region — copies refs for everything inside  |
+| Ctrl+Z                         | Unpin the last selected element                      |
+| Escape                         | Clear pins / exit inspect mode                       |
 
 Paste the ref into Claude as context — no more "where is that button defined?"
 
