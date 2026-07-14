@@ -59,15 +59,15 @@
 //     or failed                                        → "phase12"
 //   - phase is "PHASE 3" and either results.verify.remainingManualItems is
 //     empty, or the manual ledger is fully resolved (every item's verdict is
-//     pass/skip/defer, no in-flight "activeWorkflow":"phase3fix", and any
-//     fixPlan's dispatch is complete)                  → "phase3-completion"
+//     pass/skip/defer/accepted, no in-flight "activeWorkflow":"phase3fix", and
+//     any fixPlan's dispatch is complete)               → "phase3-completion"
 //   - phase is "PHASE 3" with open manual work          → "phase3-manual"
 //   - phase is "PHASE 4"                                → "phase4"
 //     (results.refactor already present               → "phase4-finalize-only")
 //   `resume` is built only from green/completed results (build/verify
-//   status:"green"; refactor status:"applied"|"clean") — a failed result is
-//   never included, so the caller re-runs that agent. `null` when nothing
-//   qualifies.
+//   status:"green"; refactor status:"applied"|"clean"; triage present at all)
+//   — a failed result is never included, so the caller re-runs that agent.
+//   `null` when nothing qualifies.
 
 import { execFileSync } from "node:child_process";
 import {
@@ -325,7 +325,7 @@ if (cmd === "init") {
     if (manualItems.length === 0) return false;
     if (cur.activeWorkflow === "phase3fix") return false;
     const allResolved = manualItems.every((i) =>
-      ["pass", "skip", "defer"].includes(i && i.verdict),
+      ["pass", "skip", "defer", "accepted"].includes(i && i.verdict),
     );
     if (!allResolved) return false;
     if (
@@ -366,6 +366,7 @@ if (cmd === "init") {
   ) {
     resume.refactor = results.refactor;
   }
+  if (results.triage) resume.triage = results.triage;
 
   process.stdout.write(
     JSON.stringify({

@@ -289,6 +289,17 @@ else
   echo "FAIL  ship-checkpoint: route PHASE 3 resolved ledger (got: $ROUTE_R)"; FAIL=$((FAIL + 1))
 fi
 
+# (r2) an "accepted" verdict (debug-round-heavy § 8 "Accept anyway") resolves the ledger the
+# same as pass/skip/defer → phase3-completion, not a dead end back into phase3-manual.
+(cd "$SCT/wt" && echo '{"manual":{"items":[{"id":"MT-1","verdict":"accepted"}]}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_R2=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(r.route)')
+if [ "$ROUTE_R2" = "phase3-completion" ]; then
+  echo "PASS  ship-checkpoint: route PHASE 3, \"accepted\" verdict resolves ledger → phase3-completion"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route PHASE 3 \"accepted\" verdict (got: $ROUTE_R2)"; FAIL=$((FAIL + 1))
+fi
+(cd "$SCT/wt" && echo '{"manual":{"items":[{"id":"MT-1","verdict":"pass"}]}}' | node "$SC" patch r) >/dev/null 2>&1
+
 # (s) an in-flight fix dispatch keeps the ledger open → phase3-manual even with all-pass items.
 (cd "$SCT/wt" && echo '{"activeWorkflow":"phase3fix"}' | node "$SC" patch r) >/dev/null 2>&1
 ROUTE_S=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(r.route)')
@@ -316,6 +327,15 @@ if [ "$ROUTE_U" = '{"route":"phase4-finalize-only","resume":{"build":{"status":"
 else
   echo "FAIL  ship-checkpoint: route PHASE 4 with applied refactor (got: $ROUTE_U)"; FAIL=$((FAIL + 1))
 fi
+# (u2) results.triage present → carried into resume (a PHASE 4 respawn must not re-run scanners).
+(cd "$SCT/wt" && echo '{"results":{"triage":{"confirmed":[],"dismissed":[],"summary":"clean"}}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_U2=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(JSON.stringify(r.resume.triage))')
+if [ "$ROUTE_U2" = '{"confirmed":[],"dismissed":[],"summary":"clean"}' ]; then
+  echo "PASS  ship-checkpoint: route carries results.triage into resume.triage"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route resume.triage (got: $ROUTE_U2)"; FAIL=$((FAIL + 1))
+fi
+
 (cd "$SCT/wt" && node "$SC" complete r) >/dev/null 2>&1
 
 # (v) route on a missing checkpoint → non-zero exit.

@@ -81,7 +81,7 @@ command). See `BACKLOG.md § Board rendering`.
                 the walkthrough, the fix-plan gate, and dispatch — see phase-3-manual-finalize.md,
                 manual-interview-walkthrough.md, fix-round.md.
                 round: 1-based counter, bumped before each fix-plan gate entry.
-                items: [{ id, title, verdict: "pass"|"fail"|"tweak"|"skip"|"defer", category,
+                items: [{ id, title, verdict: "pass"|"fail"|"tweak"|"skip"|"defer"|"accepted", category,
                           observed, expected, screenshot, source: "checklist"|"interview",
                           debugTier: "light"|"heavy" (absent = not in the debug ladder),
                           heavyRoundFailed: bool (absent otherwise),
@@ -102,6 +102,15 @@ command). See `BACKLOG.md § Board rendering`.
                         has to reuse the light round's evidence rather than re-investigating from
                         scratch.
                 interviewDone: bool — the "now that you see it" close has run.
+                `"accepted"` vs `"defer"`: `"defer"` is the walkthrough's own verdict choice, strictly
+                for external blockers (missing account, CORS origin, API token, addon —
+                `manual-interview-walkthrough.md`); `"accepted"` is set only by the user's explicit
+                "Accept anyway"/"Accept as-is" choice at a debug-ladder ceiling or a non-converging
+                tweak loop (`fix-round.md`, `debug-round-heavy.md § 8`) — a known limitation, not a
+                blocker. Both, plus deferred items from `/dev-verify`'s own walkthrough, are folded
+                into `payload.knownIssues` at completion-sync time and surface as a dashboard badge
+                (`shared/BACKLOG.md § Known-issue badges`) — this ledger itself does not survive past
+                checkpoint deletion.
                 fixPlan: the accepted round-gate appendix object (findings/groups/waves), or absent.
                 dispatch: { groups: { [groupId]: { status, itemsFixed, testsGreen, notes,
                            autoDecisions } }, allFixed: bool } — merged in from ship-fix.js's return. */
