@@ -12,7 +12,7 @@
     <script src="/lib/pwa-register.js" defer></script>
     <script src="/lib/themes.js"></script>
     <script src="/lib/collapse-store.js"></script>
-    <link rel="stylesheet" href="/css/backlog.css?v=6" />
+    <link rel="stylesheet" href="/css/backlog.css?v=11" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <link
@@ -41,14 +41,18 @@
     <div class="layout">
       <main class="board-area">
         <nav class="top-nav">
-          <input
-            class="top-nav-search"
-            id="search-input"
-            placeholder="Search..."
-            oninput="render()"
-          />
-          <div class="section-chips" id="section-chips"></div>
-          <div class="type-pills" id="type-pills"></div>
+          <div class="top-nav-left">
+            <div class="section-chips" id="section-chips"></div>
+            <div class="type-pills" id="type-pills"></div>
+          </div>
+          <div class="top-nav-center">
+            <input
+              class="top-nav-search"
+              id="search-input"
+              placeholder="Search..."
+              oninput="render()"
+            />
+          </div>
           <div class="action-btns" id="action-btns"></div>
         </nav>
         <div id="board"></div>
@@ -83,6 +87,7 @@
               <option value="PAGE-GAP">PAGE-GAP</option>
               <option value="BUG">BUG</option>
               <option value="CHANGE">CHANGE</option>
+              <option value="SECURITY">SECURITY</option>
             </select>
           </div>
           <div>
@@ -123,6 +128,35 @@
           <button class="btn-danger" id="delete-confirm">Delete</button>
         </div>
       </div>
+    </div>
+
+    <!-- Detail drawer -->
+    <div class="drawer-overlay" id="drawer-overlay">
+      <aside
+        class="detail-drawer"
+        id="detail-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="drawer-title"
+      >
+        <header class="drawer-header">
+          <div class="drawer-header-top">
+            <span class="drawer-type-pill" id="drawer-type"></span>
+            <span class="drawer-status-badge" id="drawer-status"></span>
+            <button
+              class="drawer-close-btn"
+              id="drawer-close"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+          <h2 class="drawer-title" id="drawer-title"></h2>
+          <p class="drawer-summary" id="drawer-summary"></p>
+        </header>
+        <div class="drawer-actions" id="drawer-actions"></div>
+        <div class="drawer-body" id="drawer-body"></div>
+      </aside>
     </div>
 
     <!-- Toast -->
@@ -242,6 +276,7 @@
         PERF: "CHANGE",
         REFACTOR: "REFACTOR",
         "PAGE-GAP": "GAP",
+        SECURITY: "BUG",
       };
 
       const TYPE_ICONS = {
@@ -262,6 +297,7 @@
         A11Y: "a11y",
         PERF: "perf",
         "PAGE-GAP": "gap",
+        SECURITY: "security",
       };
 
       const DESIGN_TYPES = [
@@ -823,6 +859,11 @@
               const phaseGroup = document.createElement("div");
               phaseGroup.className = "phase-group";
               phaseGroup.dataset.collapseKey = "phase:" + status + ":" + phase;
+              phaseGroup.dataset.phase = phase;
+              // Drag-to-reorder only applies to the To do section — other
+              // sections compute their own order (progressRank, parked
+              // timestamp, …) and would just fight a manual drop.
+              if (status === "TODO") wirePhaseGroupDrop(phaseGroup);
 
               const phaseHeader = document.createElement("header");
               phaseHeader.className = "phase-header";
@@ -1053,13 +1094,18 @@
             );
           });
 
-        // Expanded feature row (single selection, default none)
+        // Detail drawer (single selection, persisted across renders). The
+        // drawer lives outside #board so it isn't destroyed by the rebuild
+        // above — re-populate it here so it never shows stale actions/status
+        // after a local mutation or an SSE-driven backlog refresh, and close
+        // it if the open feature disappeared (e.g. shipped, deleted).
         const expandedName = getSingle("expandedRow");
         if (expandedName) {
-          const row = document.querySelector(
-            `.row[data-name="${CSS.escape(expandedName)}"]`,
-          );
-          if (row) toggleRowExpand(row, expandedName);
+          if (findItem(expandedName)) {
+            openDetailDrawer(expandedName);
+          } else {
+            closeDetailDrawer();
+          }
         }
       }
 
@@ -1070,80 +1116,33 @@
       }
 
       // ─── Row rendering ───────────────────────────────────────────────
-      function renderRow(f) {
-        const primaryType = PRIMARY_TYPE[f.type] || "FEATURE";
-        const typeInfo = TYPE_ICONS[primaryType] || TYPE_ICONS.FEATURE;
-        const subLabel = SUB_TYPE_LABELS[f.type] || null;
+      // A parked checkpoint is resumed by re-invoking its ship skill with the
+      // feature name — carry that command on the copy button.
+      const PARKED_SHIP_CMD = {
+        dev: "/dev-ship",
+        game: "/game-ship",
+        design: "/design-ship",
+      };
 
-        let metaHtml = "";
-        const deps = f.dependencies || [];
-        const unresolvedDeps = deps.filter((dep) => !isDepResolved(dep));
-        const isBlocked = unresolvedDeps.length > 0;
-        if (isBlocked) {
-          metaHtml += `<span class="dep-blocked-label">blocked by</span>`;
-          unresolvedDeps.forEach((dep) => {
-            metaHtml += `<span class="dep-icon" title="Waiting for ${esc(dep)}">${esc(dep)}</span>`;
-          });
-        }
-        const pendingGaps = Array.isArray(f.gaps)
-          ? f.gaps.filter((g) => g.status === "pending").length
-          : 0;
-        if (pendingGaps > 0) {
-          metaHtml += `<span class="gap-badge" title="${pendingGaps} unlinked handler${pendingGaps > 1 ? "s" : ""} — run /design-convert ${f.name} to link">⚠ ${pendingGaps} gap${pendingGaps > 1 ? "s" : ""}</span>`;
-        }
-        if (f.status === "DONE" && f.refactor) {
-          if (f.refactor === "ROLLED_BACK") {
-            metaHtml += `<span class="refactor-badge refactor-rollback">⚠ rolled back</span>`;
-          } else {
-            metaHtml += `<span class="refactor-badge refactor-done">✓ refactored</span>`;
-          }
-        }
-        if (
-          DESIGN_PIPELINE_TYPES.includes(f.type) &&
-          f.stage === "built" &&
-          f.contentStatus !== "filled"
-        ) {
-          metaHtml += `<span class="copy-badge" title="Copy not yet filled — run /design-content ${esc(f.name)}">copy: placeholder</span>`;
-        }
-        if (f.externalRef?.url) {
-          const refType = f.externalRef.type || "github";
-          const refId = f.externalRef.id || "?";
-          const refLabel = refType === "github" ? `#${refId}` : refId;
-          metaHtml +=
-            `<a class="card-ref-link card-ref-${esc(refType)}" href="${esc(f.externalRef.url)}" target="_blank" rel="noopener" title="${esc(f.externalRef.url)}">${esc(refLabel)}</a>` +
-            `<button class="card-ref-copy" data-copy="${esc(f.externalRef.url)}" title="Copy issue URL">⎘</button>`;
-        } else if (f.github_issue) {
-          const ghNum = f.github_issue.match(/\/(\d+)$/);
-          metaHtml += `<a class="card-gh-link" href="${esc(f.github_issue)}" target="_blank" rel="noopener" title="${esc(f.github_issue)}">#${ghNum ? ghNum[1] : "?"}</a>`;
-        }
-
+      // ─── Shared card action state (row + detail drawer) ────────────────
+      // Computes everything the "primary action" button, progress label and
+      // ⋯ menu need. Both renderRow() and openDetailDrawer() call this so
+      // the row and the drawer always agree on what actions are available.
+      function computeCardMeta(f) {
         if (f.shipped && f.transition) delete f.transition;
 
-        const row = document.createElement("div");
+        const primaryType = PRIMARY_TYPE[f.type] || "FEATURE";
+        const typeInfo = TYPE_ICONS[primaryType] || TYPE_ICONS.FEATURE;
+
         const live = getLiveSignal(f);
         const isParked = !!(live && live.parked);
         const isWaiting = !!(live && live.waiting);
         const isQueued = !!f.transition && !live;
-        row.className =
-          "row" +
-          (isBlocked ? " row--blocked" : "") +
-          (isQueued ? " row--active row--queued" : "") +
-          (live ? " row--live" : "") +
-          (isWaiting ? " row--waiting" : "") +
-          (isParked ? " row--waiting row--parked" : "");
-        row.dataset.name = f.name;
 
         const next = getNextSkill(f);
         const copyCmd = next ? next.cmd : null;
         const copyTitle = copyCmd || f.name;
 
-        // A parked checkpoint is resumed by re-invoking its ship skill with the
-        // feature name — carry that command on the copy button.
-        const PARKED_SHIP_CMD = {
-          dev: "/dev-ship",
-          game: "/game-ship",
-          design: "/design-ship",
-        };
         const parkedResumeCmd = isParked
           ? `${PARKED_SHIP_CMD[live.pipeline] || "/dev-ship"} ${f.name}`
           : null;
@@ -1207,36 +1206,33 @@
           }
           return "";
         })();
-        const editDeleteHtml = menuItemsHtml
-          ? `<div class="row-menu-wrap">
-               <button class="row-menu-btn" title="Actions" aria-haspopup="menu" aria-expanded="false">⋯</button>
-               <div class="row-menu" role="menu" hidden>${menuItemsHtml}</div>
-             </div>`
-          : "";
 
-        row.innerHTML = `<div class="row-summary">
-          ${actionBtnHtml}
-          <span class="row-name">${esc(f.name)}</span>
-          ${progressLabelHtml}
-          ${subLabel ? `<span class="row-sub-tag">${subLabel}</span>` : ""}
-          ${f.description ? `<span class="row-desc">${esc(f.description)}</span>` : ""}
-          <div class="row-actions-group">
-            <div class="row-meta">${metaHtml}</div>
-            ${editDeleteHtml}
-          </div>
-        </div>
-        <div class="row-expand"></div>`;
+        return {
+          live,
+          isParked,
+          isWaiting,
+          isQueued,
+          copyCmd,
+          copyTitle,
+          parkedResumeCmd,
+          actionBtnHtml,
+          progressLabelHtml,
+          menuItemsHtml,
+        };
+      }
 
-        const summary = row.querySelector(".row-summary");
-        const editBtn = row.querySelector(".row-edit-btn");
-        const deleteBtn = row.querySelector(".row-delete-btn");
-        const cancelBtn = row.querySelector(".row-cancel-btn");
-        const restoreBtn = row.querySelector(".row-restore-btn");
+      // Wires the shared action buttons (copy/cancel, ref-copy, outsource,
+      // convert, review, edit, delete, archive, restore, and the ⋯ dropdown
+      // when present) inside `container`. Used for both a row and the detail
+      // drawer, since both render the identical button markup from `meta`.
+      // Returns the elements the caller needs for its own click guards.
+      function wireCardActions(container, f, meta) {
+        const { live, isParked, isQueued } = meta;
         let copyBtn = null;
 
         if (isQueued) {
-          const annuleerBtn = row.querySelector(".row-annuleer-btn");
-          annuleerBtn.addEventListener("click", (e) => {
+          const annuleerBtn = container.querySelector(".row-annuleer-btn");
+          annuleerBtn?.addEventListener("click", (e) => {
             e.stopPropagation();
             const found = findItem(f.name);
             if (found) {
@@ -1246,8 +1242,8 @@
             }
           });
         } else if (!live || isParked) {
-          copyBtn = row.querySelector(".row-copy-btn");
-          copyBtn.addEventListener("click", (e) => {
+          copyBtn = container.querySelector(".row-copy-btn");
+          copyBtn?.addEventListener("click", (e) => {
             e.stopPropagation();
             const cmd = copyBtn.dataset.cmd;
             if (!cmd) return;
@@ -1278,7 +1274,7 @@
           });
         }
 
-        const refCopyBtn = row.querySelector(".card-ref-copy");
+        const refCopyBtn = container.querySelector(".card-ref-copy");
         if (refCopyBtn) {
           refCopyBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1288,7 +1284,7 @@
           });
         }
 
-        const outsourceBtn = row.querySelector(".row-outsource-btn");
+        const outsourceBtn = container.querySelector(".row-outsource-btn");
         if (outsourceBtn) {
           outsourceBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1299,7 +1295,7 @@
           });
         }
 
-        const convertSketchBtn = row.querySelector(".row-convert-btn");
+        const convertSketchBtn = container.querySelector(".row-convert-btn");
         if (convertSketchBtn) {
           convertSketchBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1310,7 +1306,7 @@
           });
         }
 
-        const reviewBtn = row.querySelector(".row-review-btn");
+        const reviewBtn = container.querySelector(".row-review-btn");
         if (reviewBtn) {
           reviewBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1324,16 +1320,19 @@
           });
         }
 
+        const editBtn = container.querySelector(".row-edit-btn");
         if (editBtn)
           editBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             openEditModal(f.name);
           });
+        const deleteBtn = container.querySelector(".row-delete-btn");
         if (deleteBtn)
           deleteBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             openDeleteModal(f.name);
           });
+        const cancelBtn = container.querySelector(".row-cancel-btn");
         if (cancelBtn)
           cancelBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1345,6 +1344,7 @@
               toast(f.name + " archived");
             }
           });
+        const restoreBtn = container.querySelector(".row-restore-btn");
         if (restoreBtn)
           restoreBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1357,8 +1357,8 @@
             }
           });
 
-        const menuBtn = row.querySelector(".row-menu-btn");
-        const menu = row.querySelector(".row-menu");
+        const menuBtn = container.querySelector(".row-menu-btn");
+        const menu = container.querySelector(".row-menu");
         if (menuBtn && menu) {
           menuBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1377,166 +1377,398 @@
           });
         }
 
+        return { copyBtn, menuBtn, menu };
+      }
+
+      // ─── Drag-to-reorder (To do section only) ──────────────────────────
+      // Reorders within a phase group, or moves a card to a different phase
+      // (P1–P4). Never crosses a status section — that stays skill-driven.
+      let _draggedName = null;
+
+      function wireRowDrag(row, f) {
+        if (f.status !== "TODO") return;
+        row.addEventListener("dragstart", (e) => {
+          _draggedName = f.name;
+          row.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", f.name);
+        });
+        row.addEventListener("dragend", () => {
+          row.classList.remove("dragging");
+          document
+            .querySelectorAll(".phase-group.drag-over")
+            .forEach((el) => el.classList.remove("drag-over"));
+          document
+            .querySelectorAll(".drop-indicator")
+            .forEach((el) => el.remove());
+          _draggedName = null;
+        });
+      }
+
+      // Finds the row whose vertical midpoint sits just below `y` — the drop
+      // lands right before it. Returns null when `y` is below every row
+      // (drop lands at the end of this phase group).
+      function getDragAfterElement(container, y) {
+        const rows = [...container.querySelectorAll(".row:not(.dragging)")];
+        return rows.reduce(
+          (closest, row) => {
+            const box = row.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+              return { offset, element: row };
+            }
+            return closest;
+          },
+          { offset: Number.NEGATIVE_INFINITY, element: null },
+        ).element;
+      }
+
+      function showDropIndicator(container, afterEl) {
+        let indicator = container.querySelector(".drop-indicator");
+        if (!indicator) {
+          indicator = document.createElement("div");
+          indicator.className = "drop-indicator";
+        }
+        if (afterEl) container.insertBefore(indicator, afterEl);
+        else container.appendChild(indicator);
+      }
+
+      function wirePhaseGroupDrop(phaseGroup) {
+        phaseGroup.addEventListener("dragover", (e) => {
+          if (!_draggedName) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          phaseGroup.classList.add("drag-over");
+          showDropIndicator(
+            phaseGroup,
+            getDragAfterElement(phaseGroup, e.clientY),
+          );
+        });
+        phaseGroup.addEventListener("dragleave", (e) => {
+          if (e.target === phaseGroup) phaseGroup.classList.remove("drag-over");
+        });
+        phaseGroup.addEventListener("drop", (e) => {
+          e.preventDefault();
+          phaseGroup.classList.remove("drag-over");
+          const name = _draggedName;
+          if (!name) return;
+          const afterEl = getDragAfterElement(phaseGroup, e.clientY);
+          reorderFeature(
+            name,
+            phaseGroup.dataset.phase,
+            afterEl ? afterEl.dataset.name : null,
+          );
+        });
+      }
+
+      // Moves `name` to `targetPhase`, positioned right before `afterName`
+      // (or at the end of the array — still the end of its phase's filtered
+      // slice — when `afterName` is null).
+      function reorderFeature(name, targetPhase, afterName) {
+        const idx = data.features.findIndex((f) => f.name === name);
+        if (idx === -1) return;
+        const [item] = data.features.splice(idx, 1);
+        if (targetPhase === "—") delete item.phase;
+        else item.phase = targetPhase;
+
+        let insertIdx = data.features.length;
+        if (afterName) {
+          const afterIdx = data.features.findIndex((f) => f.name === afterName);
+          if (afterIdx !== -1) insertIdx = afterIdx;
+        }
+        data.features.splice(insertIdx, 0, item);
+        syncJSON();
+        render();
+      }
+
+      function renderRow(f) {
+        const subLabel = SUB_TYPE_LABELS[f.type] || null;
+
+        let metaHtml = "";
+        const deps = f.dependencies || [];
+        const unresolvedDeps = deps.filter((dep) => !isDepResolved(dep));
+        const isBlocked = unresolvedDeps.length > 0;
+        if (isBlocked) {
+          metaHtml += `<span class="dep-blocked-label">blocked by</span>`;
+          unresolvedDeps.forEach((dep) => {
+            metaHtml += `<span class="dep-icon" title="Waiting for ${esc(dep)}">${esc(dep)}</span>`;
+          });
+        }
+        const pendingGaps = Array.isArray(f.gaps)
+          ? f.gaps.filter((g) => g.status === "pending").length
+          : 0;
+        if (pendingGaps > 0) {
+          metaHtml += `<span class="gap-badge" title="${pendingGaps} unlinked handler${pendingGaps > 1 ? "s" : ""} — run /design-convert ${f.name} to link">⚠ ${pendingGaps} gap${pendingGaps > 1 ? "s" : ""}</span>`;
+        }
+        if (f.status === "DONE" && f.refactor) {
+          if (f.refactor === "ROLLED_BACK") {
+            metaHtml += `<span class="refactor-badge refactor-rollback">⚠ rolled back</span>`;
+          } else {
+            metaHtml += `<span class="refactor-badge refactor-done">✓ refactored</span>`;
+          }
+        }
+        if (Array.isArray(f.knownIssues) && f.knownIssues.length) {
+          const n = f.knownIssues.length;
+          metaHtml += `<span class="known-issue-badge" title="${n} known issue${n > 1 ? "s" : ""} — expand for details">⚠ ${n} known issue${n > 1 ? "s" : ""}</span>`;
+        }
+        if (
+          DESIGN_PIPELINE_TYPES.includes(f.type) &&
+          f.stage === "built" &&
+          f.contentStatus !== "filled"
+        ) {
+          metaHtml += `<span class="copy-badge" title="Copy not yet filled — run /design-content ${esc(f.name)}">copy: placeholder</span>`;
+        }
+        if (f.externalRef?.url) {
+          const refType = f.externalRef.type || "github";
+          const refId = f.externalRef.id || "?";
+          const refLabel = refType === "github" ? `#${refId}` : refId;
+          metaHtml +=
+            `<a class="card-ref-link card-ref-${esc(refType)}" href="${esc(f.externalRef.url)}" target="_blank" rel="noopener" title="${esc(f.externalRef.url)}">${esc(refLabel)}</a>` +
+            `<button class="card-ref-copy" data-copy="${esc(f.externalRef.url)}" title="Copy issue URL">⎘</button>`;
+        } else if (f.github_issue) {
+          const ghNum = f.github_issue.match(/\/(\d+)$/);
+          metaHtml += `<a class="card-gh-link" href="${esc(f.github_issue)}" target="_blank" rel="noopener" title="${esc(f.github_issue)}">#${ghNum ? ghNum[1] : "?"}</a>`;
+        }
+
+        const meta = computeCardMeta(f);
+        const { live, isParked, isWaiting, isQueued } = meta;
+
+        const row = document.createElement("div");
+        row.className =
+          "row" +
+          (isBlocked ? " row--blocked" : "") +
+          (isQueued ? " row--active row--queued" : "") +
+          (live ? " row--live" : "") +
+          (isWaiting ? " row--waiting" : "") +
+          (isParked ? " row--waiting row--parked" : "");
+        row.dataset.name = f.name;
+        // Draggable only in the To do section — see wireRowDrag().
+        row.draggable = f.status === "TODO";
+
+        const editDeleteHtml = meta.menuItemsHtml
+          ? `<div class="row-menu-wrap">
+               <button class="row-menu-btn" title="Actions" aria-haspopup="menu" aria-expanded="false">⋯</button>
+               <div class="row-menu" role="menu" hidden>${meta.menuItemsHtml}</div>
+             </div>`
+          : "";
+
+        row.innerHTML = `<div class="row-summary">
+          ${meta.actionBtnHtml}
+          <span class="row-name">${esc(f.name)}</span>
+          ${meta.progressLabelHtml}
+          ${subLabel ? `<span class="row-sub-tag">${subLabel}</span>` : ""}
+          ${f.description ? `<span class="row-desc">${esc(f.description)}</span>` : ""}
+          <div class="row-actions-group">
+            <div class="row-meta">${metaHtml}</div>
+            ${editDeleteHtml}
+          </div>
+        </div>`;
+
+        const summary = row.querySelector(".row-summary");
+        const { copyBtn, menuBtn, menu } = wireCardActions(row, f, meta);
+
         summary.addEventListener("click", (e) => {
           if (copyBtn && (e.target === copyBtn || copyBtn.contains(e.target)))
             return;
           if (menuBtn && (e.target === menuBtn || menuBtn.contains(e.target)))
             return;
           if (menu && menu.contains(e.target)) return;
-          if (f.status === "TODO" || f.status === "CANCELLED") return;
-          toggleRowExpand(row, f.name);
+          openDetailDrawer(f.name);
         });
+
+        wireRowDrag(row, f);
 
         return row;
       }
 
-      // ─── Inline expand ───────────────────────────────────────────────
+      // ─── Detail drawer ──────────────────────────────────────────────
       const featureDetailCache = {};
 
-      async function toggleRowExpand(rowEl, name) {
-        const isExpanded = rowEl.classList.contains("expanded");
+      // Builds the status-specific detail body (known issues, deps,
+      // requirements, files). Pure — no DOM access — so it can feed the
+      // drawer body. `detail` is the /feature/:name payload (or null).
+      function buildDetailBody(f, detail) {
+        const status = f.status || "TODO";
+        let html = "";
 
-        document.querySelectorAll(".row.expanded").forEach((r) => {
-          if (r !== rowEl) r.classList.remove("expanded");
-        });
-
-        if (isExpanded) {
-          rowEl.classList.remove("expanded");
-          setSingle("expandedRow", null);
-          return;
+        if (Array.isArray(f.knownIssues) && f.knownIssues.length) {
+          html += `<div class="expand-section"><div class="expand-label">Known issues</div><div class="known-issue-list">${f.knownIssues
+            .map(
+              (ki) =>
+                `<div class="known-issue-row"><span class="known-issue-pill known-issue-pill--${esc(ki.verdict)}">${esc(ki.verdict)}</span><span class="known-issue-title">${esc(ki.title || ki.id)}</span>${ki.reason ? `<span class="known-issue-reason">${esc(ki.reason)}</span>` : ""}</div>`,
+            )
+            .join("")}</div></div>`;
         }
 
-        const expandEl = rowEl.querySelector(".row-expand");
-
-        if (!expandEl.dataset.loaded) {
-          const found = findItem(name);
-          if (!found) return;
-          const f = found.item;
-
-          let html = "";
-
-          let detail = featureDetailCache[name];
-          if (!detail) {
-            const basePath = location.pathname
-              .replace(/\/backlog\/?$/, "")
-              .replace(/\/+$/, "");
-            try {
-              const res = await fetch(
-                basePath + "/feature/" + encodeURIComponent(name),
-              );
-              if (res.ok) {
-                detail = await res.json();
-                featureDetailCache[name] = detail;
-              }
-            } catch {}
+        if (status === "TODO" || !detail) {
+          if (f.dependencies && f.dependencies.length > 0) {
+            html += `<div class="expand-section"><div class="expand-label">Dependencies</div><div class="expand-deps">${f.dependencies.map((d) => `<span class="expand-dep">${esc(d)}</span>`).join("")}</div></div>`;
           }
-
-          const status = f.status || "TODO";
-
-          if (status === "TODO" || !detail) {
-            if (f.dependencies && f.dependencies.length > 0) {
-              html += `<div class="expand-section"><div class="expand-label">Dependencies</div><div class="expand-deps">${f.dependencies.map((d) => `<span class="expand-dep">${esc(d)}</span>`).join("")}</div></div>`;
-            }
-            if (f.source) {
-              html += `<div class="expand-section"><div class="expand-label">Source</div><div class="expand-summary">${esc(f.source)}</div></div>`;
-            }
-            if (f.date) {
-              html += `<div class="expand-section"><div class="expand-label">Date</div><div class="expand-summary">${esc(f.date)}</div></div>`;
-            }
-          } else if (status === "DEFINED") {
-            if (f.dependencies && f.dependencies.length > 0) {
-              html += `<div class="expand-section"><div class="expand-label">Dependencies</div><div class="expand-deps">${f.dependencies.map((d) => `<span class="expand-dep">${esc(d)}</span>`).join("")}</div></div>`;
-            }
-            const reqs = detail.requirements || [];
-            if (reqs.length) {
-              const hasStatus = reqs.some(
-                (r) => r.status && r.status !== "pending",
-              );
-              html += `<div class="expand-section"><div class="bk-section-label">Requirements (${reqs.length})</div><div class="bk-reqs">`;
-              reqs.forEach((r) => {
-                const statusCls =
-                  r.status === "PASS"
-                    ? " bk-req-status--pass"
-                    : r.status === "FAIL"
-                      ? " bk-req-status--fail"
-                      : "";
-                html += `<div class="bk-req-row">
+          if (f.source) {
+            html += `<div class="expand-section"><div class="expand-label">Source</div><div class="expand-summary">${esc(f.source)}</div></div>`;
+          }
+          if (f.date) {
+            html += `<div class="expand-section"><div class="expand-label">Date</div><div class="expand-summary">${esc(f.date)}</div></div>`;
+          }
+        } else if (status === "DEFINED") {
+          if (f.dependencies && f.dependencies.length > 0) {
+            html += `<div class="expand-section"><div class="expand-label">Dependencies</div><div class="expand-deps">${f.dependencies.map((d) => `<span class="expand-dep">${esc(d)}</span>`).join("")}</div></div>`;
+          }
+          const reqs = detail.requirements || [];
+          if (reqs.length) {
+            const hasStatus = reqs.some(
+              (r) => r.status && r.status !== "pending",
+            );
+            html += `<div class="expand-section"><div class="bk-section-label">Requirements (${reqs.length})</div><div class="bk-reqs">`;
+            reqs.forEach((r) => {
+              const statusCls =
+                r.status === "PASS"
+                  ? " bk-req-status--pass"
+                  : r.status === "FAIL"
+                    ? " bk-req-status--fail"
+                    : "";
+              html += `<div class="bk-req-row">
                   <span class="bk-req-id">${esc(r.id)}</span>
                   <span class="bk-req-desc">${esc(r.description)}</span>
                   ${r.category ? `<span class="bk-req-cat">${esc(r.category)}</span>` : ""}
                   ${hasStatus && r.status && r.status !== "pending" ? `<span class="bk-req-status${statusCls}">${esc(r.status.toUpperCase())}</span>` : ""}
                 </div>`;
-              });
-              html += `</div></div>`;
-            }
-          } else if (status === "DOING") {
-            const files = detail.files || [];
-            if (files.length) {
-              const icons = { create: "+", modify: "~", delete: "−" };
-              const colors = {
-                create: "var(--done)",
-                modify: "var(--accent)",
-                delete: "var(--danger)",
-              };
-              const basePath = location.pathname.replace(
-                /\/(backlog|dashboard)\/?$/,
-                "",
-              );
-              html += `<div class="expand-section"><div class="bk-section-label">Files (${files.length})</div><div class="bk-files">`;
-              files.forEach((fFile) => {
-                const openUrl =
-                  basePath +
-                  "/open/" +
-                  encodeURIComponent(fFile.path).replace(/%2F/g, "/");
-                html += `<div class="bk-file-row" data-path="${esc(fFile.path)}" role="button" tabindex="0" aria-expanded="false">
+            });
+            html += `</div></div>`;
+          }
+        } else if (status === "DOING") {
+          const files = detail.files || [];
+          if (files.length) {
+            const icons = { create: "+", modify: "~", delete: "−" };
+            const colors = {
+              create: "var(--done)",
+              modify: "var(--accent)",
+              delete: "var(--danger)",
+            };
+            const basePath = location.pathname.replace(
+              /\/(backlog|dashboard)\/?$/,
+              "",
+            );
+            html += `<div class="expand-section"><div class="bk-section-label">Files (${files.length})</div><div class="bk-files">`;
+            files.forEach((fFile) => {
+              const openUrl =
+                basePath +
+                "/open/" +
+                encodeURIComponent(fFile.path).replace(/%2F/g, "/");
+              html += `<div class="bk-file-row" data-path="${esc(fFile.path)}" role="button" tabindex="0" aria-expanded="false">
                   <span class="bk-file-action" style="color:${colors[fFile.action] || "var(--text-dim)"}">${icons[fFile.action] || "·"}</span>
                   <span class="bk-file-chevron">▸</span>
                   <span class="bk-file-path">${esc(fFile.path)}</span>
                   <button class="bk-file-open-btn" data-open-url="${openUrl}" title="Open in VS Code" aria-label="Open ${esc(fFile.path)} in VS Code">↗</button>
                 </div>
                 <div class="bk-file-diff" hidden></div>`;
-              });
-              html += `</div></div>`;
-            }
-          } else if (status === "DONE") {
-            const doneFiles = detail.files || [];
-            if (doneFiles.length) {
-              const icons = { create: "+", modify: "~", delete: "−" };
-              const colors = {
-                create: "var(--done)",
-                modify: "var(--accent)",
-                delete: "var(--danger)",
-              };
-              const basePath = location.pathname.replace(/\/backlog\/?$/, "");
-              html += `<div class="expand-section"><div class="bk-section-label">Files (${doneFiles.length})</div><div class="bk-files">`;
-              doneFiles.forEach((fFile) => {
-                const openUrl =
-                  basePath +
-                  "/open/" +
-                  encodeURIComponent(fFile.path).replace(/%2F/g, "/");
-                html += `<div class="bk-file-row" data-path="${esc(fFile.path)}" role="button" tabindex="0" aria-expanded="false">
+            });
+            html += `</div></div>`;
+          }
+        } else if (status === "DONE") {
+          const doneFiles = detail.files || [];
+          if (doneFiles.length) {
+            const icons = { create: "+", modify: "~", delete: "−" };
+            const colors = {
+              create: "var(--done)",
+              modify: "var(--accent)",
+              delete: "var(--danger)",
+            };
+            const basePath = location.pathname.replace(/\/backlog\/?$/, "");
+            html += `<div class="expand-section"><div class="bk-section-label">Files (${doneFiles.length})</div><div class="bk-files">`;
+            doneFiles.forEach((fFile) => {
+              const openUrl =
+                basePath +
+                "/open/" +
+                encodeURIComponent(fFile.path).replace(/%2F/g, "/");
+              html += `<div class="bk-file-row" data-path="${esc(fFile.path)}" role="button" tabindex="0" aria-expanded="false">
                   <span class="bk-file-action" style="color:${colors[fFile.action] || "var(--text-dim)"}">${icons[fFile.action] || "·"}</span>
                   <span class="bk-file-chevron">▸</span>
                   <span class="bk-file-path">${esc(fFile.path)}</span>
                   <button class="bk-file-open-btn" data-open-url="${openUrl}" title="Open in VS Code" aria-label="Open ${esc(fFile.path)} in VS Code">↗</button>
                 </div>
                 <div class="bk-file-diff" hidden></div>`;
-              });
-              html += `</div></div>`;
-            }
+            });
+            html += `</div></div>`;
           }
-
-          if (!html) {
-            html =
-              '<div class="empty">No details available — use ⋮ for actions</div>';
-          }
-
-          expandEl.innerHTML = html;
-          expandEl.dataset.loaded = "1";
         }
 
-        rowEl.classList.add("expanded");
+        if (!html) {
+          html =
+            '<div class="empty">No details available — use the actions above.</div>';
+        }
+        return html;
+      }
+
+      let _openDrawerName = null;
+
+      // Opens (or refreshes, if already open) the right-hand detail drawer
+      // for `name`. render() calls this again on every re-render while the
+      // drawer is open so it never shows stale actions/status after a local
+      // mutation or an SSE-driven backlog refresh (see render()'s tail).
+      async function openDetailDrawer(name) {
+        const found = findItem(name);
+        if (!found) return;
+        const f = found.item;
+
+        const overlay = document.getElementById("drawer-overlay");
+        const bodyEl = document.getElementById("drawer-body");
+        const actionsEl = document.getElementById("drawer-actions");
+        const wasOpen =
+          _openDrawerName === name && overlay.classList.contains("open");
+        const scrollTop = wasOpen ? bodyEl.scrollTop : 0;
+
+        const primaryType = PRIMARY_TYPE[f.type] || "FEATURE";
+        const typeInfo = TYPE_ICONS[primaryType] || TYPE_ICONS.FEATURE;
+        const subLabel = SUB_TYPE_LABELS[f.type] || primaryType.toLowerCase();
+        document.getElementById("drawer-type").textContent =
+          `${typeInfo.icon} ${subLabel}`;
+        document.getElementById("drawer-type").className =
+          `drawer-type-pill ${typeInfo.cls}`;
+        document.getElementById("drawer-status").textContent =
+          STATUS_LABELS_DEV[f.status] || f.status || "";
+        document.getElementById("drawer-status").style.color =
+          STATUS_COLORS[f.status] || "var(--text-dim)";
+        document.getElementById("drawer-title").textContent = f.name;
+        document.getElementById("drawer-summary").textContent =
+          f.summary || f.description || "";
+
+        const meta = computeCardMeta(f);
+        actionsEl.innerHTML = `${meta.actionBtnHtml}${meta.menuItemsHtml}`;
+        wireCardActions(actionsEl, f, meta);
+
+        _openDrawerName = name;
+        overlay.classList.add("open");
         setSingle("expandedRow", name);
+
+        let detail = featureDetailCache[name];
+        if (!detail) {
+          bodyEl.innerHTML = '<div class="bk-diff-loading">Loading…</div>';
+          const basePath = location.pathname
+            .replace(/\/backlog\/?$/, "")
+            .replace(/\/+$/, "");
+          try {
+            const res = await fetch(
+              basePath + "/feature/" + encodeURIComponent(name),
+            );
+            if (res.ok) {
+              detail = await res.json();
+              featureDetailCache[name] = detail;
+            }
+          } catch {}
+          // Bail if the drawer was closed or switched to another feature
+          // while the fetch was in flight.
+          if (_openDrawerName !== name) return;
+        }
+
+        bodyEl.innerHTML = buildDetailBody(f, detail);
+        bodyEl.scrollTop = scrollTop;
+      }
+
+      function closeDetailDrawer() {
+        document.getElementById("drawer-overlay").classList.remove("open");
+        _openDrawerName = null;
+        setSingle("expandedRow", null);
       }
 
       // ─── Sidebar active state ───────────────────────────────────────
@@ -1696,7 +1928,23 @@
           }
         });
 
-      // ─── (detail modal removed) ──────────────────────────────────────
+      // ─── Detail drawer: close wiring ──────────────────────────────────
+      document
+        .getElementById("drawer-close")
+        .addEventListener("click", closeDetailDrawer);
+      document
+        .getElementById("drawer-overlay")
+        .addEventListener("click", (e) => {
+          if (e.target.id === "drawer-overlay") closeDetailDrawer();
+        });
+      document.addEventListener("keydown", (e) => {
+        if (
+          e.key === "Escape" &&
+          document.getElementById("drawer-overlay").classList.contains("open")
+        ) {
+          closeDetailDrawer();
+        }
+      });
 
       // Close modals on overlay click
       ["modal", "delete-modal"].forEach((id) => {

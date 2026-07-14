@@ -8,7 +8,7 @@
 //   /manifest.webmanifest         → PWA manifest (installable app icon)
 //   /sw.js                        → PWA service worker (scope "/")
 //   /icon-{192|512}.png           → PWA icon PNGs (manifest + apple-touch-icon)
-//   /                             → index with all projects
+//   /                             → 302 redirect to most-recently-opened project's board (or a "no projects" fallback)
 //   /{project}                    → dashboard (main page)
 //   /{project}/save               → save dashboard (project.json)
 //   /{project}/create             → create empty project.json
@@ -46,12 +46,7 @@ const {
   backlogMtime,
 } = require("./lib/projects");
 const { populateFromProject } = require("./lib/populate");
-const {
-  getNavBarHtml,
-  serveDashboard,
-  indexPage,
-  esc,
-} = require("./lib/templates");
+const { getNavBarHtml, serveDashboard, esc } = require("./lib/templates");
 const buildBacklogPatch = require("./lib/backlog-patches");
 
 // ── Worktree helpers ──
@@ -394,14 +389,43 @@ http
       }
     }
 
-    // Index
+    // Index — no more standalone "all projects" page; jump straight into the
+    // most recently opened project's board (switch projects via the nav's
+    // project dropdown from there instead).
     if (req.method === "GET" && parts.length === 0) {
       var projects = findProjects();
-      res.writeHead(200, {
-        "Content-Type": "text/html; charset=utf-8",
+      var target = projects.find(function (p) {
+        return p.hasBacklog || p.hasDashboard;
+      });
+
+      if (!target) {
+        res.writeHead(200, {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache, no-store",
+        });
+        res.end(
+          "<!doctype html><html><head><meta charset='UTF-8'>" +
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>" +
+            "<title>No projects</title>" +
+            "<style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#0d1117;color:#e6edf3;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}" +
+            ".box{text-align:center;max-width:420px;padding:24px}" +
+            "h1{font-size:18px;margin:0 0 8px}p{color:#8b949e;font-size:14px;line-height:1.5;margin:0}code{background:#161b22;padding:2px 6px;border-radius:4px}</style>" +
+            "</head><body><div class='box'><h1>No projects found</h1>" +
+            "<p>No project with a backlog or dashboard exists under <code>" +
+            esc(PROJECTS_ROOT) +
+            "</code> yet.</p></div></body></html>",
+        );
+        return;
+      }
+
+      var dest = target.hasBacklog
+        ? `/${target.dir}/backlog`
+        : `/${target.dir}`;
+      res.writeHead(302, {
+        Location: dest,
         "Cache-Control": "no-cache, no-store",
       });
-      res.end(indexPage(projects));
+      res.end();
       return;
     }
 
@@ -756,7 +780,7 @@ http
               "\n" +
               html.substring(endIdx);
           }
-          const nav = getNavBarHtml(projectDir, "backlog");
+          const nav = getNavBarHtml(projectDir, "backlog", findProjects());
           const projectRoot = path.join(PROJECTS_ROOT, projectDir);
           const rootScript = `<script>window.__projectRoot=${JSON.stringify(projectRoot)};</script>`;
           html = html.replace(
@@ -1245,7 +1269,7 @@ http
             JSON.stringify(reviewData, null, 2) +
             "\n" +
             html.substring(endIdx);
-          const nav = getNavBarHtml(projectDir, "review");
+          const nav = getNavBarHtml(projectDir, "review", findProjects());
           html = html.replace("</body>", nav + "</body>");
           res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",

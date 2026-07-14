@@ -13,7 +13,7 @@
     <script src="/lib/themes.js"></script>
     <script src="/lib/settings-modal.js"></script>
     <script src="/lib/collapse-store.js"></script>
-    <link rel="stylesheet" href="/css/dashboard.css?v=22" />
+    <link rel="stylesheet" href="/css/dashboard.css?v=36" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <style id="sg-tokens-scope"></style>
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
@@ -693,7 +693,7 @@
           modeKeys.length > 1
             ? `<button id="sg-overlay-mode-btn" class="sg-page-mode-btn" onclick="toggleStyleguideMode(this)">Dark</button>`
             : "";
-        html += `<header class="sg-page-header"><h1 class="sg-page-title">Design System</h1><div class="sg-page-meta">${packBadgeHtml}${modeToggleHtml}</div></header>`;
+        html += `<header class="sg-page-header"><div class="sg-page-meta">${packBadgeHtml}${modeToggleHtml}</div></header>`;
 
         // Colors
         const hasColors =
@@ -978,7 +978,7 @@
             <div class="empty-state"><p>No design tokens defined yet.</p>
             <p style="color:var(--text-dim)">Design tokens, modes, CSS variables — managed via <code>/design-tokens</code></p></div>`;
         }
-        return `<div class="sg-inline" id="sg-inline">${renderStyleguideFull(t)}</div>`;
+        return `<div class="section-header"><h2>Design System</h2></div><div class="sg-inline" id="sg-inline">${renderStyleguideFull(t)}</div>`;
       }
 
       function renderStack() {
@@ -1953,7 +1953,7 @@
         if (!contentEl.querySelector(".content-toolbar")) {
           const toolbar = document.createElement("div");
           toolbar.className = "content-toolbar";
-          toolbar.innerHTML = `<input id="dash-search" class="content-toolbar-search" placeholder="Search..." oninput="render()" /><div class="content-toolbar-mode-toggle" id="team-mode-toggle-slot"></div>`;
+          toolbar.innerHTML = `<div class="content-toolbar-side"></div><div class="content-toolbar-center"><input id="dash-search" class="content-toolbar-search" placeholder="Search..." oninput="render()" /></div><div class="content-toolbar-mode-toggle" id="team-mode-toggle-slot"></div>`;
           contentEl.appendChild(toolbar);
           if (window.SettingsModal && window.SettingsModal.mountToggle) {
             window.SettingsModal.mountToggle(

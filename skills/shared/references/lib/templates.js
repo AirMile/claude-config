@@ -1,4 +1,5 @@
-// HTML generation: navbar, dashboard, index page, escape helper
+// HTML generation: navbar (incl. project switcher, prefs menu, global config
+// editor), dashboard, escape helper
 
 const fs = require("fs");
 const path = require("path");
@@ -9,6 +10,7 @@ const {
 } = require("./config");
 const { populateFromProject } = require("./populate");
 const { createDefaultDashboardData } = require("./defaults");
+const { findProjects } = require("./projects");
 
 function esc(str) {
   return String(str || "")
@@ -18,36 +20,233 @@ function esc(str) {
     .replace(/"/g, "&quot;");
 }
 
-function getNavBarHtml(projectDir, activePage) {
+// Global ~/.claude/CLAUDE.md editor — shared across every page (opened from
+// the preferences menu in the nav bar). Backend: GET/POST /global/claude-md.
+const GLOBAL_CONFIG_CSS = `
+  .config-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10001; justify-content:center; align-items:start; padding:48px 24px; overflow-y:auto; }
+  .config-overlay.visible { display:flex; }
+  .config-modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; width:100%; max-width:720px; max-height:calc(100vh - 96px); overflow-y:auto; padding:24px; }
+  .config-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .config-header h3 { font-size:16px; font-weight:600; }
+  .config-btn { padding:4px 14px; border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit; }
+  .config-btn-edit { border:1px solid var(--border); background:none; color:var(--muted, var(--text-muted)); }
+  .config-btn-edit:hover { color:var(--text); border-color:color-mix(in srgb, var(--border) 70%, var(--text-muted)); }
+  .config-btn-save { border:1px solid var(--accent); background:color-mix(in srgb, var(--accent) 15%, transparent); color:var(--accent); }
+  .config-btn-cancel { border:1px solid var(--border); background:none; color:var(--muted, var(--text-muted)); }
+  .config-btn-close { border:1px solid var(--border); background:none; color:var(--muted, var(--text-muted)); font-size:18px; line-height:1; padding:4px 8px; }
+  .config-btn-close:hover { color:var(--text); border-color:color-mix(in srgb, var(--border) 70%, var(--text-muted)); }
+  .config-md { font-size:13px; line-height:1.6; color:var(--muted, var(--text-muted)); }
+  .config-md h1 { font-size:18px; color:var(--text); margin:0 0 8px; }
+  .config-md h2 { font-size:15px; color:var(--accent); margin:20px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--border); }
+  .config-md h3 { font-size:14px; color:var(--text); margin:16px 0 4px; }
+  .config-md p { margin:0 0 8px; }
+  .config-md ul, .config-md ol { margin:0 0 8px; padding-left:20px; }
+  .config-md li { margin-bottom:2px; }
+  .config-md strong { color:var(--text); }
+  .config-md code { background:color-mix(in srgb, var(--text-dim) 15%, transparent); padding:1px 5px; border-radius:3px; font-size:12px; }
+  .config-md pre { background:var(--bg); padding:12px; border-radius:6px; overflow-x:auto; margin:8px 0; }
+  .config-md pre code { background:none; padding:0; }
+  .config-md hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
+  .config-md a { color:var(--accent); text-decoration:none; }
+`;
+
+const GLOBAL_CONFIG_HTML = `
+<div class="config-overlay" id="config-overlay">
+  <div class="config-modal" id="config-modal"></div>
+</div>
+<script>
+(function() {
+  if (!document.getElementById("config-open")) return;
+  var cache = null;
+  var editing = false;
+  var overlay = document.getElementById("config-overlay");
+  var modal = document.getElementById("config-modal");
+
+  function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function md(s) { try { return marked.parse(s||""); } catch(e) { return esc(s); } }
+
+  function renderModal() {
+    if (cache === null) {
+      modal.innerHTML = '<div style="color:var(--muted);padding:12px">Loading...</div>';
+      fetch("/global/claude-md").then(function(r){return r.json()}).then(function(d) {
+        cache = d.content || "";
+        renderModal();
+      }).catch(function() { cache = ""; renderModal(); });
+      return;
+    }
+
+    if (editing) {
+      modal.innerHTML =
+        '<div class="config-header"><h3>~/.claude/CLAUDE.md</h3><div style="display:flex;gap:8px">' +
+        '<button class="config-btn config-btn-save" id="gcfg-save">Save</button>' +
+        '<button class="config-btn config-btn-cancel" id="gcfg-cancel">Cancel</button>' +
+        '</div></div>' +
+        '<textarea id="gcfg-editor" style="width:100%;min-height:400px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:monospace;font-size:13px;line-height:1.5;resize:vertical;tab-size:2">' + esc(cache) + '</textarea>';
+      return;
+    }
+
+    modal.innerHTML =
+      '<div class="config-header"><h3>~/.claude/CLAUDE.md</h3><div style="display:flex;gap:8px">' +
+      '<button class="config-btn config-btn-edit" id="gcfg-edit">Bewerken</button>' +
+      '<button class="config-btn config-btn-close" id="gcfg-close">&times;</button>' +
+      '</div></div>' +
+      '<div class="config-md">' + md(cache) + '</div>';
+  }
+
+  document.getElementById("config-open").addEventListener("click", function() {
+    overlay.classList.add("visible");
+    renderModal();
+  });
+
+  overlay.addEventListener("click", function(e) {
+    if (e.target === overlay) { overlay.classList.remove("visible"); editing = false; }
+  });
+
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && overlay.classList.contains("visible")) { overlay.classList.remove("visible"); editing = false; }
+  });
+
+  document.addEventListener("click", function(e) {
+    if (e.target.id === "gcfg-close") { overlay.classList.remove("visible"); editing = false; }
+    if (e.target.id === "gcfg-edit") { editing = true; renderModal(); }
+    if (e.target.id === "gcfg-cancel") { editing = false; renderModal(); }
+    if (e.target.id === "gcfg-save") {
+      var ta = document.getElementById("gcfg-editor");
+      if (!ta) return;
+      fetch("/global/claude-md", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({content:ta.value}) })
+        .then(function(r){return r.json()}).then(function(d) { if(d.ok){cache=ta.value;editing=false;renderModal()} })
+        .catch(function(err){alert("Save failed: "+err.message)});
+    }
+  });
+})();
+</script>`;
+
+function getNavBarHtml(projectDir, activePage, projects) {
   const dashClass = activePage === "dashboard" ? "active" : "";
   const backlogClass = activePage === "backlog" ? "active" : "";
-  const projectName = projectDir;
+  const allProjects = projects || [];
 
-  const backHtml =
-    '<a href="/" class="pn-back" title="Projects" aria-label="Back to projects">&larr;</a>';
+  // Target view for the project switcher: keep the user on the same kind of
+  // page they're currently on, falling back to whichever view the target
+  // project actually has.
+  const wantsBacklog = activePage === "backlog";
+  const switcherItems = allProjects
+    .map(function (p) {
+      const isCurrent = p.dir === projectDir;
+      const goBacklog = wantsBacklog
+        ? p.hasBacklog
+        : p.hasBacklog && !p.hasDashboard;
+      const href = goBacklog ? `/${esc(p.dir)}/backlog` : `/${esc(p.dir)}`;
+      return `<a href="${href}" class="pn-project-item ${isCurrent ? "current" : ""}">${esc(p.dir)}</a>`;
+    })
+    .join("");
 
   return `
 <style>
   body { padding-top: 48px !important; }
-  #project-nav { position:fixed; top:0; left:0; right:0; height:48px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; z-index:9999; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; padding:0 20px; }
-  #project-nav a { text-decoration:none; transition:all 0.15s; }
-  #project-nav .pn-back { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; color:var(--text-muted, #8b949e); background:rgba(255,255,255,0.04); border:1px solid var(--border, #30363d); border-radius:10px; font-size:16px; }
-  #project-nav .pn-back:hover { color:var(--text, #e6edf3); background:rgba(255,255,255,0.08); border-color:var(--text-dim, #6e7681); }
-  #project-nav .pn-tabs { display:flex; align-items:center; gap:2px; background:rgba(255,255,255,0.04); border:1px solid var(--border, #30363d); border-radius:10px; padding:3px; }
-  #project-nav .pn-tab { color:var(--text-muted, #8b949e); padding:6px 16px; border-radius:7px; font-size:13px; font-weight:500; border:1px solid transparent; }
-  #project-nav .pn-tab:hover { color:var(--text, #e6edf3); background:rgba(255,255,255,0.07); }
-  #project-nav .pn-tab.active { color:var(--accent, #58a6ff); background:color-mix(in srgb, var(--accent, #58a6ff) 18%, transparent); border-color:color-mix(in srgb, var(--accent, #58a6ff) 40%, transparent); }
-  #project-nav .pn-tab.active:hover { background:color-mix(in srgb, var(--accent, #58a6ff) 18%, transparent); }
-  #project-nav .pn-name { color:var(--text); font-weight:600; margin-left:auto; white-space:nowrap; }
+  #project-nav { position:fixed; top:0; left:0; right:0; height:48px; background:var(--bg); border-bottom:1px solid var(--border); display:grid; grid-template-columns:1fr auto 1fr; align-items:center; z-index:9999; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; padding:0 20px; }
+  #project-nav a, #project-nav button { text-decoration:none; transition:all 0.15s; }
+  .pn-left { justify-self:start; min-width:0; position:relative; }
+  .pn-center { justify-self:center; }
+  .pn-right { justify-self:end; position:relative; }
+
+  .pn-project { display:inline-flex; align-items:center; gap:6px; max-width:100%; color:var(--text); background:none; border:1px solid transparent; border-radius:8px; padding:6px 10px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; }
+  .pn-project:hover, .pn-project.open { background:rgba(255,255,255,0.06); border-color:var(--border, #30363d); }
+  .pn-project .pn-project-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pn-project svg { flex-shrink:0; color:var(--text-muted, #8b949e); }
+
+  .pn-menu { display:none; position:absolute; top:calc(100% + 6px); background:var(--surface, #161b22); border:1px solid var(--border, #30363d); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.3); padding:6px; min-width:200px; max-height:60vh; overflow-y:auto; z-index:10000; }
+  .pn-menu.open { display:block; }
+  .pn-left .pn-menu { left:0; }
+  .pn-right .pn-menu { right:0; }
+
+  .pn-project-item { display:block; padding:8px 12px; border-radius:6px; font-size:13px; color:var(--text-muted, #8b949e); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pn-project-item:hover { background:var(--surface-hover, rgba(255,255,255,0.06)); color:var(--text); }
+  .pn-project-item.current { color:var(--accent, #58a6ff); font-weight:600; }
+
+  .pn-tabs { display:flex; align-items:center; gap:2px; background:rgba(255,255,255,0.04); border:1px solid var(--border, #30363d); border-radius:10px; padding:3px; }
+  .pn-tab { color:var(--text-muted, #8b949e); padding:6px 16px; border-radius:7px; font-size:13px; font-weight:500; border:1px solid transparent; }
+  .pn-tab:hover { color:var(--text, #e6edf3); background:rgba(255,255,255,0.07); }
+  .pn-tab.active { color:var(--accent, #58a6ff); background:color-mix(in srgb, var(--accent, #58a6ff) 18%, transparent); border-color:color-mix(in srgb, var(--accent, #58a6ff) 40%, transparent); }
+  .pn-tab.active:hover { background:color-mix(in srgb, var(--accent, #58a6ff) 18%, transparent); }
+
+  .pn-prefs-btn { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; color:var(--text-muted, #8b949e); background:rgba(255,255,255,0.04); border:1px solid var(--border, #30363d); border-radius:10px; cursor:pointer; }
+  .pn-prefs-btn:hover, .pn-prefs-btn.open { color:var(--text, #e6edf3); background:rgba(255,255,255,0.08); border-color:var(--text-dim, #6e7681); }
+
+  .pn-prefs-menu { padding:10px; }
+  .pn-prefs-section { padding:4px 2px 10px; border-bottom:1px solid var(--border, #30363d); margin-bottom:8px; }
+  .pn-prefs-section:last-child { border-bottom:none; margin-bottom:0; padding-bottom:2px; }
+  #pn-theme-slot .theme-picker { position:static !important; }
+  #pn-theme-slot .theme-picker-dropdown { position:static !important; box-shadow:none !important; border:none !important; padding:0 !important; display:block !important; min-width:0 !important; }
+  #pn-theme-slot .theme-picker-toggle { display:none !important; }
+
+  .pn-config-btn { display:block; width:100%; text-align:left; padding:8px 12px; border-radius:6px; font-size:13px; font-family:inherit; color:var(--text-muted, #8b949e); background:none; border:1px solid var(--border, #30363d); cursor:pointer; }
+  .pn-config-btn:hover { color:var(--text); background:var(--surface-hover, rgba(255,255,255,0.06)); }
+
+  ${GLOBAL_CONFIG_CSS}
 </style>
 <nav id="project-nav">
-  ${backHtml}
-  <div class="pn-tabs">
-    <a href="/${esc(projectDir)}/backlog" class="pn-tab ${backlogClass}">Backlog</a>
-    <a href="/${esc(projectDir)}" class="pn-tab ${dashClass}">Dashboard</a>
+  <div class="pn-left">
+    <button class="pn-project" id="pn-project-btn" aria-haspopup="true" aria-expanded="false">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 3.5h5l1.5 2h6.5v7a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-9z"/></svg>
+      <span class="pn-project-label">${esc(projectDir)}</span>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+    </button>
+    <div class="pn-menu" id="pn-project-menu">${switcherItems}</div>
   </div>
-  <span class="pn-name">${esc(projectName)}</span>
-</nav>`;
+  <div class="pn-center">
+    <div class="pn-tabs">
+      <a href="/${esc(projectDir)}/backlog" class="pn-tab ${backlogClass}">Backlog</a>
+      <a href="/${esc(projectDir)}" class="pn-tab ${dashClass}">Dashboard</a>
+    </div>
+  </div>
+  <div class="pn-right">
+    <button class="pn-prefs-btn" id="pn-prefs-btn" title="Preferences" aria-label="Preferences" aria-haspopup="true" aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <div class="pn-menu" id="pn-prefs-menu">
+      <div class="pn-prefs-section" id="pn-theme-slot"></div>
+      <div class="pn-prefs-section">
+        <button class="pn-config-btn" id="config-open">Global Config (CLAUDE.md)</button>
+      </div>
+    </div>
+  </div>
+</nav>
+${GLOBAL_CONFIG_HTML}
+<script>
+(function() {
+  function wireMenu(btnId, menuId) {
+    var btn = document.getElementById(btnId);
+    var menu = document.getElementById(menuId);
+    if (!btn || !menu) return;
+    btn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      var willOpen = !menu.classList.contains("open");
+      document.querySelectorAll("#project-nav .pn-menu.open").forEach(function(m) { m.classList.remove("open"); });
+      document.querySelectorAll("#project-nav button.open").forEach(function(b) { b.classList.remove("open"); b.setAttribute("aria-expanded", "false"); });
+      if (willOpen) {
+        menu.classList.add("open");
+        btn.classList.add("open");
+        btn.setAttribute("aria-expanded", "true");
+      }
+    });
+  }
+  wireMenu("pn-project-btn", "pn-project-menu");
+  wireMenu("pn-prefs-btn", "pn-prefs-menu");
+
+  document.addEventListener("click", function(e) {
+    if (e.target.closest && e.target.closest("#project-nav")) return;
+    document.querySelectorAll("#project-nav .pn-menu.open").forEach(function(m) { m.classList.remove("open"); });
+    document.querySelectorAll("#project-nav button.open").forEach(function(b) { b.classList.remove("open"); b.setAttribute("aria-expanded", "false"); });
+  });
+
+  document.addEventListener("keydown", function(e) {
+    if (e.key !== "Escape") return;
+    document.querySelectorAll("#project-nav .pn-menu.open").forEach(function(m) { m.classList.remove("open"); });
+    document.querySelectorAll("#project-nav button.open").forEach(function(b) { b.classList.remove("open"); b.setAttribute("aria-expanded", "false"); });
+  });
+})();
+</script>`;
 }
 
 function serveDashboard(projectDir) {
@@ -73,7 +272,7 @@ function serveDashboard(projectDir) {
     JSON.stringify(dashData, null, 2) +
     "\n" +
     html.substring(endIdx);
-  const nav = getNavBarHtml(projectDir, "dashboard");
+  const nav = getNavBarHtml(projectDir, "dashboard", findProjects());
 
   const dashRefresh = `<script>
 (function(){
@@ -94,229 +293,8 @@ function serveDashboard(projectDir) {
   return html;
 }
 
-function indexPage(projects) {
-  const activeProjects = projects.filter(function (p) {
-    return p.hasBacklog || p.hasDashboard;
-  });
-  const emptyProjects = projects.filter(function (p) {
-    return !p.hasBacklog && !p.hasDashboard;
-  });
-
-  const projectCard = function (p) {
-    const displayName = p.dir;
-
-    const dashBtn = p.hasDashboard
-      ? `<a href="/${p.dir}" class="nav-btn nav-dash"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>Dashboard</a>`
-      : `<form method="POST" action="/${p.dir}/create" style="margin:0"><button type="submit" class="nav-btn nav-new"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>Dashboard</button></form>`;
-
-    const backlogBtn = p.hasBacklog
-      ? `<a href="/${p.dir}/backlog" class="nav-btn nav-backlog"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="7" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="12" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>Backlog</a>`
-      : `<form method="POST" action="/${p.dir}/backlog/create" style="margin:0"><button type="submit" class="nav-btn nav-new"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="7" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="12" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>Backlog</button></form>`;
-
-    return `
-      <div class="project-row" onclick="window.location='/${p.dir}'">
-        <div class="row-info">
-          <span class="row-name">${esc(displayName)}</span>
-        </div>
-        <div class="row-actions" onclick="event.stopPropagation()">
-          ${backlogBtn}
-          ${dashBtn}
-        </div>
-      </div>`;
-  };
-
-  const emptyCard = function (p) {
-    return `
-      <div class="project-row empty-row">
-        <div class="row-info">
-          <span class="row-name">${esc(p.dir)}</span>
-        </div>
-        <div class="row-actions">
-          <form method="POST" action="/${p.dir}/backlog/create" style="margin:0"><button type="submit" class="nav-btn nav-new"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="7" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="12" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>Backlog</button></form>
-          <form method="POST" action="/${p.dir}/create" style="margin:0"><button type="submit" class="nav-btn nav-new"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>Dashboard</button></form>
-        </div>
-      </div>`;
-  };
-
-  const activeRows = activeProjects.map(projectCard).join("");
-  const emptyRows = emptyProjects.map(emptyCard).join("");
-
-  return `<!doctype html>
-<html lang="nl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="dark light">
-  <title>Projects</title>
-  <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#0d1117">
-  <link rel="apple-touch-icon" href="/icon-192.png">
-  <script src="/lib/pwa-register.js" defer></script>
-  <script src="/lib/themes.js"></script>
-  <link rel="stylesheet" href="/css/theme-picker.css">
-  <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
-  <style>
-    :root { --bg:#0d1117; --surface:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --purple:#d2a8ff; --green:#3fb950; }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; scrollbar-color:var(--border) transparent; }
-    ::-webkit-scrollbar { width:8px; height:8px; }
-    ::-webkit-scrollbar-track { background:transparent; }
-    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
-    ::-webkit-scrollbar-thumb:hover { background:var(--muted); }
-
-    .page-header { padding:40px 48px 0; max-width:800px; margin:0 auto; }
-    .page-header h1 { font-size:24px; font-weight:700; letter-spacing:-0.5px; }
-
-    .projects-list { display:flex; flex-direction:column; gap:8px; padding:24px 48px 48px; max-width:800px; margin:0 auto; }
-
-    .section-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--muted); padding:20px 0 8px; }
-    .section-label:first-child { padding-top:0; }
-
-    .project-row { display:flex; align-items:center; gap:16px; padding:14px 20px; background:var(--surface); border:1px solid var(--border); border-radius:8px; transition:all 0.15s ease; cursor:pointer; }
-    .project-row:hover { border-color:color-mix(in srgb, var(--border) 70%, var(--text-muted)); background:var(--surface-hover); }
-
-    .empty-row { border-style:dashed; opacity:0.5; }
-    .empty-row:hover { opacity:0.8; }
-
-    .row-info { display:flex; align-items:baseline; gap:10px; min-width:0; flex:1; }
-    .row-name { font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); text-decoration:none; }
-    .row-name:hover { color:var(--accent); }
-    .row-dir { font-size:12px; color:var(--muted); white-space:nowrap; }
-
-    .row-actions { display:flex; gap:8px; flex-shrink:0; margin-left:auto; }
-
-    .nav-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:6px; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; text-decoration:none; transition:all 0.15s ease; border:1px solid transparent; white-space:nowrap; }
-
-    .nav-dash { background:color-mix(in srgb, var(--purple) 10%, transparent); color:var(--purple); border-color:color-mix(in srgb, var(--purple) 20%, transparent); }
-    .nav-dash:hover { background:color-mix(in srgb, var(--purple) 18%, transparent); border-color:color-mix(in srgb, var(--purple) 40%, transparent); }
-
-    .nav-backlog { background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--accent); border-color:color-mix(in srgb, var(--accent) 20%, transparent); }
-    .nav-backlog:hover { background:color-mix(in srgb, var(--accent) 18%, transparent); border-color:color-mix(in srgb, var(--accent) 40%, transparent); }
-
-    .nav-new { background:none; color:var(--muted); border:1px dashed var(--border); }
-    .nav-new:hover { color:var(--accent); border-color:var(--accent); border-style:solid; background:color-mix(in srgb, var(--accent) 5%, transparent); }
-
-    .page-header { display:flex; align-items:center; justify-content:space-between; }
-    .config-open-btn { padding:6px 14px; border-radius:6px; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; border:1px solid var(--border); background:var(--surface); color:var(--muted); transition:all 0.15s; }
-    .config-open-btn:hover { color:var(--text); border-color:color-mix(in srgb, var(--border) 70%, var(--text-muted)); background:var(--surface-hover); }
-    .config-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:start; padding:48px 24px; overflow-y:auto; }
-    .config-overlay.visible { display:flex; }
-    .config-modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; width:100%; max-width:720px; max-height:calc(100vh - 96px); overflow-y:auto; padding:24px; }
-    .config-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-    .config-header h3 { font-size:16px; font-weight:600; }
-    .config-btn { padding:4px 14px; border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit; }
-    .config-btn-edit { border:1px solid var(--border); background:none; color:var(--muted); }
-    .config-btn-edit:hover { color:var(--text); border-color:color-mix(in srgb, var(--border) 70%, var(--text-muted)); }
-    .config-btn-save { border:1px solid var(--accent); background:color-mix(in srgb, var(--accent) 15%, transparent); color:var(--accent); }
-    .config-btn-cancel { border:1px solid var(--border); background:none; color:var(--muted); }
-    .config-btn-close { border:1px solid var(--border); background:none; color:var(--muted); font-size:18px; line-height:1; padding:4px 8px; }
-    .config-btn-close:hover { color:var(--text); border-color:color-mix(in srgb, var(--border) 70%, var(--text-muted)); }
-    .config-md { font-size:13px; line-height:1.6; color:var(--muted); }
-    .config-md h1 { font-size:18px; color:var(--text); margin:0 0 8px; }
-    .config-md h2 { font-size:15px; color:var(--accent); margin:20px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--border); }
-    .config-md h3 { font-size:14px; color:var(--text); margin:16px 0 4px; }
-    .config-md p { margin:0 0 8px; }
-    .config-md ul, .config-md ol { margin:0 0 8px; padding-left:20px; }
-    .config-md li { margin-bottom:2px; }
-    .config-md strong { color:var(--text); }
-    .config-md code { background:color-mix(in srgb, var(--text-dim) 15%, transparent); padding:1px 5px; border-radius:3px; font-size:12px; }
-    .config-md pre { background:var(--bg); padding:12px; border-radius:6px; overflow-x:auto; margin:8px 0; }
-    .config-md pre code { background:none; padding:0; }
-    .config-md hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
-    .config-md a { color:var(--accent); text-decoration:none; }
-
-    @media (max-width:600px) {
-      .projects-list { padding:24px; }
-      .page-header { padding:32px 24px 0; }
-      .project-row { flex-wrap:wrap; }
-      .global-config { padding:0 24px 24px; }
-    }
-  </style>
-</head>
-<body>
-  <div class="page-header">
-    <h1>Projects</h1>
-    <div style="display:flex;gap:8px"><button class="config-open-btn" id="config-open">Global Config</button></div>
-  </div>
-  <div class="projects-list">
-    ${activeRows}
-  </div>
-  <div class="config-overlay" id="config-overlay">
-    <div class="config-modal" id="config-modal"></div>
-  </div>
-  <script>
-  (function() {
-    if (!document.getElementById("config-open")) return;
-    var cache = null;
-    var editing = false;
-    var overlay = document.getElementById("config-overlay");
-    var modal = document.getElementById("config-modal");
-
-    function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-    function md(s) { try { return marked.parse(s||""); } catch(e) { return esc(s); } }
-
-    function renderModal() {
-      if (cache === null) {
-        modal.innerHTML = '<div style="color:var(--muted);padding:12px">Loading...</div>';
-        fetch("/global/claude-md").then(function(r){return r.json()}).then(function(d) {
-          cache = d.content || "";
-          renderModal();
-        }).catch(function() { cache = ""; renderModal(); });
-        return;
-      }
-
-      if (editing) {
-        modal.innerHTML =
-          '<div class="config-header"><h3>~/.claude/CLAUDE.md</h3><div style="display:flex;gap:8px">' +
-          '<button class="config-btn config-btn-save" id="gcfg-save">Save</button>' +
-          '<button class="config-btn config-btn-cancel" id="gcfg-cancel">Cancel</button>' +
-          '</div></div>' +
-          '<textarea id="gcfg-editor" style="width:100%;min-height:400px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:monospace;font-size:13px;line-height:1.5;resize:vertical;tab-size:2">' + esc(cache) + '</textarea>';
-        return;
-      }
-
-      modal.innerHTML =
-        '<div class="config-header"><h3>~/.claude/CLAUDE.md</h3><div style="display:flex;gap:8px">' +
-        '<button class="config-btn config-btn-edit" id="gcfg-edit">Bewerken</button>' +
-        '<button class="config-btn config-btn-close" id="gcfg-close">&times;</button>' +
-        '</div></div>' +
-        '<div class="config-md">' + md(cache) + '</div>';
-    }
-
-    document.getElementById("config-open").addEventListener("click", function() {
-      overlay.classList.add("visible");
-      renderModal();
-    });
-
-    overlay.addEventListener("click", function(e) {
-      if (e.target === overlay) { overlay.classList.remove("visible"); editing = false; }
-    });
-
-    document.addEventListener("keydown", function(e) {
-      if (e.key === "Escape" && overlay.classList.contains("visible")) { overlay.classList.remove("visible"); editing = false; }
-    });
-
-    document.addEventListener("click", function(e) {
-      if (e.target.id === "gcfg-close") { overlay.classList.remove("visible"); editing = false; }
-      if (e.target.id === "gcfg-edit") { editing = true; renderModal(); }
-      if (e.target.id === "gcfg-cancel") { editing = false; renderModal(); }
-      if (e.target.id === "gcfg-save") {
-        var ta = document.getElementById("gcfg-editor");
-        if (!ta) return;
-        fetch("/global/claude-md", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({content:ta.value}) })
-          .then(function(r){return r.json()}).then(function(d) { if(d.ok){cache=ta.value;editing=false;renderModal()} })
-          .catch(function(err){alert("Save failed: "+err.message)});
-      }
-    });
-  })();
-  </script>
-</body>
-</html>`;
-}
-
 module.exports = {
   getNavBarHtml,
   serveDashboard,
-  indexPage,
   esc,
 };

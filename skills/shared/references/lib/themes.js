@@ -657,12 +657,13 @@
   // ─── Init on DOM ready ─────────────────────────────────────
 
   function init() {
-    // Picker UI only on the main menu (/)
-    if (location.pathname === "/") {
-      var picker = createPicker();
-      document.body.appendChild(picker);
-      updatePickerState();
-    }
+    // Mount the picker inside the nav's preferences menu (present on every
+    // page via getNavBarHtml). Fall back to <body> for standalone pages that
+    // don't inject the nav (e.g. the "no projects" fallback screen).
+    var slot = document.getElementById("pn-theme-slot");
+    var picker = createPicker();
+    (slot || document.body).appendChild(picker);
+    updatePickerState();
   }
 
   if (document.readyState === "loading") {
