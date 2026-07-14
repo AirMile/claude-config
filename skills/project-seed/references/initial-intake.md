@@ -20,8 +20,22 @@
      An existing concept was found.
      ```
 
-   - Use AskUserQuestion:
+   - **Pending drift count:** `N` = `backlog.json#data.seedDrift[].length` + sum of all `.project/features/*/feature.json#seedDrift[].length` (skip missing files/arrays).
+   - Use AskUserQuestion. With `N > 0`, Sync moves to the top as the recommended option:
+
      ```yaml
+     # N > 0
+     header: "Existing Concept"
+     question: "What do you want to do?"
+     options:
+       - label: "Sync with project (Recommended)", description: "Integrate {N} deferred drift item(s) + built/planned gaps"
+       - label: "Edit", description: "Modify the existing concept"
+       - label: "New concept", description: "Start fresh with a new idea"
+     multiSelect: false
+     ```
+
+     ```yaml
+     # N = 0 (unchanged)
      header: "Existing Concept"
      question: "What do you want to do?"
      options:
@@ -30,6 +44,7 @@
        - label: "New concept", description: "Start fresh with a new idea"
      multiSelect: false
      ```
+
    - **If "Edit":**
      - Load existing concept from `.project/project-seed.md`
      - If `seed.scope` is already set in project.json, use it as default for the question below

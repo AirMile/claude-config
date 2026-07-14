@@ -126,6 +126,8 @@ Without hard criteria a model defaults back to asking. These five are the **comp
 
 Every triggered criterion goes into **one** `AskUserQuestion` call, at most 4 questions. Never two calls in one run.
 
+The seed-update question from `references/seed-alignment.md § Seed update question` may join this same single call as one extra question. It is **not** a sixth criterion; the 4-question cap wins — cap full → drop the seed question and downgrade its edits to record-only.
+
 Per `shared/SKILL-PATTERNS.md § Smart Suggestions`: first option carries `(Recommended)` and **is the inference result**, so accepting the default yields exactly what full-auto would have produced. The gate only ever buys a correction, never a required decision.
 
 ```yaml

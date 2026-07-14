@@ -7,12 +7,13 @@ writes:
     backlog.status,
     backlog.features,
     backlog.seedDrift,
+    concept.seed,
     project.stack,
     project.thinking,
   ]
 metadata:
   author: claude-config
-  version: 2.0.0
+  version: 2.1.0
   category: project
 ---
 
@@ -107,7 +108,7 @@ STACK: game   (→ /game-ship pipeline)
         ```
    - **Found** → parse JSON, generate the kebab-case name(s), then check for an existing item that means the same thing. An exact name match is not enough: `add-dark-mode` does not collide with an existing `dark-mode-theme`, yet they are the same card. Match on **both**:
      1. **Name equality** — `data.features.find(f => f.name === kebabName)`
-     2. **Token overlap** — tokenize (tokens ≥ 3 chars, the same tokenizer as § Dependencies inference and PHASE 2 step 5) the new name plus the key nouns of its description, and compare against each existing item's name + description. **≥ 2 shared tokens** makes it a candidate; then judge semantically whether it is really the same thing.
+     2. **Token overlap** — tokenize (tokens ≥ 3 chars, the same tokenizer as § Dependencies inference) the new name plus the key nouns of its description, and compare against each existing item's name + description. **≥ 2 shared tokens** makes it a candidate; then judge semantically whether it is really the same thing.
 
      Resolve:
      - **No candidate** → continue.
@@ -129,11 +130,19 @@ Per queue item, derive:
 
 Record, per field, whether the inference was **certain** or hit a gate criterion. Track why each choice was made — PHASE 3 reports it.
 
+**Seed alignment scan** (after the field derivation, before the gate):
+
+> **Todo**: run the Reader from `shared/SEED.md` once (cache `SEED_CONTEXT` across the queue). If `SEED_CONTEXT.present` → Read '.claude/skills/project-todo/references/seed-alignment.md' and run its § Alignment scan per queue item; otherwise skip silently.
+
+Verdict per item: `aligned`, or `drift { category, entry, proposedEdit }`, or `drift { category, entry, record-only }`. Quality types (BUG/PERF/A11Y/THEME/POLISH) default to aligned; when unsure → aligned.
+
 ### PHASE 1x: Ambiguity Gate
 
-Check the five criteria in `references/inference-rules.md § Ambiguity gate`. None triggered → **no modal at all**, straight to PHASE 2.
+Check the five criteria in `references/inference-rules.md § Ambiguity gate`. None triggered, and no drift verdict carries a `proposedEdit` → **no modal at all**, straight to PHASE 2.
 
 One or more triggered → **one** `AskUserQuestion` call, at most 4 questions, one per triggered criterion. Never two calls in one run. The first option is always the inference result marked `(Recommended)`, so accepting the default equals full-auto.
+
+If any PHASE 1 verdict carries a `proposedEdit` and no escape-hatch condition holds (`references/seed-alignment.md § Escape hatch`), append **one** extra "Seed update" question to this same single call, per `seed-alignment.md § Seed update question` — with the literal edit(s) as `preview`. The 4-question cap still wins: cap full → drop the seed question and downgrade its edits to record-only. This never justifies a second call.
 
 If criterion 2 (thin description) fired, fold the answers into the sharpened description — that is the only path that later writes a thinking doc.
 
@@ -168,23 +177,10 @@ If criterion 2 (thin description) fired, fold the answers into the sharpened des
 
 4. **Update metadata:** set `data.updated` to current date (`YYYY-MM-DD`)
 
-5. **Seed drift check** (per item, no LLM round, no modal):
-   - Run the Reader from `shared/SEED.md` once per run (first loop iteration only, cache `SEED_CONTEXT` across the queue). `SEED_CONTEXT.present === false` → skip silently.
-   - Representation check: tokenize the kebab name (tokens ≥ 3 chars) plus the key nouns of the description; the item counts as represented when the name or ≥ 1 token appears in `SEED_CONTEXT.markdown`.
-   - Not represented → prepare a `seedDrift[]` entry per the `shared/SEED.md § Drift entry schema`:
-
-     ```json
-     {
-       "category": "scope-expansion",
-       "seedSays": "(no mention of {name})",
-       "featureDecides": "{description, max 120 chars}",
-       "source": "/project-todo",
-       "ref": "feature:{name}",
-       "detectedAt": "{ISO timestamp}"
-     }
-     ```
-
-   - This is the SEED.md "Skip"-branch behavior: drift is recorded for later `/project-seed § Sync` pickup — never rewrite the seed, never ask. Log one line: `Seed: ⚠ drift recorded — {name} not in seed` or `Seed: ✓ aligned`.
+5. **Seed drift resolution** (executes the PHASE 1 verdict + 1x answer — no new modal, no re-scan):
+   - **Aligned** → log `Seed: ✓ aligned`, done.
+   - **Approved edit** (user picked "Apply edit(s)" in the PHASE 1x call) → apply the previewed Edit(s) literally to `.project/project-seed.md`, then the co-updates per `shared/SEED.md § Write targets` (pitch only when the replaced sentence appears in `seed.pitch`; `backlog.json#data.overview` rides the step-6 write pass). Details: `references/seed-alignment.md § Write path`. Log: `Seed: ✓ updated — {n} edit(s) applied`.
+   - **Declined / record-only / escape hatch** → prepare the drift `entry` (real `category`, verbatim `seedSays` for contradictions) per `shared/SEED.md § Drift entry schema` with `source: "/project-todo"`, `ref: "feature:{name}"`, for later `/project-seed § Sync` pickup. Log: `Seed: ⚠ drift recorded — {category}: {name}`.
 
 6. **Write back:** Edit the JSON in `.project/backlog.json`. Find a unique anchor in the existing features array and use Edit to insert the new object before it. Prepared drift entries from step 5 are appended to `data.seedDrift[]` in this same write pass (initialize the array if absent) — no separate write roundtrip.
 
@@ -228,7 +224,7 @@ If criterion 2 (thin description) fired, fold the answers into the sharpened des
      ```
    - Write `.project/project.json`
 
-   Do NOT write to `seed.content` or `project-seed.md` — those are owned by `/project-seed`.
+   `seed.content` is legacy — never write it. `project-seed.md` is only ever touched by the approved surgical path in step 5.
 
 ### PHASE 3: Output
 
@@ -245,7 +241,10 @@ TODOS ADDED ({n} items — auto-split)
   2. {name-2}    {phase} · {type}     ← depends on: {name-1}
      {description-2}
 
+  Seed: updated — {n} edit(s) applied ← only if step 5 applied edits
   Seed drift: {n} item(s) recorded    ← only if step 5 recorded drift
+  ⚠ {N} pending drift item(s) in backlog — run /project-seed → "Sync with project"
+                                      ← only if data.seedDrift[].length ≥ 3 after the write
   Backlog: .project/backlog.json
   Adjust? Say "make {name-1} P1" or "{name-2} should be COMPONENT".
   Next steps:
@@ -260,7 +259,10 @@ TODO ADDED
   {name}                {phase} · {type}
   {description}
   Thinking: .project/thinking/feature-idea-{name}.md    ← only if gate criterion 2 fired
+  Seed: updated — {n} edit(s) applied                   ← only if step 5 applied edits
   Seed drift: {n} item(s) recorded                      ← only if step 5 recorded drift
+  ⚠ {N} pending drift item(s) in backlog — run /project-seed → "Sync with project"
+                                                        ← only if data.seedDrift[].length ≥ 3 after the write
 
   Inferred: {phase} ({reason}) · {type} ({reason})
   Adjust? Say "make it P1" or "type is COMPONENT".
@@ -293,7 +295,10 @@ FEATURE ADDED
   {name}                {phase} · {type}
   {description}
   Thinking: .project/thinking/feature-idea-{name}.md    ← only if gate criterion 2 fired
+  Seed: updated — {n} edit(s) applied                   ← only if step 5 applied edits
   Seed drift: {n} item(s) recorded                      ← only if step 5 recorded drift
+  ⚠ {N} pending drift item(s) in backlog — run /project-seed → "Sync with project"
+                                                        ← only if data.seedDrift[].length ≥ 3 after the write
 
   Inferred: {phase} ({reason}) · {type} ({reason})
   Adjust? Say "make it P1" or "type is SYSTEM".
@@ -333,7 +338,7 @@ Log one line per field: `Corrected: {field} {old} → {new}` (plus `transition: 
 - Do NOT raise more than one `AskUserQuestion` call per run
 - Max 3 items per batch during auto-split
 - Gate criterion 2: max 2 clarifying questions
-- Do NOT write to `project-seed.md` or `seed.content` — only `/project-seed` may do that
+- Seed writes ONLY via the approved surgical path (PHASE 2 step 5, `references/seed-alignment.md § Surgical edit contract`) — a single targeted Edit or section append, never a rewrite. Everything else in `project-seed.md`/`seed.*` is owned by `/project-seed`; `seed.content` is legacy and never written
 
 ### Terminal Formatting
 

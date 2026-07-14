@@ -17,7 +17,7 @@ reads:
 writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 1.8.0
+  version: 1.9.0
   category: project
 ---
 
@@ -59,27 +59,27 @@ Develop the idea through rounds of concrete, clickable questions. Question conte
 **Scope = concept** (new idea/product/game/story):
 
 ```yaml
-header: "Target Audience"    # who is this for?
-header: "Scope"              # how large/ambitious?
-header: "Core Experience"    # most important feeling/outcome? (multiSelect: true)
-header: "Session Model"      # typical use/session? (optional 4th question)
+header: "Target Audience" # who is this for?
+header: "Scope" # how large/ambitious?
+header: "Core Experience" # most important feeling/outcome? (multiSelect: true)
+header: "Session Model" # typical use/session? (optional 4th question)
 ```
 
 **Scope = implementation** (Figma/design/spec → code):
 
 ```yaml
-header: "Source of Truth"    # what defines the design? (Figma, screenshots, existing site, spec doc)
-header: "Pages/Screens"      # what's in scope? (list from design or "unknown — investigate")
-header: "Tech Stack"         # confirm framework/CMS/integrations (or "use repo defaults")
-header: "Open Decisions"     # known open questions from the design? (annotations, TBDs)
+header: "Source of Truth" # what defines the design? (Figma, screenshots, existing site, spec doc)
+header: "Pages/Screens" # what's in scope? (list from design or "unknown — investigate")
+header: "Tech Stack" # confirm framework/CMS/integrations (or "use repo defaults")
+header: "Open Decisions" # known open questions from the design? (annotations, TBDs)
 ```
 
 **Scope = feature** (feature from backlog or assignment):
 
 ```yaml
-header: "Goal"               # what must this feature achieve?
-header: "Existing Context"   # what's already in the codebase?
-header: "Out of Scope"       # explicit exclusions?
+header: "Goal" # what must this feature achieve?
+header: "Existing Context" # what's already in the codebase?
+header: "Out of Scope" # explicit exclusions?
 header: "Definition of Done" # acceptance criteria?
 ```
 

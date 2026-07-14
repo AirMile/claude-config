@@ -4,7 +4,8 @@ How a skill reads seed context. Consumer skills reference this instead of repeat
 
 **Owner:** `/project-seed` writes freely; `/dev-ship (define phase)`, `/game-ship (define phase)`, and
 `/project-plan` may rewrite affected sections after their Seed Alignment
-Check with explicit user approval. All other skills are read-only consumers.
+Check with explicit user approval. `/project-todo` may apply approved **surgical edits only**
+(single sentence replacement or section append) — see § Writing. All other skills are read-only consumers.
 
 ---
 
@@ -48,6 +49,11 @@ When `present: false`: omit concept reference in recommendation text.
 1. The Seed Alignment Check (see `## Alignment Check` below) detected drift, AND
 2. The user explicitly approved the inline rewrite via the AskUserQuestion
    prompt (and plan-mode approval where the skill uses plan mode).
+
+`/project-todo` runs outside plan mode (a lighter model under model routers), so it never
+rewrites sections: its write mode is restricted to the surgical contract in
+`project-todo/references/seed-alignment.md` (one verbatim sentence replacement or one section
+append), and its approval prompt must show the literal edit as the option `preview`.
 
 All other skills remain read-only consumers. Additional session context
 (e.g. from user input) stays in-memory as `SEED_CONTEXT.markdown += extra`
@@ -102,7 +108,7 @@ multiSelect: false
 
 ### Resolution outcomes
 
-- **Yes** → generate inline rewrite of `project-seed.md` (preserve unaffected sections verbatim, rewrite only drifted sections); derive updated `seed.pitch` (1–2 sentences) if stale. In plan-mode skills: append proposed full file to plan file under `## Proposed seed update` heading for review. Carry `seedUpdateApproved: true` to sync phase. **The sync phase MUST also co-update `backlog.json#data.overview` whenever `seed.pitch` changed** — same source of truth, two surfaces. See [§ Write targets](#write-targets-sync-phase) for the canonical mutation set.
+- **Yes** → generate inline rewrite of `project-seed.md` (preserve unaffected sections verbatim, rewrite only drifted sections); derive updated `seed.pitch` (1–2 sentences) if stale. In plan-mode skills: append proposed full file to plan file under `## Proposed seed update` heading for review. Carry `seedUpdateApproved: true` to sync phase. **The sync phase MUST also co-update `backlog.json#data.overview` whenever `seed.pitch` changed** — same source of truth, two surfaces. See [§ Write targets](#write-targets-sync-phase) for the canonical mutation set. Exception: `/project-todo` never generates a section rewrite — its Yes-path applies the pre-approved targeted Edit(s) only.
 - **Skip** → record drift items as `seedDrift[]` (each entry per the schema below) and persist in the skill's primary artifact (`feature.json#seedDrift[]` or `backlog.json#data.seedDrift[]`). Picked up later by `/project-seed § Sync`, `/project-brainstorm` (concept-scope save), or `/project-critique` (concept-scope save) — first one to successfully rewrite the seed clears the matching entries. Carry `seedUpdateApproved: false`.
 - **Adjust** → loop on item selection, regenerate rewrite, re-prompt.
 
@@ -121,11 +127,12 @@ multiSelect: false
 
 ### Designated alignment points
 
-| Skill                       | Alignment point                                                        | Plan mode?  |
-| --------------------------- | ---------------------------------------------------------------------- | ----------- |
-| `/dev-ship (define phase)`  | During define's architecture interview (inline `AskUserQuestion`)      | No (inline) |
-| `/game-ship (define phase)` | During define's PHASE 3 architecture design (inline `AskUserQuestion`) | No (inline) |
-| `/project-plan`             | After PHASE 3 Priority Assignment confirmation, before ExitPlanMode    | Yes         |
+| Skill                       | Alignment point                                                                     | Plan mode?  |
+| --------------------------- | ----------------------------------------------------------------------------------- | ----------- |
+| `/dev-ship (define phase)`  | During define's architecture interview (inline `AskUserQuestion`)                   | No (inline) |
+| `/game-ship (define phase)` | During define's PHASE 3 architecture design (inline `AskUserQuestion`)              | No (inline) |
+| `/project-plan`             | After PHASE 3 Priority Assignment confirmation, before ExitPlanMode                 | Yes         |
+| `/project-todo`             | PHASE 1 alignment scan; question bundled into the single PHASE 1x `AskUserQuestion` | No (inline) |
 
 ---
 
@@ -139,6 +146,8 @@ When `seedUpdateApproved: true` reaches the consumer skill's sync phase, the fol
 | `project.json#seed.pitch`    | If pitch differs from previous            | Targeted Edit                                                                                               |
 | `project.json#seed.name`     | Only if H1 title in rewrite changed       | Targeted Edit                                                                                               |
 | `backlog.json#data.overview` | If `seed.pitch` changed                   | Replace with new pitch (or first 1–2 sentences if pitch > ~200 chars). Skip silently when already matching. |
+
+`/project-todo` deviation: the `project-seed.md` row is a **targeted Edit** (surgical contract, `project-todo/references/seed-alignment.md`), never a full-file write; the pitch/name/overview rows apply unchanged.
 
 Log line (consumer skill): `Seed: ✓ updated — N section(s) rewritten` (append ` + backlog.overview` when overview was co-updated).
 
