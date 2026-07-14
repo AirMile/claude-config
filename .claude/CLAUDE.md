@@ -28,7 +28,7 @@ Cross-platform: **macOS** and **Windows**.
 ## Structure
 
 ```
-skills/           41 skills in 8 categories
+skills/           42 skills in 8 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (each with SKILL.md)
 agents/           23 sub-agent definitions (.md with YAML frontmatter)

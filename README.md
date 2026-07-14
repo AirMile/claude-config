@@ -55,7 +55,7 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 
 | Category    | Skills                                                                                   |
 | ----------- | ---------------------------------------------------------------------------------------- |
-| `core`      | audit, bootstrap, commit, finalize, pull, setup, update                                  |
+| `core`      | audit, bootstrap, commit, finalize, orchestrate, pull, setup, update                     |
 | `content`   | rewrite, write                                                                           |
 | `dev`       | learn, optimize, security, ship, tweak                                                   |
 | `design`    | content, convert, ship, tokens                                                           |
