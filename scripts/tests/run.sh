@@ -762,6 +762,31 @@ fi
 
 rm -rf "$LWT"
 
+# --- check-task-markers.py ---
+# Fixture units live in their own subdirs: the validator scans sibling .md files
+# per skill dir, so isolation per fixture prevents cross-contamination.
+TM="$ROOT/scripts/fixtures/task-markers"
+
+run_tm() {
+  local label="$1" fixture="$2" want_exit="$3" want_pattern="$4"
+  local out code
+  out=$(python3 "$ROOT/scripts/check-task-markers.py" "$TM/$fixture/case.md" 2>&1)
+  code=$?
+  if [ "$code" -eq "$want_exit" ] && printf '%s' "$out" | grep -q "$want_pattern"; then
+    echo "PASS  task-markers: $label"
+    PASS=$((PASS + 1))
+  else
+    echo "FAIL  task-markers: $label (exit=$code, wanted $want_exit + /$want_pattern/)"
+    printf '%s\n' "$out"
+    FAIL=$((FAIL + 1))
+  fi
+}
+
+run_tm "conformant unit (incl. wrapped marker) → OK, exit 0" conformant 0 "^OK:"
+run_tm "seeded phase without header → WARN, exit 1" mismatch 1 "PHASE 2 has no matching header"
+run_tm "seeded phase never completed → WARN, exit 1" mismatch 1 'PHASE 2 is never marked `completed`'
+run_tm "unparsable seed → PARSE-SKIP, non-fatal exit 0" parse-skip 0 "PARSE-SKIP"
+
 echo
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

@@ -4,7 +4,7 @@ Extract evidence from the target skill's real run in this conversation. Report o
 
 **Extract:**
 
-1. **Deviations** — diff what SKILL.md prescribes against what Claude actually did: skipped or reordered steps, improvised output formats, instructions silently adapted. Every deviation marks an ambiguous, impractical, or unnecessary instruction.
+1. **Deviations** — diff what SKILL.md prescribes against what Claude actually did: skipped or reordered steps, improvised output formats, instructions silently adapted. Every deviation marks an ambiguous, impractical, or unnecessary instruction. Classify each as **skip** (step not executed), **weaken** (executed below spec), or **improvise** (replaced with a reconstructed version). These classifications are the primary evidence for dimension 10 (Execution Adherence) — an observed skip on a step the static read predicted as solid caps that score at 3.
 2. **User corrections** — every interruption, re-steer, rejection, or rephrase by the user. Map each friction point to the skill section that caused it.
 3. **"Other" answers** — AskUserQuestion calls the user answered with custom text instead of an offered option → the option set was wrong or incomplete. Quote the custom answer.
 4. **Auto-decidable modals** — questions whose answer was predictable from context already available (project files, conversation, sensible defaults). Count total modals vs avoidable ones.
@@ -22,7 +22,7 @@ TRACE OBSERVATIONS
 Run: [skill] — [completed | partial: stopped at step X | abandoned]
 
 Deviations:
-- [what the skill prescribes] → [what actually happened] ([location])
+- [what the skill prescribes] → [what actually happened] ([location]) — [skip|weaken|improvise]
 
 Friction:
 - [user correction/interruption] → [section that caused it]

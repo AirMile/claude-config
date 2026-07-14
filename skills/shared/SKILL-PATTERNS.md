@@ -249,7 +249,9 @@ visible — no risk of forgetting phases.
 - Lowercase `mark` in all inline + completion markers
 - Statuses always in backticks: `pending`, `in_progress`, `completed`
 - Skills using "Step" or "Phase" instead of "PHASE" keep their own word
-- Seed count = number of headers = number of markers (PHASE 0 marker + N-1 transitions + 1 completion = N total)
+- Every seeded phase has a matching header and is marked `in_progress` and `completed` somewhere in the skill (N seed items = N headers; PHASE 0 marker + N-1 transitions + 1 completion = N+1 markers)
+
+**Validator:** `python3 scripts/check-task-markers.py` enforces the seed = headers = status-coverage invariant (run per skill via `--skill <name>`; wired into `scripts/tests/run.sh`).
 
 **Skip for:** short CLI utilities (<5 phases), interactive thinking skills, backlog/CRUD skills.
 

@@ -174,16 +174,18 @@ Discover routes and screenshottable features inline using Glob, Grep, and Read.
 4. Check for theme support (dark mode toggle, colorScheme)
 
 Return structured output:
+
+```
 FEATURES_START
 
-| #            | Feature | URL Path | Description     | Required State                           |
-| ------------ | ------- | -------- | --------------- | ---------------------------------------- |
-| 1            | {name}  | {path}   | {what it shows} | {logged in / public / modal open / etc.} |
-| FEATURES_END |
+| # | Feature | URL Path | Description | Required State |
+| - | ------- | -------- | ----------- | -------------- |
+| 1 | {name} | {path} | {what it shows} | {logged in / public / modal open / etc.} |
+
+FEATURES_END
 
 APP_DESCRIPTION: {1-2 sentence summary of what the app does}
 THEME_SUPPORT: {yes/no}
-
 ```
 
 Parse the structured output from the agent.
@@ -231,13 +233,13 @@ SCREENSHOT PLAN:
 
 ...
 
-````
+```
 
 Create output directory:
 
 ```bash
 mkdir -p .project/screenshots
-````
+```
 
 ## PHASE 4: Capture Screenshots
 

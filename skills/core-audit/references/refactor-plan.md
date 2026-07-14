@@ -18,10 +18,11 @@ Order significant changes by impact, highest first.
 - Apply token-efficiency techniques (`skills/shared/SKILL-PATTERNS.md § Token Efficiency`, incl. Lazy Reference Loading) when criteria are met
 - Preserve unique project-specific knowledge and AskUserQuestion UX
 - Don't sacrifice clarity for brevity — if a longer explanation prevents mistakes, keep it
+- Harden skip-prone steps structurally (`> **Todo**` markers, **STOP** gates, artifact anchoring, script-ification of judgment calls) — not with added prose emphasis; and only where skipping is costly, since every hard gate adds tokens and friction
 
 ## 5.2 Selective Approval
 
-This is the single approval gate. Present a numbered plain-text list (`SKILL-PATTERNS.md § Numbered List Selection`). Per significant change include a `--- Before ---` / `--- After ---` block so the user approves concrete diffs, not titles:
+This is the single approval gate, and it doubles as the plan-mode exit (`shared/PLAN-MODE.md`) — no separate confirmation. Write a numbered plain-text list (`SKILL-PATTERNS.md § Numbered List Selection`) to the plan file. Per significant change include a `--- Before ---` / `--- After ---` block so the user approves concrete diffs, not titles:
 
 ```
 PROPOSED CHANGES
@@ -35,15 +36,18 @@ Minor (bundled):
 - [one-line each]
 ```
 
-Ask: "Which significant changes do I apply? Enter numbers (e.g. `1, 3`, `1-4`, `all`, `all except 2`). The minor bundle is included unless you add `no minors`."
+Then call `ExitPlanMode` to present it. Call it even if the skill started already in plan mode — the apply step below needs writes, which stay blocked until exit regardless of who entered.
 
+Interpret the user's approval response with the same rules as before:
+
+- "Which significant changes do I apply?" maps to numbers (e.g. `1, 3`, `1-4`, `all`, `all except 2`). The minor bundle is included unless the response adds `no minors`.
 - Empty or `none` with minors excluded → stop without modifying the skill
 - Selected change depends on an unselected one → say so and re-ask
 - Echo the parsed selection before applying
 
 ## 5.3 Apply
 
-Apply approved changes with Edit. For new reference extractions: Write the new `references/{descriptive-name}.md`, replace the inline block with a transition-marker Read directive.
+Runs after the `ExitPlanMode` exit (normal mode — writes are unblocked again). Apply approved changes with Edit. For new reference extractions: Write the new `references/{descriptive-name}.md`, replace the inline block with a transition-marker Read directive.
 
 Bump the audited skill's `metadata.version`: minor bump for significant changes, patch for a minors-only pass.
 
