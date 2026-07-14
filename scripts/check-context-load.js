@@ -245,6 +245,12 @@ check(
   ["backlogPresent", "items"],
 );
 check(
+  "backlog-load / guard-items",
+  "backlog-load.js",
+  [devRepo, "guard-items"],
+  ["backlogPresent", "items"],
+);
+check(
   "backlog-load / pages",
   "backlog-load.js",
   [devRepo, "pages"],

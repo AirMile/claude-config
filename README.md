@@ -53,16 +53,16 @@ Pulls the latest claude-config and rebuilds composed global files. For setup wit
 
 Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL-PATTERNS.md`](skills/shared/SKILL-PATTERNS.md) for conventions and [`skills/shared/PIPELINE.md`](skills/shared/PIPELINE.md) for canonical pipeline diagrams.
 
-| Category    | Skills                                                                     |
-| ----------- | -------------------------------------------------------------------------- |
-| `core`      | audit, bootstrap, commit, finalize, pull, setup, update                    |
-| `content`   | rewrite, write                                                             |
-| `dev`       | debug, learn, optimize, security, ship                                     |
-| `design`    | content, convert, ship, tokens                                             |
-| `game`      | debug, optimize, ship                                                      |
-| `marketing` | content, research, screenshots                                             |
-| `project`   | add, app, brainstorm, critique, plan, remove, research, seed, todo, tunnel |
-| `team`      | issues, outsource, review, verify                                          |
+| Category    | Skills                                                                                   |
+| ----------- | ---------------------------------------------------------------------------------------- |
+| `core`      | audit, bootstrap, commit, finalize, pull, setup, update                                  |
+| `content`   | rewrite, write                                                                           |
+| `dev`       | learn, optimize, security, ship, tweak                                                   |
+| `design`    | content, convert, ship, tokens                                                           |
+| `game`      | debug, optimize, ship, tweak                                                             |
+| `marketing` | content, research, screenshots                                                           |
+| `project`   | add, app, brainstorm, critique, memory, plan, remove, research, seed, sync, todo, tunnel |
+| `team`      | issues, outsource, review, verify                                                        |
 
 | Pipeline    | Flow                                                                                                                                                                          |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -72,6 +72,8 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 | `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                                          |
 
 Optional `/project-research` enriches the dev seed with market/tech/codebase context before backlog.
+
+Small 1-3-file changes skip the pipeline entirely via the `/dev-tweak` / `/game-tweak` fast path — scoped commit + optional learning, with a hard escalation gate back into the ship pipelines (shared discipline: [`skills/shared/TWEAK-DISCIPLINE.md`](skills/shared/TWEAK-DISCIPLINE.md)).
 
 State handoff between skills lives in `.project/session/devinfo.json` (schema: [`shared/DEVINFO.md`](skills/shared/DEVINFO.md)). A handful of skills delegate parallel work to sub-agents in [`agents/`](agents/) (OWASP scanners, Godot researchers, fix-strategies, learning-extractor) — invisible to the user.
 

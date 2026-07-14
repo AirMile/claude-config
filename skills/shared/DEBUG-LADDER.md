@@ -35,6 +35,9 @@ debug round hands off to the standalone `/game-debug` skill — see `game-ship/r
 no active feature/worktree), there is no standalone tier-3 command anymore — apply the same
 discipline inline: an Explore investigation, a single evidence-backed fix plan, then escalate to a
 fan-out only if that fails, following `debug-round.md`/`debug-round-heavy.md`'s structure by hand.
+Outside a ship pipeline, a **tier-1/2-sized** fix request is `/dev-tweak` · `/game-tweak` territory
+(`TWEAK-DISCIPLINE.md`) — tier-3 signals are an escalation criterion there, routing to `/game-debug`
+(game) or a `/dev-ship` debug round / the inline discipline above (dev).
 
 ## Tier 2 — the hypothesis loop (the discipline that prevents guess-and-check)
 

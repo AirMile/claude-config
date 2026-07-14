@@ -18,13 +18,16 @@ node scripts/backlog-load.js <repo-root> <profile> [feature-name]
 | `read-feature` | required                        | dev-ship build/define PHASE 0 (risk-check, dependency-status, `externalRef`, interview anchor) |
 | `ready-queue`  | —                               | dev-ship build phase selection display (ready ✓ / blocked ✗)                                   |
 | `open-items`   | required (excluded from result) | Backlog Impact Check — [BACKLOG.md § Impact Check](BACKLOG.md#impact-check-consumer-protocol)  |
+| `guard-items`  | —                               | tweak-skill backlog guard — [TWEAK-DISCIPLINE.md § Backlog guard](TWEAK-DISCIPLINE.md)         |
 | `pages`        | —                               | frontend PAGE enumeration (e.g. `dev-define/references/frontend-discovery.md`)                 |
 
 Output: one JSON object per profile.
 
 - `read-feature` → `{ present: false }` if the store or the feature is absent, else
   `{ present: true, name, type, status, description, risk, dependencies, externalRef, transition, pageHint }`.
-- `ready-queue` / `open-items` / `pages` → `{ backlogPresent, items }` — `items` may be `[]`.
+- `ready-queue` / `open-items` / `guard-items` / `pages` → `{ backlogPresent, items }` — `items` may be `[]`.
+  `guard-items` returns every non-CANCELLED card (all statuses and types, with `transition`/`stage`) —
+  unlike `open-items`, in-pipeline cards are exactly what the tweak guard must see.
 
 ## Game-pipeline equivalent
 

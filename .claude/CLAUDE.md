@@ -28,7 +28,7 @@ Cross-platform: **macOS** and **Windows**.
 ## Structure
 
 ```
-skills/           39 skills in 8 categories
+skills/           41 skills in 8 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (each with SKILL.md)
 agents/           23 sub-agent definitions (.md with YAML frontmatter)
@@ -65,8 +65,8 @@ Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 ## Pipelines
 
-**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (runs define→build→verify→refactor as one auto-mode flow, with in-ship park-first debug rounds on failure — no standalone debug skill)
-**Game**: `project-seed` → `project-plan` → `game-ship` (runs define→build→GUT-verify→playtest→refactor as one auto-mode flow) (+ `game-debug` everywhere, Godot 4.x / GUT)
+**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (runs define→build→verify→refactor as one auto-mode flow, with in-ship park-first debug rounds on failure — no standalone debug skill); small 1-3-file changes skip the pipeline via `dev-tweak` (gate/guard: `shared/TWEAK-DISCIPLINE.md`)
+**Game**: `project-seed` → `project-plan` → `game-ship` (runs define→build→GUT-verify→playtest→refactor as one auto-mode flow) (+ `game-debug` everywhere, Godot 4.x / GUT); small changes via `game-tweak` (same TWEAK-DISCIPLINE fast path)
 **Design**: `design-convert` (spec management, visual→code convert — sketch/wireframe/Figma/Canva/URL → high-fi code — and game `.tscn` codegen) & `design-content` (fill copy) feed `design-ship` — auto-mode build→content→check as one flow (Build lane / web); `design-tokens` for tokens/motion packs; dev-track counterpart: `dev-ship`
 **Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`
 

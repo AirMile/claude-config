@@ -14,6 +14,7 @@
 //   node scripts/backlog-load.js <repo-root> ready-queue
 //   node scripts/backlog-load.js <repo-root> queue <status> [transition]
 //   node scripts/backlog-load.js <repo-root> open-items <feature-name>
+//   node scripts/backlog-load.js <repo-root> guard-items
 //   node scripts/backlog-load.js <repo-root> pages
 //   node scripts/backlog-load.js <repo-root> game-read-feature <feature-name>
 //   node scripts/backlog-load.js <repo-root> game-queue <status> [transition]
@@ -186,6 +187,29 @@ switch (profile) {
     break;
   }
 
+  // Tweak-skill backlog guard (shared/TWEAK-DISCIPLINE.md § Backlog guard):
+  // every live card regardless of status/type — unlike open-items, DOING/DONE
+  // and design-track cards are exactly what the guard must see, and
+  // `transition`/`stage` tell it whether a pipeline currently owns the area.
+  case "guard-items": {
+    if (!data) {
+      emit({ backlogPresent: false, items: [] });
+      break;
+    }
+    const items = features
+      .filter((f) => f.status !== "CANCELLED")
+      .map((f) => ({
+        name: f.name,
+        type: f.type,
+        status: f.status,
+        transition: f.transition || null,
+        stage: f.stage || null,
+        description: f.description || null,
+      }));
+    emit({ backlogPresent: true, items });
+    break;
+  }
+
   case "pages": {
     if (!data) {
       emit({ backlogPresent: false, items: [] });
@@ -268,6 +292,6 @@ switch (profile) {
 
   default:
     usageError(
-      `unknown profile "${profile}" — expected one of: read-feature, ready-queue, queue, open-items, pages, game-read-feature, game-queue`,
+      `unknown profile "${profile}" — expected one of: read-feature, ready-queue, queue, open-items, guard-items, pages, game-read-feature, game-queue`,
     );
 }
