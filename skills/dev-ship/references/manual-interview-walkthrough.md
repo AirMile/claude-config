@@ -3,9 +3,13 @@
 **When:** dev-ship PHASE 3 has `remainingManualItems` (from AGENT 2). This is the **collect-only**
 walkthrough: each item is presented on its own, the user tests it live, and any non-pass verdict gets
 its detail captured immediately — but nothing is fixed here. MANUAL = human perception/judgment,
-real-credential auth, physical-device, or audio/screen-reader checks (each carries a `manualReason`
-per `dev-verify/references/test-classification.md` — an item without one is a contract violation and
-should not have reached this file). Visual polish is not a MANUAL _verification_ item — but the
+real-credential auth, physical-device, audio/screen-reader checks, or objectively-checkable items no
+automation vehicle can reach (`tooling-gap` — e.g. a Tauri shell without WebDriver) (each carries a
+`manualReason` per `dev-verify/references/test-classification.md` — an item without one is a contract
+violation and should not have reached this file). Items split into **judgment-class** (`perception`,
+`audio` — the user's verdict is the evidence) and **evidence-class** (`tooling-gap`,
+`real-credentials`, `physical-device`, `screen-reader` — a Pass asks for user-supplied evidence; soft
+gate, see Step C). Visual polish is not a MANUAL _verification_ item — but the
 running app routinely sparks change requests, so this round also accepts a **Tweak** outcome ("works,
 but I want it different"), and a closing interview surfaces anything else the user noticed. None of
 that gets fixed during this walkthrough — see `phase-3-manual-finalize.md § Findings ledger +
@@ -36,13 +40,38 @@ ledger) resumes.
 ## Step A2 — Evidence pre-check sweep (before plan mode)
 
 For each MANUAL item with an objectively observable sub-aspect (a DOM state, a navigation, a visible
-outcome — not the perception/audio/credential/device reason itself), exercise it now via
-Claude-in-Chrome (preferred — see `shared/CLAUDE-IN-CHROME.md` for the tool-loading ritual and the
-Chrome/Playwright decision rule) or the `playwright-cli` daemon (fallback, no live browser
-connected), and capture one screenshot per item (note its path — you'll attach it in Step B/D). Skip
-this sweep entirely for items that are purely perceptual (real credentials, audio, physical device,
-screen reader — nothing here is objectively pre-checkable). This sweep never sets a verdict — it only
-prepares evidence for the human to confirm against.
+outcome — not the perception/audio/credential/device reason itself), collect evidence now, before plan
+mode. Skip this sweep entirely for items that are purely perceptual (real credentials, audio, physical
+device, screen reader — nothing here is objectively pre-checkable). This sweep never sets a verdict —
+it only prepares evidence for the human to confirm against.
+
+**Native-shell exception (check first)**: when the app under test is a native-shell app whose window
+no automation vehicle can drive (Tauri/Electron without a working WebDriver), skip this sweep
+entirely — no vehicle means no evidence, in a fork or otherwise. Evidence-class items then run in
+**user-evidence mode**: the proof comes from the user in Step C instead of from this sweep.
+
+**Primary — fork dispatch** (`shared/SKILL-PATTERNS.md § Fork Delegation`). Dispatch one fork (`Agent`
+tool, `subagent_type: "fork"`): it inherits this session's context — the items, the app URL, the
+launch state — so the prompt states only the task, no context re-statement. The fork exercises each
+pre-checkable item via Claude-in-Chrome (preferred — see `shared/CLAUDE-IN-CHROME.md` for the
+tool-loading ritual and the Chrome/Playwright decision rule) or the `playwright-cli` daemon (fallback,
+no live browser connected), saves one screenshot per item to `.project/screenshots/`, and returns
+ONLY:
+
+```
+EVIDENCE_SWEEP_START
+{item id} | exercised: yes|no | {one-line observation} | {screenshot path or "-"}
+… one line per pre-checkable item
+EVIDENCE_SWEEP_END
+```
+
+End the turn after the dispatch and wake on the fork's task-notification. Do **not** touch the browser
+while the fork runs — it shares the same Chrome session. On wake, parse the block and note each
+item's screenshot path (you'll attach it in Step B/D), then proceed to Step A3.
+
+**Fallback — inline sweep** (fork dispatch unavailable or errored): exercise each pre-checkable item
+yourself via the same vehicles and capture one screenshot per item (note its path). Same output
+discipline: keep only the per-item observation + path, don't carry raw page dumps forward.
 
 ## Step A3 — Enter plan mode
 
@@ -54,6 +83,12 @@ routing` names the exact exit point per path). **Trade-off, accepted**: a sessio
 loses that session's in-memory verdicts — the resume filters `remainingManualItems` down to items not
 yet present in the persisted `manual.items` (`phase-3-manual-finalize.md § Resume entry`), so nothing
 is lost except having to re-ask those specific items.
+
+**If a mid-walkthrough discovery needs its own approval** (e.g. the test environment itself must
+change) and plan mode gets entered/exited for that unrelated purpose: the walkthrough's original
+write-protection window has already lapsed. Do not try to re-enter plan mode to "resume" it —
+persist the ledger directly via the `ship-checkpoint.js item` batch-write (§ Step E) once the
+walkthrough itself concludes, without waiting on a second `ExitPlanMode` call.
 
 ## Step B — Present ONE item
 
@@ -70,6 +105,11 @@ MANUAL TEST {i}/{M} — {title}
   expected: {observable outcome}
 ```
 
+For an evidence-class item with no Step A2 evidence, append one pre-chewed evidence step to `steps`,
+naming the concrete end state to capture — e.g. `3. take a screenshot showing {the element/state
+from expected}` (a photo of the device for `physical-device`; pasted command/log output where a
+screenshot fits less).
+
 If Step A2 produced evidence for this item, lead with it: "already exercised — here's the evidence
 (screenshot); confirm, or test it yourself." Otherwise wait for the user to actually run it before
 asking for a verdict — this is a live check, not a read-through.
@@ -84,6 +124,21 @@ One `AskUserQuestion` per item (not batched — the user asked for item-by-item 
 - `Skip / Defer` — one immediate follow-up: which of the two, and why (reason for Skip; blocking
   external prereq for Defer — account, CORS-origin, API-token, third-party config). **Defer is for
   external blockers only** — "it is broken" is by definition a **Fail**, never a Defer.
+
+**Evidence gate (soft) — evidence-class items only.** When the user answers `Pass` on an
+evidence-class item and Step A2 produced no evidence for it:
+
+1. Ask for the evidence named in Step B: drag the screenshot file into the chat (a path you can
+   `Read`) or paste the image directly.
+2. Verify it yourself against the item's `expected` — this is the factual check the automation could
+   not run. Match → record `verdict: "pass"` with the evidence. Discrepancy → show the user what you
+   see vs `expected`; the user decides (fail / tweak / pass anyway — a pass-anyway keeps the
+   evidence but notes the discrepancy in `observed`).
+3. User declines or cannot provide evidence → Pass still stands (**soft gate**), recorded with
+   `evidence: "none"` — it surfaces as **unproven** in the routing summary and the final report.
+
+Judgment-class items (`perception`, `audio`) never trigger this gate — the verdict itself is the
+evidence.
 
 ## Step D — Immediate detail capture on Fail/Tweak (do NOT fix)
 
@@ -116,22 +171,26 @@ fix routing lives in `phase-3-manual-finalize.md § Findings ledger + routing`, 
 
 ## Step E — Collect (in memory)
 
-Keep each item's full record (id, title, verdict, category, observed, expected, screenshot, source)
-in memory as you go — do **not** write to the checkpoint yet; plan mode blocks it. Repeat Steps B–E
-for every remaining item.
+Keep each item's full record (id, title, verdict, category, manualReason, observed, expected,
+screenshot, evidence, source) in memory as you go — do **not** write to the checkpoint yet; plan mode
+blocks it. `evidence` is `{path}` (user-supplied file, or the Step A2 capture), `"in-chat"` (pasted
+image — cannot be persisted to disk; note the paste timestamp in `observed`), or `"none"` (unproven
+pass). Repeat Steps B–E for every remaining item.
 
 **Batch persist (after plan-mode exit).** The exact `ExitPlanMode` you follow is named in
 `phase-3-manual-finalize.md § Findings ledger + routing` (it differs by which path the ledger takes).
 Immediately after that exit, in one call:
 
 ```bash
-echo '[{"id":"MT-1","title":"...","verdict":"pass","category":"...","observed":"...","expected":"...","screenshot":"...","source":"checklist"}, {"id":"MT-2", ...}]' \
+echo '[{"id":"MT-1","title":"...","verdict":"pass","category":"...","observed":"...","expected":"...","manualReason":"tooling-gap","screenshot":"...","evidence":".project/screenshots/mt-1.png","source":"checklist"}, {"id":"MT-2", ...}]' \
   | node ~/.claude/scripts/ship-checkpoint.js item {feature} manual
 ```
 
 Send the full in-memory array — the script upserts each element into `manual.items` by `id` in one
 atomic write. Then patch `manual.interviewDone: true`, and capture any screenshots you deferred in
-Step D (the app is still running).
+Step D (the app is still running). User-supplied evidence files: copy them into
+`.project/screenshots/` now (a disk write — only possible after the plan-mode exit) and store that
+path as the item's `evidence`.
 
 ## Step F — "Now that you see it running" interview close
 

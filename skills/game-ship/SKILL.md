@@ -52,6 +52,11 @@ workflows under
   mid-run **and its fix-plan gate**; everything else hands-off. Merge happens at the end of PHASE 4.
   The playtest classification (COVERED=GUT vs MANUAL=playtest) is advisory; AGENT 2's
   `remainingManualItems` is authoritative for PHASE 3.
+- **Difficulty escalation** — any main-chat decision point that turns out genuinely hard (triggers
+  in `shared/PLAN-MODE.md § Difficulty escalation`: multi-approach architecture calls, twice-failed
+  fixes, plan-invalidating surprises — e.g. choosing recovery after a `"failed"` workflow return)
+  enters plan mode for the thinking, exits with the decision, and continues execution. Backstop
+  only — the catalogued PHASE 0/3/4 gates keep their own entries.
 - **Build and verify are separate agents/contexts** (fresh verify = adversarial). **`.project/` is
   shared on disk, context isolated** — sequential, one writer, re-read `.project/` after every agent
   return. See `references/agent-verify.md` / `references/non-interactive-contract.md`.

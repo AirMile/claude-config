@@ -1,0 +1,29 @@
+{
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "verdict": "PASS",
+      "acceptancePass": 2,
+      "acceptanceTotal": 2,
+      "builderPass": 3,
+      "builderTotal": 3
+    },
+    {
+      "id": "REQ-002",
+      "verdict": "PASS",
+      "acceptancePass": 1,
+      "acceptanceTotal": 1,
+      "builderPass": 2,
+      "builderTotal": 2
+    }
+  ],
+  "checklist": { "1": "PASS", "2": "PASS" },
+  "knownIssues": [
+    {
+      "id": "REQ-002",
+      "title": "Empty-state spacing off by 4px",
+      "verdict": "wontfix",
+      "reason": "not a real verdict"
+    }
+  ]
+}

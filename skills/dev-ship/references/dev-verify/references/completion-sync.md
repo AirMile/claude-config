@@ -31,7 +31,8 @@ echo '{
   "verificationCheckpoint": { "gaps": [], "mismatches": [], "adjustments": "none" },
   "acceptanceTestFile": "tests/acceptance/....spec.ts",
   "seedPages": [{ "name": "admin-settings", "routePattern": "app/admin/settings/page.tsx" }],
-  "designComponent": "Button"
+  "designComponent": "Button",
+  "knownIssues": [{ "id": "REQ-003", "title": "...", "verdict": "deferred", "reason": "...", "source": "dev-verify" }]
 }' | node ~/.claude/scripts/completion-sync.js sync {feature-name}
 ```
 
@@ -41,6 +42,7 @@ Field notes:
   (BLOCKED/UNCLEAR need `evidence`); score fields optional.
 - `checklist`: `{ "<checklist-id>": "PASS"|"FAIL"|"skip" }` for every `tests.checklist[]` item.
 - `designComponent`: only when PHASE 4 touched components / `IS_COMPONENT_VERIFY = true` (updates `project.json#design.components[]` — the design-track inventory, unrelated to the architecture map).
+- `knownIssues[]`: optional, one entry per item this run marked DEFERRED (`workflow.md § Step 3`) — `verdict` is always `"deferred"` here, `source` always `"dev-verify"`. Upserted by `id` into `feature.json#tests.knownIssues[]` and the backlog entry's `knownIssues[]`, surfaced on the dashboard as a badge (see `shared/BACKLOG.md § Known-issue badges`). Distinct from — and does not replace — the existing `tests.checklist[i].status:"deferred"`/`hasDeferred` re-test marker; both get written from the same DEFERRED verdict.
 
 Exit codes: `0` full sync · `6` validation failed before any write (missing/unknown verdict, or a
 forbidden key anywhere in the payload) — fall back to hand-authoring; > **Todo**: Read

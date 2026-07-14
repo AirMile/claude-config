@@ -431,6 +431,33 @@ Two sanctioned agents:
 
 ---
 
+## Fork Delegation
+
+**When:** A skill needs work done whose tool output should stay out of the main context, but whose input is the live conversation itself — re-serializing that context into a fresh agent prompt would be expensive or lossy.
+
+A **fork** (`Agent` tool with `subagent_type: "fork"`) inherits the full conversation context at spawn time, runs in the background, keeps its tool output out of the main context, and returns only its final message. It always runs on the parent model (a `model` override is ignored). This is a fourth agent justification besides scale-parallelism, independent reasoning, and context-isolation-for-volume (project CLAUDE.md § Agent Conventions): **context-inheritance with output-isolation**.
+
+**Use a fork only when ALL three hold:**
+
+1. The conversation context is load-bearing — re-serializing it into a fresh agent prompt is expensive or lossy (interview history, round history, live app/launch state), AND
+2. the work's tool output does not belong in the main context (browser loops, test-suite output, broad reads), AND
+3. the result fits in a compact delimited block (same contract as scout agents above).
+
+**How:** dispatch the fork with a task-only prompt (no context re-statement — that is the point), end the turn, wake on its task-notification (same rhythm as background Workflows). Parse only the delimited block from its final message.
+
+**Rules:**
+
+- **Never** for adversarial or independent judgment (verify, critique, fix-strategy diversity) — inherited context is contamination there, not a feature.
+- **Never** for fan-outs or mechanical work: forks always run the parent model, so fresh sonnet/haiku agents stay correct there (§ Agent Model Selection).
+- The fork sees context only up to the spawn moment; nothing after propagates. The result returns only as its final message → the delimited-block contract is mandatory.
+- The main chat does no conflicting work while the fork runs (same browser session, same worktree files) — wait for the notification.
+- **Fallback required:** every fork dispatch names its fresh-agent or inline fallback. Forks are a harness feature — if the dispatch is unavailable or errors, take the fallback path without retrying.
+- **Cost framing:** the fork's win is main-context headroom (fewer compactions late in long interactive phases), not a lower bill — it re-reads the conversation as cached input on the parent model. Do not reach for a fork where a cheap fresh agent with a short prompt does the job.
+
+**Decision rule:** conversation context load-bearing + output isolation needed → fork. Context cheaply re-statable as paths/fields + filtering needed → scout agent (§ Context Aggregation). Result must be reasoned over line-by-line in the main chat → inline.
+
+---
+
 ## Description Format
 
 **When:** When writing or reviewing SKILL.md frontmatter `description`.

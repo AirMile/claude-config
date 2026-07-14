@@ -21,9 +21,10 @@ here are **no arg**, a fast-path miss, or **no open checkpoint**.
   irreproducible user choices (direction, archetype, brief) written only at Step 9, post-plan-exit,
   so the first checkpoint write already lands after the gate. This asymmetry with dev/game is
   deliberate. A **Restart** choice continues fresh below.
-- **No open checkpoint** → run the **preflight checks** (dirty working tree, colliding
-  `worktree-{target}` from a prior aborted run without a checkpoint; per `SHIP-CHECKPOINT.md
-§ Preflight`), surface any notice, then continue to Step 1.
+- **No open checkpoint** → run the **preflight checks** (merge/rebase-in-progress **hard stop**;
+  dirty working tree; colliding `worktree-{target}` from a prior aborted run without a checkpoint;
+  per `SHIP-CHECKPOINT.md § Preflight`), surface any notice — a hard stop ends the turn with
+  resolve instructions — then continue to Step 1.
 
 On a fresh run, capture the rollback anchor now: `baselineSha = git rev-parse HEAD` (read-only). It
 is written to the checkpoint in Step 9.

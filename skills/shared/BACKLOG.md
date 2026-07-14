@@ -43,6 +43,15 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
       "auto": "true|null",
       "refactor": "REFACTORED|ROLLED_BACK|null",
       "summary": "<=200 chars, human-readable — set at ship time, see § Shipped summary",
+      "knownIssues": [
+        {
+          "id": "REQ-003",
+          "title": "...",
+          "verdict": "deferred|accepted",
+          "reason": "...",
+          "source": "ship-ledger|dev-verify"
+        }
+      ],
       "audit": {
         "buildScreenshot": "<path>",
         "buildSmokeStatus": "PASS|FAIL|SKIPPED",
@@ -260,6 +269,41 @@ Items with `status === "DONE"` that have not yet shipped render in the **In prog
 `/dev-ship`'s refactor phase writes this field on both `feature.json` and the backlog feature in the same sync. On CLEAN or REFACTORED, `f.shipped = true` also follows and the item moves to the Dashboard.
 
 > **Invariant:** `f.refactor === "REFACTORED"` implies `f.shipped === true` + feature absent from `backlog.json#features[]` + feature present in `backlog-archive.json#archived[]` + feature-dir under `features/archive/`. A `refactor`-without-`shipped` state is invalid — `/dev-ship`'s refactor phase must detect and self-heal this before completing (see `dev-ship/references/dev-refactor/workflow.md`).
+
+## Known-issue badges
+
+A ship run's manual/playtest ledger can end an item with `verdict: "accepted"` (explicit "Accept
+anyway" at a debug-ladder ceiling or a non-converging tweak loop) or `verdict: "deferred"` (external
+blocker, or a `/dev-verify` DEFERRED item) — see `shared/SHIP-CHECKPOINT.md`'s `manual.items[]`
+schema comment for the full distinction. That ledger lives in the session checkpoint and is deleted
+on green completion, so `scripts/completion-sync.js` folds any such items into a durable
+`f.knownIssues[]` array at completion-sync time — same moment `f.status` flips to `DONE`:
+
+```json
+"knownIssues": [
+  {
+    "id": "REQ-003",
+    "title": "Empty-state spacing off by 4px",
+    "verdict": "deferred",
+    "reason": "cosmetic, external design review pending",
+    "source": "ship-ledger"
+  }
+]
+```
+
+| Field     | Meaning                                                                                                                       |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `id`      | The REQ/checklist/ledger item id this outcome belongs to                                                                      |
+| `title`   | Short human-readable summary                                                                                                  |
+| `verdict` | `"deferred"` \| `"accepted"` — never a third value; orthogonal to `f.status`                                                  |
+| `reason`  | Free text — why it was accepted/deferred                                                                                      |
+| `source`  | `"ship-ledger"` (dev-ship/game-ship manual/playtest walkthrough) \| `"dev-verify"` (a standalone `/dev-verify` DEFERRED item) |
+
+Optional; absent when a ship completed with no accepted/deferred items. Rendered on the dashboard
+card as a `⚠ N known issue(s)` badge regardless of `f.status` (unlike the refactor-badge, it is not
+gated to DONE — a known issue can persist through shipping), expandable to list each item's title,
+verdict, and reason. Survives archiving: carried verbatim when the feature object moves to
+`backlog-archive.json#archived[]` (same as `refactor`/`summary`).
 
 ## COMPONENT as first-class type
 

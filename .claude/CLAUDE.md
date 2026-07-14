@@ -60,7 +60,7 @@ Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 - Frontmatter: name, description, model (`sonnet` default), color
 - Run via `Task` tool in isolated context — keep output compact
-- Only use where agents provide real value: scale-parallelism (OWASP scanners), independent reasoning (fix strategies), context-isolation for large volumes (refactor Explore)
+- Only use where agents provide real value: scale-parallelism (OWASP scanners), independent reasoning (fix strategies), context-isolation for large volumes (refactor Explore), context-inheritance with output-isolation (forks — `shared/SKILL-PATTERNS.md § Fork Delegation`)
 - Most skills do analysis inline — agents only for the exceptions above
 
 ## Pipelines

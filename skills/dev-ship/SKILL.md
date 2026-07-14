@@ -27,11 +27,12 @@ writes:
     concept.seed,
     project-context.learnings,
     conventions,
+    security.shipTriage,
   ]
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.13.0
+  version: 0.21.0
   category: dev
 ---
 
@@ -52,6 +53,11 @@ and drives them internally — there are no separate `/dev-define`…`/dev-refac
 - **One human touchpoint** (PHASE 0 define + plan-approval gate); then hands-off except the
   conditional PHASE 3 manual round **and its fix-plan gate**. Merge happens at the end of PHASE 4.
   `verificationProfile` is advisory; AGENT 2's `remainingManualItems` is authoritative for PHASE 3.
+- **Difficulty escalation** — any main-chat decision point that turns out genuinely hard (triggers
+  in `shared/PLAN-MODE.md § Difficulty escalation`: multi-approach architecture calls, twice-failed
+  fixes, plan-invalidating surprises — e.g. choosing recovery after a `"failed"` workflow return)
+  enters plan mode for the thinking, exits with the decision, and continues execution. Backstop
+  only — the catalogued PHASE 0/3/4 gates keep their own entries.
 - **Build and verify are separate agents/contexts** (fresh verify = adversarial). **`.project/` is
   shared on disk, context isolated** — sequential, one writer, re-read `.project/` after every agent
   return. See `references/agent-verify.md` / `references/non-interactive-contract.md`.
@@ -100,18 +106,21 @@ then a fresh-session resume when manual items remain.
 ### PHASE 0: Define + Classify + Auto-derive technique plan
 
 > **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred
-> and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above).
-> Mark PHASE 0 → `in_progress` via `TaskUpdate`.
-> **Then route in two steps** (the resume path is deliberately cheap — it skips the fresh-run PHASE 0
-> file entirely):
+> and unusable without their schemas.
+> **Check for a resumable run before seeding tasks** (the resume path is deliberately cheap — it
+> skips the fresh-run PHASE 0 file entirely):
 >
 > 1. **Resume check first.** If `/dev-ship` was called with an **explicit** `{feature}` arg and
 >    `test -f .project/session/ship-{feature}.json` succeeds (an open checkpoint) → Read
 >    `.claude/skills/shared/SHIP-RESUME.md` and follow it. The fast path jumps straight to the
 >    checkpoint's recorded phase (no prompt when explicit arg + matching pipeline + running + ≤ 24h)
 >    — so on the common parked-resume you land in PHASE 3 **without** loading
->    `phase-0-define-classify.md`. (Only a "Restart fresh" choice falls through to step 2.)
-> 2. **Fresh / no-arg / no checkpoint** → Read
+>    `phase-0-define-classify.md`. **Seed `TaskCreate` per its § 3 re-seed step**: every phase in
+>    `completedPhases` created `completed`, the rest `pending` — never create all 6 as `pending`
+>    first and then flip the already-done ones. (Only a "Restart fresh" choice falls through to
+>    step 2.)
+> 2. **Fresh / no-arg / no checkpoint** → call `TaskCreate` with the 6 phase items (see above), mark
+>    PHASE 0 → `in_progress` via `TaskUpdate`, then Read
 >    `.claude/skills/dev-ship/references/phase-0-define-classify.md` and follow it from Step 0 (it
 >    resolves the feature name — needed before a no-arg resume check — then delegates resume
 >    detection to `SHIP-RESUME.md` and runs preflight + define for a genuine fresh run).
@@ -239,6 +248,29 @@ above.
 > On a **failure-jump, leave the checkpoint on disk** (`status: "failed"`) so `/dev-ship {feature}`
 > can resume; surface its `baselineSha` in the failure report as the rollback anchor.
 
+**Security auto-todo** (only when `results.triage.confirmed` is non-empty — read from the ship-triage
+file `orchestration.md § 5` just persisted, not the about-to-be-deleted checkpoint): if it contains
+≥1 finding with `severity: "critical"` or `"high"`, auto-create a backlog todo — deliberately without
+an `AskUserQuestion` (a confirmed CRITICAL/HIGH security finding is not optional to surface, unlike
+the Smart-Todo Creation pattern's usual confirm-first flow, `shared/SKILL-PATTERNS.md § Smart
+Suggestions`). Dedup first (`shared/BACKLOG.md § Writing the backlog` name check): if
+`data.features.find(f => f.name === "security-{feature}")` already exists and is open, skip creation
+and log one line instead. Otherwise push to `backlog.json#data.features[]`:
+
+```json
+{
+  "name": "security-{feature}",
+  "type": "SECURITY",
+  "status": "TODO",
+  "phase": "P1",
+  "description": "{X} CRITICAL / {Y} HIGH confirmed by ship security triage. Findings: .project/security/ship-triage-{feature}.json. Remediate via /dev-security {feature}.",
+  "source": "/dev-ship",
+  "parentFeature": "{feature}"
+}
+```
+
+Then patch `backlogTodo: "security-{feature}"` into the ship-triage file.
+
 Print the ship summary (ASCII table): feature, build test counts, verify results, manual outcomes,
 refactor result, security findings (if any), and the collected `autoDecisions[]` (choices the
 agents auto-made in non-interactive mode) for your review. All fields come from the checkpoint's
@@ -249,9 +281,9 @@ SHIP COMPLETE: {feature}
 ========================
 Plan:     auto-derived → lenses {refactorLenses} · security {securityDeep or "none"}
 Build:    {passed}/{total} PASS
-Verify:   AUTO {n} PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}) · {rounds} fix round(s)
+Verify:   AUTO {n} PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}/{accepted}) · {rounds} fix round(s)
 Refactor: {lenses applied} · {techniques} applied ({reverted} reverted)
-Security: {triage: {confirmed} confirmed · {dismissed} dismissed, or "not run"}
+Security: {triage: {confirmed} confirmed · {dismissed} dismissed → persisted + todo security-{feature}, or just persisted if below the auto-todo threshold, or "not run"}
 Merged:   {yes → main | no → {reason}}
 
 Auto-decisions ({N}):

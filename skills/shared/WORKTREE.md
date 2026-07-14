@@ -21,6 +21,7 @@ Run once after a worktree is first created (Step 3 of auto-create). Makes backlo
 | `.project/features/`            | **Yes** | `feature.json` readable from both checkouts                                                       |
 | `.project/project.json`         | **Yes** | Design spec, theme, routing — project-wide                                                        |
 | `.project/project-context.json` | **Yes** | Learnings, architecture — project-wide                                                            |
+| `.project/archive/`             | **Yes** | Shipped-feature backlog archive + archived feature.json dirs — project-wide, not session-bound    |
 | `.project/wireframes/`          | **Yes** | Design artifacts — not code, not session-bound                                                    |
 | `.project/screenshots/`         | **Yes** | Audit artifacts — not session-bound                                                               |
 | `.project/thinking/`            | **Yes** | Research output — not session-bound                                                               |
@@ -39,12 +40,13 @@ mkdir -p "$WT/.project/session"
 rm -f "$WT/.project/.project"
 
 rm -f "$WT/.project/backlog.json"
-rm -rf "$WT/.project/features" "$WT/.project/wireframes" \
+rm -rf "$WT/.project/features" "$WT/.project/archive" "$WT/.project/wireframes" \
        "$WT/.project/screenshots" "$WT/.project/thinking"
 rm -f "$WT/.project/project.json" "$WT/.project/project-context.json"
 
 ln -sfn "$MP/backlog.json"          "$WT/.project/backlog.json"
 ln -sfn "$MP/features"              "$WT/.project/features"
+ln -sfn "$MP/archive"               "$WT/.project/archive"
 ln -sfn "$MP/wireframes"            "$WT/.project/wireframes"
 ln -sfn "$MP/screenshots"           "$WT/.project/screenshots"
 ln -sfn "$MP/thinking"              "$WT/.project/thinking"
@@ -52,6 +54,8 @@ ln -sfn "$MP/project.json"          "$WT/.project/project.json"
 ln -sfn "$MP/project-context.json"  "$WT/.project/project-context.json"
 
 # Assert: all required symlinks must resolve — fail loudly instead of silently passing with broken links
+# (archive/ is deliberately excluded — like wireframes/screenshots/thinking below, its source may not
+# exist yet on a fresh project with zero shipped features, so it may dangle safely)
 WIRE_FAILED=()
 for f in backlog.json features project.json project-context.json; do
   if ! { [ -L "$WT/.project/$f" ] && [ -e "$WT/.project/$f" ]; }; then
@@ -72,13 +76,13 @@ fi
 
 After Step 3 completes (and on every silent-reuse path), verify the **required** symlinks resolve. Idempotent — re-running repairs broken links.
 
-Only 4 links gate the worktree; the other 3 may dangle safely and must **not** fail the gate:
+Only 4 links gate the worktree; the other 4 (including `archive/`) may dangle safely and must **not** fail the gate:
 
 ```bash
 WT="{main_root}/.claude/worktrees/{feature-name}"
 # Required — a broken one means .project/ writes from the worktree won't reach main.
 REQUIRED=("backlog.json" "features" "project.json" "project-context.json")
-# Optional (wireframes/screenshots/thinking): their source dirs don't always exist in main
+# Optional (archive/wireframes/screenshots/thinking): their source dirs don't always exist in main
 # (a fresh project has none yet), so their links legitimately dangle. `ln -sfn` still created
 # the link, and it resolves itself once the first write makes the target — never fail on these.
 FAILED=()
@@ -93,7 +97,7 @@ if [ ${#FAILED[@]} -gt 0 ]; then
   echo "Re-run ## Shared .project/ via symlink. If failure persists, check permissions on $WT/.project/"
   exit 1
 fi
-echo "SYMLINKS: ok (4/4 required; wireframes/screenshots/thinking optional — dangling is safe)"
+echo "SYMLINKS: ok (4/4 required; archive/wireframes/screenshots/thinking optional — dangling is safe)"
 ```
 
 ---

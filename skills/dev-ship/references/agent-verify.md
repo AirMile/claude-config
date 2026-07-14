@@ -44,9 +44,12 @@ CONTEXT (verify-slice of SHIP_CONTEXT; worktree path = {worktreePath}):
 3. `status: green` → **re-read `.project/` from disk**. `remainingManualItems` is **authoritative**
    for PHASE 3 (overrides the PHASE 0 advisory estimate). Continue to PHASE 3.
 
-**Contract check**: every element of `remainingManualItems` must carry a `manualReason` (one of
-`perception`/`real-credentials`/`audio`/`physical-device`/`screen-reader` —
-`dev-verify/references/test-classification.md § MANUAL`). An item with no `manualReason`, or one
-AGENT 2 downgraded to MANUAL out of uncertainty rather than a genuine human-only criterion, is a
-contract violation — AGENT 2 should have executed it itself as AUTO/BROWSER (`prompts/verify.md`
-tells the agent to do exactly this) instead of pushing it to the human round.
+**Contract check**: every element of `remainingManualItems` must carry a `manualReason` as a
+**structured field on the item itself** (one of
+`perception`/`real-credentials`/`audio`/`physical-device`/`screen-reader`/`tooling-gap` —
+`dev-verify/references/test-classification.md § MANUAL`), not merely mentioned in prose — PHASE 3
+routes its evidence gate on this field and persists it into the manual ledger. An item with no
+`manualReason`, or one AGENT 2 downgraded to MANUAL out of uncertainty rather than a genuine
+human-only criterion or a real tooling gap, is a contract violation — AGENT 2 should have executed
+it itself as AUTO/BROWSER (`prompts/verify.md` tells the agent to do exactly this) instead of
+pushing it to the human round.

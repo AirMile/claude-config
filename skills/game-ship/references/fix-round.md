@@ -156,10 +156,23 @@ Rewrite the live signal **with** `waiting: "playtest"`. Re-launch the game windo
 new interview close; that only runs once per full walkthrough).
 
 - **Pass** → update `playtest.items[].verdict` to `"pass"`; done with this item.
-- **Trivial nitpick** surfaces (cosmetic MEASURABLE, obvious) → an inline **polish loop**: no gate, no
-  plan mode, iterate directly in the main chat until the user is satisfied (this is the old
-  Tweak/iterate-mode behaviour, now scoped specifically to post-dispatch polish — not a substitute for
-  the round gate on anything substantial).
+- **Trivial nitpick surfaces, and it's the only thing still open this round** (cosmetic MEASURABLE,
+  obvious — a nitpick riding along with a real failing item does **not** get the free-standing loop,
+  it falls through to the Still-failing bullet below like any other finding this round) → an inline
+  **polish loop**, capped at 3 attempts (mirrors `dev-verify/references/fix-loop.md`'s own max-3
+  precedent, and `shared/DEBUG-LADDER.md`'s hard rule that a failed round is proof the working
+  hypothesis was wrong — don't keep retrying blind past the cap): no gate, no plan mode, apply live,
+  reload, ask the user to confirm. After each attempt, patch the item's `tweakAttempts` (increment,
+  starts at 1) via `ship-checkpoint.js item {feature} playtest` — not a park, but it durably records a
+  nitpick is in progress so a crash mid-loop leaves a marker instead of losing all trace of it. On a
+  resume landing back on this item, read the existing `tweakAttempts` first and continue counting —
+  never reset to 1.
+  - Satisfied at attempt ≤3 → clear `tweakAttempts`, `verdict: "pass"`, done.
+  - Still not right after 3 attempts → this is now evidence it wasn't actually trivial. Clear
+    `tweakAttempts`, then handle exactly as the Still-failing bullet below — append to the ledger,
+    increment `failedRounds`, and present that same `AskUserQuestion` ladder. Reusing the existing
+    escalation ladder here (rather than a separate ask) means a nitpick that turns out to be a real
+    bug gets the same park/retry/escalate/defer choices any other stuck item gets.
 - **Still failing on its own `expected` text** (the scope check in
   `playtest-interview-walkthrough.md § Step D` already split off anything unrelated as its own
   ledger item) → append it to the ledger now (this write happens outside plan mode — we are back in

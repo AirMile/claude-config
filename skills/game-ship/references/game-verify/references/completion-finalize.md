@@ -110,13 +110,16 @@ Recorded in test results.
      "fixSync": ["..."],
      "observations": ["..."],
      "verificationCheckpoint": { "gaps": [], "mismatches": [], "adjustments": "none" },
-     "componentSync": [{ "name": "player-controller", "src": ["..."], "test": ["..."] }]
+     "componentSync": [{ "name": "player-controller", "src": ["..."], "test": ["..."] }],
+     "knownIssues": [{ "id": "PT-2", "title": "...", "verdict": "accepted", "reason": "...", "source": "ship-ledger" }]
    }' | node ~/.claude/scripts/completion-sync.js sync {feature-name}
    ```
 
    `requirements[]`/`checklist` follow the same shape as dev-verify (see
    `dev-verify/references/completion-sync.md § Step 3`). `componentSync` only when PHASE 3 fixes
-   touched `architecture.components[]`. Exit `6` (validation failed, nothing written) — fall back
+   touched `architecture.components[]`. `knownIssues[]` — the accepted/deferred items scanned from
+   `checkpoint.playtest.items[]` per `phase-3-playtest.md § Step 3`; omit the key entirely when there
+   are none. Exit `6` (validation failed, nothing written) — fall back
    to hand-authoring; > **Todo**: Read
    '.claude/skills/dev-ship/references/dev-verify/references/completion-sync-fallback.md' (never
    the script source, same file as dev-verify). Exit `7` (no backlog match, feature.json written)

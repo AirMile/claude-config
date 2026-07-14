@@ -10,7 +10,9 @@ an `opusplan`-style router that means it reasons on the **planning model** (e.g.
 and source writes, so **all bookkeeping is hoisted to Step 2a (before plan mode)** and **all durable
 artifacts are written at gate-accept (Step 4b, after plan mode exits)**. The gate is the single
 review + go/no-go for the whole plan — reject loops back inside plan mode to revise. Runs unchanged on
-a single fixed model (plan mode is then just structure, no model switch).
+a single fixed model (plan mode is then just structure, no model switch). An unforeseen
+non-deferrable write mid-define uses `shared/PLAN-MODE.md § Administrative exit` — exit with an
+administrative note, write, and **re-enter plan mode before continuing the interview**.
 
 ## Step 0 — Checkpoint-resume detection + preflight
 
@@ -27,9 +29,10 @@ resolved above), a fast-path miss (`status: "failed"` / stale), or **no open che
   from the top, Step 1 below — the draft was authored in plan mode and is **not** durably
   checkpointed, so the interview re-runs; a workflow phase → its On-"Resume" step 4 relaunch). A
   **Restart** choice continues fresh below.
-- **No open checkpoint** → run the **preflight checks** (dirty working tree, colliding
-  `worktree-{feature}` from a prior aborted run without a checkpoint; per `SHIP-CHECKPOINT.md
-§ Preflight`), surface any notice, then continue to Step 1.
+- **No open checkpoint** → run the **preflight checks** (merge/rebase-in-progress **hard stop**;
+  dirty working tree; colliding `worktree-{feature}` from a prior aborted run without a checkpoint;
+  per `SHIP-CHECKPOINT.md § Preflight`), surface any notice — a hard stop ends the turn with
+  resolve instructions — then continue to Step 1.
 
 On a fresh run, capture the rollback anchor now: `baselineSha = git rev-parse HEAD`. It is written
 to the checkpoint in Step 2a.
@@ -118,6 +121,12 @@ own (dev-ship owns the enclosing plan mode) and no phase tracking. Notes for thi
   `.project/{backlog,project,project-context}.json` writes — including the backlog `DEFINED` flip with
   `auto: true` — are deferred to that accept, so a rejected-and-abandoned define leaves no orphan card.
   Any conditional define writes (`00-split.md` + sub-feature `mkdir`s on a split) defer to accept too.
+
+PHASE 1b/2 of `dev-define/workflow.md` contain three checks that must run whenever their stated
+condition is met — Frontend Discovery (frontend features outside the type skip-list), Seed
+Alignment Check, and Backlog Impact Check. Do not read past them on the way to PHASE 2's machine
+contract; each either produces a section in the gate plan file or is silently skipped for a stated
+reason.
 
 Then continue **in plan mode** to Step 3 (classify) and Step 4 (technique plan), then Step 4b (the
 gate). Do not end the skill.
@@ -212,7 +221,10 @@ surface for the whole plan. It always runs (no env-var opt-out).
      `buildSequence` + key interfaces; **for visual features the ASCII wireframe + states** (this is
      the design review — it replaces the removed inline sketch-confirm); the Step 3 "Verification
      profile" line (~N auto, ~N manual); the auto-derived technique plan (`refactorLenses`,
-     `securityDeep` scanners, or "security off"). Then any **proposal sections** the draft carries,
+     `securityDeep` scanners, or "security off"); a **process-trail line** — `Discovery: run | n/a
+     · Seed check: run | n/a · Backlog impact: run | n/a` — one word per specialized check in
+     `dev-define/workflow.md` PHASE 1b/2, so a skipped-with-reason check is visible at the gate
+     instead of silently absent. Then any **proposal sections** the draft carries,
      each with its default action stated (accept applies it; reject-feedback can drop just that one):
      `## Proposed seed update` (from the Seed Alignment Check), `## Backlog impact` (obsoleted/adjusted
      cards from the Backlog Impact Check), `## Pages to seed` (frontend PAGE-seeding candidates), and

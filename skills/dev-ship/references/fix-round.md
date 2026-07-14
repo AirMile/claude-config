@@ -112,8 +112,9 @@ parses it directly (a resume that lands back in the gate simply re-plans instead
    `ExitPlanMode`: the walkthrough's batch persist
    (`manual-interview-walkthrough.md § Step E, Batch persist`) and the deferred `manual.round`
    increment. Skip the `waiting: "fix-plan"` live-signal write — the gate already resolved with this
-   same exit, so go straight to step 3 below's `waiting`-clear. (On a round 2+ gate, both writes
-   already happened in `§ Hoisted bookkeeping` — skip this step.)
+   same exit, so go straight to step 3 below's plain `signal` rewrite (drop only the `waiting` key —
+   this is NOT the `signal-clear` subcommand, which would wrongly park the board mid-dispatch). (On a
+   round 2+ gate, both writes already happened in `§ Hoisted bookkeeping` — skip this step.)
 1. Patch the checkpoint: `manual.fixPlan` = the appendix object.
 2. For every `agent`-dispatch group, write one rich descriptor file to
    `.project/session/ship-prompts/{feature}-fix-{groupId}.txt` — that group's findings (title, steps,
@@ -168,10 +169,33 @@ check` — split off anything not about this item's own `expected` text into its
 (dev-ship mechanics: `manual-interview-walkthrough.md § Step D`).
 
 - **Pass** → update `manual.items[].verdict` to `"pass"`; done with this item.
-- **Cosmetic tweak** (MEASURABLE, obvious, ≤1-2 files — the same skip-condition
-  `dev-verify/references/fix-loop.md § Plan-mode gate` uses) → an inline **polish loop**: no gate, no
-  plan mode, iterate directly in the main chat until the user is satisfied. No park, no `debugTier`
-  set — this never enters the debug ladder.
+- **Cosmetic tweak, and it's the only finding still open this round** (MEASURABLE, obvious, ≤1-2
+  files — the same skip-condition `dev-verify/references/fix-loop.md § Plan-mode gate` uses, plus
+  "no other open finding this round is `fail`-class": a tweak riding along with a real bug does
+  **not** get the free-standing loop below — it falls through to the Otherwise bullet like any other
+  fail-adjacent item) → an inline **polish loop**, capped at 3 attempts (mirrors
+  `dev-verify/references/fix-loop.md § PHASE 5b`'s own "max 3, then ask" precedent, and
+  `shared/DEBUG-LADDER.md`'s hard rule that a failed round is proof the working hypothesis was
+  wrong — don't keep retrying blind past the cap): no gate, no plan mode. Per attempt: apply the
+  change live in the worktree, reload, ask the user to confirm. After each attempt, patch the
+  ledger item's `tweakAttempts` (increment, starts at 1) via `ship-checkpoint.js item` — this is
+  **not** a park (`debugTier` stays unset, the live signal keeps `waiting: "manual-tests"`), but it
+  durably records a tweak is in progress, so a crash mid-loop leaves a marker instead of losing all
+  trace of it. **On a resume landing back on this item** (`phase-3-manual-finalize.md § Resume
+entry` bullet 5 — no verdict, no `debugTier` set, dispatch already complete), read the existing
+  `tweakAttempts` first and continue counting from there — never reset to 1, or a crash/`/clear`
+  becomes a way to dodge the cap.
+  - Satisfied at attempt ≤3 → clear `tweakAttempts`, `verdict: "pass"`, done.
+  - Still not right after 3 attempts → stop looping — this is now evidence the MEASURABLE/≤1-2-file
+    classification was wrong, not a reason to keep guessing. `AskUserQuestion` — header: "Tweak not
+    converging", question: "This hasn't landed after 3 tries — {title}. What next?":
+    1. **"Escalate to root-cause analysis (Recommended)"** → clear `tweakAttempts`, then handle
+       exactly as the Otherwise bullet below (fail-class park) — treat it as evidence this belongs
+       in the debug ladder after all.
+    2. **"Accept anyway"** → clear `tweakAttempts`, `verdict: "accepted"`, done — same semantics as
+       the debug ladder's own terminal accept (`debug-round-heavy.md § 8`), reachable directly here
+       since forcing two more tiers on something the user is already fine leaving as-is would be
+       wasted effort.
 - **Anything else that's tweak-class AND every other open finding this round is also tweak-class**
   (never when any open finding is `fail`-class — see the Fail-never-to-todo policy in
   `phase-3-manual-finalize.md § Findings ledger + routing`) → one `AskUserQuestion`, the only choice
@@ -179,14 +203,17 @@ check` — split off anything not about this item's own `expected` text into its
   1. **"Park — debug in a fresh chat"** (recommended) → same park mechanics as below.
   2. **"Defer to backlog todo"** → route each remaining finding to `/project-todo`, then proceed to
      the regression re-check and completion on the verified scope.
-- **Otherwise (any `fail`-class finding, or a substantial tweak with a `fail` sibling this round)**
-  → always park, no question asked:
-  1. Patch the ledger item: `debugTier: "light"` (via
-     `ship-checkpoint.js item {feature} manual` — this write happens outside plan mode, we're back in
-     the main-chat re-check step, not the gate).
+- **Otherwise (any `fail`-class finding, or any tweak — substantial or cosmetic — with a `fail`
+  sibling this round)** → always park, no question asked:
+  1. Patch the ledger item: `debugTier: "light"`, and clear `tweakAttempts` if it was set from an
+     escalated tweak loop above (via `ship-checkpoint.js item {feature} manual` — this write happens
+     outside plan mode, we're back in the main-chat re-check step, not the gate).
   2. `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`.
-  3. Print the park/handoff template from `SKILL.md § PHASE 1–4` with `/dev-ship {feature}` as the
-     resume command. **End the turn.**
+  3. Print a park/handoff message (own wording — do NOT reuse `SKILL.md § PHASE 1–4`'s
+     manual-items-remain template; its "you land directly in the item-by-item manual round" line is
+     wrong here): state which item(s) parked and why (fail / tweak-with-fail-sibling), that
+     `/dev-ship {feature}` resumes straight into the debug round for those items (not the manual
+     walkthrough), and that the board shows this run as parked (⏸). **End the turn.**
   4. A fresh session resumes via `phase-3-manual-finalize.md § Resume entry`'s `debugTier: "light"`
      branch, landing directly in `references/debug-round.md` for this item. Other items in the ledger
      are unaffected and keep progressing normally (a later resume walks each open item to wherever its

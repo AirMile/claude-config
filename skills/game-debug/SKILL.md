@@ -75,8 +75,9 @@ Run the two `node -e` snippets for the `verify` profile. Extracts: `stack`, `ent
 check `.project/session/ship-{feature-name}.json` for a `playtest.items[]` entry with
 `escalatedTo: "game-debug"`. Found → carry its full record (title, steps, observed/expected, category,
 and the round history that led to escalation) as pre-filled intake; PHASE 1 then confirms this summary
-instead of running the full intake questions. This is a read-only lifecycle signal
-(`shared/DEVINFO.md § Implicit signals`) — game-debug never writes to the ship checkpoint.
+instead of running the full intake questions. This is otherwise a read-only lifecycle signal
+(`shared/DEVINFO.md § Implicit signals`) — the one exception is PHASE 10 Step 0, which patches the
+item's `verdict` back to the ship checkpoint when PHASE 9 ends in an explicit "Accept" outcome.
 
 **Worktree switch** (only when active feature detected):
 
@@ -367,6 +368,31 @@ Ask user to confirm that the fix resolves the original problem.
 ## PHASE 10: Completion
 
 > **Todo**: mark PHASE 9 → `completed`, PHASE 10 → `in_progress`.
+
+### Step 0: Ship-round escalation write-back
+
+**Skip if** this run was not reached via a ship-round escalation (no `escalatedTo` pre-fill from PHASE 0).
+
+If PHASE 9 ended in an **Accept** outcome ("Accept as incomplete" in Step 1, or "Accept (mark as
+known)" in Step 2): patch the escalated item back into the ship checkpoint so the decision isn't
+lost —
+
+```bash
+echo '{"id":"{item-id}","verdict":"accepted","reason":"{short reason the user accepted this as a known limitation}"}' \
+  | node ~/.claude/scripts/ship-checkpoint.js item {feature-name} playtest
+```
+
+— upserts by `id`, omitting `escalatedTo` entirely (do not null it — per the ledger's "omit fields
+entirely, don't null them" convention) clears the flag. This is what lets `/game-ship {feature-name}`'s
+resume skip re-checking an item the user already explicitly accepted
+(`phase-3-playtest.md § Resume entry`'s sub-exception), and what surfaces it as a known-issue badge
+on the dashboard once the ship completes (`phase-3-manual-finalize.md`'s dev-ship equivalent scans
+this same `verdict:"accepted"` field into `payload.knownIssues`; game-ship's `phase-3-playtest.md §
+Step 3` does the same).
+
+If PHASE 9 ended in a **fixed** outcome, or a still-broken/rollback outcome, do not write to the ship
+checkpoint here — the existing `escalatedTo` flag stays as-is, and `/game-ship {feature-name}`'s
+resume re-checks the item live (`debug-round.md § 8`).
 
 ### Step 1: Learning Extraction
 

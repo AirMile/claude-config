@@ -10,7 +10,9 @@ an `opusplan`-style router that means it reasons on the **planning model** (e.g.
 and source writes, so **all bookkeeping is hoisted to Step 2a (before plan mode)** and **all durable
 artifacts are written at gate-accept (Step 4b, after plan mode exits)**. The gate is the single
 review + go/no-go for the whole plan — reject loops back inside plan mode to revise. Runs unchanged on
-a single fixed model (plan mode is then just structure, no model switch).
+a single fixed model (plan mode is then just structure, no model switch). An unforeseen
+non-deferrable write mid-define uses `shared/PLAN-MODE.md § Administrative exit` — exit with an
+administrative note, write, and **re-enter plan mode before continuing the interview**.
 
 ## Step 0 — Checkpoint-resume detection + preflight
 
@@ -27,9 +29,10 @@ checkpoint**.
 entry`; `PHASE 0 · define` → re-run define from the top, Step 1 below — the draft was authored in
   plan mode and is **not** durably checkpointed, so the interview re-runs; a workflow phase → its
   On-"Resume" step 4 relaunch). A **Restart** choice continues fresh below.
-- **No open checkpoint** → run the **preflight checks** (dirty working tree, colliding
-  `worktree-{feature}` from a prior aborted run without a checkpoint; per `SHIP-CHECKPOINT.md
-§ Preflight`), surface any notice, then continue to Step 1.
+- **No open checkpoint** → run the **preflight checks** (merge/rebase-in-progress **hard stop**;
+  dirty working tree; colliding `worktree-{feature}` from a prior aborted run without a checkpoint;
+  per `SHIP-CHECKPOINT.md § Preflight`), surface any notice — a hard stop ends the turn with
+  resolve instructions — then continue to Step 1.
 
 On a fresh run, capture the rollback anchor now: `baselineSha = git rev-parse HEAD`. It is written
 to the checkpoint in Step 2a.

@@ -33,7 +33,8 @@ handle each via its own highest-matching bullet):
    `fix-round.md § Dispatch` and relaunch `ship-fix.js` with `resume` built from `manual.dispatch`
    (cross-session) or `resumeFromRunId` (same session, per `shared/SHIP-RESUME.md`).
 5. **`manual.fixPlan` present, dispatch complete (`manual.dispatch.allFixed` or all groups
-   terminal), and ≥1 item from that round has no `verdict: "pass"` yet and no `debugTier` set** →
+   terminal), and ≥1 item from that round has no `verdict: "pass"` or `"accepted"` yet and no
+   `debugTier` set** →
    go to `fix-round.md § Re-check` for those still-open items (checks 1–3 already claimed any item
    that re-check has already escalated on a prior pass — this bullet only fires for the ones it
    hasn't reached yet).
@@ -71,6 +72,14 @@ then **hand the first item to the user immediately** and let them confirm when t
 _a manual test is verified by the human, not by a log line — the person at the window is the
 readiness signal._ Never make the user wait on your own "is it ready yet" check.
 
+> **STOP — launch command shape.** `run_in_background: true` already backgrounds the whole
+> command. Do **not** also append a trailing shell `&`/`disown` — that double-backgrounds the
+> process, and the tool reports the launch itself as "completed" while the app keeps running,
+> which reads as a crash and costs a clarifying round.
+>
+> - Wrong: `Bash({command: "npm run tauri dev & disown", run_in_background: true})`
+> - Right: `Bash({command: "npm run tauri dev", run_in_background: true})`
+
 **App-launch rule — launch what the manual item actually needs, from the project's OWN run config.**
 A hard rule, not a judgment call: a slow compile or a heavier process is **never** a reason to
 substitute a lighter command that cannot exercise the item under test.
@@ -105,6 +114,21 @@ manual item touches a capability the lighter command does not provide (native ru
 launch the heavier one — the only cost is startup time, whereas the wrong launch wastes the whole
 manual round. When unsure, launch the fuller shell.
 
+**Git-manipulating feature → check for a worktree branch-name collision first.** If the feature
+under test itself performs branch operations (switch/create/merge), the app's project selection may
+be the very repo this ship is running in — and its other local branches may already be claimed by
+`.claude/worktrees/*` (git refuses to check out a branch that's checked out elsewhere). Run `git
+worktree list` before presenting item 1; if the only other branches are worktree-claimed, set up a
+disposable scratch git repo (a few plain branches, a deliberately colliding file for a merge-conflict
+item) instead of discovering the blocker mid-item.
+
+**If the app under test has its own persisted project/workspace selection** (a canvas/IDE-style app,
+a multi-project tool) — its active project may not be the worktree the dev server serves from.
+Before creating any test fixture file (e.g. for a read-only-file or permission-error scenario),
+verify which path the running app actually has open (its own settings/store, not an assumption
+that "the worktree" == "what the app shows") — a fixture written to the wrong path silently never
+appears in the app and costs a full extra round to diagnose.
+
 > If you genuinely must detect readiness programmatically (e.g. to auto-open a browser tab), it MUST
 > (a) tolerate ANSI color codes — match the bare word (`grep -aE "Running|Finished|error"`), never a
 > literal `Running \`space\`…`pattern, because Cargo/Vite wrap words in ANSI escapes so "Running" is
@@ -126,17 +150,19 @@ You are still inside the walkthrough's plan mode here — this routing decision 
 `ExitPlanMode` closes it. Route on the accumulated in-memory ledger (`manual.items` + any
 interview-close findings):
 
-| Ledger state                                                                    | Route                                                                                                                                                                         |
-| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No Fail/Tweak findings (all Pass, or only Skip/Defer)                           | `ExitPlanMode` now (short summary, e.g. "all N items pass") → batch-persist (walkthrough § Step E) → Regression re-check → Step 3                                             |
-| ≤2 findings, all MEASURABLE, cosmetic, obvious fix (styling/timing/copy)        | `ExitPlanMode` now → batch-persist → **Inline fix now** (below) → Regression → Step 3                                                                                         |
-| Anything else (any TESTABLE finding, >2 findings, or an unclear/multi-file fix) | Stay in plan mode — Read `fix-round.md` and run the round gate; **its** `ExitPlanMode` (presenting interview outcome + fix plan together) closes this walkthrough's plan mode |
+| Ledger state                                                                    | Route                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No Fail/Tweak findings (all Pass, or only Skip/Defer)                           | `ExitPlanMode` now (short summary, e.g. "all N items pass — {k} unproven" when any evidence-class Pass carries `evidence: "none"`; omit when k = 0) → batch-persist (walkthrough § Step E) → Regression re-check → Step 3 |
+| ≤2 findings, all MEASURABLE, cosmetic, obvious fix (styling/timing/copy)        | `ExitPlanMode` now → batch-persist → **Inline fix now** (below) → Regression → Step 3                                                                                                                                     |
+| Anything else (any TESTABLE finding, >2 findings, or an unclear/multi-file fix) | Stay in plan mode — Read `fix-round.md` and run the round gate; **its** `ExitPlanMode` (presenting interview outcome + fix plan together) closes this walkthrough's plan mode                                             |
 
 **Inline-fix path (skip-gate case)** — mirrors `dev-verify/references/fix-loop.md § Plan-mode gate`'s
 skip-silently condition: fix each finding directly in the main chat (the app is already running),
-Read `shared/DEBUG-LADDER.md` and apply tier 1 (symptom + cause both visible, ≤1-2 files), reload,
-let the user confirm live. No round bookkeeping — this is the common trivial case and should stay
-friction-free (plan mode itself already closed by the table above).
+Read `shared/DEBUG-LADDER.md` and apply tier 1 (symptom + cause both visible, ≤1-2 files). If the fix
+touches typed code, run the project's typecheck command on the touched file(s) before reloading — a
+live "it looks right" confirm from the user cannot catch a type error the dev server silently
+tolerates. Then reload, let the user confirm live. No round bookkeeping — this is the common trivial
+case and should stay friction-free (plan mode itself already closed by the table above).
 
 **Otherwise** → Read `.claude/skills/dev-ship/references/fix-round.md` and follow it: the
 hoisted-bookkeeping + round-level plan-mode fix-plan gate (Opus designs the fix, in the **same**
@@ -152,19 +178,63 @@ route to `/project-todo` — the ship then finalizes normally and **refactor run
 deferral). `Skip`/`Defer` outcomes never block finalize either — they are recorded (deferred items
 stay open for a later re-test), and the flow continues regardless of how many are open; remember
 that Defer is for external blockers only (walkthrough Step C) — a `fail` is never disguised as a
-Defer to get it out of the way.
+Defer to get it out of the way. Unproven passes (an evidence-class Pass with `evidence: "none"`)
+never block either — they are surfaced in the routing summary and the completion report, nothing
+more (soft gate).
 
 ## Regression re-check (before completion)
 
-If **any** PHASE 3 fix or tweak touched code, run the FULL test suite once before Step 3. New
-failures → back into the fix routing above (ladder escalation applies); clean → proceed to Step 3.
-Skip only when nothing was changed in this phase (all items passed first time).
+If **any** PHASE 3 fix or tweak touched code, run the FULL test suite **plus a typecheck/lint pass**
+(the project's own commands, e.g. `tsc --noEmit` + the linter) once before Step 3. Skip only when
+nothing was changed in this phase (all items passed first time). Plan mode is not active here.
+
+**Primary — fork dispatch** (`shared/SKILL-PATTERNS.md § Fork Delegation`): dispatch one fork — it
+knows from context which fixes were just made. **Scope this prompt explicitly**: the fork's ONLY job
+is to run the suite + typecheck/lint and return a digest — it must NOT act on the result, continue
+the ship (PHASE 3 completion, PHASE 4 refactor/finalize, merges), or call the Workflow tool, even
+though it inherits full conversation context and technically could. State this negative boundary in
+the fork's prompt itself, not just here. **State this too**: run each command as a blocking,
+foreground Bash call inside the fork — never `run_in_background` — and the fork's final answer must
+be the actual digest, not a "still running" status; a fork that reports it kicked off a background
+process instead of returning results has failed the task, not completed it. It returns ONLY a
+compact digest: overall pass/fail, typecheck/lint pass/fail, and on any fail, each NEW failure
+relative to the known state (test name + first error line). End the turn, wake on its notification —
+do not resume the fork with follow-up instructions that could restart it mid-pipeline; if the digest
+is incomplete or wrong, re-dispatch a fresh fork instead. **Fallback:** run the suite +
+typecheck/lint inline via `run_in_background` Bash and read only the failure tail, not the full log.
+
+New failures → back into the fix routing above (ladder escalation applies); clean → proceed to
+Step 3.
+
+## Step 2 teardown — stop the launched app
+
+Stop the app you launched in Step 2 in **either** of these two moments — whichever comes first:
+
+- **Full resolution**: all items verdicted, any fix-round re-checks passed, regression re-check
+  clean, right before proceeding to Step 3.
+- **A fix-round park** (`fix-round.md § Re-check`'s Otherwise bullet, or the "Park — debug in a
+  fresh chat" choice): right before ending the turn — a fresh session's `debug-round.md` resume
+  relaunches its own app instance, so leaving this one running orphans a duplicate dev-server/port
+  across the session boundary.
+
+Kill the process(es) you started in Step 2 in either case. A lingering app process serves no further
+purpose here and would otherwise still be running when PHASE 4 spawns the refactor agent into the
+same worktree (potential file-lock/port contention, and simply wasted resources). Skip silently when
+Step 2 never launched anything (the no-manual path).
 
 ## Step 3 — Completion (DONE)
 
 All AUTO passed (AGENT 2) and no open manual FAIL → complete (but do **not** integrate yet):
 
-1. Run `dev-verify`'s completion-sync to flip the feature to **DONE** (backlog + feature.json
+1. **Known-issue payload**: scan `checkpoint.manual.items[]` for every item with
+   `verdict: "accepted"` or `verdict: "deferred"` and map each to
+   `{ id, title, verdict, reason, source: "ship-ledger" }` — `reason` is a short synthesis of the
+   item's `expected`/`lightRoundNotes`/context (same free-text judgment already used for
+   `fixSync`/`observations`). Pass the result as `payload.knownIssues` on the completion-sync call
+   below (omit the key entirely when empty — never send `[]`). This is what survives the ship
+   checkpoint's eventual deletion (`SKILL.md § PHASE 1–4`, on green completion); without it, an
+   explicitly accepted or deferred finding leaves no trace once the ship completes.
+2. Run `dev-verify`'s completion-sync to flip the feature to **DONE** (backlog + feature.json
    `tests` section + learning extraction) — Read `.claude/skills/dev-ship/references/dev-verify/references/completion-sync.md`
    if the reused flow does not already cover it from the manual step. (This is the DONE write AGENT
    2 was told to skip.) **Skip completion-sync's tail handoff**: its `VERIFY COMPLETE` block ends

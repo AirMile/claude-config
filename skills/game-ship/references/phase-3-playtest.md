@@ -39,7 +39,11 @@ normal path, then route on the checkpoint's `playtest` block:
   before parking — do not re-run it. **Exception**: items flagged `escalatedTo: "game-debug"` skip fix
   design entirely — walk them straight through re-check (`playtest-interview-walkthrough.md` Steps
   B–E); a pass clears the flag, a fail re-enters the ladder at the ceiling (the debug round already ran
-  for this item — see `references/debug-round.md`).
+  for this item — see `references/debug-round.md`). **Sub-exception**: if the escalated item's ledger
+  already reads `verdict: "accepted"` (written by `/game-debug` PHASE 9's accept-and-write-back, per
+  `skills/game-debug/SKILL.md`), it was already explicitly accepted in that session — skip the
+  re-check walkthrough entirely for this item and treat it as resolved; walking it through Steps B–E
+  again would re-open a decision the user already made.
 
 Keep the checkpoint `phase: "PHASE 3"` throughout.
 
@@ -124,7 +128,15 @@ once before Step 3. New failures → back into the fix routing above (ladder esc
 
 All COVERED passed (AGENT 2) and no open playtest FAIL → complete (but do **not** integrate yet):
 
-1. Run `game-verify`'s completion-sync to flip the feature to **DONE** (backlog + feature.json
+1. **Known-issue payload**: scan `checkpoint.playtest.items[]` for every item with
+   `verdict: "accepted"` or `verdict: "deferred"` and map each to
+   `{ id, title, verdict, reason, source: "ship-ledger" }` — `reason` is a short synthesis of the
+   item's context (same free-text judgment already used elsewhere in this ledger). Pass the result
+   as `payload.knownIssues` on the completion-sync call below (omit the key entirely when empty —
+   never send `[]`). This is what survives the ship checkpoint's eventual deletion (`SKILL.md §
+PHASE 1–4`, on green completion); without it, an explicitly accepted or deferred finding leaves
+   no trace once the ship completes.
+2. Run `game-verify`'s completion-sync to flip the feature to **DONE** (backlog + feature.json
    `tests` section: `finalStatus`, `sessions[]`, `requirements[].status`, `stage → "done"` + learning
    extraction) — Read
    `.claude/skills/game-ship/references/game-verify/references/completion-finalize.md` and run its

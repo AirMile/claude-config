@@ -27,6 +27,8 @@
 //     "fixSync"?: [string], "observations"?: [string],
 //     "verificationCheckpoint"?: { gaps, mismatches, adjustments },
 //     "acceptanceTestFile"?: string,
+//     "knownIssues"?: [{ "id", "title", "verdict": "deferred|accepted", "reason",
+//                         "source"?: "ship-ledger|dev-verify" }],
 //     "seedPages"?: [{ "name", "routePattern" }],
 //     "componentSync"?: [{ "name", "src": [string], "test": [string] }],
 //     "designComponent"?: string,
@@ -57,6 +59,7 @@ import { dirname, join } from "node:path";
 const FORBIDDEN_BACKLOG_KEYS = ["shipped", "shippedAt", "shippedSha"];
 const VERDICTS = ["PASS", "FAIL", "BLOCKED", "UNCLEAR"];
 const CHECKLIST_STATUSES = ["PASS", "FAIL", "skip"];
+const KNOWN_ISSUE_VERDICTS = ["deferred", "accepted"];
 
 const [cmd, name] = process.argv.slice(2);
 if (cmd !== "sync" || !name) {
@@ -217,6 +220,40 @@ for (const [id, status] of Object.entries(payload.checklist)) {
     );
 }
 
+if (payload.knownIssues !== undefined && !Array.isArray(payload.knownIssues))
+  fail6("payload.knownIssues must be an array when present");
+const knownIssues = (payload.knownIssues || []).map((issue) => {
+  if (!issue || typeof issue.id !== "string" || !issue.id)
+    fail6("every knownIssues[] payload entry needs a non-empty string id");
+  if (typeof issue.title !== "string" || !issue.title)
+    fail6(`knownIssues entry "${issue.id}" needs a non-empty string title`);
+  if (typeof issue.reason !== "string" || !issue.reason)
+    fail6(`knownIssues entry "${issue.id}" needs a non-empty string reason`);
+  if (!KNOWN_ISSUE_VERDICTS.includes(issue.verdict))
+    fail6(
+      `knownIssues entry "${issue.id}" has an invalid verdict "${issue.verdict}" (expected one of ${KNOWN_ISSUE_VERDICTS.join(", ")})`,
+    );
+  const clean = {
+    id: issue.id,
+    title: issue.title,
+    verdict: issue.verdict,
+    reason: issue.reason,
+  };
+  if (typeof issue.source === "string" && issue.source)
+    clean.source = issue.source;
+  return clean;
+});
+
+function upsertKnownIssues(existing, incoming) {
+  const list = Array.isArray(existing) ? existing.slice() : [];
+  for (const issue of incoming) {
+    const idx = list.findIndex((i) => i.id === issue.id);
+    if (idx === -1) list.push(issue);
+    else list[idx] = issue;
+  }
+  return list;
+}
+
 // ── Mutate feature.json in memory, single write ─────────────────────────────
 
 feature.status = "DONE";
@@ -285,6 +322,11 @@ if (Array.isArray(payload.observations) && payload.observations.length) {
     : [];
   feature.observations.push(...payload.observations);
 }
+if (knownIssues.length)
+  feature.tests.knownIssues = upsertKnownIssues(
+    feature.tests.knownIssues,
+    knownIssues,
+  );
 
 atomicWrite(featurePath, feature);
 
@@ -319,6 +361,8 @@ if (!entry) {
 entry.status = "DONE";
 delete entry.stage;
 if (entry.transition !== "shipping") delete entry.transition;
+if (knownIssues.length)
+  entry.knownIssues = upsertKnownIssues(entry.knownIssues, knownIssues);
 
 if (Array.isArray(payload.seedPages)) {
   for (const p of payload.seedPages) {

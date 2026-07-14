@@ -31,10 +31,13 @@ SCOPE LIMITS (critical — this is a partial verify):
   shared so feature.json is present (the git-show reconciliation branch will not fire).
 - **Classification discipline**: assign MANUAL only when `test-classification.md § MANUAL`'s
   criteria are genuinely met, and attach the matching `manualReason`
-  (`perception`/`real-credentials`/`audio`/`physical-device`/`screen-reader`) to every item you
-  return in `remainingManualItems`. If you are uncertain whether an item needs a human, it does
-  not — execute it yourself as AUTO/BROWSER instead of downgrading it to MANUAL. An item with no
+  (`perception`/`real-credentials`/`audio`/`physical-device`/`screen-reader`/`tooling-gap`) to every
+  item you return in `remainingManualItems`. If you are uncertain whether an item needs a human, it
+  does not — execute it yourself as AUTO/BROWSER instead of downgrading it to MANUAL. An item with no
   `manualReason` is a contract violation (`agent-verify.md § Main-chat handling` checks for this).
+  Exception: when the app shell cannot be driven by any available vehicle (native-shell app without a
+  working WebDriver) and the item depends on the native runtime, classify it `tooling-gap` instead of
+  forcing a browser run against a dev server that cannot exercise it.
 - DO NOT run the MANUAL walkthrough (dev-verify PHASE 2 / manual-walkthrough.md) — collect the
   MANUAL items (each with its `manualReason`) and return them instead.
 - DO NOT run completion-sync's DONE transition and DO NOT run PHASE Finalize — leave backlog status
@@ -43,6 +46,11 @@ SCOPE LIMITS (critical — this is a partial verify):
 - Commit any AUTO fix-loop changes into the worktree branch (scoped commit), same as dev-verify.
 - If an AUTO item cannot be made to pass after the fix-loop: STOP, do not merge, return status
   "failed" with the item.
+
+**Manual-item authoring**: `steps` must read as concrete, numbered, end-user-executable UI actions
+(which button, which menu, which literal input) — not abstract preconditions ("open two tabs with
+different state"). A human tester who has never seen the implementation should be able to follow
+`steps` without asking what it means.
 
 Result fields (structured output object — `remainingManualItems` is an array, empty when none;
 fallback = this exact block):
@@ -58,7 +66,7 @@ remainingManualItems:
   title: <manual item title>
   steps: [<step>, ...]
   expected: <observable outcome>
-  manualReason: perception | real-credentials | audio | physical-device | screen-reader
+  manualReason: perception | real-credentials | audio | physical-device | screen-reader | tooling-gap
 
 # ... or "none"
 

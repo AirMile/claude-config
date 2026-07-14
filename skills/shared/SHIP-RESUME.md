@@ -13,8 +13,14 @@ The checkpoint file is `.project/session/ship-{name}.json` (schema in `SHIP-CHEC
 
 ## Resume detection (run at the start of PHASE 0, before resolving the feature)
 
+Resolve the main checkout root first — a resumed session's cwd is commonly already inside a
+feature worktree (the normal PHASE 3/4 resume case), where `.project/session/` is **not**
+symlinked (`shared/WORKTREE.md § What to share`), so a plain relative path silently misses an
+existing checkpoint:
+
 ```bash
-test -f .project/session/ship-{name}.json && echo EXISTS
+main_root=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+test -f "$main_root/.project/session/ship-{name}.json" && echo EXISTS
 ```
 
 If a checkpoint exists with `status != "complete"`, an earlier run was interrupted. **First check
@@ -61,6 +67,14 @@ options:
 ```
 
 ### On "Resume"
+
+**Git-operation check first (before step 1).** Run
+`ls .git/rebase-merge .git/rebase-apply .git/MERGE_HEAD .git/CHERRY_PICK_HEAD 2>/dev/null` in the
+main repo root, and — when the checkpoint records a worktree (`results.build.worktreePath`) — inside
+that worktree too. Non-empty means a merge/rebase/cherry-pick is mid-flight (possibly being resolved
+in another session) → **stop before touching anything**: report the in-progress operation with the
+resolve/abort instructions from `SHIP-CHECKPOINT.md § Preflight` (first bullet) and end the turn.
+The checkpoint stays parked; the same resume command works after resolution.
 
 1. Run **orphan/leak cleanup** (below) to reconcile stray worktrees/processes/signals.
 2. Load `plan` + `results` from the checkpoint into memory (these replace the in-context
@@ -124,9 +138,10 @@ Resume entry`); design re-enters its PHASE 4 review. Then the walkthrough replay
 
 ### On "Restart fresh"
 
-Archive the old checkpoint (`mv .project/session/ship-{name}.json .project/archive/ship-{name}-{ISO}.json`,
-`mkdir -p .project/archive` first), run orphan/leak cleanup, then proceed with a normal fresh PHASE 0
-(read the pipeline's `phase-0-*.md` and run it from the top).
+Archive the old checkpoint (`mv "$main_root/.project/session/ship-{name}.json" "$main_root/.project/archive/ship-{name}-{ISO}.json"`,
+`mkdir -p "$main_root/.project/archive"` first — reuse `$main_root` from Resume detection above, or
+re-resolve it if this is a fresh Bash call), run orphan/leak cleanup, then proceed with a normal
+fresh PHASE 0 (read the pipeline's `phase-0-*.md` and run it from the top).
 
 ### On "Inspect first"
 

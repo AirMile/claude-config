@@ -44,6 +44,9 @@ SCOPE:
   merge sha after finalize (SKILL.md PHASE 4 post-merge reconcile). Write it anyway; do not block on it.
 - Do NOT run dev-refactor's PHASE Finalize / FINALIZE.md dispatch (the single-mode finalize step in
   completion-batch.md) — the main chat runs finalize after you return (contract rule 7); never merge.
+- Skip dev-refactor's terminal REFACTOR COMPLETE next-steps + Next-Step Clipboard Offer
+  (completion-batch.md § Step 6) — non-interactive-contract.md rule 4 covers this, restated here to
+  match `prompts/build.md`'s existing "Skip dev-build's terminal Next-Step Clipboard Offer" line.
 
 Result fields (structured output object; fallback = this exact block):
 SHIP_REFACTOR_RESULT_START

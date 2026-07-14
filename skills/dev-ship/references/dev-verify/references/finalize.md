@@ -4,6 +4,8 @@ Loaded only when PHASE Finalize fires (worktree branch + all test items PASS + r
 
 > **Note on ExitWorktree:** FINALIZE.md instructs `ExitWorktree(action: keep)` before merging. This is a no-op when the worktree is the primary CWD (i.e. dev-verify was invoked directly in the worktree, not via EnterWorktree this session) — the tool reports "no worktree session active" and returns. Skip the ToolSearch round-trip in that case and proceed directly to the merge via `git -C {main_root}`.
 
+> **Note on merge conflicts:** `shared/FINALIZE.md § Solo-Merge Procedure` step 5's "On conflict" exit is generic (applies to `core-finalize`/`design-ship` too). For dev-ship specifically, resolve the conflict via `references/merge-conflict-resolution.md` (compare both sides, verify no feature's work was silently dropped, typecheck/compile the resolved file, run the full suite) before committing the merge — do not hand-resolve from scratch or accept an auto-merge without this check.
+
 **Finalize behavior** — detect `TEAM_MODE` + PR state, then act automatically (no confirmation modal for the merge/cleanup decision):
 
 ```bash

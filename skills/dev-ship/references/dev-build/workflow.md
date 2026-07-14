@@ -289,9 +289,7 @@ Follow [shared/SCOPED-COMMIT.md](.claude/skills/shared/SCOPED-COMMIT.md). dev-bu
 
 The commit and session-file cleanup above are the last git operations in this skill. Move immediately to the completion output — no further git commands:
 
-**Completion output — print this block, then execute the Next-Step Clipboard Offer directly below. Both are required to close PHASE 3B.**
-
-> **Note**: PHASE 3B is only `completed` after the clipboard offer below is executed — the BUILD COMPLETE block is not the endpoint.
+**Completion output — print this block to close PHASE 3B** (under dev-ship: no clipboard offer follows — see Terminal handoff below):
 
 **Output:**
 
@@ -303,19 +301,9 @@ Tests: {passed}/{total} PASS
 Files created: {count} | modified: {count}
 ```
 
-**Next steps** — check branch (`git -C "$REPO" branch --show-current`); if it matches `worktree-*`, add the worktree annotations shown in `{...}`:
-
-```
-Next steps:{ (start in a NEW chat — worktree auto-detected)}
-  1. /dev-verify {feature}   → hybrid acceptance verification{ (auto-finalizes worktree on green)}
-  2. /dev-refactor {feature} → optional polish after verify
-  ?. /dev-ship {feature}     → re-run on unexpected build failures (routes to root-cause analysis if it recurs)
-```
-
-When worktree active: also append `  ?. /core-finalize {feature} → recovery only — when verify was skipped or interrupted` and `💡 Worktree: {worktree_path}`.
-
-> **Todo (closing action — do not skip)**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /dev-verify {feature} → hybrid acceptance verification (primary next step).
+**Terminal handoff — none.** dev-ship drives the pipeline: **no** BUILD COMPLETE next-steps list,
+**no** `Next:`/clipboard offer (`non-interactive-contract.md` rule 4 always overrides this when
+dev-build runs as a dev-ship subagent — there is no standalone `/dev-build` trigger to hand off to
+anymore). After the BUILD COMPLETE block above, return control to dev-ship (PHASE 1 → PHASE 2).
 
 > **Todo**: mark PHASE 3B → `completed`.

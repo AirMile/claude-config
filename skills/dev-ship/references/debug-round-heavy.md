@@ -39,7 +39,10 @@ re-arm it the same way if it isn't already active.
 
 `EnterPlanMode` per `shared/PLAN-MODE.md § Entry` — this is a fresh resume session, so plan mode is
 essentially never already active here (unlike the light round, which is sometimes invoked from an
-already-open plan-mode session).
+already-open plan-mode session). If the investigation needs a **mutating** repro command (state
+reset, migration, destructive fixture), use `shared/PLAN-MODE.md § Administrative exit` — exit with
+an administrative note, run it, **re-enter immediately** — never continue the round outside plan
+mode silently.
 
 ## 4. Re-investigate only if `lightRoundNotes` is insufficient
 
@@ -80,6 +83,10 @@ dispatch criteria and prompt template):
 Each receives: root-cause analysis + Step 4 evidence + affected files.
 Each returns: specific changes with file:line refs, risk (low/medium/high), scope, trade-offs, AND:
 `Reproduction test assertion: {what the test must assert to prove the bug}`
+
+The three agents carry no `model:` pin deliberately — they inherit the session model (the planning
+model under opusplan), which is the intent at the ladder's hard ceiling: two cheaper tiers already
+failed, so the strongest available model designs this round's candidates.
 
 ## 6. Plan selection
 
@@ -177,15 +184,27 @@ re-check` already covers the whole PHASE 3 scope once, right before completion.
   `fix-round.md § Re-check` for any remaining items already mid-round, back to
   `phase-3-manual-finalize.md § Findings ledger + routing` if the scope check in
   `manual-interview-walkthrough.md § Step D` split off a new item that hasn't been through a
-  round-gate pass yet, or straight to the regression re-check if this was the last open item.
-- **Cosmetic tweak surfaces** → inline polish loop in this same chat (app is already running,
-  plan mode already closed) — no new round, no park.
+  round-gate pass yet, straight to the regression re-check if this was the last open item, or — if
+  another open item carries its own `debugTier` — route it per `phase-3-manual-finalize.md § Resume
+entry`'s per-item precedence.
+- **Cosmetic tweak surfaces, and it's the only thing still open** → inline polish loop in this same
+  chat (app is already running, plan mode already closed) — no new round, no park. Same skip-condition
+  **and** capped mechanics as `fix-round.md § Re-check`'s cosmetic branch (3 attempts, `tweakAttempts`
+  tracked on the item). If it doesn't converge after 3 tries, **"Escalate" folds into this section's
+  own "Still failing" branch below** (Accept anyway / Park) — heavy has no further tier to escalate
+  to, so escalating here means the same accept-or-park choice as any other still-failing item at the
+  ceiling.
 - **Still failing** → this is the hard ceiling; no further automated tier exists. Patch the item
   (`heavyRoundFailed: true`, keep `debugTier: "heavy"`), `signal-clear`, then a single
   `AskUserQuestion` — no "another round" option, nothing left to escalate to:
   1. **"Accept anyway"** — mark the item `verdict: "accepted"` with the failure noted as a known
-     limitation (never silently DONE — this requires the explicit choice). Proceed to the regression
-     re-check with this item excluded from the pass/fail count.
+     limitation (never silently DONE — this requires the explicit choice). Also **clear the ladder
+     markers**: the `item` subcommand upserts by id and replaces the whole object, so re-send the
+     full item with `debugTier`, `heavyRoundFailed`, and `tweakAttempts` (if set) omitted (not set
+     to `null` — omit them entirely) rather than a partial patch. Without this, a later resume's
+     per-item precedence (`phase-3-manual-finalize.md § Resume entry`, bullets 1–2) would route this
+     already-accepted item straight back into the heavy round. Proceed to the regression re-check
+     with this item excluded from the pass/fail count.
   2. **"Park — leave this item open"** — checkpoint stays as-is (`debugTier: "heavy"`,
      `heavyRoundFailed: true`), print the park/handoff template (`SKILL.md § PHASE 1–4`) with
      `/dev-ship {feature}` as the resume command. A later resume re-enters this same § 8 re-check

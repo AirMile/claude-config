@@ -37,7 +37,10 @@ Reuse the existing `waiting: "fix-plan"` signal — no new signal vocabulary.
 
 `EnterPlanMode` per `shared/PLAN-MODE.md § Entry` — skip if a plan-mode session is already active
 (the proactive-entry case, arriving from inside `fix-round.md`'s own plan-mode session). On a
-primary (parked-resume) entry this is essentially always a fresh `EnterPlanMode` call.
+primary (parked-resume) entry this is essentially always a fresh `EnterPlanMode` call. If the
+investigation needs a **mutating** repro command (state reset, migration, destructive fixture), use
+`shared/PLAN-MODE.md § Administrative exit` — exit with an administrative note, run it, **re-enter
+immediately** — never continue the round outside plan mode silently.
 
 ## 4. Investigation
 
@@ -52,6 +55,11 @@ its placeholders from the ledger:
   (prior attempts + why they didn't hold).
 
 Parse only the `INVESTIGATION_START…END` block — the compact findings, not the raw reads.
+
+A fork (`shared/SKILL-PATTERNS.md § Fork Delegation`) may replace this Explore dispatch: it inherits
+`DEBUG_CONTEXT` and the round history, shrinking the prompt to the `PROBLEM` section plus the output
+instruction. Same `INVESTIGATION_START…END` contract, read-only work only (plan mode is active). The
+Explore path above remains the fallback and the default.
 
 ## 5. Root cause + Context7
 
@@ -85,18 +93,26 @@ Re-check via `manual-interview-walkthrough.md` Steps B–E for this one item (no
 - **Pass** → clear the item's `debugTier`, set `verdict: "pass"`. Return to
   `fix-round.md § Re-check` for any remaining items already mid-round, back to
   `phase-3-manual-finalize.md § Findings ledger + routing` if the scope check below split off a new
-  item that hasn't been through a round-gate pass yet, or straight to the regression re-check if this
-  was the last open item.
-- **Cosmetic tweak surfaces** (MEASURABLE, obvious, ≤1-2 files) → inline polish loop right here —
-  no park, no new tier. Same skip-condition as `fix-round.md § Re-check`'s cosmetic branch.
+  item that hasn't been through a round-gate pass yet, straight to the regression re-check if this
+  was the last open item, or — if another open item carries its own `debugTier` — route it per
+  `phase-3-manual-finalize.md § Resume entry`'s per-item precedence.
+- **Cosmetic tweak surfaces, and it's the only thing still open** (MEASURABLE, obvious, ≤1-2 files)
+  → inline polish loop right here — no park, no new tier. Same skip-condition **and** capped
+  mechanics as `fix-round.md § Re-check`'s cosmetic branch (3 attempts, `tweakAttempts` tracked on
+  the item). If it doesn't converge after 3 tries, **"Escalate" folds into this section's own
+  "Still failing" branch below** (park to `debugTier: "heavy"`) rather than fix-round.md's
+  light-tier park — you're already past light, there's nowhere lower to send it.
 - **Still failing on its own `expected` text** (the scope check in `manual-interview-walkthrough.md
-  § Step D` already split off anything unrelated) → this light round's one evidence-backed attempt
+§ Step D` already split off anything unrelated) → this light round's one evidence-backed attempt
   didn't hold — escalate to the heavy tier:
   1. **Before parking**, write this round's evidence to the ledger item — a park ends the session, so
-     nothing held only in-context survives it. Patch the item: `debugTier: "heavy"`, and
+     nothing held only in-context survives it. Patch the item: `debugTier: "heavy"`, clear
+     `tweakAttempts` if arriving here via an escalated tweak loop, and
      `lightRoundNotes` (a compact string): the § 4 investigation digest's key lines (error location,
      root code, pitfall match), the § 5 hypothesis and its confirming/refuting evidence, the fix
-     applied, and what the § 8 re-check actually observed. This is the only thing the heavy round has
+     applied, and what the § 8 re-check actually observed — on a tweak escalation, note explicitly
+     that it was first judged a simple cosmetic fix and didn't hold after 3 tries, so the heavy round
+     doesn't waste its own first pass re-deriving that. This is the only thing the heavy round has
      to go on — write it as if handing the case to someone who wasn't in this session.
   2. `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`.
   3. Print the park/handoff template (`SKILL.md § PHASE 1–4`) with `/dev-ship {feature}` as the

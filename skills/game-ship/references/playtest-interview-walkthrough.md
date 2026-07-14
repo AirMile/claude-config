@@ -44,6 +44,12 @@ that session's in-memory verdicts — the resume filters `remainingManualItems` 
 present in the persisted `playtest.items` (`phase-3-playtest.md § Resume entry`), so nothing is lost
 except having to re-ask those specific items.
 
+**If a mid-walkthrough discovery needs its own approval** (e.g. the playtest environment itself must
+change) and plan mode gets entered/exited for that unrelated purpose: the walkthrough's original
+write-protection window has already lapsed. Do not try to re-enter plan mode to "resume" it —
+persist the ledger directly via the `ship-checkpoint.js item` batch-write (§ Step E) once the
+walkthrough itself concludes, without waiting on a second `ExitPlanMode` call.
+
 ## Step B — Launch the game window, present ONE item
 
 Launch the playtest scene **once** — the user plays a single window across every item, not a

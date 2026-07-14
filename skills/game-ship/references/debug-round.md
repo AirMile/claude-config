@@ -27,7 +27,10 @@ deferred writes.
 ## 3. Enter plan mode
 
 `EnterPlanMode` per `shared/PLAN-MODE.md § Entry` — skip if a plan-mode session is already active (the
-common case: this file is loaded from inside `fix-round.md`'s own plan-mode session).
+common case: this file is loaded from inside `fix-round.md`'s own plan-mode session). If the
+investigation needs a **mutating** repro command (state reset, migration, destructive fixture), use
+`shared/PLAN-MODE.md § Administrative exit` — exit with an administrative note, run it, **re-enter
+immediately** — never continue the round outside plan mode silently.
 
 ## 4. Investigation
 
@@ -85,7 +88,11 @@ Print the park/handoff template from `SKILL.md § PHASE 1–4` with two resume c
 **End the turn.**
 
 `game-debug` PHASE 0 reads the `escalatedTo` flag and pre-fills its intake from this item's evidence
-(`game-debug/SKILL.md § PHASE 0`) — the user is not re-asked what they already reported here. On
-completion, `game-debug` writes nothing to the ship checkpoint; the `/game-ship {feature}` resume
-re-checks this item via `phase-3-playtest.md § Resume entry`'s `escalatedTo` handling instead of
-designing a new fix.
+(`game-debug/SKILL.md § PHASE 0`) — the user is not re-asked what they already reported here. On a
+fixed or still-broken outcome, `game-debug` writes nothing to the ship checkpoint; the
+`/game-ship {feature}` resume re-checks this item via `phase-3-playtest.md § Resume entry`'s
+`escalatedTo` handling instead of designing a new fix. On an **accept** outcome (PHASE 9 Step 1/2 —
+"Accept as incomplete"/"Accept (mark as known)"), `game-debug` patches the ledger item directly with
+`verdict: "accepted"` and clears `escalatedTo` (`game-debug/SKILL.md § PHASE 9`) — the resume then
+skips the re-check walkthrough for that item entirely (`phase-3-playtest.md § Resume entry`'s
+sub-exception) instead of re-opening a decision the user already made.

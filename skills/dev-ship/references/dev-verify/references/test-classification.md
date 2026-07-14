@@ -84,7 +84,7 @@ Each test item is classified as **COVERED**, **AUTO**, or **MANUAL** before test
 
 - **COVERED** — build tests already verify this item's contract (only in post-build mode)
 - **AUTO** — can be tested automatically (three sub-methods: BROWSER, CLI, or A11Y)
-- **MANUAL** — requires human perception or judgment
+- **MANUAL** — requires human perception or judgment, or no automation vehicle can reach the runtime (`tooling-gap`)
 
 AUTO items have three sub-methods — the Task agent picks the best one per item:
 
@@ -132,7 +132,7 @@ Execution detail (axe-core injection snippet + common A11Y patterns): `reference
 
 ### MANUAL (human walkthrough)
 
-Assign MANUAL **only** when human perception or judgment is truly required — if it can be objectively checked, it's AUTO. **When in doubt, it is AUTO.**
+Assign MANUAL **only** when human perception or judgment is truly required, or when no available automation vehicle can reach the runtime (`tooling-gap`, below) — if it can be objectively checked by an available vehicle, it's AUTO. **When in doubt, it is AUTO.**
 
 **Contract**: every MANUAL item carries a `manualReason` field naming exactly one criterion from the
 list below. An item with no `manualReason`, or one that doesn't match any of these, is not a valid
@@ -146,6 +146,12 @@ MANUAL when ANY of the following are true (the matching `manualReason` value in 
 - **Audio/sound** (`audio`): sounds play correctly, volume appropriate, timing right
 - **Physical multi-device** (`physical-device`): "log out on phone, log in on desktop" (requires actual second device)
 - **Real-credential auth** (`real-credentials`): a login/flow that requires a genuine third-party account, OAuth consent, or production credentials no test double can stand in for
+- **Automation cannot reach the runtime** (`tooling-gap`): the item is objectively checkable, but no
+  automation vehicle can drive the app shell — e.g. a Tauri/Electron native window with no working
+  WebDriver on this OS, where the item exercises the native IPC/plugin chain (fs, dialog, store,
+  subprocess) that a frontend-only dev server cannot provide. Guard: a pure-frontend item with no
+  native-IPC dependency stays AUTO/BROWSER against the dev server — `tooling-gap` is never a
+  convenience label for "automation is awkward" (that remains a contract violation).
 
 NOT MANUAL (these are AUTO):
 
@@ -159,6 +165,15 @@ NOT MANUAL (these are AUTO):
 - Multi-step flows with deterministic outcomes → AUTO/BROWSER (sequence of actions + snapshots)
 - Heading hierarchy, alt text, ARIA labels, contrast ratio → AUTO/A11Y
 - Keyboard tab order (logical sequence) → AUTO/A11Y
+
+**Evidence classes** — the manual walkthrough (`manual-interview-walkthrough.md § Step C`) applies a
+soft evidence gate keyed on `manualReason`:
+
+- **judgment-class** (`perception`, `audio`): the user's judgment IS the verification — no evidence
+  is asked.
+- **evidence-class** (`tooling-gap`, `real-credentials`, `physical-device`, `screen-reader`): the
+  expected outcome is factual/observable; on Pass the user is asked to supply evidence (screenshot,
+  photo, or pasted output) which the main chat verifies against the item's `expected`.
 
 ### COVERED (post-build only)
 

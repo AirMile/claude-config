@@ -562,6 +562,37 @@ else
   echo "FAIL  completion-sync: componentSync/designComponent (arch=$CS_ARCH design=$CS_DESIGN inv=$CS_INV)"; FAIL=$((FAIL + 1))
 fi
 
+# (j) knownIssues: written to both feature.json#tests.knownIssues and the backlog entry.
+cs_reset
+(cd "$CST/wt" && cat "$CSFX/payloads/knownissues.json" | node "$CS" sync auth-login) >/dev/null 2>&1
+CS_KI_F=$(node -e 'const f=require(process.argv[1]);const k=f.tests.knownIssues;process.stdout.write(k&&k.length===1?[k[0].id,k[0].verdict,k[0].source].join("|"):"missing")' "$CST/.project/features/auth-login/feature.json")
+CS_KI_BL=$(node -e 'const b=require(process.argv[1]);const e=b.features.find(x=>x.name==="auth-login");const k=e.knownIssues;process.stdout.write(k&&k.length===1?[k[0].id,k[0].verdict].join("|"):"missing")' "$CST/.project/backlog.json")
+if [ "$CS_KI_F" = "REQ-002|deferred|ship-ledger" ] && [ "$CS_KI_BL" = "REQ-002|deferred" ]; then
+  echo "PASS  completion-sync: knownIssues written to feature.json + backlog entry"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: knownIssues write (feature=$CS_KI_F backlog=$CS_KI_BL)"; FAIL=$((FAIL + 1))
+fi
+
+# (k) knownIssues upsert: a second sync with the same id replaces it in place, a new id appends.
+(cd "$CST/wt" && cat "$CSFX/payloads/knownissues-update.json" | node "$CS" sync auth-login) >/dev/null 2>&1
+CS_KI_UPD=$(node -e 'const f=require(process.argv[1]);const k=f.tests.knownIssues;process.stdout.write([k.length,k.find(x=>x.id==="REQ-002").verdict,!!k.find(x=>x.id==="REQ-001")].join("|"))' "$CST/.project/features/auth-login/feature.json")
+if [ "$CS_KI_UPD" = "2|accepted|true" ]; then
+  echo "PASS  completion-sync: knownIssues upsert (replace by id + append new id)"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: knownIssues upsert (got: $CS_KI_UPD)"; FAIL=$((FAIL + 1))
+fi
+
+# (l) knownIssues validation: unknown verdict → exit 6, nothing written.
+cs_reset
+CS_KI_INVALID_OUT=$(cd "$CST/wt" && cat "$CSFX/payloads/knownissues-invalid.json" | node "$CS" sync auth-login 2>&1)
+CS_KI_INVALID_CODE=$?
+if [ "$CS_KI_INVALID_CODE" -eq 6 ] && [ ! -f "$CST/.project/features/auth-login/feature.json.tmp" ] \
+  && [ "$(cs_backlog_entry auth-login | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0)).status)')" != "DONE" ]; then
+  echo "PASS  completion-sync: knownIssues invalid verdict → exit 6, nothing written"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: knownIssues invalid verdict (code=$CS_KI_INVALID_CODE out=$CS_KI_INVALID_OUT)"; FAIL=$((FAIL + 1))
+fi
+
 rm -rf "$CST"
 
 # --- learnings-search.js ---

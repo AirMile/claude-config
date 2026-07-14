@@ -68,6 +68,16 @@ Convention framing (≤200 chars): `Convention: keep {pattern}. {why-skipped}.`
 
 ## Step 3 — Parallel sync
 
+> **Todo (symlink self-heal, before any write below):** `learnings-write.js`'s atomic temp+rename
+> (Step 2 above) replaces a symlinked path with a real file if the target was a symlink pointing
+> outside the worktree — a known failure mode, not hypothetical. Before writing, check `.project/archive`
+> and `.project/project-context.json` inside the worktree: if either is no longer a symlink (`[ ! -L path ]`)
+> but main's real file/dir at `{main_root}/.project/{archive,project-context.json}` still exists, re-run
+> `ln -sfn` for that one path only (idempotent, no abort branch — this is a targeted repair, not the
+> full gate). Skip silently if it's already a symlink. Without this, the archive entry and any
+> just-appended learnings land in a worktree-local copy that the later `git worktree remove` silently
+> destroys.
+
 Follow `shared/SYNC.md` 3-File Sync Pattern. Read backlog.json + project.json + project-context.json in parallel (see `shared/BACKLOG.md § Writing` for the legacy backlog.html migration rule).
 
 **Backlog**: per feature (CLEAN/REFACTORED) — set `f.refactor="REFACTORED"`, `f.shipped=true`, `f.shippedAt`, `f.shippedSha=$(git rev-parse HEAD)` (the PHASE 4 refactor commit), `f.summary` (see below), remove `transition`, set `data.updated`. These mutations are **one atomic unit** — never write `f.refactor` without also writing `f.shipped`/`f.shippedAt`/`f.shippedSha`/`f.summary` in the same file write. ROLLED_BACK: `f.refactor="ROLLED_BACK"`, remove `transition`, set `data.updated` — do NOT set shipped or summary.
