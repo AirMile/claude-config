@@ -51,6 +51,10 @@ ALLOWLIST = [
         "Read backlog.json + project.json + project-context.json in parallel",
     ),
     (
+        "skills/dev-ship/references/orchestration.md",
+        "Re-read `backlog.json#features[]` after the merge: if the just-shipped",
+    ),
+    (
         "skills/dev-ship/references/dev-refactor/references/completion-batch.md",
         "Re-read `backlog.json#features[]` — feature must **not** be present",
     ),
