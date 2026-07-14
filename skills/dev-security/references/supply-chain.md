@@ -1,4 +1,4 @@
-# Supply-chain, SAST & secret tooling — dev-security PHASE 2b
+# Supply-chain, SAST & secret tooling — dev-security PHASE 2
 
 Open-source SAST + supply-chain + secret scanning on top of the LLM-driven OWASP scanners. Motivation: the A03 (Supply Chain) scanner is pattern-based and misses real-world CVE data and malicious-package signals. The Qix/chalk-debug compromise (Sep 2025, ~2.6 billion weekly downloads) is a concrete example where OSV-Scanner picked it up within hours. Semgrep CE catches code-level anti-patterns with a faster ruleset than an LLM pass. Gitleaks catches leaked credentials in the working tree **and git history** — invisible to file-based scanners once the secret is "removed" but still in a past commit.
 

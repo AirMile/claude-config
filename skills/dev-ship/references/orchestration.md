@@ -18,6 +18,11 @@ inline costs nothing extra: Workflow already runs in the background and notifies
   non-interactive-contract rule 1).
 - If the `Workflow` tool's schema is not yet loaded, call `ToolSearch query="select:Workflow"`
   first.
+- **`Workflow`'s `scriptPath` is NOT cwd-safe** (unlike `ship-checkpoint.js` above) — a relative
+  path resolves against the main chat's current directory. By §5 the main chat is always inside
+  `worktree-{feature}` (PHASE 3 Step 1 already switched in), where `.claude/` does not exist — a
+  relative `scriptPath` there fails outright. Always resolve `main_root` first (`git worktree
+  list --porcelain | head -1`, same as the triage-persist step in §5) and pass an absolute path.
 - Each `Workflow(...)` launch below ends your turn with a short one-liner ("Shipping `{feature}` in
   the background — I'll report when it returns.") — no further tool calls until the task-notification
   arrives.
@@ -41,8 +46,8 @@ output as authoritative rather than re-deriving it by hand):
 
 Write the live signal: `echo '{"skill":"build"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}`.
 
-Launch:
-`Workflow({scriptPath: ".claude/skills/dev-ship/references/workflows/ship-phase12.js", args:
+Launch (resolve `main_root` and use an absolute `scriptPath`, per § Ground rules):
+`Workflow({scriptPath: "{main_root}/.claude/skills/dev-ship/references/workflows/ship-phase12.js", args:
 {feature, buildPromptPath, verifyPromptPath, resume}})` — `buildPromptPath`/`verifyPromptPath` come
 from the pointer files you wrote at the PHASE 0→1 boundary (SKILL.md § PHASE 1–4), or from the
 checkpoint's `prompts` field on a respawn (reassemble from `plan` + disk per
@@ -101,7 +106,11 @@ set **and** `securityDeep` is empty.
 rev-parse HEAD` and patch it to the checkpoint; (b) run the TEAM_MODE + PR-state detection from
 `references/dev-verify/references/finalize.md` and decide `finalizeRoute: merge | halt` (`merge`
 on the solo/`MERGED` rows, `halt` on the open-PR / team rows) — this decides whether AGENT 3 does
-the shipped completion writes.
+the shipped completion writes; (c) safety net — check for a still-running app/dev-server process
+whose cwd is `{worktreePath}` (a PHASE 3 manual-round app that `phase-3-manual-finalize.md`'s
+teardown step missed, e.g. on a crash-resume) and kill it before spawning — the refactor agent
+runs its own tests in this same worktree and a lingering process is unrelated interference to rule
+out up front, not discover mid-merge.
 
 Otherwise: rewrite the live signal (same as §3): `echo '{"skill":"refactor"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}`. Read
 `.claude/skills/dev-ship/references/agent-refactor.md` (when refactor runs) and
@@ -112,7 +121,10 @@ Otherwise: rewrite the live signal (same as §3): `echo '{"skill":"refactor"}' |
 does), **write each pointer + slice file** (carrying the worktree path + `finalizeRoute`) under
 `.project/session/ship-prompts/`, and pass the **paths** (never inline).
 
-Launch: `Workflow({scriptPath: ".claude/skills/dev-ship/references/workflows/ship-phase4.js", args:
+Launch — **use an absolute `scriptPath`** (main chat is inside `worktree-{feature}` here;
+`.claude/` is not checked out in a worktree, so a relative path fails — resolve `main_root` the
+same way the triage-persist step below does): `Workflow({scriptPath:
+"{main_root}/.claude/skills/dev-ship/references/workflows/ship-phase4.js", args:
 {feature, refactorPromptPath, scanners, triagePromptPath, resume}})` — `refactorPromptPath: null`
 only when `--no-refactor` was set; `scanners: []` when `securityDeep` is empty (otherwise one
 `{code, promptPath}` per auto-derived OWASP code, per `agent-security.md`); `triagePromptPath` a
@@ -128,11 +140,53 @@ On return, write point 3: clear `activeWorkflow`/`workflowRunId`/`prompts`, merg
 {worktreePath} reset --hard {preRefactorSha}`, non-fatal, note `reverted:true` for the report) —
 still finalize.
 
+**Persist the triage** (only if `results.triage` is non-null — `scanners` was empty otherwise): the
+ship checkpoint is deleted on `status: "complete"` (SKILL.md § PHASE 5's checkpoint cleanup), so
+without this the triage vanishes the moment the feature finishes shipping and PHASE 5's "run
+`/dev-security {feature}`" offer would point at nothing. Write a durable copy that survives it:
+
+- Resolve `main_root` the same way `ship-checkpoint.js` does (`git worktree list --porcelain | head
+-1`, strip the `worktree ` prefix) — cwd may still be inside `{worktreePath}` here and
+  `.project/security/` is **not** symlinked (`shared/WORKTREE.md § What to share`), so a relative
+  path would silently write into the worktree and be lost at cleanup.
+- `mkdir -p "$main_root/.project/security"`, then atomic-write (tmp+rename, same pattern as
+  `ship-checkpoint.js`'s `atomicWrite`) to `$main_root/.project/security/ship-triage-{feature}.json`:
+  ```json
+  {
+    "schemaVersion": 1,
+    "feature": "{feature}",
+    "writtenAt": "{ISO 8601, now}",
+    "scannersRun": "{ship-phase4.js result.scannersRun}",
+    "scannersFailed": "{ship-phase4.js result.scannersFailed}",
+    "findingsAboveThreshold": "{ship-phase4.js result.findingsAboveThreshold}",
+    "triage": "{ship-phase4.js result.triage — {confirmed[], dismissed[], summary}}",
+    "backlogTodo": null
+  }
+  ```
+- On the Agent-tool fallback path (`agent-security.md § Main-chat handling`, fallback bullet), write
+  the same file from the inline triage result assembled there.
+
+This write happens **before** PHASE 5's checkpoint cleanup and is a plain state file, not part of
+the checkpoint — never stage it into git; it lives under `.project/`, which is gitignored
+per-developer runtime state, same as the rest of `.project/session/`.
+
 **Then finalize** — Read
 `.claude/skills/dev-ship/references/dev-verify/references/finalize.md` and execute it (solo →
 merge + worktree cleanup; open PR / team → halt and leave the worktree). It also owns the
 **merge-route postconditions**: post-merge archive reconcile + self-heal, `shippedSha` re-stamp,
 and state auto-push (its § Post-merge reconcile).
+
+**On a real merge conflict** during the solo-merge step (two features touched the same file) — do
+**not** improvise from scratch: Read `references/merge-conflict-resolution.md` first. It documents
+the extract-both-sides + reconstruct technique and the diff3 shared-closing-brace-tail trap that
+silently breaks a naive concatenation.
+
+**Do not skip the archive-reconcile check even if the project's actual `backlog.json` looks
+inconsistent with it.** Re-read `backlog.json#features[]` after the merge: if the just-shipped
+feature is still present there, that is a half-run — move it to `.project/archive/backlog-archive.json`
+per `finalize.md`'s self-heal, do not leave it and match precedent. If you find this check does not
+match the project's established pattern for prior ships, say so explicitly to the user instead of
+silently choosing one behavior over the other.
 
 **Guard** — never finalize before the refactor workflow returns; never skip finalize because
 refactor failed. Finalize runs on both the `applied|clean` and the reverted-`failed` path.

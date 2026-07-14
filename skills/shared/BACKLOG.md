@@ -32,7 +32,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
   "features": [
     {
       "name": "feature-name",
-      "type": "FEATURE|CHANGE|BUG|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|THEME|A11Y|PERF|PAGE-GAP",
+      "type": "FEATURE|CHANGE|BUG|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|THEME|A11Y|PERF|PAGE-GAP|SECURITY",
       "status": "TODO|DEFINED|DOING|DONE|CANCELLED",
       "phase": "P1|P2|P3|P4",
       "description": "Description",

@@ -87,6 +87,13 @@ findingsAboveThreshold, triage: {confirmed[], dismissed[], summary}}` — read d
    **Fallback path**: collect each scanner's report, filter to `confidence ≥ 60%`
    (dev-security's threshold), and apply the triage judgment inline in the main chat (same
    criteria as the static triage file).
-2. **Do not apply fixes.** In PHASE 5, present `triage.confirmed` (priority-ordered) +
-   `triage.summary` and offer (as plain text, not an auto-run): "Run `/dev-security {feature}` to
-   remediate." The PHASE 4 finalize still merges the verified feature regardless.
+2. **Do not apply fixes.** The triage is persisted durably at PHASE 4 return time
+   (`orchestration.md § 5`'s "Persist the triage" step) to
+   `.project/security/ship-triage-{feature}.json` — it survives the ship checkpoint's deletion at
+   PHASE 5. If `triage.confirmed` contains ≥1 `critical`/`high` finding, PHASE 5 auto-creates a
+   `SECURITY` backlog todo (`SKILL.md § PHASE 5`) referencing that file. In PHASE 5, present
+   `triage.confirmed` (priority-ordered) + `triage.summary`, then offer (as plain text, not an
+   auto-run): "SECURITY todo `security-{feature}` added — run `/dev-security {feature}` to
+   remediate (it preloads this triage)." (Or, when nothing reached the auto-todo threshold: "Run
+   `/dev-security {feature}` to remediate.") The PHASE 4 finalize still merges the verified feature
+   regardless.
