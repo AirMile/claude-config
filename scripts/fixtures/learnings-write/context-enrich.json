@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "learnings": [
+    {
+      "date": "2026-01-01",
+      "feature": "foo",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Some pitfall about foo",
+      "tags": ["ui"]
+    },
+    {
+      "date": "2026-01-02",
+      "feature": "control",
+      "type": "pattern",
+      "source": "extracted",
+      "summary": "Untouched control entry"
+    },
+    {
+      "type": "pitfall",
+      "source": "extracted",
+      "key": "legacy-one",
+      "text": "Legacy text about bar module"
+    },
+    {
+      "type": "observation",
+      "source": "inferred",
+      "note": "Keyless legacy note about baz behavior"
+    }
+  ]
+}

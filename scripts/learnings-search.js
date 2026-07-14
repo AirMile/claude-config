@@ -17,8 +17,8 @@
 // (loading, scope filters, ranking, output) stays put.
 //
 // Usage:
-//   node learnings-search.js <project-root> load        [--feature <kebab>] [--scopes a,b] [--pitfall-prefix true|false]
-//   node learnings-search.js <project-root> search      [--query "..."] [--feature <kebab>] [--tags a,b] [--type <t>] [--archive] [--cap N] [--json]
+//   node learnings-search.js <project-root> load        [--feature <kebab>] [--scopes a,b] [--pitfall-prefix true|false] [--paths a,b]
+//   node learnings-search.js <project-root> search      [--query "..."] [--feature <kebab>] [--tags a,b] [--type <t>] [--archive] [--cap N] [--json] [--paths a,b]
 //   node learnings-search.js <project-root> suggest-tags
 //   node learnings-search.js --print-vocab
 //
@@ -274,20 +274,75 @@ export const TOKEN_TO_TAGS = (() => {
   return m;
 })();
 
+// ── Path tokens ──────────────────────────────────────────────────────────────
+// Language-neutral anchor: summaries may be written in the runtime language
+// (Dutch) while file paths are English — path tokens bridge that gap. Segments
+// present in nearly every path carry no signal and are dropped before
+// tokenizing; camelCase/kebab/snake basenames split into their words.
+const GENERIC_PATH_SEGMENTS = new Set([
+  "src",
+  "lib",
+  "libs",
+  "app",
+  "apps",
+  "test",
+  "tests",
+  "spec",
+  "index",
+  "main",
+  "dist",
+  "build",
+  "public",
+  "assets",
+  "node_modules",
+  "components",
+  "utils",
+  "util",
+  "shared",
+  "common",
+  "core",
+  "scripts",
+]);
+
+export function pathTokens(paths) {
+  const out = new Set();
+  for (const p of paths || []) {
+    for (let seg of String(p).replace(/\\/g, "/").split("/").filter(Boolean)) {
+      seg = seg.replace(/\.[A-Za-z0-9]+$/, ""); // strip extension
+      if (GENERIC_PATH_SEGMENTS.has(seg.toLowerCase())) continue;
+      const spaced = seg
+        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+        .replace(/[-_.]/g, " ");
+      for (const tok of tokenize(spaced)) out.add(tok);
+    }
+  }
+  return out;
+}
+
 // ── Context builder ──────────────────────────────────────────────────────────
-// ctx.tokens: query + feature tokens. ctx.tags: explicit --tags plus tags
-// implied by those tokens via the reverse index.
-function buildCtx({ query = "", feature = "", tags = [] } = {}) {
+// ctx.tokens: query + feature + path tokens (path tokens also match summary
+// keywords, so pre-paths entries benefit too). ctx.tags: explicit --tags plus
+// tags implied by those tokens via the reverse index. ctx.pathTokens: kept
+// separately for the entry.paths[] anchor bonus in scoreEntry.
+function buildCtx({ query = "", feature = "", tags = [], paths = [] } = {}) {
+  const pTokens = pathTokens(paths);
   const tokens = new Set([
     ...tokenize(query),
     ...tokenize(feature.replace(/-/g, " ")),
+    ...pTokens,
   ]);
   const tagSet = new Set(tags.filter(Boolean));
   for (const tok of tokens) {
     const implied = TOKEN_TO_TAGS.get(tok);
     if (implied) for (const t of implied) tagSet.add(t);
   }
-  return { query, feature: feature.toLowerCase(), tokens, tags: tagSet };
+  return {
+    query,
+    feature: feature.toLowerCase(),
+    tokens,
+    tags: tagSet,
+    pathTokens: pTokens,
+  };
 }
 
 // ── THE SWAP POINT ───────────────────────────────────────────────────────────
@@ -308,6 +363,16 @@ function scoreEntry(entry, ctx) {
   const eTokens = tokenize(entry.summary || "");
   for (const tok of ctx.tokens) if (eTokens.has(tok)) overlap++;
   score += Math.min(overlap, 5) * 1.0; // keyword overlap, capped
+  if (
+    ctx.pathTokens?.size &&
+    Array.isArray(entry.paths) &&
+    entry.paths.length
+  ) {
+    const eP = pathTokens(entry.paths);
+    let pOverlap = 0;
+    for (const tok of ctx.pathTokens) if (eP.has(tok)) pOverlap++;
+    score += Math.min(pOverlap, 3) * 2.0; // path anchor overlap, capped
+  }
   return score;
 }
 
@@ -440,7 +505,7 @@ function cmdLoad(root, flags) {
   const active = loadActive(root);
   if (!active.length && !existsSync(join(root, ".project", "archive"))) return;
   const archive = loadArchive(root);
-  const ctx = buildCtx({ feature });
+  const ctx = buildCtx({ feature, paths: splitList(flags.paths) });
   const out = [];
 
   if (pitfallPrefix) {
@@ -478,10 +543,8 @@ function cmdSearch(root, flags) {
   const ctx = buildCtx({
     query: flags.query || "",
     feature: flags.feature || "",
-    tags: (flags.tags || "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean),
+    tags: splitList(flags.tags),
+    paths: splitList(flags.paths),
   });
   const active = loadActive(root);
   const cap = flags.cap ? parseInt(flags.cap, 10) : undefined; // undefined → per-scope default
@@ -511,6 +574,7 @@ function cmdSearch(root, flags) {
           author: s.e.author,
           summary: s.e.summary,
           tags: s.e.tags || [],
+          paths: s.e.paths || [],
           archived: !!s.e._archived,
           score: Math.round(s.score * 100) / 100,
         })),
@@ -554,6 +618,15 @@ function cmdPrintVocab() {
 }
 
 // ── Arg parsing ──────────────────────────────────────────────────────────────
+function splitList(v) {
+  return typeof v === "string"
+    ? v
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+}
+
 function parseFlags(argv) {
   const flags = {};
   for (let i = 0; i < argv.length; i++) {

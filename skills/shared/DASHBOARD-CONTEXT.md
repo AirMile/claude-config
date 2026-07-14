@@ -229,13 +229,15 @@ Skills write to `context` after each build/refactor. CLAUDE.md refers to `projec
     "source": "synced",
     "author": "Alice",
     "summary": "Stripe webhooks via idempotency keys per request",
-    "tags": ["api", "security"]
+    "tags": ["api", "security"],
+    "paths": ["src/webhooks/stripe.ts"]
   }
 ]
 ```
 
 `type` values: `pattern` (architectural choice), `pitfall` (bug/gotcha), `observation` (cross-feature insight).
 `tags` = optional 0–3 domain tags (kebab-case) from `LEARNING-WRITE.md § Tag Vocabulary`. They drive relevance search (`scripts/learnings-search.js`) so an old entry resurfaces by topic; not part of the dedup key; absent on pre-tag entries (keyword fallback still matches).
+`paths` = optional 0–5 repo-relative source paths the learning is anchored to (`LEARNING-WRITE.md § Writer Append Protocol → Paths`). Language-neutral relevance hook for `--paths` callers; not part of the dedup key; absent on pre-paths entries.
 `source` values: `extracted` (direct observation from code output or test result) | `inferred` (cross-feature pattern recognition or LLM inference) | `synced` (extracted from teammate code or mature codebase via core-pull / core-setup --mode=mature) | `consolidated` (merge of multiple archived entries — written only by the core-pull consolidation pass, see `LEARNING-WRITE.md § Consolidation`).
 `date` = extraction date. `feature` = source feature (kebab-case). For `synced` learnings without a structured feature: use primary directory (`auth`, `payments`). `summary` = max 200 chars.
 `author` = optional, only for `source === "synced"`. Mirrors `features[].author`.

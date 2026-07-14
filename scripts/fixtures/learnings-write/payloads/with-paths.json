@@ -1,0 +1,20 @@
+{
+  "entries": [
+    {
+      "feature": "navigator",
+      "type": "pitfall",
+      "source": "extracted",
+      "summary": "Virtualized navigator list drops scroll anchor when the file tree refreshes mid-scroll",
+      "tags": ["ui"],
+      "paths": [
+        "src/components/navigator/FileList.tsx",
+        "src/components/navigator/TreeView.tsx",
+        "src/store/navigatorStore.ts",
+        "src/lib/fileTree.ts",
+        "src/lib/scrollAnchor.ts",
+        "src/lib/extra-one.ts",
+        "src/lib/extra-two.ts"
+      ]
+    }
+  ]
+}

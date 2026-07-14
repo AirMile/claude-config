@@ -26,7 +26,8 @@ Each skill specifies one or more scopes. No wildcards — choose explicitly. The
 
 ```bash
 node ~/.claude/scripts/learnings-search.js "$REPO" load \
-  --feature "$FEAT" --scopes "$SCOPES" --pitfall-prefix true
+  --feature "$FEAT" --scopes "$SCOPES" --pitfall-prefix true \
+  [--paths "src/a.ts,src/b.ts"]
 ```
 
 One process runs the pitfall-prefix, `component`, and `architectural` scopes in the order above and prints the whole `LEARNINGS CONTEXT` block (or nothing when there are no matches). Pass `--pitfall-prefix false` to drop the pitfall block. Empty output = no matches; show nothing (no "0 entries" lines). The script never writes and exits 0 even when `project-context.json` is absent.
@@ -38,10 +39,15 @@ One process runs the pitfall-prefix, `component`, and `architectural` scopes in 
 - **+4** per shared tag (entry `tags[]` ∩ tags implied by the feature/query — see `LEARNING-WRITE.md § Tag Vocabulary`)
 - **+2** feature-name match (bidirectional substring)
 - **+1** per summary keyword overlap (same tokenizer as dedup), capped at 5
+- **+2** per path-token overlap (entry `paths[]` ∩ caller `--paths`, both reduced to tokens: extension stripped, camelCase/kebab/snake split, generic segments like `src`/`components` dropped), capped at 3 — the language-neutral anchor: Dutch summaries still match an English file path. Caller path tokens also join the keyword pool, so pre-`paths` entries whose _summary_ names the file benefit too.
 - **recency**: a sub-point tiebreak (`< 1`), so relevance always outranks date
 - **archive entries**: score damped ×0.7 and gated — they surface only on a tag match or a strong textual score, never on recency alone
 
-Entries without `tags[]` still score on feature + keyword overlap, so the loader is fully backwards-compatible with pre-tag projects.
+Entries without `tags[]` or `paths[]` still score on feature + keyword overlap, so the loader is fully backwards-compatible with pre-tag/pre-paths projects.
+
+**Passing paths**: callers that know the touched files append `--paths "src/a.ts,src/b.ts"`
+(comma-separated, repo-relative) to the `load` or `search` command — used by `dev-tweak` /
+`game-tweak` after locating the change; ship skills may add it where the file set is known.
 
 ## Output format
 
@@ -74,6 +80,7 @@ Load learnings via shared/LEARNINGS-LOAD.md:
 - scopes: [component, architectural]
 - pitfall-prefix: true
 - current-feature: <kebab-case name, or "none" for non-feature skills>
+- paths: <comma-separated repo-relative files, optional — adds the path-anchor bonus>
 ```
 
 `pitfall-prefix` defaults to `true` — only explicitly disable if the skill genuinely does not need pitfall context.

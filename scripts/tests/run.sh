@@ -617,6 +617,16 @@ else
   echo "FAIL  learnings-search: equal base → newest date ranks first (got top: $D2_TOP)"; FAIL=$((FAIL + 1))
 fi
 
+# (d3) --paths anchor: the Dutch-summary entry (zero English query keywords)
+#      ranks first purely on entry.paths[] ∩ --paths token overlap — the
+#      language-neutral bridge the paths field exists for.
+D3_TOP=$(node "$LS" "$LST" search --paths "src/canvas/graphLayout.ts" --json 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write((r[0]&&r[0].feature)||"")')
+if [ "$D3_TOP" = "canvas-layout" ]; then
+  echo "PASS  learnings-search: --paths anchor ranks path-matched entry first"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-search: --paths anchor ranks path-matched entry first (got top: $D3_TOP)"; FAIL=$((FAIL + 1))
+fi
+
 # (e) missing project-context.json → exit 0, no output (silent loader contract).
 LSE=$(mktemp -d)
 E_OUT=$(node "$LS" "$LSE" load --feature x 2>&1); E_CODE=$?
@@ -654,6 +664,7 @@ mkdir -p "$LWT/proj/.project"
 lw_reset_small() { cp "$LWFX/context.json" "$LWT/proj/.project/project-context.json"; }
 lw_reset_large() { cp "$LWFX/context-large.json" "$LWT/proj/.project/project-context.json"; }
 lw_reset_no_op() { cp "$LWFX/context-no-op.json" "$LWT/proj/.project/project-context.json"; }
+lw_reset_enrich() { cp "$LWFX/context-enrich.json" "$LWT/proj/.project/project-context.json"; }
 lw_learnings_len() { node -e 'const c=require(process.argv[1]);process.stdout.write(String(c.learnings.length))' "$LWT/proj/.project/project-context.json"; }
 
 # (a) append a genuinely new entry → appended, date stamped, nothing skipped.
@@ -695,6 +706,16 @@ if [ "$LW_D_CHECK" = "1|1" ]; then
   echo "PASS  learnings-write: within-batch duplicate deduped against its own batch"; PASS=$((PASS + 1))
 else
   echo "FAIL  learnings-write: within-batch duplicate (got: $LW_D_CHECK)"; FAIL=$((FAIL + 1))
+fi
+
+# (d5) paths[] passthrough on append, capped at 5.
+lw_reset_small
+LW_P=$(cd "$LWT" && cat "$LWFX/payloads/with-paths.json" | node "$LW" append proj)
+LW_P_CHECK=$(node -e 'const c=require(process.argv[1]);const e=c.learnings.find(l=>l.feature==="navigator");process.stdout.write(e&&Array.isArray(e.paths)?String(e.paths.length):"no-paths")' "$LWT/proj/.project/project-context.json")
+if [ "$LW_P_CHECK" = "5" ]; then
+  echo "PASS  learnings-write: paths[] stored on append, capped at 5"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: paths[] stored on append, capped at 5 (got: $LW_P_CHECK)"; FAIL=$((FAIL + 1))
 fi
 
 # (e) gate at/under the 60 threshold → silent, exit 0.
@@ -758,6 +779,49 @@ if [ "$LW_I_CODE" -eq 0 ] && [ -z "$LW_I_OUT" ]; then
   echo "PASS  learnings-write: gate over 60 with no qualifying cluster/age-out → silent no-op"; PASS=$((PASS + 1))
 else
   echo "FAIL  learnings-write: gate over 60 no-op (code=$LW_I_CODE out='$LW_I_OUT')"; FAIL=$((FAIL + 1))
+fi
+
+# (j) enrich: tags+paths patch via exact-tuple match, control entry untouched.
+lw_reset_enrich
+LW_J=$(cd "$LWT" && cat "$LWFX/payloads/enrich-tags-paths.json" | node "$LW" enrich proj)
+LW_J_CHECK=$(echo "$LW_J" | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write([r.patched,r.alreadyApplied,r.notFound.length,r.ambiguous.length].join("|"))')
+LW_J_ENTRY=$(node -e 'const c=require(process.argv[1]);const e=c.learnings.find(l=>l.feature==="foo");process.stdout.write(JSON.stringify([e.tags,e.paths]))' "$LWT/proj/.project/project-context.json")
+LW_J_CONTROL=$(node -e 'const c=require(process.argv[1]);const e=c.learnings.find(l=>l.feature==="control");process.stdout.write(e.tags?"has-tags":"no-tags")' "$LWT/proj/.project/project-context.json")
+if [ "$LW_J_CHECK" = "1|0|0|0" ] && [ "$LW_J_ENTRY" = '[["ui","state"],["src/foo.ts"]]' ] && [ "$LW_J_CONTROL" = "no-tags" ] && [ "$(lw_learnings_len)" = "4" ]; then
+  echo "PASS  learnings-write: enrich tags+paths via exact-tuple match, control entry untouched"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: enrich tags+paths (got: $LW_J_CHECK entry=$LW_J_ENTRY control=$LW_J_CONTROL len=$(lw_learnings_len))"; FAIL=$((FAIL + 1))
+fi
+
+# (k) enrich: legacy key-migration produces a conformant entry (no key/text/note,
+# valid date/feature/type/source/summary) — then a SECOND identical run is a
+# no-op via the identity fallback (key was already deleted by run 1).
+lw_reset_enrich
+LW_K1=$(cd "$LWT" && cat "$LWFX/payloads/enrich-legacy-migrate.json" | node "$LW" enrich proj)
+LW_K1_CHECK=$(echo "$LW_K1" | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write([r.patched,r.alreadyApplied].join("|"))')
+LW_K_SHAPE=$(node -e '
+const c=require(process.argv[1]);
+const e=c.learnings.find(l=>l.feature==="bar");
+const clean = e && !("key" in e) && !("text" in e) && !("note" in e);
+const valid = e && e.date==="2025-06-01" && e.type==="pitfall" && e.source==="extracted" && e.summary==="Legacy text about bar module";
+process.stdout.write(clean && valid ? "conformant" : "not-conformant");
+' "$LWT/proj/.project/project-context.json")
+LW_K2=$(cd "$LWT" && cat "$LWFX/payloads/enrich-legacy-migrate.json" | node "$LW" enrich proj)
+LW_K2_CHECK=$(echo "$LW_K2" | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write([r.patched,r.alreadyApplied].join("|"))')
+if [ "$LW_K1_CHECK" = "1|0" ] && [ "$LW_K_SHAPE" = "conformant" ] && [ "$LW_K2_CHECK" = "0|1" ] && [ "$(lw_learnings_len)" = "4" ]; then
+  echo "PASS  learnings-write: enrich legacy-key migration + idempotent re-run"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: enrich legacy migration (run1=$LW_K1_CHECK shape=$LW_K_SHAPE run2=$LW_K2_CHECK len=$(lw_learnings_len))"; FAIL=$((FAIL + 1))
+fi
+
+# (l) enrich: patch with no match anywhere → notFound, reported not swallowed, array untouched.
+lw_reset_enrich
+LW_L=$(cd "$LWT" && cat "$LWFX/payloads/enrich-no-match.json" | node "$LW" enrich proj)
+LW_L_CHECK=$(echo "$LW_L" | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write([r.patched,r.notFound.length].join("|"))')
+if [ "$LW_L_CHECK" = "0|1" ] && [ "$(lw_learnings_len)" = "4" ]; then
+  echo "PASS  learnings-write: enrich no-match reported, array untouched"; PASS=$((PASS + 1))
+else
+  echo "FAIL  learnings-write: enrich no-match (got: $LW_L_CHECK len=$(lw_learnings_len))"; FAIL=$((FAIL + 1))
 fi
 
 rm -rf "$LWT"

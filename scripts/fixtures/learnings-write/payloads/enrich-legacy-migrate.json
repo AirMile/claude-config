@@ -1,0 +1,12 @@
+{
+  "patches": [
+    {
+      "match": { "key": "legacy-one" },
+      "date": "2025-06-01",
+      "feature": "bar",
+      "summary": "Legacy text about bar module",
+      "tags": ["state"],
+      "paths": ["src/bar.ts"]
+    }
+  ]
+}

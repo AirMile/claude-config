@@ -1,0 +1,13 @@
+{
+  "patches": [
+    {
+      "match": {
+        "feature": "foo",
+        "type": "pitfall",
+        "summaryEquals": "Some pitfall about foo"
+      },
+      "tags": ["ui", "state"],
+      "paths": ["src/foo.ts"]
+    }
+  ]
+}

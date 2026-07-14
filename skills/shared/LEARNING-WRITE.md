@@ -67,11 +67,21 @@ Single canon for every skill that appends to `project-context.json#learnings[]` 
   "source": "extracted|inferred|synced|consolidated",
   "author": "(only when source === \"synced\")",
   "summary": "max 200 chars",
-  "tags": ["auth", "async"]
+  "tags": ["auth", "async"],
+  "paths": ["src/components/navigator/FileList.tsx"]
 }
 ```
 
 **Filter**: only items relevant beyond the current feature — skip feature-specific implementation details.
+
+**Paths** (optional, 0-5 repo-relative source paths): the files the learning is anchored to — the
+writer knows them at extraction time, so record them. They are a **language-neutral** relevance
+hook: summaries may be written in the runtime language (e.g. Dutch) while queries/slugs/filenames
+are English; `learnings-search.js` gives entries a path-anchor bonus when the caller passes
+`--paths` (see `LEARNINGS-LOAD.md § Relevance model`). Include only paths central to the learning —
+not every file the feature touched. Omit for learnings without a file anchor (process observations,
+architecture decisions). The script caps at 5. **Paths are NOT part of the dedup key.** On
+consolidation, the merged entry gets the most-frequent paths of its group (capped at 5).
 
 **Tags**: assign 0–3 domain tags from § Tag Vocabulary describing what the learning is _about_ (kebab-case; at most one free tag when nothing fits; omit rather than force). Tags let relevance search resurface an old entry by topic — a stale `auth` pitfall stays reachable when a new auth feature is built. Optional and backwards-compatible: entries without `tags` still match on feature name + summary keywords. **Tags are NOT part of the dedup key.**
 

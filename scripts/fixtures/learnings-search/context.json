@@ -67,6 +67,14 @@
       "author": "Alice",
       "summary": "Stripe idempotency keys stored per webhook event",
       "tags": ["api"]
+    },
+    {
+      "date": "2025-03-01",
+      "feature": "canvas-layout",
+      "type": "observation",
+      "source": "extracted",
+      "summary": "Dagre-crossing-minimalisatie is volgorde-gevoelig bij symmetrische buren",
+      "paths": ["src/canvas/graphLayout.ts"]
     }
   ]
 }

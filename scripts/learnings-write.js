@@ -21,6 +21,7 @@
 //   echo '{"entries":[...]}' | node scripts/learnings-write.js append <project-root>
 //                              node scripts/learnings-write.js gate   <project-root>
 //   echo '{"merges":[...]}'  | node scripts/learnings-write.js consolidate <project-root>
+//   echo '{"patches":[...]}' | node scripts/learnings-write.js enrich <project-root> [--target active|archive:<file>]
 //
 // - append:      dedup (exact-tuple, then Jaccard >= 0.55 same-type) each
 //                entries[] item against existing learnings[] AND earlier
@@ -39,6 +40,21 @@
 //                Unmatched merge, or a qualifying group with no merge, is a
 //                warning (that group is left untouched) — never fatal. Empty
 //                merges is valid: only the age-out pass runs.
+// - enrich:      patches EXISTING entries in place (add/overwrite tags[],
+//                paths[]; migrate a legacy {key|text|note}-shaped row to the
+//                current {date,feature,type,source,summary} schema) — distinct
+//                from append, which only ever adds new deduped entries.
+//                Each patches[] item's "match" (key / textEquals / noteEquals
+//                / feature+type+summaryEquals) resolves to exactly one target
+//                entry; append's dedup does NOT run here (match IS the
+//                uniqueness guarantee). --target selects "active" (default,
+//                project-context.json#learnings[]) or "archive:<file>"
+//                (.project/archive/<file>#archived[]). Idempotent: a patch
+//                whose target already has the resulting date/feature/summary
+//                (+ tags/paths, if the patch specifies them) is reported
+//                "alreadyApplied" and skipped, even after the raw legacy
+//                key/text/note fields a first run would have deleted.
+//                Stdout: { patched, alreadyApplied, notFound: [...], ambiguous: [...] }.
 //
 // <project-root> is used as-is when given; when omitted, the main worktree
 // root is resolved via `git worktree list --porcelain` (same as
@@ -47,7 +63,7 @@
 //
 // Exit 0 = ok (including "nothing to do"). 2 = usage. 4 = project-context.json
 //   not found. 5 = invalid JSON (stdin or existing file).
-//   6 = schema-invalid entry/merge — caller falls back to manual authoring.
+//   6 = schema-invalid entry/merge/patch — caller falls back to manual authoring.
 
 import { execFileSync } from "node:child_process";
 import {
@@ -64,15 +80,31 @@ const TYPES = ["pattern", "pitfall", "observation"];
 const SOURCES = ["extracted", "inferred", "synced", "consolidated"];
 const VOCAB_ORDER = Object.keys(VOCAB);
 
-const [cmd, argRoot] = process.argv.slice(2);
-const COMMANDS = ["append", "gate", "consolidate"];
+const rawArgs = process.argv.slice(2);
+const cmd = rawArgs[0];
+const COMMANDS = ["append", "gate", "consolidate", "enrich"];
 if (!cmd || !COMMANDS.includes(cmd)) {
   console.error(
-    "Usage: learnings-write.js <append|gate|consolidate> [project-root]\n" +
-      "  append/consolidate read their JSON payload from stdin.\n" +
-      "  project-root defaults to the resolved main worktree root.",
+    "Usage: learnings-write.js <append|gate|consolidate|enrich> [project-root] [--target active|archive:<file>]\n" +
+      "  append/consolidate/enrich read their JSON payload from stdin.\n" +
+      "  project-root defaults to the resolved main worktree root.\n" +
+      "  --target (enrich only) selects active learnings[] or a named archive file; default active.",
   );
   process.exit(2);
+}
+
+// Positional project-root + an optional --target flag (enrich only) can
+// appear in either order; --target is pulled out wherever it is, the first
+// remaining non-flag token is argRoot — append/gate/consolidate never pass
+// --target, so their existing single-positional-arg behavior is unchanged.
+let argRoot;
+let target = "active";
+for (let i = 1; i < rawArgs.length; i++) {
+  if (rawArgs[i] === "--target") {
+    target = rawArgs[++i];
+    continue;
+  }
+  if (argRoot === undefined) argRoot = rawArgs[i];
 }
 
 function resolveRoot() {
@@ -222,6 +254,19 @@ function buildMergedScaffold(group) {
     summary: "",
   };
   if (tags.length) merged.tags = tags;
+
+  // paths union, most-frequent first, capped at 5 (originals stay lossless in
+  // the archive) — keeps the merged entry reachable by path-anchor scoring.
+  const pathCounts = new Map();
+  for (const e of group.entries) {
+    for (const p of e.paths || [])
+      pathCounts.set(p, (pathCounts.get(p) || 0) + 1);
+  }
+  const paths = [...pathCounts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 5)
+    .map(([p]) => p);
+  if (paths.length) merged.paths = paths;
   return merged;
 }
 
@@ -302,6 +347,10 @@ function cmdAppend() {
         }
       }
     }
+    if (e.paths !== undefined) {
+      if (!Array.isArray(e.paths) || e.paths.some((p) => typeof p !== "string"))
+        fail6("entries[] item's paths must be an array of strings");
+    }
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -319,6 +368,8 @@ function cmdAppend() {
     if (raw.author !== undefined) entry.author = raw.author;
     if (Array.isArray(raw.tags) && raw.tags.length)
       entry.tags = raw.tags.slice(0, 3);
+    if (Array.isArray(raw.paths) && raw.paths.length)
+      entry.paths = raw.paths.slice(0, 5);
 
     const candidateNorm = normalize(entry.summary);
     const candidateAuthor = entry.author ?? null;
@@ -486,6 +537,223 @@ function cmdConsolidate() {
   );
 }
 
+// ── Enrich — patch existing entries in place ───────────────────────────
+// (§ header comment above has the full contract.) Not a dedup/insert path:
+// every patch targets one already-resolved existing entry via "match".
+
+function resolveTargetPath() {
+  if (target === "active") return contextPath;
+  const m = /^archive:(.+)$/.exec(target || "");
+  if (!m)
+    fail6(
+      `invalid --target "${target}" (expected "active" or "archive:<file>")`,
+    );
+  return join(root, ".project", "archive", m[1]);
+}
+
+// Raw-field match tiers, tried in order — never positional/index matching
+// (learnings[] has no stable id, and consolidate already reorders/removes
+// rows, so an index computed earlier would silently drift).
+function matchCandidates(m, arr) {
+  if (m.key !== undefined) return arr.filter((e) => e.key === m.key);
+  if (m.textEquals !== undefined)
+    return arr.filter((e) => e.text === m.textEquals);
+  if (m.noteEquals !== undefined)
+    return arr.filter((e) => e.note === m.noteEquals);
+  if (
+    m.feature !== undefined &&
+    m.type !== undefined &&
+    m.summaryEquals !== undefined
+  ) {
+    const wantNorm = normalize(m.summaryEquals);
+    return arr.filter(
+      (e) =>
+        e.feature === m.feature &&
+        e.type === m.type &&
+        normalize(e.summary || "") === wantNorm,
+    );
+  }
+  fail6(
+    'each patches[] item needs a "match" with key, textEquals, noteEquals, or feature+type+summaryEquals',
+  );
+}
+
+// Does an entry already carry exactly the shape `patch` would produce?
+// Compares the fields enrich actually touches, tags/paths order-insensitive.
+function sameEnrichedShape(entry, next) {
+  const norm = (x) => ({
+    date: x.date,
+    feature: x.feature,
+    type: x.type,
+    source: x.source,
+    summary: x.summary,
+    tags: x.tags ? [...x.tags].sort() : undefined,
+    paths: x.paths ? [...x.paths].sort() : undefined,
+  });
+  return JSON.stringify(norm(entry)) === JSON.stringify(norm(next));
+}
+
+// Two phases: (1) raw-field tiers via `match` — this is the normal path,
+// including a REPEAT run of a tags/paths-only patch (its `match` still
+// resolves via feature+type+summaryEquals, since those never change).
+// (2) only when phase 1 finds NOTHING, and the patch carries its own
+// feature+summary (true for a legacy migration, never for a tags/paths-only
+// patch), fall back to identity matching — this is what catches a REPEAT run
+// of a legacy migration, whose first run already deleted the raw
+// key/text/note field phase 1 would otherwise match on. `type` narrows the
+// fallback when the patch specifies it, but is not required — a legacy
+// entry's `type` is often already correct pre-migration and a patch may
+// reasonably omit it. This fallback never fires for ordinary patches, so it
+// can't accidentally match an unrelated entry via tags/paths alone.
+function resolvePatch(patch, arr) {
+  const candidates = matchCandidates(patch.match, arr);
+
+  if (candidates.length === 0) {
+    if (patch.feature !== undefined && patch.summary !== undefined) {
+      const wantNorm = normalize(patch.summary);
+      const revived = arr.filter(
+        (e) =>
+          e.feature === patch.feature &&
+          (patch.type === undefined || e.type === patch.type) &&
+          normalize(e.summary || "") === wantNorm,
+      );
+      if (
+        revived.length === 1 &&
+        sameEnrichedShape(revived[0], applyPatch(revived[0], patch))
+      )
+        return { status: "alreadyApplied" };
+    }
+    return { status: "notFound" };
+  }
+  if (candidates.length > 1)
+    return { status: "ambiguous", count: candidates.length };
+
+  const entry = candidates[0];
+  const next = applyPatch(entry, patch);
+  if (sameEnrichedShape(entry, next)) return { status: "alreadyApplied" };
+  return { status: "matched", entry, next };
+}
+
+function applyPatch(entry, patch) {
+  const next = { ...entry };
+  delete next.key;
+  delete next.text;
+  delete next.note;
+  if (patch.date !== undefined) next.date = patch.date;
+  if (patch.feature !== undefined) next.feature = patch.feature;
+  if (patch.type !== undefined) next.type = patch.type;
+  if (patch.source !== undefined) next.source = patch.source;
+  if (patch.summary !== undefined) next.summary = patch.summary;
+  if (patch.tags !== undefined) {
+    if (patch.tags.length) next.tags = patch.tags.slice(0, 3);
+    else delete next.tags;
+  }
+  if (patch.paths !== undefined) {
+    if (patch.paths.length) next.paths = patch.paths.slice(0, 5);
+    else delete next.paths;
+  }
+  return next;
+}
+
+function validateEnrichedEntry(entry, index) {
+  if (typeof entry.date !== "string" || !entry.date)
+    fail6(`patches[${index}] result needs a non-empty string date`);
+  if (typeof entry.feature !== "string" || !entry.feature)
+    fail6(`patches[${index}] result needs a non-empty string feature`);
+  if (!TYPES.includes(entry.type))
+    fail6(
+      `patches[${index}] result has an invalid type "${entry.type}" (expected ${TYPES.join(", ")})`,
+    );
+  if (!SOURCES.includes(entry.source))
+    fail6(
+      `patches[${index}] result has an invalid source "${entry.source}" (expected ${SOURCES.join(", ")})`,
+    );
+  if (typeof entry.summary !== "string" || !entry.summary.trim())
+    fail6(`patches[${index}] result needs a non-empty string summary`);
+  if (entry.tags !== undefined) {
+    for (const t of entry.tags) {
+      if (!Object.prototype.hasOwnProperty.call(VOCAB, t)) {
+        console.error(
+          `learnings-write: warning: tag "${t}" is not in the controlled vocabulary (allowed as the one free tag)`,
+        );
+      }
+    }
+  }
+  if (entry.paths !== undefined && !Array.isArray(entry.paths))
+    fail6(`patches[${index}] result's paths must be an array of strings`);
+}
+
+function cmdEnrich() {
+  const payload = parseStdinPayload();
+  if (!Array.isArray(payload.patches))
+    fail6('stdin payload must be { "patches": [...] }');
+
+  const targetPath = resolveTargetPath();
+  const label = target === "active" ? "project-context.json" : "archive file";
+  const data = readJsonFile(targetPath, label);
+  const field = target === "active" ? "learnings" : "archived";
+  const arr = data[field];
+  if (!Array.isArray(arr))
+    fail6(`${label} at ${targetPath} has no ${field}[] array to patch`);
+
+  // Validate every patch's shape up front — fail before resolving/writing
+  // anything, so a batch never partially applies.
+  payload.patches.forEach((patch, i) => {
+    if (!patch || typeof patch !== "object")
+      fail6(`patches[${i}] must be an object`);
+    if (!patch.match || typeof patch.match !== "object")
+      fail6(`patches[${i}] needs a "match" object`);
+    if (patch.tags !== undefined && !Array.isArray(patch.tags))
+      fail6(`patches[${i}]'s tags must be an array of strings`);
+    if (patch.paths !== undefined && !Array.isArray(patch.paths))
+      fail6(`patches[${i}]'s paths must be an array of strings`);
+  });
+
+  const alreadyApplied = [];
+  const notFound = [];
+  const ambiguous = [];
+  const replacements = new Map(); // original entry object -> patched entry object
+  let patchedCount = 0;
+
+  for (const patch of payload.patches) {
+    const result = resolvePatch(patch, arr);
+    if (result.status === "alreadyApplied") {
+      alreadyApplied.push(patch.match);
+      continue;
+    }
+    if (result.status === "notFound") {
+      notFound.push({ match: patch.match });
+      continue;
+    }
+    if (result.status === "ambiguous") {
+      ambiguous.push({ match: patch.match, count: result.count });
+      continue;
+    }
+    validateEnrichedEntry(result.next, patchedCount);
+    replacements.set(result.entry, result.next);
+    patchedCount++;
+  }
+
+  if (replacements.size) {
+    data[field] = arr.map((e) => replacements.get(e) || e);
+    atomicWrite(targetPath, data);
+  }
+
+  console.log(
+    JSON.stringify(
+      {
+        patched: patchedCount,
+        alreadyApplied: alreadyApplied.length,
+        notFound,
+        ambiguous,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
 if (cmd === "append") cmdAppend();
 else if (cmd === "gate") cmdGate();
 else if (cmd === "consolidate") cmdConsolidate();
+else if (cmd === "enrich") cmdEnrich();
