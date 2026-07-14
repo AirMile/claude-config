@@ -1,10 +1,11 @@
 ---
 name: core-commit
-description: Generate conventional commit messages from staged changes. Use with /core-commit.
+description: Generate conventional commit messages from staged diffs. Use with /core-commit.
 reads: [feature.externalRef]
+writes: [team.commitConvention, team.ticketPrefix]
 metadata:
   author: claude-config
-  version: 1.0.0
+  version: 1.1.0
   category: core
 ---
 
@@ -162,19 +163,20 @@ Before staging, verify that risky file patterns are covered by `.gitignore`. Thi
 Analyze the diff for:
 
 **Type** (Conventional Commits):
-| Type | Use | SemVer |
-|------|-----|--------|
-| `feat` | New feature | MINOR |
-| `fix` | Bug fix | PATCH |
-| `docs` | Documentation only | - |
-| `style` | Formatting, whitespace | - |
-| `refactor` | Code refactoring | - |
-| `perf` | Performance improvement | PATCH |
-| `test` | Adding/fixing tests | - |
-| `build` | Build system, dependencies | - |
-| `ci` | CI/CD configuration | - |
-| `chore` | Other tasks | - |
-| `revert` | Revert previous commit | - |
+
+| Type       | Use                        | SemVer |
+| ---------- | -------------------------- | ------ |
+| `feat`     | New feature                | MINOR  |
+| `fix`      | Bug fix                    | PATCH  |
+| `docs`     | Documentation only         | -      |
+| `style`    | Formatting, whitespace     | -      |
+| `refactor` | Code refactoring           | -      |
+| `perf`     | Performance improvement    | PATCH  |
+| `test`     | Adding/fixing tests        | -      |
+| `build`    | Build system, dependencies | -      |
+| `ci`       | CI/CD configuration        | -      |
+| `chore`    | Other tasks                | -      |
+| `revert`   | Revert previous commit     | -      |
 
 **Scope**: Component/module name (optional)
 **Breaking change**: Add ! after type for breaking changes
@@ -184,10 +186,12 @@ If staged changes contain multiple unrelated groups:
 
 - Detect based on path pattern (e.g. `.claude/` vs `src/` vs `public/`)
 - Detect based on type (deletions-only group vs additions group)
-- If >2 clearly separated groups or >50% of changes are unrelated to the primary change:
-  - Suggest split via AskUserQuestion:
-    - "Split into separate commits (Recommended)" → unstage the secondary group, commit primary first
-    - "One commit" → proceed with everything
+- 2 clearly separated groups → Suggest split via AskUserQuestion:
+  - "Split into separate commits (Recommended)" → unstage the secondary group, commit primary first
+  - "One commit" → proceed with everything
+- **>2 groups, or a shared file (README, CHANGELOG, a config/registry doc) touched by more than
+  one concern** → read `references/multi-commit-split.md` before staging anything — do not
+  improvise a split by hand.
 
 ### 4. Generate Message
 
@@ -227,11 +231,16 @@ docs: update API documentation for v2 endpoints
 
 ### 5. Confirm & Commit
 
-Show the generated message and ask for confirmation:
+Show the generated message and ask for confirmation (AskUserQuestion):
 
 - "Commit" → execute commit
 - "Edit" → allow user to modify
 - "Cancel" → cancel
+
+> **STOP — before every `git commit` call, including every commit in a multi-commit split.** Do
+> not call `git commit` until this gate returned "Commit" for _this specific_ message. A
+> multi-commit session does not carry one approval across commits — each commit gets its own
+> gate.
 
 **Execute commit with HEREDOC** (safe for quotes and multilines):
 
@@ -270,6 +279,9 @@ git log -1 --oneline
 ```
 
 ### 7. Push Option
+
+> **STOP — ask this after every successful commit, including each commit in a multi-commit
+> split.** Do not silently move on to the next commit or end the turn without this gate.
 
 After a successful commit, ask with AskUserQuestion:
 
