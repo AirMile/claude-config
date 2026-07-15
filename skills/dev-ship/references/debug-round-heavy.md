@@ -64,6 +64,14 @@ Only if `lightRoundNotes` shows the light round's hypothesis was **refuted** by 
 the prompt template (do not write an ad hoc prompt) — explicitly noting any refuted hypothesis from
 `lightRoundNotes` in `PROBLEM` so this pass doesn't repeat it.
 
+**L-tier evidence sources.** By construction, an item that reached this file already carries an
+L-tier difficulty score (a light round already failed once — `shared/DEBUG-LADDER.md § Difficulty
+triage`'s escalation rule). Read `shared/DEBUG-TOOLBOX.md § Heavy techniques` before re-investigating:
+a confirmed regression feeds `git bisect run` instead of another Explore pass; a value mystery feeds
+a scripted CDP breakpoint dump; state corruption feeds a state-checkpoint diff. Whichever technique
+runs, its output becomes the evidence the 3-strategy fan-out (or the § 5 triage gate's inline plan)
+works from — record which one via the `technique` field on the ledger item.
+
 ## 5. Triage gate — skip the fan-out for trivial fixes
 
 Skip the 3-agent dispatch when ALL of:
@@ -211,9 +219,12 @@ entry`'s per-item precedence.
   own "Still failing" branch below** (Accept anyway / Park) — heavy has no further tier to escalate
   to, so escalating here means the same accept-or-park choice as any other still-failing item at the
   ceiling.
-- **Still failing** → this is the hard ceiling; no further automated tier exists. Patch the item
-  (`heavyRoundFailed: true`, keep `debugTier: "heavy"`), `signal-clear`, then a single
-  `AskUserQuestion` — no "another round" option, nothing left to escalate to:
+- **Still failing** → this is the hard ceiling; no further automated tier exists. **Re-score
+  first** — re-run `shared/DEBUG-LADDER.md § Difficulty triage` (a failed heavy round is new
+  evidence too, even with nowhere further to escalate; the updated score is still worth recording
+  for whoever reviews the accept/park outcome). Patch the item (`heavyRoundFailed: true`, keep
+  `debugTier: "heavy"`, the re-scored `difficulty`/`difficultySignals`), `signal-clear`, then a
+  single `AskUserQuestion` — no "another round" option, nothing left to escalate to:
   1. **"Accept anyway (Recommended)"** — mark the item `verdict: "accepted"` with the failure noted as a known
      limitation (never silently DONE — this requires the explicit choice). Also **clear the ladder
      markers**: the `item` subcommand upserts by id and replaces the whole object, so re-send the

@@ -42,6 +42,16 @@ investigation needs a **mutating** repro command (state reset, migration, destru
 `shared/PLAN-MODE.md § Administrative exit` — exit with an administrative note, run it, **re-enter
 immediately** — never continue the round outside plan mode silently.
 
+## 3b. Difficulty triage
+
+Score this item per `shared/DEBUG-LADDER.md § Difficulty triage` (5 signals → S/M/L) before
+investigating. Persist `difficulty` + `difficultySignals` via the same `ship-checkpoint.js item`
+upsert used elsewhere in this round (primary entry: now; proactive entry: deferred to this file's
+completion step, same as § 2's bookkeeping). **S** → the investigation below still runs (this tier
+already implies the cause wasn't obvious), but skip straight to forming the hypothesis from what
+Explore returns. **M/L** → read `shared/DEBUG-TOOLBOX.md` and run 1–2 matching techniques as part of
+§ 4/§ 5 before writing the hypothesis down; record which one ran (`technique` field, same upsert).
+
 ## 4. Investigation
 
 Spawn one Explore agent (`subagent_type="Explore"`, `thoroughness="very thorough"`) to investigate in
@@ -105,30 +115,40 @@ Re-check via `manual-interview-walkthrough.md` Steps B–E for this one item (no
 - **Still failing on its own `expected` text** (the scope check in `manual-interview-walkthrough.md
 § Step D` already split off anything unrelated) → this light round's one evidence-backed attempt
   didn't hold.
-  1. **Always first, regardless of what happens next** (durability — a park, or the session simply
+  1. **Re-score first** — a failed round is new evidence; re-run `shared/DEBUG-LADDER.md § Difficulty
+triage` before deciding anything below (a signal like reproducibility or origin can flip once
+     you've seen the fix not hold). Fold the updated score into the same durable write in step 2.
+  2. **Always first, regardless of what happens next** (durability — a park, or the session simply
      ending, must never lose this): in **one** `ship-checkpoint.js item` call (never two separate
      calls — a torn write between them is unrecoverable state, see
-     `phase-3-manual-finalize.md § Resume entry`), patch the item: `debugTier: "heavy"`, clear
-     `tweakAttempts` if arriving here via an escalated tweak loop, and
-     `lightRoundNotes` (a compact string): the § 4 investigation digest's key lines (error location,
-     root code, pitfall match), the § 5 hypothesis and its confirming/refuting evidence, the fix
-     applied, and what the § 8 re-check actually observed — on a tweak escalation, note explicitly
+     `phase-3-manual-finalize.md § Resume entry`), patch the item: `debugTier: "heavy"`, the re-scored
+     `difficulty`/`difficultySignals`, clear `tweakAttempts` if arriving here via an escalated tweak
+     loop, and `lightRoundNotes` (a compact string): the § 4 investigation digest's key lines (error
+     location, root code, pitfall match), the § 5 hypothesis and its confirming/refuting evidence, the
+     fix applied, and what the § 8 re-check actually observed — on a tweak escalation, note explicitly
      that it was first judged a simple cosmetic fix and didn't hold after 3 tries, so the heavy round
      doesn't waste its own first pass re-deriving that. This is the only thing the heavy round has
      to go on — write it as if handing the case to someone who wasn't in this session.
-  2. `AskUserQuestion` — header: "Debug ladder", question: "The light round didn't hold for {title}.
+  3. `AskUserQuestion` — header: "Debug ladder", question: "The light round didn't hold for {title}.
      How do you want to proceed?":
      - **"Escalate now, same session (Recommended)"** → skip straight to
        `debug-round-heavy.md § 1`'s same-session entry variant, reusing the current plan-mode
-       session. Step 1's durable write above already covers a crash mid-heavy-round.
-     - **"Park — resume in a fresh session"** → continue with steps 3-5 below.
+       session. Step 2's durable write above already covers a crash mid-heavy-round.
+     - **"Instrument + user-in-the-loop repro"** — offer this option only when the item looks
+       unreproducible by the agent itself (real credentials, a specific device, a
+       perception-triggered symptom — the M/L signals from step 1 pointing that way) → run
+       `shared/DEBUG-TOOLBOX.md § User-in-the-loop repro` right here, in this same round, before
+       deciding escalation: instrument, hand the user a repro script, read the resulting log, fold
+       what it shows into a fresh hypothesis. Converges → treat as a normal Pass above. Still
+       unresolved → fall through to one of the other three options with the new evidence in hand.
+     - **"Park — resume in a fresh session"** → continue with steps 4-6 below.
      - **"Accept as known limitation now"** → skip the heavy round entirely: `verdict: "accepted"`,
        clear `debugTier`/`tweakAttempts` (omit, not null — same mechanics as
        `debug-round-heavy.md § 8`'s own accept branch), proceed to the regression re-check with this
        item excluded from the pass/fail count.
-  3. (park path only) `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`.
-  4. (park path only) Print the park/handoff template (`SKILL.md § PHASE 1–4`) with
+  4. (park path only) `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`.
+  5. (park path only) Print the park/handoff template (`SKILL.md § PHASE 1–4`) with
      `/dev-ship {feature}` as the resume command. **End the turn.**
-  5. (park path only) A fresh session resumes via `phase-3-manual-finalize.md § Resume entry`'s
+  6. (park path only) A fresh session resumes via `phase-3-manual-finalize.md § Resume entry`'s
      `debugTier: "heavy"` branch, landing directly in `references/debug-round-heavy.md`, which reads
      `lightRoundNotes` instead of re-running Explore (`debug-round-heavy.md § 4`).

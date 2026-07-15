@@ -64,6 +64,36 @@ exact loop the user feels as "I keep saying what's wrong and it still doesn't ge
 persists, or two hypotheses refuted) → tier 3 (`debug-round.md` → `debug-round-heavy.md` for dev,
 `/game-debug` for game). Never repeat a tier on the same issue without new evidence in hand.
 
+## Difficulty triage (before tier entry, re-scored every failed round)
+
+Tier (1/2/3) decides **how much process** a fix gets — this triage decides **which technique**
+within that process actually produces the evidence a hypothesis needs. Score five observable
+signals, each 0 or 1, before the first debug round for an issue and again after **every** failed
+round (new evidence changes the score — never reuse a stale one):
+
+| Signal          | 0                                         | 1                                                     |
+| --------------- | ----------------------------------------- | ----------------------------------------------------- |
+| Error evidence  | A stack trace/error points at a location  | No error, or the error is misleading/swallowed        |
+| Reproducibility | Deterministic, known repro steps          | Intermittent, timing-dependent, "sometimes"           |
+| Origin          | New code from this round                  | Regression in previously-working code                 |
+| Boundary        | Confined to one tier (pure FE or pure BE) | Crosses frontend↔backend (payload/contract/auth/CORS) |
+| Mechanism       | Logic/syntax/wrong value                  | Async/race/ordering/state-dependent/cache             |
+
+Sum the score: **S** (0–1) — the tier-1 direct fix or a quick console check already suffices, no
+extra technique needed. **M** (2–3) — gather evidence with a technique before hypothesizing (don't
+skip straight to a guess just because the tier feels light). **L** (4–5, or any intermittent
+symptom / confirmed regression) — reach for the heavier techniques; the fix is expensive, cheap
+guessing wastes more than it saves.
+
+Record the score (`difficulty: "S"|"M"|"L"` + a compact `difficultySignals` note, e.g.
+`"no-trace,cross-boundary (2)"`) on the ledger item alongside `debugTier`. Read
+[DEBUG-TOOLBOX.md](DEBUG-TOOLBOX.md) for the technique menu the score selects from, and record which
+technique ran (`technique` field) when one did.
+
+**This triage never substitutes for the escalation rule above** — a failed round still escalates
+exactly one tier regardless of difficulty score; the score only ever picks the technique used
+_within_ whatever tier the ladder already put you on.
+
 ## Anti-patterns (what this file exists to stop)
 
 - **Guess-and-check** — editing before you can name the cause and the evidence for it.

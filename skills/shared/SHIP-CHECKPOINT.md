@@ -90,7 +90,14 @@ command). See `BACKLOG.md § Board rendering`.
                           was offloaded via phase-3-manual-finalize.md § Offload flush; absent for
                           fail/pass/skip/defer items and for the narrow inline-fixed tweak exception,
                           which flips straight to "pass" instead — see that section's verdict-flip
-                          rule) }] —
+                          rule),
+                          difficulty: "S"|"M"|"L" (absent until the item enters the debug ladder;
+                          scored per shared/DEBUG-LADDER.md § Difficulty triage, re-scored on every
+                          failed round — see debug-round.md § 3b / § 8, debug-round-heavy.md § 8),
+                          difficultySignals: string (compact note on which of the 5 signals fired,
+                          e.g. "no-trace,cross-boundary (2)"; absent alongside `difficulty`),
+                          technique: string (which shared/DEBUG-TOOLBOX.md technique ran, if any;
+                          absent when the difficulty score was S or no technique was needed) }] —
                         written one item at a time via `ship-checkpoint.js item {name} manual`,
                         which upserts by `id` (append if new, replace in place if the id already
                         exists) — never re-send the full array yourself. `debugTier` is dev-ship's

@@ -160,6 +160,11 @@ Agent prompt: Read '.claude/skills/game-debug/references/explore-agent-prompt.md
 
 Parse the agent's `INVESTIGATION_START...END` block — only the compact findings enter the main context.
 
+Technique menu when the Explore digest alone isn't enough evidence: `shared/DEBUG-TOOLBOX.md` — its
+browser-driven section doesn't apply here, but instrumentation (structured print markers with the
+same cleanup discipline), `git bisect run` for regressions, and state-checkpoint diffs for corrupted
+game state all translate directly to GDScript/Godot.
+
 ---
 
 ## PHASE 3: Root Cause Analysis
