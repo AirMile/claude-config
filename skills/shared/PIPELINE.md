@@ -19,12 +19,19 @@ Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and
                                  /project-plan ──→ backlog.json
                                                │
                                                ▼
-                        /dev-ship (running define → build → verify → [refactor])
+                        /dev-ship (running define → build → auto-verify)
                                              │
-                                             └── in-ship debug rounds (debug-round.md → debug-round-heavy.md)
+                                             ▼ (manual items remain)
+                        /dev-manual (manual verify → fix/debug rounds → refactor → finalize)
+                                             │
+                                             └── shared debug rounds (debug-round.md → debug-round-heavy.md)
 ```
 
-Standalone (dev): `/dev-security` (security audit); `/dev-tweak` (1-3-file fast path, no pipeline — gate/guard per `TWEAK-DISCIPLINE.md`; game counterpart: `/game-tweak`); `/dev-inspect` (element-pinned edit from a pasted inspect-overlay ref — size gate per `TWEAK-DISCIPLINE.md`, screenshot-verify, no commit).
+`/dev-ship {feature}` still resumes straight into `/dev-manual`'s territory when re-invoked after the
+auto-verify hand-off — both read the identical reference files, so there is no behavioral difference,
+only which command name starts the resume.
+
+Standalone (dev): `/dev-security` (security audit); `/dev-tweak` (1-3-file fast path, no pipeline — gate/guard per `TWEAK-DISCIPLINE.md`; can also pick up a `TWEAK` backlog card offloaded from a ship's verify/manual round; game counterpart: `/game-tweak`); `/dev-inspect` (element-pinned edit from a pasted inspect-overlay ref — size gate per `TWEAK-DISCIPLINE.md`, screenshot-verify, no commit).
 
 ## Design Pipeline
 
@@ -73,18 +80,18 @@ Design items skip `defining/defined` — design captures pages/flows, Build gene
 
 ## Skill Registry
 
-| Skill                     | Input                            | Output                      | Requires stage | Produces stage |
-| ------------------------- | -------------------------------- | --------------------------- | -------------- | -------------- |
-| project-research          | topic / question                 | research findings           | —              | —              |
-| project-plan              | seed document / task description | backlog.json                | —              | —              |
-| project-todo              | description                      | backlog item                | —              | —              |
-| dev-ship (define phase)   | backlog item / user reqs         | feature.json (req + arch)   | —              | defined        |
-| dev-ship (build phase)    | feature.json (defined)           | feature.json (code + tests) | defined        | built          |
-| dev-ship (verify phase)   | feature.json (built)             | feature.json (verified)     | built          | DONE           |
-| dev-ship (refactor phase) | feature.json (DONE)              | feature.json (DONE + ref)   | DONE           | DONE           |
-| dev-security              | —                                | security report + fixes     | —              | —              |
-| dev-tweak / game-tweak    | change description (1-3 files)   | scoped commit [+ learning]  | —              | —              |
-| dev-inspect               | pasted overlay ref(s) + change   | verified edit (uncommitted) | —              | —              |
+| Skill                   | Input                                         | Output                                               | Requires stage | Produces stage |
+| ----------------------- | --------------------------------------------- | ---------------------------------------------------- | -------------- | -------------- |
+| project-research        | topic / question                              | research findings                                    | —              | —              |
+| project-plan            | seed document / task description              | backlog.json                                         | —              | —              |
+| project-todo            | description                                   | backlog item                                         | —              | —              |
+| dev-ship (define phase) | backlog item / user reqs                      | feature.json (req + arch)                            | —              | defined        |
+| dev-ship (build phase)  | feature.json (defined)                        | feature.json (code + tests)                          | defined        | built          |
+| dev-ship (auto-verify)  | feature.json (built)                          | feature.json (auto-verified), remaining manual items | built          | verifying      |
+| dev-manual              | feature.json (auto-verified)                  | feature.json (verified, DONE + ref), merged          | verifying      | DONE           |
+| dev-security            | —                                             | security report + fixes                              | —              | —              |
+| dev-tweak / game-tweak  | change description (1-3 files) / a TWEAK card | scoped commit [+ learning]                           | —              | —              |
+| dev-inspect             | pasted overlay ref(s) + change                | verified edit (uncommitted)                          | —              | —              |
 
 ---
 

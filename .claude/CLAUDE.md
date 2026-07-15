@@ -28,7 +28,7 @@ Cross-platform: **macOS** and **Windows**.
 ## Structure
 
 ```
-skills/           43 skills in 8 categories
+skills/           44 skills in 8 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (each with SKILL.md)
 agents/           23 sub-agent definitions (.md with YAML frontmatter)
@@ -65,7 +65,7 @@ Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 ## Pipelines
 
-**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (runs define→build→verify→refactor as one auto-mode flow, with in-ship park-first debug rounds on failure — no standalone debug skill); small 1-3-file changes skip the pipeline via `dev-tweak` (gate/guard: `shared/TWEAK-DISCIPLINE.md`); element-pinned frontend edits from a pasted inspect-overlay ref via `dev-inspect` (theme-aware edit + screenshot-verify, no commit — offers `/core-commit`)
+**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (define→build→auto-verify as one auto-mode flow) hands off to `dev-manual` (manual verify→debug→refactor→ship) when manual items remain — both read the same in-ship park-first debug rounds (no standalone debug skill); small 1-3-file changes skip the pipeline via `dev-tweak` (gate/guard: `shared/TWEAK-DISCIPLINE.md`; can also pick up a `TWEAK` backlog card a ship's verify/manual round offloaded); element-pinned frontend edits from a pasted inspect-overlay ref via `dev-inspect` (theme-aware edit + screenshot-verify, no commit — offers `/core-commit`)
 **Game**: `project-seed` → `project-plan` → `game-ship` (runs define→build→GUT-verify→playtest→refactor as one auto-mode flow) (+ `game-debug` everywhere, Godot 4.x / GUT); small changes via `game-tweak` (same TWEAK-DISCIPLINE fast path)
 **Design**: `design-convert` (spec management, visual→code convert — sketch/wireframe/Figma/Canva/URL → high-fi code — and game `.tscn` codegen) & `design-content` (fill copy) feed `design-ship` — auto-mode build→content→check as one flow (Build lane / web); `design-tokens` for tokens/motion packs; dev-track counterpart: `dev-ship`
 **Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`
@@ -108,6 +108,6 @@ Idempotent — skip if file already exists. No junction needed: `~/.claude/CLAUD
 - Don't modify shared files without considering the impact on all skills
 - New skills: copy frontmatter structure from an existing skill in the same category
 - Test by actually running the skill
-- Dev/game pipeline sync: for structural changes to `dev-ship` (its define/build/verify/refactor phases, including its in-ship debug rounds `debug-round.md`/`debug-round-heavy.md`), check whether the game-pipeline counterpart (`game-ship`, `game-debug`) needs the same change. Note the asymmetry: dev's debug ladder is folded into dev-ship (no standalone skill), while game's remains the standalone `game-debug` skill — don't force parity there, only sync the shared debug _discipline_ (DEBUG-LADDER.md). Domain-specific content (Godot vs web, GUT vs browser) does not need to be synced.
+- Dev/game pipeline sync: for structural changes to `dev-ship`/`dev-manual` (their define/build/verify/refactor phases, including the shared in-ship debug rounds `debug-round.md`/`debug-round-heavy.md`), check whether the game-pipeline counterpart (`game-ship`, `game-debug`) needs the same change. Note the asymmetry: dev's debug ladder is folded into dev-ship/dev-manual (both read the same reference files — no separately-maintained debug skill), while game's remains the standalone `game-debug` skill — don't force parity there, only sync the shared debug _discipline_ (DEBUG-LADDER.md, DEBUG-TOOLBOX.md). Domain-specific content (Godot vs web, GUT vs browser) does not need to be synced.
 - Before tagging a release: run `python3 scripts/check-handoff.py`, `python3 scripts/check-dashboard-writers.py`, `python3 scripts/check-no-project-commit.py`, `python3 scripts/check-backlog-reads.py`, `python3 scripts/check-task-markers.py`, `node scripts/check-context-load.js`, and `bash scripts/tests/run.sh` — all must exit 0. (`run.sh` is bash; on Windows run via WSL.)
 - New skills forecasted >500 lines: apply lazy-reference-loading before committing — see `skills/shared/SKILL-PATTERNS.md § Lazy Reference Loading`.

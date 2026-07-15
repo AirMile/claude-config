@@ -237,7 +237,8 @@ entry`'s per-item precedence.
      `heavyRoundFailed: true`). Print a park/handoff message in **own wording** — do NOT reuse
      `SKILL.md § PHASE 1–4`'s manual-items-remain template; its "you land directly in the
      item-by-item manual round" line is wrong here (mirrors `fix-round.md § Re-check`'s Otherwise
-     bullet) — state which item parked and why, with `/dev-ship {feature}` as the resume command. A
+     bullet) — state which item parked and why, with `/dev-manual {feature}` as the resume command
+     (`/dev-ship {feature}` still resumes to the same place). A
      later resume re-enters this same § 8 re-check directly (nothing to redesign — the plan already
      exists) rather than restarting § 4–7. If other ledger items are still open at a different stage
      (different `debugTier`/no attempt yet) and are file-disjoint from this one, they may be finished

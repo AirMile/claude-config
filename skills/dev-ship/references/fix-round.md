@@ -244,8 +244,9 @@ entry` bullet 5 — no verdict, no `debugTier` set, dispatch already complete), 
   4. Print a park/handoff message (own wording — do NOT reuse `SKILL.md § PHASE 1–4`'s
      manual-items-remain template; its "you land directly in the item-by-item manual round" line is
      wrong here): state which item(s) parked and why (fail / tweak-with-fail-sibling), that
-     `/dev-ship {feature}` resumes straight into the debug round for those items (not the manual
-     walkthrough), and that the board shows this run as parked (⏸). **End the turn.**
+     `/dev-manual {feature}` (or `/dev-ship {feature}`, same result) resumes straight into the debug
+     round for those items (not the manual walkthrough), and that the board shows this run as parked
+     (⏸). **End the turn.**
   5. A fresh session resumes via `phase-3-manual-finalize.md § Resume entry`'s `debugTier: "light"`
      branch, landing directly in `references/debug-round.md` for this item. Other items in the ledger
      are unaffected and keep progressing normally (a later resume walks each open item to wherever its

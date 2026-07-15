@@ -8,15 +8,19 @@ feature branch first. AGENT 2's `remainingManualItems` is authoritative here.
 **Dual reader**: this file is read by the main chat on both paths — the manual-items path (below),
 and the no-manual path (`references/orchestration.md § 4`), which runs only **Step 1** + **Step 3**,
 never Step 2 (no app launch, no walkthrough — this route only fires when there's nothing to show a
-human) and never the routing sections below (those assume manual items).
+human) and never the routing sections below (those assume manual items). **`/dev-manual`** is the
+standalone skill that owns this whole phase for a resume (`dev-manual/SKILL.md`) — it reads this
+same file rather than duplicating it; `/dev-ship {feature}` still resumes here too (same reference,
+same routing), so both commands land in the same place.
 
 ## Resume entry (fresh session)
 
-When PHASE 3 is entered via a direct resume (a fresh chat re-invoking `/dev-ship {feature}` after the
-last session handed off here — the deliberate token break after auto-verify leaves manual items, the
-common case — or was interrupted), `results.verify` comes from
-the checkpoint (`ship-{feature}.json`), not from an in-context AGENT 2 return. Run **Step 1** (enter
-the worktree) and **Step 2** (launch the app via the App-launch rule) exactly as on the normal path,
+When PHASE 3 is entered via a direct resume (a fresh chat running `/dev-manual {feature}` — or
+`/dev-ship {feature}`, same result — after the last session handed off here: the deliberate token
+break after auto-verify leaves manual items, the common case — or was interrupted), `results.verify`
+comes from the checkpoint (`ship-{feature}.json`), not from an in-context AGENT 2 return. Run
+**Step 1** (enter the worktree) and **Step 2** (launch the app via the App-launch rule) exactly as on
+the normal path,
 then route **per open item** in the following precedence order (highest first — check 1 before 2,
 2 before 3, and so on; a resume typically finds only one kind of open work, but if the ledger has
 several items at different stages, e.g. one still mid-dispatch while another already escalated,

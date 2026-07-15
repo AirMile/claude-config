@@ -122,7 +122,9 @@ The checkpoint stays parked; the same resume command works after resolution.
      hands off here (parks the run, ends the turn) so this phase runs on a fresh session. The re-entry steps live in the pipeline's own
      interactive-phase file, not here (this spec stays pipeline-generic): dev/game run that file's
      worktree-entry step (via `shared/WORKTREE.md`) + app/game-launch step before presenting the
-     checklist (dev: `phase-3-manual-finalize.md § Resume entry`; game: `phase-3-playtest.md §
+     checklist (dev: `phase-3-manual-finalize.md § Resume entry` — preferably entered via
+     `/dev-manual {feature}`, the standalone skill for this exact resume; `/dev-ship {feature}` still
+     resumes to the same place. game: `phase-3-playtest.md §
 Resume entry`); design re-enters its PHASE 4 review. Then the walkthrough replays from
      `results.verify.remainingManualItems` (dev/game) / the stored check results (design) — for
      dev/game, filtered against the checkpoint's `manual`/`playtest` items verdicts respectively

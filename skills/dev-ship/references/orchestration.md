@@ -85,9 +85,9 @@ auto-verify"` (batch ≤3 per invocation, same cap as
     PHASE 1+2 green — {testsTotal} tests pass, {N} manual items remain.
     To keep this chat cheap the run stops here; the checkpoint is ready to resume.
 
-    → Run /clear (or open a new chat), then: /dev-ship {feature}
+    → Run /clear (or open a new chat), then: /dev-manual {feature}
       You land directly in the item-by-item manual round (worktree + app are relaunched
-      automatically).
+      automatically). (/dev-ship {feature} still works too — it resumes to the same place.)
 
     The board shows this run as parked (⏸) with the same resume button.
     Prefer to continue here instead? Say so and I'll run PHASE 3 in this session.

@@ -24,8 +24,9 @@ intermittent / a previous session already tried and failed → tier 3.
 
 **dev and game diverge at tier 3.** Inside `dev-ship` PHASE 3, tier 2→3 is fully in-ship and
 park-first: a failed batch fix parks to `debug-round.md` (Explore investigation + research + one
-evidence-backed fix, via a fresh `/dev-ship {feature}` resume — never inline in the same session
-that produced the failed attempt); if that also fails it parks again to `debug-round-heavy.md`
+evidence-backed fix, via a fresh `/dev-manual {feature}` resume — or `/dev-ship {feature}`, same
+result — never inline in the same session that produced the failed attempt); if that also fails it
+parks again to `debug-round-heavy.md`
 (3-strategy fan-out + reproduction-test discipline) — the hard ceiling, see `fix-round.md § Re-check`
 for the full ladder (progress tracked via the ledger item's `debugTier`, not a `failedRounds` menu).
 Inside `game-ship` PHASE 3, tier 2→3 still runs the ship's own `references/debug-round.md` first

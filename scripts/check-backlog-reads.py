@@ -25,7 +25,11 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCOPE_DIRS = [REPO_ROOT / "skills" / "dev-ship", REPO_ROOT / "skills" / "game-ship"]
+SCOPE_DIRS = [
+    REPO_ROOT / "skills" / "dev-ship",
+    REPO_ROOT / "skills" / "game-ship",
+    REPO_ROOT / "skills" / "dev-manual",
+]
 
 # Matches a prose instruction to Read the raw backlog store file, e.g.:
 #   "Read `.project/backlog.json`"

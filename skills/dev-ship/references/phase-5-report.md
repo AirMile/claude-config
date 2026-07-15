@@ -1,0 +1,83 @@
+# Report (final phase — read by both `/dev-ship` and `/dev-manual`)
+
+Shared by both skills' final phase (`dev-ship/SKILL.md` PHASE 5; `dev-manual/SKILL.md` MANUAL 3) —
+whichever one is running this ship to completion runs this exact step; only its own `TaskUpdate`
+phase-marker calls differ (PHASE 5 vs M3), everything else below is identical.
+
+> **Todo**: mark the phases that actually ran → `completed` (on a failure-jump, leave the failed
+> phase `in_progress` and never mark a skipped phase `completed`), this final phase → `in_progress`.
+> **Board cleanup** (every exit path, success or failure): `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`,
+> and if the feature still exists in `backlog.json#features[]` with `transition: "shipping"`, remove
+> that `transition`. **On full success the feature is no longer in `features[]` at all** — refactor's
+> completion-batch shipped it and moved it to `backlog-archive.json`, verified by PHASE 4's post-merge
+> reconcile — so **never treat absence from `features[]` as data loss** (do not re-add the entry). The
+> `transition`-strip here is only for failure-jumps and the `--no-refactor` escape hatch, where the
+> feature is still present.
+> **Checkpoint cleanup** — asymmetric with the board signal (per `shared/SHIP-CHECKPOINT.md`): on a
+> green completion set the checkpoint `status: "complete"` then `rm -f .project/session/ship-{feature}.json`.
+> On a **failure-jump, leave the checkpoint on disk** (`status: "failed"`) so `/dev-ship {feature}`
+> (or `/dev-manual {feature}`, same result) can resume; surface its `baselineSha` in the failure
+> report as the rollback anchor.
+
+**Security auto-todo** (only when `results.triage.confirmed` is non-empty — read from the ship-triage
+file `orchestration.md § 5` just persisted, not the about-to-be-deleted checkpoint): if it contains
+≥1 finding with `severity: "critical"` or `"high"`, auto-create a backlog todo — deliberately without
+an `AskUserQuestion` (a confirmed CRITICAL/HIGH security finding is not optional to surface, unlike
+the Smart-Todo Creation pattern's usual confirm-first flow, `shared/SKILL-PATTERNS.md § Smart
+Suggestions`). Dedup first (`shared/BACKLOG.md § Writing the backlog` name check): if
+`data.features.find(f => f.name === "security-{feature}")` already exists and is open, skip creation
+and log one line instead. Otherwise push to `backlog.json#data.features[]`:
+
+```json
+{
+  "name": "security-{feature}",
+  "type": "SECURITY",
+  "status": "TODO",
+  "phase": "P1",
+  "description": "{X} CRITICAL / {Y} HIGH confirmed by ship security triage. Findings: .project/security/ship-triage-{feature}.json. Remediate via /dev-security {feature}.",
+  "source": "/dev-ship",
+  "parentFeature": "{feature}"
+}
+```
+
+Then patch `backlogTodo: "security-{feature}"` into the ship-triage file.
+
+Print the ship summary (ASCII table): feature, build test counts, verify results, manual outcomes,
+refactor result, security findings (if any), and the collected `autoDecisions[]` (choices the
+agents auto-made in non-interactive mode) for your review. All fields come from the checkpoint's
+`results` (and, on the manual path, the in-context PHASE 3 walkthrough).
+
+```
+SHIP COMPLETE: {feature}
+========================
+Plan:     auto-derived → lenses {refactorLenses} · security {securityDeep or "none"}
+Build:    {passed}/{total} PASS
+Verify:   AUTO {n} PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}/{accepted}) · {rounds} fix round(s){, plus {N} debug-ladder escalation(s) if this run used debug-round.md/debug-round-heavy.md — the two counters don't compose into one number}
+Refactor: {lenses applied} · {techniques} applied ({reverted} reverted)
+Security: {triage: {confirmed} confirmed · {dismissed} dismissed → persisted + todo security-{feature}, or just persisted if below the auto-todo threshold, or "not run"}
+Merged:   {yes → main | no → {reason}}
+
+Auto-decisions ({N}):
+- {agent}: {decision} → chose {choice}
+```
+
+**Ship-level learning extraction** (the layer the agents cannot see — dev-ship owns it). The copied
+build/verify/refactor already wrote their **domain** learnings during their phases (do not re-write
+those). But cross-phase, ship-level signals only exist in the main chat — extract a small set (0-3)
+to `project-context.json#learnings[]` via `shared/LEARNING-WRITE.md` (`source: "extracted"`,
+same dedup): a recurring `autoDecisions` pattern, manual-test friction (an item that repeatedly
+needed a human), or a refactor technique the test-guard **reverted** (signals a fragile pattern).
+Only write genuinely reusable signals — skip if none.
+
+**Memory consolidation** (so future ship runs have insight). This step then runs the
+consolidation gate per `shared/LEARNING-WRITE.md § Consolidation Gate` (trigger `> 60` →
+merge per-feature clusters, archive originals, target ≤40). Archived entries stay **searchable by
+relevance** (the loader scans the archive as a damped tier), so consolidation shrinks the active
+list without losing recall. This closes the loop: the next ship run's PHASE 0 `SHIP_CONTEXT`
+preloads the relevant learnings via `shared/LEARNINGS-LOAD.md`.
+
+> **Todo**: mark this final phase → `completed`.
+
+On any agent failure earlier in the flow, this phase still runs but reports the stop point and the
+recovery options (re-run `/dev-ship {feature}` or `/dev-manual {feature}`, or
+`references/debug-round-heavy.md` directly) instead of a green summary.

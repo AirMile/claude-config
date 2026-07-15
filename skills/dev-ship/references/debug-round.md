@@ -148,7 +148,8 @@ triage` before deciding anything below (a signal like reproducibility or origin 
        item excluded from the pass/fail count.
   4. (park path only) `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`.
   5. (park path only) Print the park/handoff template (`SKILL.md § PHASE 1–4`) with
-     `/dev-ship {feature}` as the resume command. **End the turn.**
+     `/dev-manual {feature}` as the resume command (`/dev-ship {feature}` still resumes to the same
+     place). **End the turn.**
   6. (park path only) A fresh session resumes via `phase-3-manual-finalize.md § Resume entry`'s
      `debugTier: "heavy"` branch, landing directly in `references/debug-round-heavy.md`, which reads
      `lightRoundNotes` instead of re-running Explore (`debug-round-heavy.md § 4`).

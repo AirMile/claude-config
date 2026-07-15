@@ -1146,8 +1146,15 @@
         const copyCmd = next ? next.cmd : null;
         const copyTitle = copyCmd || f.name;
 
+        // dev parked at PHASE 3/4 → the standalone manual-round skill is the preferred re-entry
+        // (same resume, just the command that names what actually happens next); PHASE 0-2 has no
+        // manual-round ledger yet, so it must stay /dev-ship.
+        const devParkedCmd =
+          live && (live.phase === "PHASE 3" || live.phase === "PHASE 4")
+            ? "/dev-manual"
+            : "/dev-ship";
         const parkedResumeCmd = isParked
-          ? `${PARKED_SHIP_CMD[live.pipeline] || "/dev-ship"} ${f.name}`
+          ? `${live.pipeline === "dev" ? devParkedCmd : PARKED_SHIP_CMD[live.pipeline] || "/dev-ship"} ${f.name}`
           : null;
 
         // parked → copy button carrying the resume command (one-click resume)
