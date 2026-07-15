@@ -42,7 +42,9 @@ CONTEXT (verify-slice of SHIP_CONTEXT; worktree path = {worktreePath}):
    worktree intact — re-run `/dev-ship {feature}` to retry, or go straight to
    `references/debug-round-heavy.md` (non-ledger entry)." Do not finalize.
 3. `status: green` → **re-read `.project/` from disk**. `remainingManualItems` is **authoritative**
-   for PHASE 3 (overrides the PHASE 0 advisory estimate). Continue to PHASE 3.
+   for PHASE 3 (overrides the PHASE 0 advisory estimate). Non-empty `improvementNotes` → hand them to
+   `references/orchestration.md § 3`'s offload flush before continuing (never blocks; never enters
+   `remainingManualItems`). Continue to PHASE 3.
 
 **Contract check**: every element of `remainingManualItems` must carry a `manualReason` as a
 **structured field on the item itself** (one of

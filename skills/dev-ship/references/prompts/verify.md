@@ -46,6 +46,10 @@ SCOPE LIMITS (critical — this is a partial verify):
 - Commit any AUTO fix-loop changes into the worktree branch (scoped commit), same as dev-verify.
 - If an AUTO item cannot be made to pass after the fix-loop: STOP, do not merge, return status
   "failed" with the item.
+- **Non-blocking improvement observations**: if you notice something that works but could be
+  better — a rough edge, awkward copy, a small polish item — that is NOT a failure and does NOT
+  belong in `remainingManualItems` or `failedAt`. Note it as a short string in `improvementNotes`
+  instead and move on; never let it affect `status` or block completion.
 
 **Manual-item authoring**: `steps` must read as concrete, numbered, end-user-executable UI actions
 (which button, which menu, which literal input) — not abstract preconditions ("open two tabs with
@@ -74,4 +78,6 @@ failedAt: <item id + short reason, or "none">
 autoDecisions:
 
 - <auto-choice, or "none">
+  improvementNotes:
+- <short non-blocking observation, or omit the key entirely when none>
   SHIP_VERIFY_RESULT_END

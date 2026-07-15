@@ -109,6 +109,12 @@ const VERIFY_SCHEMA = {
       description: 'item id + short reason, or "none"',
     },
     autoDecisions: { type: "array", items: { type: "string" } },
+    improvementNotes: {
+      type: "array",
+      items: { type: "string" },
+      description:
+        "Non-blocking improvement observations noticed during auto-verify — never failures. Optional; omitted or empty when none.",
+    },
   },
   required: [
     "status",

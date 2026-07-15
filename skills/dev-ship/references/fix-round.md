@@ -188,7 +188,10 @@ this skill defines.
 
 **Before judging Pass/Cosmetic/Otherwise below**, apply `shared/FEEDBACK-CATEGORIZATION.md § Scope
 check` — split off anything not about this item's own `expected` text into its own ledger item first
-(dev-ship mechanics: `manual-interview-walkthrough.md § Step D`).
+(dev-ship mechanics: `manual-interview-walkthrough.md § Step D`). A split-off item that lands
+**out-of-scope AND improvement-class** (tweak, not a defect) skips the round-gate entirely — send it
+straight through the § Offload flush below instead of giving it its own ledger lifecycle; only an
+out-of-scope **defect** goes to `/project-todo` as a plain `BUG` per the Scope check's own routing.
 
 - **Pass** → update `manual.items[].verdict` to `"pass"`; done with this item.
 - **Cosmetic tweak, and it's the only finding still open this round** (MEASURABLE, obvious, ≤1-2
@@ -222,9 +225,10 @@ entry` bullet 5 — no verdict, no `debugTier` set, dispatch already complete), 
   (never when any open finding is `fail`-class — see the Fail-never-to-todo policy in
   `phase-3-manual-finalize.md § Findings ledger + routing`) → one `AskUserQuestion`, the only choice
   point on this path:
-  1. **"Park — debug in a fresh chat (Recommended)"** → same park mechanics as below.
-  2. **"Defer to backlog todo"** → route each remaining finding to `/project-todo`, then proceed to
-     the regression re-check and completion on the verified scope.
+  1. **"Offload to TWEAK card(s) (Recommended)"** → run
+     `phase-3-manual-finalize.md § Offload flush` for each remaining finding, then proceed to the
+     regression re-check and completion on the verified scope.
+  2. **"Park — debug in a fresh chat"** → same park mechanics as below.
 - **Otherwise (any `fail`-class finding, or any tweak — substantial or cosmetic — with a `fail`
   sibling this round)** → park (one optional diagnostic question — e.g. what specifically changed
   after the fix attempt — is allowed first, to sharpen `lightRoundNotes`; do not loop past that

@@ -135,7 +135,9 @@ One `AskUserQuestion` per item (not batched — the user asked for item-by-item 
 
 - `Pass (Recommended)`
 - `Fail — doesn't work as specified`
-- `Tweak — works, but I want it different`
+- `Tweak — works, but I want it different` (offloaded to a TWEAK backlog card by default — the ship
+  stays raw-functionality only; `/dev-tweak` picks it up later. See
+  `phase-3-manual-finalize.md § Findings ledger + routing` for the narrow inline-fix exception.)
 - `Skip / Defer` — one immediate follow-up: which of the two, and why (reason for Skip; blocking
   external prereq for Defer — account, CORS-origin, API-token, third-party config). **Defer is for
   external blockers only** — "it is broken" is by definition a **Fail**, never a Defer.
@@ -228,7 +230,8 @@ moment the user has nothing more to add; do not fish for issues that aren't ther
 - **In-theme adjustment** (design/behaviour change to something already built) → a new ledger
   finding, `verdict: "tweak"` (or `"fail"` if it turns out a criterion was genuinely not met),
   `source: "interview"`. Add it to the in-memory collection (Step E) — it persists in the same batch
-  write.
+  write. A `"tweak"` verdict here routes to offload, same as Step C — it is not queued for the fix
+  round.
 - **Net-new capability** (not in `remainingManualItems`, not a change to existing scope) → keep it
   out of the ledger entirely. Either fold it into the fix round only if it is small and clearly
   in-theme (the round-gate decides), or route it to `/project-todo` and finish the ship on the

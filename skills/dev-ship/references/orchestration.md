@@ -22,7 +22,7 @@ inline costs nothing extra: Workflow already runs in the background and notifies
   path resolves against the main chat's current directory. By §5 the main chat is always inside
   `worktree-{feature}` (PHASE 3 Step 1 already switched in), where `.claude/` does not exist — a
   relative `scriptPath` there fails outright. Always resolve `main_root` first (`git worktree
-  list --porcelain | head -1`, same as the triage-persist step in §5) and pass an absolute path.
+list --porcelain | head -1`, same as the triage-persist step in §5) and pass an absolute path.
 - Each `Workflow(...)` launch below ends your turn with a short one-liner ("Shipping `{feature}` in
   the background — I'll report when it returns.") — no further tool calls until the task-notification
   arrives.
@@ -71,7 +71,12 @@ no worktree created), retry once via §7 (fallback path) before routing anywhere
 code/test failure follows the branches below.
 
 - `status: "green"` → mark `completedPhases += ["PHASE 1","PHASE 2"]`, `phase: "PHASE 3"`.
-  Re-read `.project/` from disk. Branch on `verify.remainingManualItems`:
+  Re-read `.project/` from disk. **Offload flush**: non-empty `verify.improvementNotes` → for each
+  note, invoke `/project-todo` with `"{note}, type TWEAK, depends on {feature}, parked from /dev-ship
+auto-verify"` (batch ≤3 per invocation, same cap as
+  `phase-3-manual-finalize.md § Offload flush`) — these are AGENT 2's own observations, never a
+  ledger item, so there's no `offload` field to upsert. Do this before either branch below, since it
+  applies regardless of which one fires. Branch on `verify.remainingManualItems`:
   - **Empty** → go to **§4 PHASE 3 completion (no-manual path)**.
   - **Non-empty** → `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}` (board renders
     **parked** with the resume button); print this handoff message (English source, translate per

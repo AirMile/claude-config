@@ -85,7 +85,12 @@ command). See `BACKLOG.md § Board rendering`.
                           observed, expected, screenshot, source: "checklist"|"interview",
                           debugTier: "light"|"heavy" (absent = not in the debug ladder),
                           heavyRoundFailed: bool (absent otherwise),
-                          lightRoundNotes: string (absent unless debugTier reached "heavy") }] —
+                          lightRoundNotes: string (absent unless debugTier reached "heavy"),
+                          offload: string (backlog card name — set when this "tweak"-verdict item
+                          was offloaded via phase-3-manual-finalize.md § Offload flush; absent for
+                          fail/pass/skip/defer items and for the narrow inline-fixed tweak exception,
+                          which flips straight to "pass" instead — see that section's verdict-flip
+                          rule) }] —
                         written one item at a time via `ship-checkpoint.js item {name} manual`,
                         which upserts by `id` (append if new, replace in place if the id already
                         exists) — never re-send the full array yourself. `debugTier` is dev-ship's
@@ -149,16 +154,16 @@ free-text field (an observation, a note, ordinary English/Dutch prose) breaks th
 the command fails before node ever runs. When a payload carries free text, write it to a temp
 file first (Write tool) and pipe via `cat file | node ...` instead of inlining it after `echo`.
 
-| Write kind                              | Command                                                                                      | Notes                                                                                            |
-| --------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Create** (write point 0/1)            | `echo '<full object>' \| node ~/.claude/scripts/ship-checkpoint.js init {name}`              | full checkpoint object; overwrites if present                                                    |
-| **Patch delta** (write points 1–4)      | `echo '<delta>' \| node ~/.claude/scripts/ship-checkpoint.js patch {name}`                   | deep-merge; pass `"key": null` to clear it (e.g. `"activeWorkflow": null`)                       |
-| **Complete** (write point 5)            | `node ~/.claude/scripts/ship-checkpoint.js complete {name}`                                  | sets `status:"complete"`, then removes the file                                                  |
-| resolve path (debug)                    | `node ~/.claude/scripts/ship-checkpoint.js path {name}`                                      | prints the absolute checkpoint path, no write                                                    |
-| **Live signal** (skill start)           | `echo '{"skill":"..."}' \| node ~/.claude/scripts/ship-checkpoint.js signal {name}`          | writes `active-{name}.json` wholesale; script stamps `feature`/`startedAt`                       |
-| **Live signal clear** (skill end)       | `node ~/.claude/scripts/ship-checkpoint.js signal-clear {name}`                              | removes `active-{name}.json`; exit 0 whether or not it existed                                   |
+| Write kind                              | Command                                                                                      | Notes                                                                                                                                                                                                            |
+| --------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Create** (write point 0/1)            | `echo '<full object>' \| node ~/.claude/scripts/ship-checkpoint.js init {name}`              | full checkpoint object; overwrites if present                                                                                                                                                                    |
+| **Patch delta** (write points 1–4)      | `echo '<delta>' \| node ~/.claude/scripts/ship-checkpoint.js patch {name}`                   | deep-merge; pass `"key": null` to clear it (e.g. `"activeWorkflow": null`)                                                                                                                                       |
+| **Complete** (write point 5)            | `node ~/.claude/scripts/ship-checkpoint.js complete {name}`                                  | sets `status:"complete"`, then removes the file                                                                                                                                                                  |
+| resolve path (debug)                    | `node ~/.claude/scripts/ship-checkpoint.js path {name}`                                      | prints the absolute checkpoint path, no write                                                                                                                                                                    |
+| **Live signal** (skill start)           | `echo '{"skill":"..."}' \| node ~/.claude/scripts/ship-checkpoint.js signal {name}`          | writes `active-{name}.json` wholesale; script stamps `feature`/`startedAt`                                                                                                                                       |
+| **Live signal clear** (skill end)       | `node ~/.claude/scripts/ship-checkpoint.js signal-clear {name}`                              | removes `active-{name}.json`; exit 0 whether or not it existed                                                                                                                                                   |
 | **Ledger item upsert** (write point 3b) | `echo '<item(s)>' \| node ~/.claude/scripts/ship-checkpoint.js item {name} manual\|playtest` | **full-object replace-by-`id`**, not a field-merge — send the item's complete object (every field you want kept), one item (or a JSON array, batch) at a time; a partial patch silently wipes any field you omit |
-| **Route** (dev/game orchestration)      | `node ~/.claude/scripts/ship-checkpoint.js route {name}`                                     | prints `{"route": "...", "resume": {...}\|null}` — no write; see the script header for the logic |
+| **Route** (dev/game orchestration)      | `node ~/.claude/scripts/ship-checkpoint.js route {name}`                                     | prints `{"route": "...", "resume": {...}\|null}` — no write; see the script header for the logic                                                                                                                 |
 
 - The merge is a **deep merge for nested objects** (`results`, `plan`) and a **replace for arrays
   and scalars** — so `results.build` from an earlier write survives when a later write adds
