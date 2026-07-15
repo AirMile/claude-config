@@ -1,12 +1,12 @@
 ---
 name: game-tweak
 description: Use when a Godot change fits 1-3 files, no pipeline. Use with /game-tweak.
-argument-hint: "[change description]"
+argument-hint: "[change description | POLISH card name]"
 reads: [backlog.features, project-context.learnings]
-writes: [project-context.learnings]
+writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.0.0
+  version: 1.1.0
   category: game
 ---
 
@@ -27,10 +27,18 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
 
 ## PHASE 0 — Pre-flight, size gate & backlog guard
 
-1. **Description** from the invocation argument; if empty, ask one short question.
-2. **Repo**: resolve `$REPO` to the main worktree (per `shared/SYNC.md` Worktree-aware Path
-   Resolution). `.project/` absent → degrade gracefully: skip the guard and learnings silently, keep
-   the rest (the code change is the value; do not scaffold).
+1. **Repo**: resolve `$REPO` to the main worktree (per `shared/SYNC.md` Worktree-aware Path
+   Resolution). `.project/` absent → degrade gracefully: skip the card lookup, guard, and learnings
+   silently, keep the rest (the code change is the value; do not scaffold).
+2. **Mode + description**: `.project/` present → load once:
+   `node ~/.claude/scripts/backlog-load.js "$REPO" guard-items` (the game-pipeline `stage` field
+   included; reused by step 6's guard — one load, not two). The invocation argument matches a live
+   `POLISH` card — exact name, or an unambiguous ≥2-shared-token match — per
+   [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup path 1?
+   - **Match → card mode.** Description = the card's `description`. Run the dependency check now
+     (one `AskUserQuestion` only if the card has an open, unshipped dependency).
+   - **No match, or `.project/` absent → free-text mode.** Description from the invocation argument;
+     if empty, ask one short question.
 3. **Branch guard** per [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Branch guard:
    not on the default branch (or detached HEAD) → warn + ask before proceeding.
 4. **Baseline** per [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md) § 1:
@@ -38,13 +46,18 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    absent).
 5. **Gate + guard**: Read [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md); run § Size
    gate on the projected scope (game surface examples: new scene, autoload, signal contract, input
-   action) and § Backlog guard — the `guard-items` load includes the game-pipeline `stage` field.
+   action). § Backlog guard: **card mode** → skip (the card already names the scope). **Free-text
+   mode** → run § Backlog guard as before — the `guard-items` load includes the game-pipeline
+   `stage` field — then § Card pickup path 2 (the POLISH-only mini-guard) against the same
+   `guard-items` load from step 2.
 
    > **Todo**: if any gate criterion fires or the guard demands escalation → Read
    > `.claude/skills/game-tweak/references/escalate.md` and follow it — never continue silently.
 
-6. **Slug**: derive a kebab-case slug from the description (commit scope + learnings feature key).
-   Print the status: `Gate: ✓ tweak-sized · Guard: ✓ no card overlap` (or the warn/advisory lines).
+6. **Slug**: card mode → the card's own kebab `name` (no re-derivation). Free-text mode → derive a
+   kebab-case slug from the description (commit scope + learnings feature key). Print the status:
+   `Gate: ✓ tweak-sized · Guard: ✓ no card overlap` (or the warn/advisory lines; card mode prints
+   `Card: {name}` instead of the guard line).
 
 ## PHASE 1 — Locate & context
 
@@ -96,13 +109,21 @@ scope → Read `references/escalate.md`.
    which files belong to the tweak; message `{fix|refactor|perf|style|chore}({slug}): {summary}` —
    never `feat` (net-new capability is an escalation criterion by definition); cleanup: remove the
    baseline file.
-2. **Optional learning (0-1)**: only for a bugfix whose root cause has value beyond this spot
+2. **Card-mode completion** (skip entirely in free-text mode): per
+   [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup completion write — flip
+   the card `shipped: true` + `shippedAt` + `shippedSha` + `summary` (this tweak's one-line
+   outcome), move it from `backlog.json#features[]` to
+   `.project/archive/backlog-archive.json#archived[]`, dual-write `project.json#features[]` to
+   match.
+3. **Optional learning (0-1)**: only for a bugfix whose root cause has value beyond this spot
    (filter per [shared/LEARNING-WRITE.md](../shared/LEARNING-WRITE.md) § Writer Append Protocol) —
    append via `learnings-write.js append` with `type: "pitfall"`, `source: "extracted"`, 0-3 tags
    (game vocabulary: `godot`, `gdscript`, `scene`, `game-loop`), then run the Consolidation Gate
    once (`LEARNING-WRITE.md § Consolidation Gate`). Skip both silently otherwise. No state auto-push
    (TWEAK-DISCIPLINE § Registration policy).
-3. **Report** (compact prose, no rigid table): what changed with `file:line` refs, checks run,
-   commit sha, a `Guard:` line repeating any card overlap, a `Learning:` line when one was written,
-   and `Escalation overridden: {criterion}` when applicable. Add `Next steps: /game-ship {card}`
-   only when the guard flagged a TODO card. A tweak is terminal — no next-step offer otherwise.
+4. **Report** (compact prose, no rigid table): what changed with `file:line` refs, checks run,
+   commit sha, a `Guard:` line repeating any card overlap (card mode prints `Card: {name} →
+shipped` instead), a `Learning:` line when one was written, and `Escalation overridden:
+{criterion}` when applicable. Add `Next steps: /game-ship {card}` only when the guard flagged a
+   TODO card (free-text mode only — card mode is already terminal). A tweak is terminal — no
+   next-step offer otherwise.

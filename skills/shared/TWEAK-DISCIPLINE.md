@@ -69,6 +69,45 @@ Tokenizer`): take tokens ≥ 3 chars from the tweak description + slug + touched
      `/game-ship {name}`); continue only on an explicit user override (size-gate criterion 5).
    - **Same area, different thing** → one advisory line in the status output, continue.
 
+## Card pickup (TWEAK / POLISH cards)
+
+A tweak card is a small improvement a ship's verify/manual round already offloaded to the backlog
+(`dev-ship/references/phase-3-manual-finalize.md § Findings ledger + routing`), or one added ad hoc via
+`/project-todo`. Two ways a run picks one up, in addition to the free-text description path used
+everywhere above:
+
+1. **Invocation arg names a card** — exact match, or an unambiguous ≥2-shared-token match (same
+   tokenizer as § Backlog guard) against **only** live cards of type `TWEAK` (dev) / `POLISH` (game) —
+   never the full backlog (that full-backlog scan is `/project-todo`'s job, out of scope here).
+   Ambiguous (≥2 candidates) → ask which one, or "none of these — treat my text as a free-form
+   description" as the last option.
+
+   **Card mode**: the card's `description` becomes the tweak's working description (the invocation arg
+   was only the lookup key). **Dependency check**: any `dependencies[]` entry not yet
+   `shipped`/`DONE` → warn: _"parent feature `{dep}` not shipped yet — this tweak may target code
+   that isn't on `main`."_ One `AskUserQuestion`: proceed anyway (recommended when the dependency is
+   nearly done or the overlap is small) / abort. No warn when `dependencies` is empty or every entry
+   already resolved.
+
+2. **No card argument** (free-text description, as always) — after the existing § Backlog guard
+   resolves, run one further, narrower check: filter the same `guard-items` load down to
+   `type === "TWEAK"` (dev) / `"POLISH"` (game) only, and token-match the description against just
+   those cards. Match → offer _"pick up existing card `{name}` (Recommended)"_ (switches into card
+   mode above) vs _"proceed separately"_ (a second, unlinked tweak touching the same area — rare, not
+   forbidden). No match → proceed as a standalone tweak, unchanged from today.
+
+   This mini-guard is deliberately narrower than `/project-todo`'s dedup (which scans the whole
+   backlog) — its only job is to stop a tweak run from silently duplicating a card someone already
+   offloaded from a ship run.
+
+**Card-mode completion write** (PHASE 4 of the calling skill, in addition to its normal steps): flip
+the card `shipped: true` + `shippedAt` + `shippedSha` + `summary` (the tweak's one-line outcome), move
+it from `backlog.json#features[]` to `.project/archive/backlog-archive.json#archived[]`
+([BACKLOG.md § Archiving](BACKLOG.md) — TWEAK/POLISH archive like any other dev-track type), and
+dual-write `project.json#features[]` to match ([BACKLOG.md § Parallel sync](BACKLOG.md)). This is the
+**only** sanctioned backlog write a tweak run ever performs, and only in card mode — a free-text run
+still makes zero backlog writes.
+
 ## Registration policy
 
 A completed tweak registers as **exactly**:
@@ -78,12 +117,13 @@ A completed tweak registers as **exactly**:
    this spot (filter per [LEARNING-WRITE.md](LEARNING-WRITE.md) § Writer Append Protocol): `type:
 "pitfall"`, `source: "extracted"`, 0-3 tags — then the Consolidation Gate once
    (`LEARNING-WRITE.md § Consolidation Gate`).
+3. **Card mode only**: the § Card pickup completion write.
 
-Nothing else. No backlog card, no `feature.json`, no dashboard writes, no board signal
+Nothing else. No backlog card creation, no `feature.json`, no dashboard writes, no board signal
 (`active-*.json` / ship checkpoint) — tweaks are not board-visible pipeline runs. **No state
 auto-push either** (deliberate, do not "fix" this later): the only durable `.project/` delta is
-≤ 1 learning, and it rides the next ship/finalize/`core-pull` auto-push
-([STATE-SYNC-PUSH.md](STATE-SYNC-PUSH.md) § Auto-push).
+≤ 1 learning plus, in card mode, the card completion write — both ride the next
+ship/finalize/`core-pull` auto-push ([STATE-SYNC-PUSH.md](STATE-SYNC-PUSH.md) § Auto-push).
 
 ## Escalation gate
 
@@ -106,10 +146,14 @@ live in each skill's `references/escalate.md`):
 A tweak run must never:
 
 - write `shipped` / `shippedAt` / `shippedSha` / `summary` / `refactor` on a card — owned by the
-  ship refactor phase via `completion-sync.js`;
-- flip a card's `status` or set/clear its `transition` — owned by the ship pipelines and the board;
+  ship refactor phase via `completion-sync.js`, **except the § Card pickup completion write, and only
+  for the exact TWEAK/POLISH card this run was invoked with**;
+- flip a card's `status` or set/clear its `transition` — owned by the ship pipelines and the board,
+  **except that same § Card pickup completion write** (a TWEAK/POLISH card's lifecycle is
+  `TODO → shipped` directly — there is no intermediate `transition` to protect);
 - create a card by hand — the backlog/project dual write ([BACKLOG.md](BACKLOG.md) § Parallel sync)
-  is project-todo's job; the park path _invokes_ that skill;
+  is project-todo's job; the park path _invokes_ that skill; card pickup only ever mutates an
+  **existing** TWEAK/POLISH card, never creates one;
 - touch `feature.json` or the seed;
 - stage or commit `.project/` paths ([SCOPED-COMMIT.md](SCOPED-COMMIT.md) — local-only state);
 - run the state auto-push (see § Registration policy).
