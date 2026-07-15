@@ -12,7 +12,7 @@
     <script src="/lib/pwa-register.js" defer></script>
     <script src="/lib/themes.js"></script>
     <script src="/lib/collapse-store.js"></script>
-    <link rel="stylesheet" href="/css/backlog.css?v=11" />
+    <link rel="stylesheet" href="/css/backlog.css?v=12" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <link
@@ -88,6 +88,7 @@
               <option value="BUG">BUG</option>
               <option value="CHANGE">CHANGE</option>
               <option value="SECURITY">SECURITY</option>
+              <option value="TWEAK">TWEAK</option>
             </select>
           </div>
           <div>
@@ -277,6 +278,7 @@
         REFACTOR: "REFACTOR",
         "PAGE-GAP": "GAP",
         SECURITY: "BUG",
+        TWEAK: "TWEAK",
       };
 
       const TYPE_ICONS = {
@@ -285,6 +287,7 @@
         CHANGE: { icon: "✎", cls: "type-change" },
         REFACTOR: { icon: "↻", cls: "type-refactor" },
         GAP: { icon: "□", cls: "type-gap" },
+        TWEAK: { icon: "✦", cls: "type-tweak" },
       };
 
       const SUB_TYPE_LABELS = {

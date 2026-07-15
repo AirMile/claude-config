@@ -1252,6 +1252,10 @@ body {
   background: color-mix(in srgb, var(--purple) 18%, transparent);
   color: var(--purple);
 }
+.type-tweak {
+  background: color-mix(in srgb, var(--pink) 18%, transparent);
+  color: var(--pink);
+}
 
 /* ── Meta chips ── */
 

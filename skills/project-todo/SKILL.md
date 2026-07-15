@@ -274,6 +274,8 @@ TODO ADDED
   [If type is FEATURE, CHANGE, BUG, or API:]
   - /dev-ship {name} - Start with requirements and building
   - /team-outsource {name} - Outsource to a teammate via GitHub/Jira/Linear
+  [If type is TWEAK:]
+  - /dev-tweak {name} - Pick up the tweak on main (no worktree needed)
   [If type is PAGE or COMPONENT:]
   - /design-convert {name} - Build the page/component
   - /design-convert - Define multiple pages at once

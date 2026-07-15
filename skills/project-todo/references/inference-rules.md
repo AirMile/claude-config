@@ -6,6 +6,8 @@ The governing principle is stated repo-wide in `shared/FEEDBACK-CATEGORIZATION.m
 
 `/project-todo` is called mid-run by `dev-ship` and `game-ship` to park out-of-scope findings (`dev-ship/references/fix-round.md`, `shared/FEEDBACK-CATEGORIZATION.md § Scope check`). Those call sites sit in the ship's **interactive lane** — the manual walkthrough and the live playtest, where `dev-ship/SKILL.md` puts "human interaction … in the main chat". The user is present, so a gate question there is a normal interaction, not a stall.
 
+**Ship offload passes `type TWEAK` explicitly.** When `/dev-ship`'s manual/verify rounds offload a tweak-class finding (`shared/TWEAK-DISCIPLINE.md`, `dev-ship/references/phase-3-manual-finalize.md § Findings ledger + routing`), the invocation states `type TWEAK` + `depends on {feature}` up front — this overrides row-based inference below (row 1 of the WEB table still applies to a plain user-typed "tweak" description with no explicit type).
+
 The cost being removed is **per-item friction**: parking three findings used to mean twelve modals. The happy path must be **zero modals** so that parking a finding costs one sentence.
 
 ---
@@ -18,18 +20,21 @@ Signals below are written in English; descriptions arrive in the user's language
 
 Evaluate top-down, **first match wins**. Ordered most-specific first, so a "fix the slow settings page" lands on `BUG`, not `PERF` or `PAGE`.
 
-| #   | Type        | Signals                                                                       |
-| --- | ----------- | ----------------------------------------------------------------------------- |
-| 1   | `BUG`       | bug, fix, crash, error, broken, throws, regression, "doesn't work"            |
-| 2   | `THEME`     | design tokens, color scheme, typography scale, spacing scale, dark-mode theme |
-| 3   | `A11Y`      | accessibility, a11y, screenreader, contrast, keyboard nav, aria, focus order  |
-| 4   | `PERF`      | performance, slow, lighthouse, bundle size, SEO, core web vitals, caching     |
-| 5   | `PAGE-GAP`  | missing functionality on an **existing** page — resolve by lookup, see below  |
-| 6   | `COMPONENT` | reusable UI element, not bound to one route (button, modal, card, nav)        |
-| 7   | `PAGE`      | new route/screen, path-like name (`/settings`), "page", "screen", "view"      |
-| 8   | `API`       | endpoint, route handler, webhook, service, backend contract, mutation, query  |
-| 9   | `CHANGE`    | modification of existing behavior ("now does X, should do Y", "instead of")   |
-| 10  | `FEATURE`   | **default**                                                                   |
+| #   | Type        | Signals                                                                                                                                                                     |
+| --- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `BUG`       | bug, fix, crash, error, broken, throws, regression, "doesn't work"                                                                                                          |
+| 2   | `TWEAK`     | explicit `type TWEAK` hint (always wins, see above) · "tweak" · polish/copy/styling/spacing adjustment of **existing**, already-working behavior — never net-new capability |
+| 3   | `THEME`     | design tokens, color scheme, typography scale, spacing scale, dark-mode theme                                                                                               |
+| 4   | `A11Y`      | accessibility, a11y, screenreader, contrast, keyboard nav, aria, focus order                                                                                                |
+| 5   | `PERF`      | performance, slow, lighthouse, bundle size, SEO, core web vitals, caching                                                                                                   |
+| 6   | `PAGE-GAP`  | missing functionality on an **existing** page — resolve by lookup, see below                                                                                                |
+| 7   | `COMPONENT` | reusable UI element, not bound to one route (button, modal, card, nav)                                                                                                      |
+| 8   | `PAGE`      | new route/screen, path-like name (`/settings`), "page", "screen", "view"                                                                                                    |
+| 9   | `API`       | endpoint, route handler, webhook, service, backend contract, mutation, query                                                                                                |
+| 10  | `CHANGE`    | modification of existing behavior ("now does X, should do Y", "instead of")                                                                                                 |
+| 11  | `FEATURE`   | **default**                                                                                                                                                                 |
+
+`TWEAK` never applies to the GAME table — game keeps `POLISH` for the equivalent small-improvement case (`/game-tweak` picks those up instead, see `shared/TWEAK-DISCIPLINE.md`).
 
 **Row 5 is a lookup, not a judgement call.** "Existing page" is registered, so check the register rather than guessing:
 

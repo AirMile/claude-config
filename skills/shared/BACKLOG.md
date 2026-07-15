@@ -32,7 +32,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
   "features": [
     {
       "name": "feature-name",
-      "type": "FEATURE|CHANGE|BUG|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|THEME|A11Y|PERF|PAGE-GAP|SECURITY",
+      "type": "FEATURE|CHANGE|BUG|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|THEME|A11Y|PERF|PAGE-GAP|SECURITY|TWEAK",
       "status": "TODO|DEFINED|DOING|DONE|CANCELLED",
       "phase": "P1|P2|P3|P4",
       "description": "Description",
@@ -255,6 +255,15 @@ The backlog board is **ship-only**: `/dev-ship`, `/design-ship`, and `/game-ship
 ```
 
 The former resting columns — dev's **To build** (DEFINED) / **To verify** (DOING) / **To refactor** (DONE), and design's **To convert** (DEFINED) / **To check** (DOING) — no longer render: those statuses are transient internal states a ship-run passes through while the card sits in **In progress**. The underlying status field still moves TODO → DEFINED → DOING → DONE (see the status table above); only the board columns collapsed. DONE+`shipped: true` (both tracks) move to the Dashboard.
+
+## TWEAK cards
+
+`type: "TWEAK"` is a dev-track type for a small improvement offloaded from a ship's verify/manual round (`shared/TWEAK-DISCIPLINE.md`, `dev-ship/references/phase-3-manual-finalize.md § Findings ledger + routing`), or added ad hoc via `/project-todo`. Semantics: "works, but I want it different" — never a `fail`-class finding (the hard policy — a `fail` never leaves a ship via a backlog todo — is unchanged).
+
+- **Dependency**: a ship-offloaded TWEAK card always carries `dependencies: ["{feature}"]` — the parent feature it was observed against. This isn't cosmetic bookkeeping: `/dev-tweak` warns before picking up a card whose dependency hasn't shipped yet, because the tweak targets code that may not be on `main`.
+- **Lifecycle**: `TODO → shipped` directly — a TWEAK card never enters `DEFINED`/`DOING`/`DONE` and never runs through a ship pipeline. `/dev-tweak {card-name}` executes it on `main` (no worktree) and flips it straight to `shipped: true` + archive on completion (`shared/TWEAK-DISCIPLINE.md § Card pickup`).
+- **Track**: dev-track (not in `DESIGN_TYPES`/`DESIGN_PIPELINE_TYPES` — the track filter and board sections treat it like any other dev-track type).
+- **Game equivalent**: `POLISH` already covers this case on the game side — there is no `TWEAK` type in the GAME inference table (`project-todo/references/inference-rules.md`).
 
 ## Refactor-badges
 
