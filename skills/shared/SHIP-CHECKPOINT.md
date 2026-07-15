@@ -142,8 +142,12 @@ cwd **inside the feature worktree** during PHASE 3/4 (manual tests / refactor+fi
 `.project/session/` is worktree-local — deliberately **not** symlinked — so a relative path would
 silently write the wrong (worktree-local) location. Because the script resolves main_root, callers
 may invoke it from **any cwd**. It does the atomic tmp+rename, deep-merges patches, and stamps
-`updatedAt` on every write. JSON travels on **stdin** (not argv) so the object/patch blob never
-fights shell quoting.
+`updatedAt` on every write. JSON travels on **stdin** (not argv), which avoids node/argv escaping
+issues — but the payload still has to survive the shell's own quoting to reach that stdin. The
+`echo '<json>' | node ...` form below wraps the payload in single quotes: any apostrophe inside a
+free-text field (an observation, a note, ordinary English/Dutch prose) breaks that wrapping and
+the command fails before node ever runs. When a payload carries free text, write it to a temp
+file first (Write tool) and pipe via `cat file | node ...` instead of inlining it after `echo`.
 
 | Write kind                              | Command                                                                                      | Notes                                                                                            |
 | --------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
@@ -153,7 +157,7 @@ fights shell quoting.
 | resolve path (debug)                    | `node ~/.claude/scripts/ship-checkpoint.js path {name}`                                      | prints the absolute checkpoint path, no write                                                    |
 | **Live signal** (skill start)           | `echo '{"skill":"..."}' \| node ~/.claude/scripts/ship-checkpoint.js signal {name}`          | writes `active-{name}.json` wholesale; script stamps `feature`/`startedAt`                       |
 | **Live signal clear** (skill end)       | `node ~/.claude/scripts/ship-checkpoint.js signal-clear {name}`                              | removes `active-{name}.json`; exit 0 whether or not it existed                                   |
-| **Ledger item upsert** (write point 3b) | `echo '<item(s)>' \| node ~/.claude/scripts/ship-checkpoint.js item {name} manual\|playtest` | upserts one item (or a JSON array of items, batch) by `id` — send only the changed item(s)       |
+| **Ledger item upsert** (write point 3b) | `echo '<item(s)>' \| node ~/.claude/scripts/ship-checkpoint.js item {name} manual\|playtest` | **full-object replace-by-`id`**, not a field-merge — send the item's complete object (every field you want kept), one item (or a JSON array, batch) at a time; a partial patch silently wipes any field you omit |
 | **Route** (dev/game orchestration)      | `node ~/.claude/scripts/ship-checkpoint.js route {name}`                                     | prints `{"route": "...", "resume": {...}\|null}` — no write; see the script header for the logic |
 
 - The merge is a **deep merge for nested objects** (`results`, `plan`) and a **replace for arrays

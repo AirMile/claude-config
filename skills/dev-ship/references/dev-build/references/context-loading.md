@@ -1,6 +1,6 @@
 # PHASE 0: Context Loading — dev-build
 
-Full context-loading procedure for `/dev-build`. Executed via Todo-marker in workflow.md.
+Full context-loading procedure for the build phase (dev-ship PHASE 1). Executed via Todo-marker in workflow.md.
 
 > **Note**: this file loads on every run — it is a deliberate size-split of workflow.md, not lazy loading. Genuinely conditional blocks inside it (theme-token guard, dependency-blocker dialog) are small enough to stay inline.
 
@@ -15,7 +15,7 @@ REPO=$(git rev-parse --show-toplevel 2>/dev/null) || \
   REPO=$(cd "$(dirname "$(find . -maxdepth 6 -name 'feature.json' -path '*/.project/features/*' | head -1)")/../../.." && pwd)
 ```
 
-No repo found → exit: "No git repo detected; /dev-build requires a tracked project."
+No repo found → exit: "No git repo detected; the build phase requires a tracked project."
 
 Store `$REPO` — all subsequent git commands use `git -C "$REPO" ...`.
 
@@ -85,7 +85,7 @@ If no feature name provided:
 
 Feature load: `node ~/.claude/scripts/context-load.js "$REPO" feature-build "{feature-name}"` (see [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)). Use extracted fields: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`), `research`. If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files. If `research` is present: it is define-scout's library digest for exactly this feature's unfamiliar-API areas — first stop during PHASE 2 GREEN steps, before any new Context7 query (cache order: [shared/CONTEXT7.md](.claude/skills/shared/CONTEXT7.md)).
 
-`present: false` → exit: "Run `/dev-define` first."
+`present: false` → exit: "Run `/dev-ship {feature-name}` first."
 
 **COMPONENT detection** (immediately after feature.json load):
 
@@ -97,19 +97,19 @@ If `feature.type === "COMPONENT"` (or backlog item type is COMPONENT): set `IS_C
 
 ```yaml
 header: "Theme tokens"
-question: "No design tokens found. /dev-build generates UI with token classes that stay unstyled without a theme. How to proceed?"
+question: "No design tokens found. This build phase generates UI with token classes that stay unstyled without a theme. How to proceed?"
 options:
-  - label: "Run /design-tokens first (Recommended)", description: "Set up color + spacing tokens, then run /dev-build again"
+  - label: "Run /design-tokens first (Recommended)", description: "Set up color + spacing tokens, then re-run /dev-ship {feature-name}"
   - label: "Continue with fallback defaults", description: "Use defaults from shared/TOKENS.md (neutral gray-scale)"
   - label: "Cancel", description: "Stop this build"
 multiSelect: false
 ```
 
-- "Run /design-tokens first" → exit: `Run /design-tokens, then /dev-build {feature} again.`
+- "Run /design-tokens first" → exit: `Run /design-tokens, then re-run /dev-ship {feature} again.`
 - "Continue with fallback defaults" → set `$USE_FALLBACK_TOKENS = true`; Token-styled UI rule uses `shared/TOKENS.md` defaults.
 - "Cancel" → exit.
 
-**Token-styled UI rule** (applies to both `feature.hasUI === true` FEATURE builds and all COMPONENT builds): dev-build writes functional, presentably-styled UI using the project's design tokens — sufficient for `/dev-verify` manual checks; polish via browser inspect + commit without re-running `/design-convert` (run it on-demand only for layout reshaping).
+**Token-styled UI rule** (applies to both `feature.hasUI === true` FEATURE builds and all COMPONENT builds): the build phase writes functional, presentably-styled UI using the project's design tokens — sufficient for the verify phase's manual checks; polish via browser inspect + commit without re-running `/design-convert` (run it on-demand only for layout reshaping).
 
 - Use semantic HTML and token-based Tailwind classes (`bg-background`, `text-foreground`, `bg-primary`, `rounded-md`, `p-4`, semantic headings). Read `project.json#theme` for token names; empty → defaults from `shared/TOKENS.md`.
 - **Motion** (if `theme.motion.pack` set and not `"none"`): token-based transitions + hover lift + active scale on interactive elements; Expressive/Playful packs use `var(--ease-ios-spring)`/`var(--spring-snappy-bezier)`; `motion.dev`/`framer-motion` in package.json → `<motion.*>` with spring token values from `theme.motion.spring[]`.
@@ -123,7 +123,7 @@ Skip if no `depends[]` or empty.
 2. Per dependency: status must be `"DONE"`.
 3. Blockers found → **AskUserQuestion**:
    - "Stop — finish {dep} first (Recommended)" / "Continue anyway"
-   - Stop → exit with message: `Run /dev-build {dep}` (for FEATURE or COMPONENT deps) or `Run /design-convert {dep}` (for PAGE deps). Continue → proceed.
+   - Stop → exit with message: `Run /dev-ship {dep}` (for FEATURE or COMPONENT deps) or `Run /design-convert {dep}` (for PAGE deps). Continue → proceed.
 
 **Workspace setup:**
 
@@ -153,7 +153,7 @@ elif [[ -f "$MARKER" ]] && grep -q "^not-applied" "$MARKER"; then
   echo "GATE: ok — worktree explicitly skipped ($(cat "$MARKER"))"
 else
   echo "ABORT: PHASE 0 incomplete — not inside expected worktree and no 'not-applied' marker found at $MARKER."
-  echo "Re-run /dev-build from the start; follow shared/WORKTREE-CREATE.md → Auto-create worktree literally."
+  echo "Re-run /dev-ship {feature-name} from the start; follow shared/WORKTREE-CREATE.md → Auto-create worktree literally."
   exit 1
 fi
 ```

@@ -74,8 +74,21 @@ code/test failure follows the branches below.
   Re-read `.project/` from disk. Branch on `verify.remainingManualItems`:
   - **Empty** → go to **§4 PHASE 3 completion (no-manual path)**.
   - **Non-empty** → `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}` (board renders
-    **parked** with the resume button); print the park/handoff message (SKILL.md § PHASE 1–4,
-    "On workflow notification") — a fresh chat runs the manual round. **End the turn.**
+    **parked** with the resume button); print this handoff message (English source, translate per
+    LANGUAGE.md), then **end the turn**:
+    ```
+    PHASE 1+2 green — {testsTotal} tests pass, {N} manual items remain.
+    To keep this chat cheap the run stops here; the checkpoint is ready to resume.
+
+    → Run /clear (or open a new chat), then: /dev-ship {feature}
+      You land directly in the item-by-item manual round (worktree + app are relaunched
+      automatically).
+
+    The board shows this run as parked (⏸) with the same resume button.
+    Prefer to continue here instead? Say so and I'll run PHASE 3 in this session.
+    ```
+    **Same-session escape hatch**: if the user replies "continue here" (or equivalent), continue with
+    **§ 4** (PHASE 3 completion) inline in this chat instead of parking.
 - `failedPhase: "build"` → patch `{"status":"failed"}` (keep everything else),
   `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`, print the failure recovery
   message (SKILL.md § PHASE 1–4), proceed to PHASE 5's failure path.

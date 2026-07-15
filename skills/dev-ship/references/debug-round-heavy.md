@@ -7,10 +7,10 @@ discipline. It is the hard ceiling of the in-ship debug ladder — see `shared/D
 — there is no tier beyond this one; if it also fails, control returns to the user for an explicit
 accept-or-park decision (§ 8 below), not a further automated escalation.
 
-Always entered via a **parked resume** (`fix-round.md § Re-check` → light round parks again on its
-own failed re-check, setting the item's `debugTier: "heavy"` before parking) — never inline in the
-same session that ran the light round. Runs in the main chat so `AskUserQuestion`/`ExitPlanMode`
-reach the real user.
+Entered one of two ways: a **parked resume** (the light round's own re-check failed in a prior
+session, `debug-round.md § 8`'s park path) or a **same-session escalation** (the user chose
+"Escalate now" at `debug-round.md § 8`'s choice point, immediately after the light round's own
+plan-mode session). Runs in the main chat so `AskUserQuestion`/`ExitPlanMode` reach the real user.
 
 ## 1. Entry
 
@@ -22,6 +22,11 @@ do not assume more context than it holds, and do not re-ask the user anything it
 The ledger item itself still carries the original Step-D evidence (console errors, network
 responses, screenshots).
 
+**Same-session entry** (`debug-round.md § 8`'s "Escalate now" choice): `lightRoundNotes` was just
+written this same turn — read it from memory, no need to re-fetch from disk. Plan mode is already
+active (inherited from the light round's own session) and the live signal is already `waiting:
+"fix-plan"` — § 2 and § 3 below are no-ops on this path.
+
 **Non-ledger entry** (build/verify-failure recovery, `SKILL.md § PHASE 1–4`'s failure branch): a
 repeated build or auto-verify failure on `/dev-ship {feature}` re-run has no `manual.items` ledger
 entry (PHASE 1/2 are autonomous, pre-manual-round) — treat the build/test failure output itself as
@@ -32,14 +37,16 @@ is the title, and there is no light-tier history to carry (go straight to § 4's
 ## 2. Bookkeeping before plan mode
 
 Reuse the existing `waiting: "fix-plan"` signal — `debug-round.md § 2` already wrote it before this
-round's park; on resume (`phase-3-manual-finalize.md § Resume entry`, `debugTier: "heavy"` branch)
-re-arm it the same way if it isn't already active.
+round's park; on a **parked** resume (`phase-3-manual-finalize.md § Resume entry`, `debugTier:
+"heavy"` branch) re-arm it the same way if it isn't already active. On a **same-session entry**, it
+is already active — nothing to do here.
 
 ## 3. Enter plan mode
 
-`EnterPlanMode` per `shared/PLAN-MODE.md § Entry` — this is a fresh resume session, so plan mode is
-essentially never already active here (unlike the light round, which is sometimes invoked from an
-already-open plan-mode session). If the investigation needs a **mutating** repro command (state
+`EnterPlanMode` per `shared/PLAN-MODE.md § Entry` — **skip on a same-session entry** (plan mode is
+already active, inherited from the light round). On a parked resume, plan mode is essentially never
+already active here (unlike the light round, which is sometimes invoked from an already-open
+plan-mode session). If the investigation needs a **mutating** repro command (state
 reset, migration, destructive fixture), use `shared/PLAN-MODE.md § Administrative exit` — exit with
 an administrative note, run it, **re-enter immediately** — never continue the round outside plan
 mode silently.
@@ -52,9 +59,10 @@ incomplete). Reuse it directly — do not re-run Explore.
 
 Only if `lightRoundNotes` shows the light round's hypothesis was **refuted** by its own re-check
 (the fix based on it did nothing, or made it worse), **or** this is a non-ledger entry (§ 1) with no
-`lightRoundNotes` at all: run one Explore agent via
-`.claude/skills/dev-ship/references/debug-explore-agent-prompt.md`, explicitly noting any refuted
-hypothesis from `lightRoundNotes` in `PROBLEM` so this pass doesn't repeat it.
+`lightRoundNotes` at all: run one Explore agent — **read
+`.claude/skills/dev-ship/references/debug-explore-agent-prompt.md` first** and use it verbatim as
+the prompt template (do not write an ad hoc prompt) — explicitly noting any refuted hypothesis from
+`lightRoundNotes` in `PROBLEM` so this pass doesn't repeat it.
 
 ## 5. Triage gate — skip the fan-out for trivial fixes
 
@@ -64,6 +72,9 @@ Skip the 3-agent dispatch when ALL of:
 - Fix scope is small: ≤2 files, no API/schema/contract change
 - Not a **spec-issue** (an acceptance criterion was implemented wrong — that needs the
   fix-thorough perspective)
+
+> **Todo**: show `TRIAGE: trivial fix — inline plan, fan-out skipped` before continuing — this line
+> is easy to drop silently once the fan-out is already skipped in practice.
 
 → Write ONE inline fix plan (minimal-style: smallest change that addresses the root cause) with the
 same fields the agents below return — changes with file:line refs, risk, scope, trade-offs, and the
@@ -142,8 +153,11 @@ MEASURABLE skip, apply the direct fix and confirm live (per `shared/DEBUG-LADDER
 
 ### Step 2: Write failing test
 
-- Location: `test/regression/{slug}.test.{ext}` or add to an existing file with a
-  `// REGRESSION: {issue}` marker.
+- Location: **default** — add to the existing test file covering the buggy code, with a
+  `// REGRESSION: {issue}` marker comment on the new test. Use a new
+  `test/regression/{slug}.test.{ext}` file only when the project already has an established
+  `test/regression/` convention (check for the directory first) — do not create one ad hoc, and do
+  not skip the marker comment on the default path.
 - Framework: detect from `package.json` (vitest/jest/node:test) or project convention.
 - Assert the **expected** behavior (not the buggy one). Include the input/setup that triggered the
   bug (from the ledger + § 4 investigation).
@@ -162,6 +176,8 @@ MEASURABLE skip, apply the direct fix and confirm live (per `shared/DEBUG-LADDER
 
 ### Step 4: Confirm
 
+Print this block verbatim — a prose description of the same facts does not satisfy this step:
+
 ```
 REPRODUCTION TEST: {file}:{line}
 Expected fail reason: {root cause}
@@ -178,7 +194,8 @@ criterion is that test going green — do not change more than that test + the f
 re-check). Full-suite regression is **not** re-run here — `phase-3-manual-finalize.md § Regression
 re-check` already covers the whole PHASE 3 scope once, right before completion.
 
-**Re-check**: `manual-interview-walkthrough.md` Steps B–E for this one item (no new interview close).
+**Re-check**: Read `manual-interview-walkthrough.md` Steps B–E and follow their item-presentation
+format for this one item (no new interview close).
 
 - **Pass** → clear the item's `debugTier`, set `verdict: "pass"`. Return to
   `fix-round.md § Re-check` for any remaining items already mid-round, back to
@@ -197,7 +214,7 @@ entry`'s per-item precedence.
 - **Still failing** → this is the hard ceiling; no further automated tier exists. Patch the item
   (`heavyRoundFailed: true`, keep `debugTier: "heavy"`), `signal-clear`, then a single
   `AskUserQuestion` — no "another round" option, nothing left to escalate to:
-  1. **"Accept anyway"** — mark the item `verdict: "accepted"` with the failure noted as a known
+  1. **"Accept anyway (Recommended)"** — mark the item `verdict: "accepted"` with the failure noted as a known
      limitation (never silently DONE — this requires the explicit choice). Also **clear the ladder
      markers**: the `item` subcommand upserts by id and replaces the whole object, so re-send the
      full item with `debugTier`, `heavyRoundFailed`, and `tweakAttempts` (if set) omitted (not set
@@ -206,6 +223,12 @@ entry`'s per-item precedence.
      already-accepted item straight back into the heavy round. Proceed to the regression re-check
      with this item excluded from the pass/fail count.
   2. **"Park — leave this item open"** — checkpoint stays as-is (`debugTier: "heavy"`,
-     `heavyRoundFailed: true`), print the park/handoff template (`SKILL.md § PHASE 1–4`) with
-     `/dev-ship {feature}` as the resume command. A later resume re-enters this same § 8 re-check
-     directly (nothing to redesign — the plan already exists) rather than restarting § 4–7.
+     `heavyRoundFailed: true`). Print a park/handoff message in **own wording** — do NOT reuse
+     `SKILL.md § PHASE 1–4`'s manual-items-remain template; its "you land directly in the
+     item-by-item manual round" line is wrong here (mirrors `fix-round.md § Re-check`'s Otherwise
+     bullet) — state which item parked and why, with `/dev-ship {feature}` as the resume command. A
+     later resume re-enters this same § 8 re-check directly (nothing to redesign — the plan already
+     exists) rather than restarting § 4–7. If other ledger items are still open at a different stage
+     (different `debugTier`/no attempt yet) and are file-disjoint from this one, they may be finished
+     in the same session before the turn actually ends — see
+     `phase-3-manual-finalize.md § Resume entry`'s "handle each via its own highest-matching bullet."

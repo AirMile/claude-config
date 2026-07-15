@@ -6,7 +6,7 @@ reads: [backlog.features, project-context.learnings]
 writes: [project-context.learnings]
 metadata:
   author: claude-config
-  version: 1.0.0
+  version: 1.1.0
   category: dev
 ---
 
@@ -27,6 +27,11 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
   [DEBUG-LADDER.md](../shared/DEBUG-LADDER.md) tier-3 discipline outside a feature context
 
 ## PHASE 0 — Pre-flight, size gate & backlog guard
+
+> **Todo**: session already in plan mode at invocation (harness-level, not this skill's own) →
+> still run steps 1-3 and 5-6 now — they're read-only and plan-mode-safe. Defer only step 4 (a
+> write) to the first action after the session's next `ExitPlanMode` resolves, before PHASE 1
+> starts. A fired gate/guard still routes to `references/escalate.md` regardless of plan mode.
 
 1. **Description** from the invocation argument; if empty, ask one short question.
 2. **Repo**: resolve `$REPO` to the main worktree (per `shared/SYNC.md` Worktree-aware Path
@@ -50,8 +55,9 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
 
 1. **Locate** the change with minimal reads (Grep → targeted Read). The files found here feed the
    size-gate re-check and the learnings load below.
-2. **Learnings** — loaded _after_ locating, so the query carries the real file anchors instead of
-   only the description-derived slug. Load via
+2. **Learnings** — run this now, after locating (so the query carries the real file anchors instead
+   of only the description-derived slug); only the printed output is conditional on being non-empty,
+   not the load itself. Load via
    [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
    - scopes: [component]
@@ -71,8 +77,11 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    enters.
 2. Bugfix-shaped tweaks follow [shared/DEBUG-LADDER.md](../shared/DEBUG-LADDER.md) tier 1/2:
    hypothesis before edit, evidence before a second attempt — never guess-and-check.
-3. **Mid-flight re-check**: the moment actual scope exceeds the size gate (a 4th file, a discovered
-   new surface) → stop and Read `references/escalate.md`.
+3. **Mid-flight re-check**.
+
+   > **Todo**: the moment actual scope exceeds the size gate (a 4th source file touched, a
+   > discovered new surface) → stop now and Read `references/escalate.md` — do not finish the
+   > edit first and reconcile after.
 
 ## PHASE 3 — Verify light
 
@@ -84,6 +93,9 @@ Scoped to the touched modules — never the full suite unless it is genuinely fa
   package.json; ESLint when configured; skip with one line otherwise. `tsc --noEmit` only when
   configured and cheap.
 - **Visual/copy tweaks**: re-check live in the running app (DEBUG-LADDER tier 1) instead of tests.
+  Can't reach/drive the running app (wrong worktree, no dev server, headless environment) → say so
+  explicitly and ask the user to verify visually; never report the live check as passed when it
+  wasn't run.
 
 New failures vs the baseline → fix within the current tier's discipline; unfixable within tweak
 scope → Read `references/escalate.md`.
@@ -101,6 +113,7 @@ scope → Read `references/escalate.md`.
    then run the Consolidation Gate once (`LEARNING-WRITE.md § Consolidation Gate`). Skip both
    silently otherwise. No state auto-push (TWEAK-DISCIPLINE § Registration policy).
 3. **Report** (compact prose, no rigid table): what changed with `file:line` refs, checks run,
-   commit sha, a `Guard:` line repeating any card overlap, a `Learning:` line when one was written,
-   and `Escalation overridden: {criterion}` when applicable. Add `Next steps: /dev-ship {card}` only
+   commit sha, a `Guard:` line reflecting PHASE 0's actual result (never assert "no card overlap"
+   if the guard didn't run — say so instead), a `Learning:` line when one was written, and
+   `Escalation overridden: {criterion}` when applicable. Add `Next steps: /dev-ship {card}` only
    when the guard flagged a TODO card. A tweak is terminal — no next-step offer otherwise.

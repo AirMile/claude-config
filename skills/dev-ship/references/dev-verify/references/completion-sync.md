@@ -114,15 +114,6 @@ VERIFY COMPLETE: {feature-name}
 | Spec Issues Fixed | {n}                 |
 ```
 
-Append a single Next step line (pick the most relevant — do NOT list multiple):
-
-- Worktree finalized in PHASE Finalize → `Next: /dev-refactor {feature-name}` (optional polish on main)
-- User chose "Keep open" → omit Next line (finalize prompt already explained the path)
-- No worktree + more items in backlog → `Next: /dev-define {next-feature}`
-- All else → omit Next line.
-
-Refactor is optional. Skip if scope was small and the feature is clean.
-
-> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: if worktree finalized → /dev-refactor {feature-name} (optional polish on main); else if more items in backlog → /dev-define {next-feature} (continues pipeline); else omit the offer.
+**Terminal handoff — none.** dev-ship drives the pipeline: `phase-3-manual-finalize.md § Step 3`
+always skips this section's `Next:` line and Next-Step Clipboard Offer (no standalone `/dev-verify`
+trigger exists to hand off to anymore) — keep only the VERIFY COMPLETE table above.

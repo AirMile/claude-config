@@ -2,8 +2,8 @@
 
 ## Context Loading Failures
 
-**No features found** → exit: "Run /dev-define and /dev-build first"
-**No test results for any feature** → exit: "Run /dev-verify first"
+**No features found** → exit: "Run /dev-ship {feature-name} first"
+**No test results for any feature** → exit: "Run /dev-ship {feature-name} first"
 **Some features missing test results** → remove from queue, warn, continue with rest
 **No files in feature** → skip feature, warn: "No code files found in feature.json for {feature}"
 

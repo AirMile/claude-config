@@ -75,9 +75,13 @@ discipline: keep only the per-item observation + path, don't carry raw page dump
 
 ## Step A3 — Enter plan mode
 
-`EnterPlanMode` per `shared/PLAN-MODE.md` Entry (skip if already in plan mode). From here through the
-end of this walkthrough — and into the round gate if the ledger routes there — all `.project/`
-writes are blocked. Verdicts and ledger items are collected **in memory** (Step E) and written in one
+> **STOP — before presenting item 1.** Call `EnterPlanMode` now per `shared/PLAN-MODE.md` Entry
+> (skip only if already in plan mode). Do not go straight from Step A2 to presenting item 1 —
+> `AskUserQuestion` works identically in or out of plan mode, so nothing else will catch a skipped
+> entry here.
+
+From here through the end of this walkthrough — and into the round gate if the ledger routes there
+— all `.project/` writes are blocked. Verdicts and ledger items are collected **in memory** (Step E) and written in one
 batch immediately after the matching `ExitPlanMode` (`phase-3-manual-finalize.md § Findings ledger +
 routing` names the exact exit point per path). **Trade-off, accepted**: a session death mid-interview
 loses that session's in-memory verdicts — the resume filters `remainingManualItems` down to items not
@@ -89,6 +93,14 @@ change) and plan mode gets entered/exited for that unrelated purpose: the walkth
 write-protection window has already lapsed. Do not try to re-enter plan mode to "resume" it —
 persist the ledger directly via the `ship-checkpoint.js item` batch-write (§ Step E) once the
 walkthrough itself concludes, without waiting on a second `ExitPlanMode` call.
+
+**If plan mode ends externally mid-walkthrough** (e.g. the session's permission mode switches to
+bypass) rather than via this file's own `ExitPlanMode` calls: a later `ExitPlanMode` (here or in
+`fix-round.md`) will error "not in plan mode." Treat that error as the plan already being implicitly
+accepted — present the pending plan/ledger via one `AskUserQuestion` instead (accept = recommended
+option), then continue exactly as if `ExitPlanMode` had returned an accept. Do not re-enter plan mode
+to "recover" the write-blocking — the in-memory ledger collected so far is still valid; batch-persist
+it at the same point the matching `ExitPlanMode` normally would.
 
 ## Step B — Present ONE item
 
@@ -116,9 +128,12 @@ asking for a verdict — this is a live check, not a read-through.
 
 ## Step C — Verdict for this item
 
+> **STOP — do not infer a verdict from prose.** A user's free-text reply ("ja werkt het") is not a
+> verdict — call `AskUserQuestion` now, one call per item, even when the answer seems obvious.
+
 One `AskUserQuestion` per item (not batched — the user asked for item-by-item testing):
 
-- `Pass` (recommended)
+- `Pass (Recommended)`
 - `Fail — doesn't work as specified`
 - `Tweak — works, but I want it different`
 - `Skip / Defer` — one immediate follow-up: which of the two, and why (reason for Skip; blocking
@@ -128,12 +143,17 @@ One `AskUserQuestion` per item (not batched — the user asked for item-by-item 
 **Evidence gate (soft) — evidence-class items only.** When the user answers `Pass` on an
 evidence-class item and Step A2 produced no evidence for it:
 
-1. Ask for the evidence named in Step B: drag the screenshot file into the chat (a path you can
-   `Read`) or paste the image directly.
+0. **If the user's own reply already carries the evidence** (an attached screenshot, a pasted
+   image, or a description precise enough to verify against `expected` — common when a user
+   narrates what they saw instead of clicking an option, including a rejected tool-call followed
+   by a plain message) → skip straight to step 2 using that evidence; do not ask again.
+1. Otherwise, ask for the evidence named in Step B: drag the screenshot file into the chat (a path
+   you can `Read`) or paste the image directly.
 2. Verify it yourself against the item's `expected` — this is the factual check the automation could
-   not run. Match → record `verdict: "pass"` with the evidence. Discrepancy → show the user what you
-   see vs `expected`; the user decides (fail / tweak / pass anyway — a pass-anyway keeps the
-   evidence but notes the discrepancy in `observed`).
+   not run. Match → record `verdict: "pass"` with the evidence (`{path}`, or `"in-chat"` for a
+   pasted image — **always set this field**, never leave it unset). Discrepancy → show the user
+   what you see vs `expected`; the user decides (fail / tweak / pass anyway — a pass-anyway keeps
+   the evidence but notes the discrepancy in `observed`).
 3. User declines or cannot provide evidence → Pass still stands (**soft gate**), recorded with
    `evidence: "none"` — it surfaces as **unproven** in the routing summary and the final report.
 
@@ -146,10 +166,12 @@ While the user is still looking at it, capture what the fix round will need — 
 start fixing:
 
 - **Observed vs expected** — what happened vs what should have happened.
-- **SUBJECTIVE → clarify first (mandatory)** — "feels off", "looks wrong" is not actionable. Ask
+- **SUBJECTIVE → clarify first.** > **STOP — never self-classify a subjective remark.** "feels off",
+  "looks wrong", or an unprompted aside like "and X also loads late" is not actionable as stated. Ask
   **one** clarifying `AskUserQuestion` (which element/target, expected vs seen, too much/too little,
-  wrong position/timing/behaviour), then re-categorize the answer as TESTABLE or MEASURABLE per
-  `shared/FEEDBACK-CATEGORIZATION.md`. Never leave a finding as SUBJECTIVE in the ledger.
+  wrong position/timing/behaviour) before assigning TESTABLE or MEASURABLE per
+  `shared/FEEDBACK-CATEGORIZATION.md`. Never leave a finding as SUBJECTIVE in the ledger, and never
+  classify it solo.
 - **Visual / DOM-observable item** → reuse the Step A2 evidence if it exists; otherwise note the
   element pointer now and capture the screenshot right after plan-mode exit (the app is still
   running) — screenshot capture is a disk write, blocked until then. The later fix round needs this

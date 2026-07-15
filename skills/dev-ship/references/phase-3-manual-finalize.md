@@ -26,23 +26,28 @@ handle each via its own highest-matching bullet):
    `debug-round-heavy.md § 8`'s re-check. The fix plan already exists; nothing to redesign.
 2. **Item has `debugTier: "heavy"`** (and not `heavyRoundFailed`) → go straight to
    `references/debug-round-heavy.md § 1` for that item (`debug-round.md § 8` escalated it there).
-3. **Item has `debugTier: "light"`** → go straight to `references/debug-round.md § 1` for that item
-   (`fix-round.md § Re-check` parked it there) — its evidence is already durable in the ledger,
-   nothing is re-asked.
-4. **`manual.fixPlan` present and `activeWorkflow: "phase3fix"`** (a dispatch was in flight) → go to
+3. **Item has `debugTier: "light"` AND a non-empty `lightRoundNotes`** → a light round already ran
+   to completion (the notes read as investigation + hypothesis + fix + re-check, not a bare park) —
+   the `debugTier: "heavy"` write was interrupted before landing. Treat it as already escalated: go
+   straight to `references/debug-round-heavy.md § 1`, and first patch `debugTier: "heavy"` to
+   correct the record.
+4. **Item has `debugTier: "light"`** (no `lightRoundNotes` yet) → go straight to
+   `references/debug-round.md § 1` for that item (`fix-round.md § Re-check` parked it there) — its
+   evidence is already durable in the ledger, nothing is re-asked.
+5. **`manual.fixPlan` present and `activeWorkflow: "phase3fix"`** (a dispatch was in flight) → go to
    `fix-round.md § Dispatch` and relaunch `ship-fix.js` with `resume` built from `manual.dispatch`
    (cross-session) or `resumeFromRunId` (same session, per `shared/SHIP-RESUME.md`).
-5. **`manual.fixPlan` present, dispatch complete (`manual.dispatch.allFixed` or all groups
+6. **`manual.fixPlan` present, dispatch complete (`manual.dispatch.allFixed` or all groups
    terminal), and ≥1 item from that round has no `verdict: "pass"` or `"accepted"` yet and no
    `debugTier` set** →
    go to `fix-round.md § Re-check` for those still-open items (checks 1–3 already claimed any item
    that re-check has already escalated on a prior pass — this bullet only fires for the ones it
    hasn't reached yet).
-6. **Ledger complete (`manual.items` covers every item, `manual.interviewDone: true`) but no
+7. **Ledger complete (`manual.items` covers every item, `manual.interviewDone: true`) but no
    `manual.fixPlan`** → go straight to `§ Findings ledger + routing` below and re-enter the fix-plan
    gate (the ledger is durable, so the walkthrough never re-runs — only the round's fix-plan draft was
    lost, same as a rejected-and-abandoned plan would be).
-7. **No `manual` block, or `manual.items` shorter than `results.verify.remainingManualItems`** →
+8. **No `manual` block, or `manual.items` shorter than `results.verify.remainingManualItems`** →
    run the walkthrough (`manual-interview-walkthrough.md`), filtering `remainingManualItems` down to
    the items **not yet present** in `manual.items` (already-verdicted items are not re-asked). The
    walkthrough's Step A re-arms `active-{feature}.json` with `waiting: "manual-tests"`, so the board
@@ -54,8 +59,9 @@ Keep the checkpoint `phase: "PHASE 3"` throughout.
 ## Step 1 — Enter the worktree
 
 The agents ran in isolated contexts; the main-chat shell is **not** in the worktree. Switch in
-before anything else: execute `.claude/skills/shared/WORKTREE.md` with `feature-name = {feature}`
-and `feature.status = DOING`. This switches to `worktree-{feature}` (needed for the dev-server /
+before anything else: execute `.claude/skills/shared/WORKTREE.md § Switch into existing worktree`
+with `feature-name = {feature}` and `feature.status = DOING`. This switches to `worktree-{feature}`
+(needed for the dev-server /
 Playwright daemon that the walkthrough uses) and runs the symlink-integrity gate.
 
 > **Gate scope:** only the 4 required symlinks (`backlog.json`, `features`, `project.json`,
@@ -79,6 +85,12 @@ readiness signal._ Never make the user wait on your own "is it ready yet" check.
 >
 > - Wrong: `Bash({command: "npm run tauri dev & disown", run_in_background: true})`
 > - Right: `Bash({command: "npm run tauri dev", run_in_background: true})`
+
+> **STOP — confirm the fix is actually loaded before asking for a re-check.** After editing a file
+> during a fix/debug round with the app already running, grep the dev-server's background output
+> for an HMR/rebuild line naming that file before handing the item back to the user. No matching
+> line (or a full-reload/compile-error line instead) → kill and relaunch the app before asking —
+> never hand off a re-check against code the running instance hasn't actually picked up.
 
 **App-launch rule — launch what the manual item actually needs, from the project's OWN run config.**
 A hard rule, not a judgment call: a slow compile or a heavier process is **never** a reason to
@@ -188,6 +200,10 @@ If **any** PHASE 3 fix or tweak touched code, run the FULL test suite **plus a t
 (the project's own commands, e.g. `tsc --noEmit` + the linter) once before Step 3. Skip only when
 nothing was changed in this phase (all items passed first time). Plan mode is not active here.
 
+> **Todo**: dispatch the fork below first. Fall back to inline `run_in_background` only when the
+> fork dispatch itself errors — running the suite inline by default defeats the reason this section
+> exists (keeping the raw test/typecheck/lint output out of the main-chat context).
+
 **Primary — fork dispatch** (`shared/SKILL-PATTERNS.md § Fork Delegation`): dispatch one fork — it
 knows from context which fixes were just made. **Scope this prompt explicitly**: the fork's ONLY job
 is to run the suite + typecheck/lint and return a digest — it must NOT act on the result, continue
@@ -222,6 +238,13 @@ purpose here and would otherwise still be running when PHASE 4 spawns the refact
 same worktree (potential file-lock/port contention, and simply wasted resources). Skip silently when
 Step 2 never launched anything (the no-manual path).
 
+**Clean up manual-test fixtures created outside the worktree.** When the app's active-project
+selection pointed at the main checkout instead of the worktree (the mismatch this file already warns
+about above), any scratch file created to exercise a manual item lands in main, not the worktree — it
+is untracked and irrelevant to the merge, but a stray file/directory there will otherwise trip
+`shared/FINALIZE.md`'s pre-merge Uncommitted Changes Check with an avoidable prompt. Remove such
+fixtures now, in the same teardown moment as the app kill.
+
 ## Step 3 — Completion (DONE)
 
 All AUTO passed (AGENT 2) and no open manual FAIL → complete (but do **not** integrate yet):
@@ -245,7 +268,10 @@ All AUTO passed (AGENT 2) and no open manual FAIL → complete (but do **not** i
 Do **not** finalize/merge here — stay in the worktree. Finalize runs at the end of PHASE 4
 (SKILL.md § PHASE 1–4) so refactor commits land on the feature branch first. **Return to SKILL.md
 § PHASE 1–4**: continue per `references/orchestration.md § 5` (the checkpoint's `route` subcommand
-sends you straight to PHASE 4) and handle its notification there.
+sends you straight to PHASE 4) and handle its notification there. **Idempotency note**: `route` may
+still return `"phase3-completion"` even when this Step 3 already ran inline (e.g. a resume that
+landed directly in the manual round) — that's expected, not a signal to redo it; Step 1+3 are safe
+to re-run but unnecessary if already done, so just proceed to § 5.
 
 ## Guard
 

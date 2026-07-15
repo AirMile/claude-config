@@ -25,7 +25,7 @@ post-write re-read checks.
 - matching entry (`features[].name === feature.name`): `status: "DONE"`, delete `stage`, delete `transition` unless it equals `"shipping"`
 - `seedPages[]` in the payload → push new backlog entries: `{ name, type: "PAGE", status: "TODO", phase: "P3", description: "Page introduced via fix in {feature}. Routes: {routePattern}", source: "/dev-verify", dependencies: [feature], parentFeature: feature, auto: true }`
 - top-level `backlog.updated = <today>`
-- **never** write `shipped` / `shippedAt` / `shippedSha` on the entry — those keys belong exclusively to `/dev-refactor`
+- **never** write `shipped` / `shippedAt` / `shippedSha` on the entry — those keys belong exclusively to the refactor phase
 
 ## project-context.json (componentSync)
 

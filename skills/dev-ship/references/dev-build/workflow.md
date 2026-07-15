@@ -4,7 +4,7 @@
 
 Auto-detects stack from CLAUDE.md, assigns TDD to all testable requirements; Implementation Only only when automated tests add no value (visual/config/prototype).
 
-**Trigger**: `/dev-build` or `/dev-build [feature-name]`
+**Trigger**: invoked internally by `/dev-ship` as PHASE 1 (build) — no standalone trigger.
 
 ## Input
 
@@ -131,7 +131,7 @@ Resolve the test command from `package.json` `scripts.test` — do NOT assume vi
 {resolved test command} 2>&1 | tail -8
 ```
 
-Including acceptance tests from earlier `/dev-verify` runs (`test/acceptance/*.test.js`) — these protect against spec regressions.
+Including acceptance tests from an earlier verify-phase run (`test/acceptance/*.test.js`) — these protect against spec regressions.
 
 **Parallel call 2 — scoped diagnostics** (Bash `timeout: 60000`):
 
@@ -277,7 +277,7 @@ All with `source: "extracted"`. Only write if decisions or resolved blockers are
 
 Follow [shared/SCOPED-COMMIT.md](.claude/skills/shared/SCOPED-COMMIT.md). dev-build deltas:
 
-> **Boundary — dev-build never integrates.** PHASE 3B's only git operations are the worktree commit below and the session-file cleanup. Do **not** run `git merge`, `git branch -d/-D`, or `git worktree remove`, and do **not** switch to `main`. The worktree stays intact on its `worktree-{feature}` branch — merging and finalizing is `/dev-verify` (PHASE Finalize) or `/core-finalize`. If you find yourself resolving a merge conflict in dev-build, you have left the skill.
+> **Boundary — the build phase never integrates.** PHASE 3B's only git operations are the worktree commit below and the session-file cleanup. Do **not** run `git merge`, `git branch -d/-D`, or `git worktree remove`, and do **not** switch to `main`. The worktree stays intact on its `worktree-{feature}` branch — merging and finalizing is the verify phase's Finalize step (or `/core-finalize`). If you find yourself resolving a merge conflict here, you have left the build phase's scope.
 
 - **Baseline**: SHA form — `$REPO/.project/session/pre-skill-sha.txt` (mid-build commits possible; see § 1). All git commands via `git -C "$REPO"`.
 - **Stage set**: new/modified files from this feature (`feature.json files[]`, test files, feature.json itself). Untracked files outside the feature → don't stage. **Install exception**: if the pre-flight or any PHASE 2 install ran this build (detectable via `TEST-DEPS: patched` in the output, a non-empty `packages[]` in feature.json, or a PHASE 2 ERESOLVE/fast-check install), also stage `package.json` + `package-lock.json` — the install landed in the worktree, so staging these files ensures the dep reaches main via the merge without leaving main dirty.

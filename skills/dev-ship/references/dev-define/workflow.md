@@ -2,8 +2,6 @@
 
 PHASE 1 of the dev workflow: define → build → test.
 
-**Trigger**: `/dev-define` or `/dev-define [feature-name]`
-
 > **Vendored & pre-adapted for dev-ship** — run **inline in the main chat** by dev-ship PHASE 0
 > (Step 2c of `phase-0-define-classify.md`), not as a standalone skill. This copy is already adapted:
 > there is **no plan-mode machinery** and **no own phase tracking** (dev-ship's task list drives).
@@ -28,7 +26,7 @@ PHASE 1 of the dev workflow: define → build → test.
 
 ## Constraints (apply to every phase)
 
-- **No implementation code anywhere.** Plan file and feature.json contain only type signatures, structure, decisions. Function bodies, `(set, get) => ({...})` blocks, JSX, hook internals → `/dev-build`. Detail: see PHASE 2 "Strict boundary."
+- **No implementation code anywhere.** Plan file and feature.json contain only type signatures, structure, decisions. Function bodies, `(set, get) => ({...})` blocks, JSX, hook internals → the build phase. Detail: see PHASE 2 "Strict boundary."
 - **No requirements skipping** — every feature gets PHASE 1 extraction with acceptance criteria.
 - **No phase-jump without checkpoint** — user confirms scope (PHASE 1) before architecture; the plan-approval gate (dev-ship Step 4b) is the review surface before feature.json is written.
 
@@ -119,7 +117,7 @@ Conduct the open interview per the reference — one anchored open question at a
 
 ### PHASE 1b: Requirements Synthesis
 
-**Design choices** (only for architecture-changing branches — storage strategy, route shape, auth model, data model boundary, external service contract): if the interview revealed a fork with concrete A vs B vs C options, resolve these now via AskUserQuestion before extracting requirements. **Baseline gate (run first):** for each candidate fork, check the `stack-baseline.md` content loaded in PHASE 0 §4 — if the baseline already standardizes the answer (e.g. "use @react-navigation/stack"), do NOT raise the modal; record it directly as a `clarification` (and a `durableDecision` if architecture-wide) citing the baseline, and show `Baseline: ✓ resolved fork — {pattern-name}`. Only forks the baseline leaves open reach the user. Each remaining sub-question must be a **design choice**. Include "Not relevant to scope" if applicable. Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` (written to `feature.json#clarifications` if ≥1 entry). Edge cases (validation rules, input notation, format defaults) → add directly as acceptance criteria, no AskUserQuestion.
+**Design choices** (only for architecture-changing branches — storage strategy, route shape, auth model, data model boundary, external service contract; **not** a pure implementation/library choice with no user-visible behavioral difference, e.g. which rendering library, which parser — auto-decide those, record the rationale as a `durableDecision`, and don't ask): if the interview revealed a fork with concrete A vs B vs C options on a genuine architecture-changing branch, resolve these now via AskUserQuestion before extracting requirements. **Baseline gate (run first):** for each candidate fork, check the `stack-baseline.md` content loaded in PHASE 0 §4 — if the baseline already standardizes the answer (e.g. "use @react-navigation/stack"), do NOT raise the modal; record it directly as a `clarification` (and a `durableDecision` if architecture-wide) citing the baseline, and show `Baseline: ✓ resolved fork — {pattern-name}`. Only forks the baseline leaves open reach the user. Each remaining sub-question must be a **design choice**. Include "Not relevant to scope" if applicable. Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` (written to `feature.json#clarifications` if ≥1 entry). Edge cases (validation rules, input notation, format defaults) → add directly as acceptance criteria, no AskUserQuestion.
 
 **>4 open forks** → handle the remainder inline during requirement extraction as edge cases.
 
@@ -148,7 +146,11 @@ Fill any gaps before proceeding: add missing acceptance criteria, split overlapp
 - Skip entirely if REQ has no plausible error path (pure derivation, idempotent read, state display) — omit field from that REQ
 - Written to `feature.json#requirements[].errorScenarios[]` in PHASE 3
 
-**Short chat checkpoint** — show a numbered list with REQ-ID, 1-line description, and up to 2 key `when → then` acceptance scenarios per REQ (enough to catch misinterpretations before PHASE 2):
+> **Todo — output this checkpoint now, as its own chat message, before continuing:** show a numbered
+> list with REQ-ID, 1-line description, and up to 2 key `when → then` acceptance scenarios per REQ
+> (enough to catch misinterpretations before PHASE 2). Do not skip straight from the interview to
+> PHASE 2 or the plan file without this turn — it is the user's only mid-flow checkpoint before
+> architecture work starts.
 
 ```
 REQ-001 — {1-line description}
@@ -161,7 +163,7 @@ REQ-002 — {1-line description}
 ```
 
 - **≤6 REQs**: append `Scope: {N} requirements — SINGLE feature, continuing.` and proceed directly to PHASE 2. Skip PHASE 1c.
-- **>6 REQs**: append `Scope: {N} requirements — checking for a split.` and proceed **directly** to PHASE 1c (cluster analysis). **No scope-confirm AskUserQuestion** — the numbered REQ list above is a passive progress view, and scope is reviewed at the gate; only a genuine split proposal (PHASE 1c) still asks.
+- **>6 REQs (count them — do not eyeball it)**: append `Scope: {N} requirements — checking for a split.` and proceed **directly** to PHASE 1c (cluster analysis) — do not proceed to PHASE 2 without running it. **No scope-confirm AskUserQuestion** — the numbered REQ list above is a passive progress view, and scope is reviewed at the gate; only a genuine split proposal (PHASE 1c) still asks.
 
 **Mid-flow scope expansion**: if the user introduces new scope after requirement extraction but before PHASE 2, treat it as an additional AskUserQuestion round and re-run the completeness self-check. New REQs are regular requirements (numbered sequentially), not clarifications.
 
@@ -208,7 +210,7 @@ The full requirements table with acceptance criteria and the feature overview ta
 **Strict boundary — design vs implementation**:
 
 - **Allowed in plan file**: type signatures (`interface X { ... }`, `type Y = ...`, function signatures `(input: X) => Y`), file/module structure, feature flow as `→` chain, dependency graph, build sequence, test strategy table, durable decisions.
-- **Forbidden in plan file**: function bodies, `(set, get) => ({...})` blocks, `set({...})` calls, helper implementations, JSX, hook internals — even as "skeleton" or "pseudo-code." That work belongs to `/dev-build`. If a code fence contains anything beyond type declarations: stop and rewrite as an English description.
+- **Forbidden in plan file**: function bodies, `(set, get) => ({...})` blocks, `set({...})` calls, helper implementations, JSX, hook internals — even as "skeleton" or "pseudo-code." That work belongs to the build phase. If a code fence contains anything beyond type declarations: stop and rewrite as an English description.
 
 **Draft vs feature.json — role split**: full table in [shared/feature-json-schema.md § Role split](../../../shared/feature-json-schema.md#role-split). Short rule: the gate plan file (written at Step 4b) = review surface (context, REQ-list, durable decisions 1-liners, flow, verification) + a `## Appendix — machine contract` holding the **complete feature.json draft** as a ```json block (authored here in memory, skipped in review). Gate-accept extracts that block into feature.json mechanically — the appendix IS the canonical contract, written once.
 

@@ -47,8 +47,8 @@ observation into the current item's evidence, check whether it is actually about
   3. Classify the new item: **in-scope** (this feature's diff plausibly causes or should cover it) →
      it now blocks completion like any other fail, and gets picked up by the next round-gate pass.
      **Out-of-scope** (pre-existing/tangential — this feature didn't cause it) → route to
-     `/project-todo` instead (same policy as the closing-interview's net-new-capability branch); it
-     does not block completion.
+     `/project-todo` instead (same policy as the closing-interview's net-new-capability branch;
+     write conventions: `shared/BACKLOG.md § Writing the backlog`); it does not block completion.
 
 Default to your own judgement (same as the round gate already does for closing-interview findings);
 ask one `AskUserQuestion` only if genuinely ambiguous whether something is in- or out-of-scope.

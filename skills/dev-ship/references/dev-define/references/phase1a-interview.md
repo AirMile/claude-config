@@ -1,6 +1,6 @@
 # Phase 1a Interview Protocol
 
-Full protocol for the open interview phase of `/dev-define`. Load this file when PHASE 1a starts. Form choice, anchoring rules, and the escalation ladder come from [shared/QUESTIONING.md](.claude/skills/shared/QUESTIONING.md) — read it together with this file.
+Full protocol for the open interview phase of dev-ship's define phase (PHASE 0). Load this file when PHASE 1a starts. Form choice, anchoring rules, and the escalation ladder come from [shared/QUESTIONING.md](.claude/skills/shared/QUESTIONING.md) — read it together with this file.
 
 ## Dimension Checklist
 
@@ -27,6 +27,12 @@ All required dimensions covered → trigger the [Stop Condition](#stop-condition
 - **Stay open**: do not name file structure, components, tech stack choices, or implementation options. If the user goes there, note it briefly ("Good to know — I'll factor that in") and steer back: "What about {next uncovered dimension}?"
 
 ## Interview Start
+
+> **Todo:** run the Learnings Load now if PHASE 0 §5 (`dev-define/workflow.md`) has not already run
+> it this session (`shared/LEARNINGS-LOAD.md`, scopes `[component]`, `pitfall-prefix: true`,
+> `current-feature: {feature-name}`) and show the `RELEVANT LEARNINGS` block (max 5, pitfalls first)
+> before your opening question, on ≥1 match. This feeds Step 3's classification bias and Step 4's
+> technique derivation — loading it later, only for Step 6, misses the interview entirely.
 
 **Context echo** — open the interview with a short "what I already know" block (2-3 lines max) built from PHASE 0 context: backlog title + `description` + risk, seed pitch fragment, codebase scan hits. This shows the user what the interview builds on so they never have to repeat known ground. The `PREVIOUSLY DECIDED` list and risk-check line (from workflow.md) render directly above this block — don't duplicate their content in the echo.
 

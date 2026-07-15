@@ -38,8 +38,12 @@ common case (a fresh chat re-invoking to continue exactly where the last one sto
 3. `status == "running"` (not `"failed"`),
 4. `updatedAt` is **≤ 24h** old.
 
-Print a one-line notice (`Resuming {name} at {phase} — checkpoint {age} old`) and execute the
-**§On "Resume"** steps below directly. The fast path applies to **any** recorded `phase`: workflow
+Print a one-line notice (`Resuming {name} at {phase} — checkpoint {age} old`) — compute `{age}` as
+a human-readable delta between the checkpoint's `updatedAt` and now (e.g. "23m", "4h"). `date -d`
+is GNU-only (fails on macOS's BSD `date`); use node instead, which this skill already requires:
+`node -e 'const m=Math.round((Date.now()-new Date(process.argv[1]))/60000); console.log(m<60?m+"m":Math.round(m/60)+"h")' "$updatedAt"`
+— and execute the **§On "Resume"** steps below directly. The fast path applies to **any** recorded
+`phase`: workflow
 phases relaunch per On-Resume step 4's existing bullets; an interactive phase re-enters per its
 bullet there; `"PHASE 0 · define"` (dev/game) re-runs define from the top (the draft was in plan
 mode, not checkpointed).
@@ -167,5 +171,14 @@ to truly orphaned state** — another ship run may be legitimately live in a par
   (`.project/session/*-devserver.pid`); as a backstop, for a PID file belonging to the resumed run
   or orphaned per the rule above: if the PID is still alive (`kill -0 <pid>`), kill it and remove
   the PID file. Leave PID files of live parallel runs alone.
+- **Leaked dev servers without a PID file** (the contract wasn't followed, or the process outlived
+  an unusual crash) — a PID-file-only check misses these silently. As a second backstop, for the
+  worktree path being resumed into: `lsof +D "{worktreePath}" | awk 'NR>1 && $4=="cwd" {print $2}'`
+  (same cwd-scan `shared/FINALIZE.md`'s Cleanup Procedure already uses to distinguish self from
+  foreign processes) — any PID found bound to that path with no matching PID file: kill it. Also
+  check the project's own dev port if determinable from `package.json`/`project.json` (e.g. via
+  `lsof -nP -iTCP:{port} -sTCP:LISTEN`) before launching the app in
+  `phase-3-manual-finalize.md § Step 2` — a bound port from a prior session's leaked process is a
+  launch-time failure (`Error: Port {port} is already in use`), not just a resume-time one.
 - **Stale live-signals** — remove `active-{other}.json` files only when orphaned per the rule
   above. The resumed run's own `active-{name}.json` is rewritten by the next phase anyway.

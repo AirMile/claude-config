@@ -1,6 +1,6 @@
 ---
 name: dev-ship
-description: Run define→build→verify→refactor in one auto-mode flow. /dev-ship.
+description: Use with /dev-ship to run define→build→verify→refactor unattended.
 reads:
   [
     feature.requirements,
@@ -32,7 +32,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.21.0
+  version: 0.30.0
   category: dev
 ---
 
@@ -110,9 +110,13 @@ then a fresh-session resume when manual items remain.
 > **Check for a resumable run before seeding tasks** (the resume path is deliberately cheap — it
 > skips the fresh-run PHASE 0 file entirely):
 >
-> 1. **Resume check first.** If `/dev-ship` was called with an **explicit** `{feature}` arg and
->    `test -f .project/session/ship-{feature}.json` succeeds (an open checkpoint) → Read
->    `.claude/skills/shared/SHIP-RESUME.md` and follow it. The fast path jumps straight to the
+> 1. **Resume check first.** If `/dev-ship` was called with an **explicit** `{feature}` arg and an
+>    open checkpoint exists — `main_root=$(git worktree list --porcelain | head -1 | awk '{print
+>    $2}'); test -f "$main_root/.project/session/ship-{feature}.json"` succeeds (**always resolve
+>    `main_root` first**: cwd is commonly already inside the feature worktree, where
+>    `.project/session/` is deliberately not shared, so a bare relative `test -f` silently misses
+>    an existing checkpoint) → Read `.claude/skills/shared/SHIP-RESUME.md` and follow it. The fast
+>    path jumps straight to the
 >    checkpoint's recorded phase (no prompt when explicit arg + matching pipeline + running + ≤ 24h)
 >    — so on the common parked-resume you land in PHASE 3 **without** loading
 >    `phase-0-define-classify.md`. **Seed `TaskCreate` per its § 3 re-seed step**: every phase in
@@ -180,20 +184,9 @@ the pointer-file template that carries this slice.
 > **On workflow notification**, branch on the returned `status`:
 >
 > - **`"complete"`** → proceed to PHASE 5.
-> - **`"parked"`** (manual items remain) → print the handoff message below — no further tool calls.
->   PHASE 3/4/5 run in a fresh session. Emit it in the runtime language (LANGUAGE.md); this template
->   is the English source:
->   ```
->   PHASE 1+2 green — {testsTotal} tests pass, {N} manual items remain.
->   To keep this chat cheap the run stops here; the checkpoint is ready to resume.
->
->   → Run /clear (or open a new chat), then: /dev-ship {feature}
->     You land directly in the item-by-item manual round (worktree + app are relaunched
->     automatically).
->
->   The board shows this run as parked (⏸) with the same resume button.
->   Prefer to continue here instead? Say so and I'll run PHASE 3 in this session.
->   ```
+> - **`"parked"`** (manual items remain) → Read `references/orchestration.md § 3` for the exact
+>   handoff template and print it verbatim (translated per LANGUAGE.md) — no further tool calls.
+>   PHASE 3/4/5 run in a fresh session.
 >   **Same-session escape hatch**: if the user replies "continue here" (or equivalent), continue
 >   with `orchestration.md § 4` (PHASE 3 completion) inline in this chat instead of parking.
 > - **`"failed"`** → print, depending on `failedPhase`, then proceed to PHASE 5's failure path:
@@ -281,7 +274,7 @@ SHIP COMPLETE: {feature}
 ========================
 Plan:     auto-derived → lenses {refactorLenses} · security {securityDeep or "none"}
 Build:    {passed}/{total} PASS
-Verify:   AUTO {n} PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}/{accepted}) · {rounds} fix round(s)
+Verify:   AUTO {n} PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}/{accepted}) · {rounds} fix round(s){, plus {N} debug-ladder escalation(s) if this run used debug-round.md/debug-round-heavy.md — the two counters don't compose into one number}
 Refactor: {lenses applied} · {techniques} applied ({reverted} reverted)
 Security: {triage: {confirmed} confirmed · {dismissed} dismissed → persisted + todo security-{feature}, or just persisted if below the auto-todo threshold, or "not run"}
 Merged:   {yes → main | no → {reason}}

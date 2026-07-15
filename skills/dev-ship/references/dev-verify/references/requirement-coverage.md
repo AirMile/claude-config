@@ -53,7 +53,7 @@ Cross-check `feature.json` requirements against test results.
      - label: "Add test (Recommended)", description: "Write a test — CLI/acceptance, Playwright runner spec for BROWSER, or visual baseline via toHaveScreenshot"
      - label: "Covered by other test", description: "Implicitly tested via another test"
      - label: "Blocked by dependency", description: "External service/fixture missing — not testable now"
-     - label: "Criteria too vague", description: "Acceptance criteria lacks concreteness — re-open /dev-define or convert to visual baseline"
+     - label: "Criteria too vague", description: "Acceptance criteria lacks concreteness — re-open via /dev-ship {feature-name} or convert to visual baseline"
    multiSelect: false
    ```
 
@@ -66,7 +66,7 @@ Cross-check `feature.json` requirements against test results.
    - **Blocked by dependency** → ask which dependency. Status → `"BLOCKED"`, add to `requirements[].evidence = "blocked by: {reason}"`. Not merge-blocking; signal to re-open after dependency fix.
    - **Criteria too vague** → two paths:
      - Can be concretized with a visual baseline → write `toHaveScreenshot()` runner spec, status → `"PASS"` after baseline.
-     - Cannot be concretized → ask what is vague. Status → `"UNCLEAR"`, add to `requirements[].evidence = "needs clarification: {what's vague}"`. Signal for `/dev-define` re-open to formulate concrete acceptance.
+     - Cannot be concretized → ask what is vague. Status → `"UNCLEAR"`, add to `requirements[].evidence = "needs clarification: {what's vague}"`. Signal for a define-phase re-open (`/dev-ship {feature-name}`) to formulate concrete acceptance.
 
 ---
 

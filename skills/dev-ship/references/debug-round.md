@@ -45,9 +45,9 @@ immediately** — never continue the round outside plan mode silently.
 ## 4. Investigation
 
 Spawn one Explore agent (`subagent_type="Explore"`, `thoroughness="very thorough"`) to investigate in
-an isolated context — keeps source reads and git output out of the main session. Use
-`.claude/skills/dev-ship/references/debug-explore-agent-prompt.md` as the prompt template, filling
-its placeholders from the ledger:
+an isolated context — keeps source reads and git output out of the main session. **Read
+`.claude/skills/dev-ship/references/debug-explore-agent-prompt.md` first** and use it verbatim as
+the prompt template (do not write an ad hoc prompt), filling its placeholders from the ledger:
 
 - `DEBUG_CONTEXT` → the STACK_CONTEXT/PROJECT_CONTEXT already loaded this verify session, plus this
   item's `manualReason` and category (TESTABLE/MEASURABLE).
@@ -104,9 +104,11 @@ Re-check via `manual-interview-walkthrough.md` Steps B–E for this one item (no
   light-tier park — you're already past light, there's nowhere lower to send it.
 - **Still failing on its own `expected` text** (the scope check in `manual-interview-walkthrough.md
 § Step D` already split off anything unrelated) → this light round's one evidence-backed attempt
-  didn't hold — escalate to the heavy tier:
-  1. **Before parking**, write this round's evidence to the ledger item — a park ends the session, so
-     nothing held only in-context survives it. Patch the item: `debugTier: "heavy"`, clear
+  didn't hold.
+  1. **Always first, regardless of what happens next** (durability — a park, or the session simply
+     ending, must never lose this): in **one** `ship-checkpoint.js item` call (never two separate
+     calls — a torn write between them is unrecoverable state, see
+     `phase-3-manual-finalize.md § Resume entry`), patch the item: `debugTier: "heavy"`, clear
      `tweakAttempts` if arriving here via an escalated tweak loop, and
      `lightRoundNotes` (a compact string): the § 4 investigation digest's key lines (error location,
      root code, pitfall match), the § 5 hypothesis and its confirming/refuting evidence, the fix
@@ -114,9 +116,19 @@ Re-check via `manual-interview-walkthrough.md` Steps B–E for this one item (no
      that it was first judged a simple cosmetic fix and didn't hold after 3 tries, so the heavy round
      doesn't waste its own first pass re-deriving that. This is the only thing the heavy round has
      to go on — write it as if handing the case to someone who wasn't in this session.
-  2. `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`.
-  3. Print the park/handoff template (`SKILL.md § PHASE 1–4`) with `/dev-ship {feature}` as the
-     resume command. **End the turn.**
-  4. A fresh session resumes via `phase-3-manual-finalize.md § Resume entry`'s `debugTier: "heavy"`
-     branch, landing directly in `references/debug-round-heavy.md`, which reads `lightRoundNotes`
-     instead of re-running Explore (`debug-round-heavy.md § 4`).
+  2. `AskUserQuestion` — header: "Debug ladder", question: "The light round didn't hold for {title}.
+     How do you want to proceed?":
+     - **"Escalate now, same session (Recommended)"** → skip straight to
+       `debug-round-heavy.md § 1`'s same-session entry variant, reusing the current plan-mode
+       session. Step 1's durable write above already covers a crash mid-heavy-round.
+     - **"Park — resume in a fresh session"** → continue with steps 3-5 below.
+     - **"Accept as known limitation now"** → skip the heavy round entirely: `verdict: "accepted"`,
+       clear `debugTier`/`tweakAttempts` (omit, not null — same mechanics as
+       `debug-round-heavy.md § 8`'s own accept branch), proceed to the regression re-check with this
+       item excluded from the pass/fail count.
+  3. (park path only) `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`.
+  4. (park path only) Print the park/handoff template (`SKILL.md § PHASE 1–4`) with
+     `/dev-ship {feature}` as the resume command. **End the turn.**
+  5. (park path only) A fresh session resumes via `phase-3-manual-finalize.md § Resume entry`'s
+     `debugTier: "heavy"` branch, landing directly in `references/debug-round-heavy.md`, which reads
+     `lightRoundNotes` instead of re-running Explore (`debug-round-heavy.md § 4`).

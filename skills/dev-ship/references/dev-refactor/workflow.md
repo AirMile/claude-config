@@ -2,11 +2,11 @@
 
 ## Overview
 
-Optional quality step on completed features. Not a status-gate — features are DONE after `/dev-verify`. This skill improves code structure, naming, and patterns on already-finished features.
+Optional quality step on completed features. Not a status-gate — features are DONE after the verify phase. This skill improves code structure, naming, and patterns on already-finished features.
 
 Batch-first architecture: analyzes ALL features in parallel via Explore agents, triages clean vs dirty, generates stack-aware refactor patterns via Context7, creates one combined plan with one approval, and applies changes with per-feature rollback.
 
-**Trigger**: `/dev-refactor`, `/dev-refactor {feature-name}`, or `/dev-refactor recent` (picks most recently modified feature.json with tests section)
+**Trigger**: invoked internally by `/dev-ship` as PHASE 4 (refactor) — no standalone trigger.
 
 ## Scope Rule: Feature Files Only
 
@@ -21,9 +21,9 @@ Batch-first architecture: analyzes ALL features in parallel via Explore agents, 
 
 ## When to Use
 
-- After `/dev-verify` completes (features in DONE status)
+- After the verify phase completes (features in DONE status)
 - When `.project/features/{name}/feature.json` exists with `tests` section
-- NOT for: fixing bugs (/dev-verify), adding features (/dev-define), planning (/dev-define)
+- NOT for: fixing bugs (the verify phase), adding features (the define phase), planning (the define phase)
 
 ## Input
 

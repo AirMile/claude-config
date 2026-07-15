@@ -126,7 +126,7 @@ Run after the feature-name is known. Before any state-mutating operations (backl
 
 #### Fast-path: no worktree branch
 
-Before running any git worktree calls, check whether a worktree branch even exists:
+**Run this check first, before Steps 0–4** — it is not an optional shortcut. Check whether a worktree branch even exists:
 
 ```bash
 if ! git show-ref --verify --quiet "refs/heads/worktree-{feature-name}"; then
@@ -207,14 +207,18 @@ Fetch fails silently → pull skipped, COMPARE_REF stays local `$DEFAULT`. The c
 
 **If `BEHIND == 0`**: skip silently, continue to Step 5.
 
-**If `BEHIND > 0`**: silent rebase.
+**If `BEHIND > 0`**: silent rebase. Uncommitted changes (routine after a fix/debug round left WIP)
+block a rebase outright — stash them first and restore after, regardless of outcome:
 
 ```bash
 git -C "{worktree_path}" branch -f "worktree-{feature-name}-pre-rebase"
+DIRTY=$(git -C "{worktree_path}" status --porcelain)
+[ -n "$DIRTY" ] && git -C "{worktree_path}" stash push -u -m "pre-rebase-wip"
 git -C "{worktree_path}" rebase "$COMPARE_REF" 2>&1
+REBASE_EXIT=$?
 ```
 
-- Exit 0 → print:
+- `$REBASE_EXIT` 0 → `[ -n "$DIRTY" ] && git -C "{worktree_path}" stash pop`, then print:
   ```
   STALE: auto-rebased on $COMPARE_REF ({BEHIND} commits, clean — no conflicts).
     Backup branch: worktree-{feature-name}-pre-rebase
@@ -222,10 +226,11 @@ git -C "{worktree_path}" rebase "$COMPARE_REF" 2>&1
                    git -C "{worktree_path}" branch -D worktree-{feature-name}-pre-rebase
   ```
   Continue to Step 5.
-- Exit non-zero → print conflicting files (`git -C "{worktree_path}" diff --name-only --diff-filter=U`), then:
+- `$REBASE_EXIT` non-zero → print conflicting files (`git -C "{worktree_path}" diff --name-only --diff-filter=U`), then:
   ```bash
   git -C "{worktree_path}" rebase --abort
   git -C "{worktree_path}" branch -D "worktree-{feature-name}-pre-rebase"
+  [ -n "$DIRTY" ] && git -C "{worktree_path}" stash pop
   ```
   Print: `STALE: rebase conflict in {N} file(s): {list}. Skipped — proceeding with {BEHIND}-commit-behind worktree. Resolve manually if needed: cd {worktree_path} && git rebase {COMPARE_REF}` → continue to Step 5.
 

@@ -52,7 +52,7 @@ export const {Name}: FC<{Name}Props> = ({ ...props }) => {
 
 ### Demo page
 
-**Only when `feature.pageHint[]` is empty or absent.** With `pageHint` set, skip the demo page — the component will be imported by `/design-convert`'s page-compose (pre-selected via pageHint) when those pages are designed. `/dev-verify` will locate the render context via import grep instead.
+**Only when `feature.pageHint[]` is empty or absent.** With `pageHint` set, skip the demo page — the component will be imported by `/design-convert`'s page-compose (pre-selected via pageHint) when those pages are designed. The verify phase will locate the render context via import grep instead.
 
 When generating: `app/_dev/components/{name}/page.tsx` (gitignored) showing the component in its default state + any states from `feature.json#requirements`.
 

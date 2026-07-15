@@ -2,7 +2,8 @@
 
 Verify phase: define → build → **verify**
 
-**Trigger**: `/dev-verify {feature-name}` or `/dev-verify {feature-name} {feedback}`
+**Trigger**: invoked internally by `/dev-ship` as PHASE 2 (verify) — no standalone trigger. The
+argument patterns below describe this phase's own input handling, not a user-facing command.
 
 ## Input Formats
 
@@ -62,18 +63,18 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
 3. **Validate build output** — Feature load: `node ~/.claude/scripts/context-load.js "$REPO" feature-verify "{feature-name}"` (see [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)). Parse `checklist[]` from the output.
 
-   `present: false` or `checklist` empty → check whether `/dev-build` committed it to the worktree-branch but main doesn't have it yet:
+   `present: false` or `checklist` empty → check whether the build phase committed it to the worktree-branch but main doesn't have it yet:
 
    ```bash
    git -C {worktree-path} show HEAD:.project/features/{feature-name}/feature.json 2>/dev/null
    ```
 
-   Output with valid JSON containing `tests.checklist[]` → write it to main's `.project/features/{feature-name}/feature.json` (creates the file from the committed worktree state), then **re-run the `feature-verify` load** so `type` / `checklist` / `requirements` / `files` are loaded into context, and proceed. No worktree, or `git show` empty/invalid → exit: run `/dev-build` first.
+   Output with valid JSON containing `tests.checklist[]` → write it to main's `.project/features/{feature-name}/feature.json` (creates the file from the committed worktree state), then **re-run the `feature-verify` load** so `type` / `checklist` / `requirements` / `files` are loaded into context, and proceed. No worktree, or `git show` empty/invalid → exit: run `/dev-ship {feature-name}` first.
 
    **COMPONENT detection** (after feature.json load): check whether `feature.type === "COMPONENT"` or backlog-item type is COMPONENT. If yes: set `IS_COMPONENT_VERIFY = true`. Resolve render context in this order:
    1. Grep `app/**/page.tsx` for an import matching `{PascalName}` — first match → navigate to that route.
    2. Demo-page fallback: check whether `app/_dev/components/{name}/page.tsx` exists → navigate to `/_dev/components/{name}`.
-   3. Neither found → exit: `"No render context for {name}. Options: (a) run /dev-build {feature} to generate a demo-page, or (b) run /design-convert {pageHint} to design a page that uses this component."`
+   3. Neither found → exit: `"No render context for {name}. Options: (a) run /dev-ship {feature} to generate a demo-page, or (b) run /design-convert {pageHint} to design a page that uses this component."`
 
 4. **Worktree switch** — execute the procedure in `shared/WORKTREE.md` with `feature-name` and `feature.status` (from Step 1). Switches automatically to `worktree-{feature-name}` if it exists. Includes staleness check (Step 4.6): worktree N commits behind main → offer rebase before proceeding. If no worktree exists but `feature.status === "DOING"`: WARN + AskUserQuestion (see WORKTREE.md → Step 4a: DOING-without-worktree warning). On FAIL (in a different worktree than the feature): stop with the message from WORKTREE.md.
 
@@ -313,7 +314,7 @@ AskUserQuestion: No, all good (Recommended) | Yes, I noticed something.
 
 Read `references/completion-sync.md` for full logic: feature.json mutation (all fields in one Write), PAGE-seeding, backlog update, project-context.json sync, COMPONENT design sync, learning extraction (Jaccard dedup), pre-commit diagnostics, commit message format, and output block.
 
-DEFERRED items: write per-item `tests.checklist[i] = { status: "deferred", deferredReason: "<reason>" }`. Set feature.json `tests.hasDeferred = true`. In backlog set feature `status: "DONE"` with `hasDeferred: true` so a future `/dev-verify` run can re-test deferred-only items without reopening the whole feature. Also map the same DEFERRED items into `payload.knownIssues: [{ id, title, verdict: "deferred", reason: deferredReason, source: "dev-verify" }]` on the same completion-sync call — this is what puts the known-issue badge on the dashboard card (`shared/BACKLOG.md § Known-issue badges`); it's additive to `hasDeferred`, not a replacement.
+DEFERRED items: write per-item `tests.checklist[i] = { status: "deferred", deferredReason: "<reason>" }`. Set feature.json `tests.hasDeferred = true`. In backlog set feature `status: "DONE"` with `hasDeferred: true` so a future `/dev-ship {feature-name}` verify pass can re-test deferred-only items without reopening the whole feature. Also map the same DEFERRED items into `payload.knownIssues: [{ id, title, verdict: "deferred", reason: deferredReason, source: "dev-verify" }]` on the same completion-sync call — this is what puts the known-issue badge on the dashboard card (`shared/BACKLOG.md § Known-issue badges`); it's additive to `hasDeferred`, not a replacement.
 
 ---
 

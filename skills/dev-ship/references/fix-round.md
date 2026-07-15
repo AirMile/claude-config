@@ -24,6 +24,12 @@ Before entering plan mode, check whether a plan-mode session is **already active
   checkout, per the worktree caveat) — this must happen **now**, not after `EnterPlanMode`, because
   plan mode blocks the write and the board would otherwise show "running" while it is actually
   blocked on the round-gate design work.
+  **This bullet is mandatory on EVERY fix attempt past the first**, not just a formal "round 2" —
+  if `§ Re-check` sends any finding back for another fix (a failed polish-loop attempt that got
+  re-classified per the hard rule in `§ Re-check`, a re-dispatch, anything beyond the original
+  batch), that is round 2+ by definition: increment `manual.round` and come back through this gate
+  with a fresh `EnterPlanMode` + a new JSON appendix. There is no sanctioned "just fix it again
+  inline" path once the first dispatch has run and failed.
 - **Already in plan mode** (round 1, arriving straight from the interview walkthrough's own plan-mode
   session — `manual-interview-walkthrough.md § Step A3`) → both writes are blocked (they are disk
   writes; plan mode blocks `.project/` and the live signal alike). Defer them to `§ Accept →
@@ -45,6 +51,9 @@ protect:
    and how it will be verified (repro test for TESTABLE, live re-check for MEASURABLE). Finding
    implicates an external library API? Research it per `shared/CONTEXT7.md` now — both tools work
    inside plan mode — and fold the results into the fix approach. Skip for purely internal logic.
+   Default to a single Explore agent for this research; use more only when scope is genuinely
+   uncertain across multiple files/areas (quality over quantity — the same principle `EnterPlanMode`
+   itself applies to its own exploration fan-out).
 
    A finding whose root cause is still unclear after reviewing the ledger evidence does **not** get a
    guessed fix: run `references/debug-round.md` Steps 4–5 (Explore investigation + research) for that
@@ -139,7 +148,10 @@ result), `prompts.fixGroupPromptPaths` (write point 2, same as the other workflo
 
 While the workflow runs, fix the `inline`-dispatch groups in the main chat: apply the change in the
 worktree, reload, get a live re-check from the user. These groups are file-disjoint from every agent
-group (enforced at gate time), so there is no collision running both at once.
+group (enforced at gate time), so there is no collision running both at once. **If this round has
+no `inline`-dispatch groups, end the turn now — no further tool calls** — and resume on the
+workflow's task-notification; never call a wakeup/scheduling tool to wait on it, that machinery is
+for the `/loop` skill only. When inline groups exist, end the turn once they're all done instead.
 
 On return: merge `ship-fix.js`'s `{groups, allFixed}` into checkpoint `manual.dispatch`; clear
 `activeWorkflow`/`workflowRunId`/`prompts`.
@@ -163,6 +175,16 @@ upserted the same way as the rest of the ledger) is the single progress marker; 
 strictly forward: absent → `"light"` → `"heavy"` → resolved (accepted or parked-open) — see
 `shared/DEBUG-LADDER.md` for the full tier table (dev vs. game — game-ship keeps its own
 `failedRounds`-based ladder unchanged).
+
+**Hard rule — only MEASURABLE findings get the 3-attempt polish loop below.** A TESTABLE finding
+(or anything routed through the Otherwise/tweak-class bullets) gets exactly ONE dispatch attempt,
+then the ladder's own AskUserQuestion — never more attempts without asking first. If a finding
+initially filed as MEASURABLE turns out to need real source investigation mid-loop (reading library
+internals, forming a root-cause hypothesis, more than a live style tweak) — re-file it as TESTABLE
+immediately and drop out of the polish loop into the one-attempt-then-ask path below, even if its
+`tweakAttempts` counter hasn't hit 3 yet. Never keep re-attempting a fix ad hoc across several
+messages without the loop's own counter or the ladder's own question firing — that is not a path
+this skill defines.
 
 **Before judging Pass/Cosmetic/Otherwise below**, apply `shared/FEEDBACK-CATEGORIZATION.md § Scope
 check` — split off anything not about this item's own `expected` text into its own ledger item first
@@ -200,21 +222,27 @@ entry` bullet 5 — no verdict, no `debugTier` set, dispatch already complete), 
   (never when any open finding is `fail`-class — see the Fail-never-to-todo policy in
   `phase-3-manual-finalize.md § Findings ledger + routing`) → one `AskUserQuestion`, the only choice
   point on this path:
-  1. **"Park — debug in a fresh chat"** (recommended) → same park mechanics as below.
+  1. **"Park — debug in a fresh chat (Recommended)"** → same park mechanics as below.
   2. **"Defer to backlog todo"** → route each remaining finding to `/project-todo`, then proceed to
      the regression re-check and completion on the verified scope.
 - **Otherwise (any `fail`-class finding, or any tweak — substantial or cosmetic — with a `fail`
-  sibling this round)** → always park, no question asked:
+  sibling this round)** → park (one optional diagnostic question — e.g. what specifically changed
+  after the fix attempt — is allowed first, to sharpen `lightRoundNotes`; do not loop past that
+  single question):
   1. Patch the ledger item: `debugTier: "light"`, and clear `tweakAttempts` if it was set from an
      escalated tweak loop above (via `ship-checkpoint.js item {feature} manual` — this write happens
      outside plan mode, we're back in the main-chat re-check step, not the gate).
   2. `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`.
-  3. Print a park/handoff message (own wording — do NOT reuse `SKILL.md § PHASE 1–4`'s
+  3. **Stop the app launched in `phase-3-manual-finalize.md § Step 2`** (that section's own
+     "Step 2 teardown" — a park is one of its two documented triggers) — do this now, before printing
+     the park message, not after. A lingering dev-server process would otherwise still be running
+     when a fresh session's debug round (or a later PHASE 4 refactor pass) reuses this worktree.
+  4. Print a park/handoff message (own wording — do NOT reuse `SKILL.md § PHASE 1–4`'s
      manual-items-remain template; its "you land directly in the item-by-item manual round" line is
      wrong here): state which item(s) parked and why (fail / tweak-with-fail-sibling), that
      `/dev-ship {feature}` resumes straight into the debug round for those items (not the manual
      walkthrough), and that the board shows this run as parked (⏸). **End the turn.**
-  4. A fresh session resumes via `phase-3-manual-finalize.md § Resume entry`'s `debugTier: "light"`
+  5. A fresh session resumes via `phase-3-manual-finalize.md § Resume entry`'s `debugTier: "light"`
      branch, landing directly in `references/debug-round.md` for this item. Other items in the ledger
      are unaffected and keep progressing normally (a later resume walks each open item to wherever its
      own `debugTier` says it is).

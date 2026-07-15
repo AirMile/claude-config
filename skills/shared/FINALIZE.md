@@ -208,6 +208,9 @@ FOREIGN=$(lsof +D "{worktree_path}" 2>/dev/null \
 ```bash
 git worktree remove --force "{worktree_path}"
 git branch -d {source_branch}
+# shared/WORKTREE.md's staleness-rebase (Step 4.6) may have left a backup branch behind on a
+# stale-resume ship — clean it up now that the ship succeeded; harmless no-op if none exists.
+git branch -D {source_branch}-pre-rebase 2>/dev/null || true
 ```
 
 **Post-remove directory check**:

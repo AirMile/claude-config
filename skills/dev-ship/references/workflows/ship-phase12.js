@@ -88,8 +88,20 @@ const VERIFY_SCHEMA = {
           title: { type: "string" },
           steps: { type: "array", items: { type: "string" } },
           expected: { type: "string", description: "observable outcome" },
+          manualReason: {
+            enum: [
+              "perception",
+              "real-credentials",
+              "audio",
+              "physical-device",
+              "screen-reader",
+              "tooling-gap",
+            ],
+            description:
+              "why this item needs a human — required per agent-verify.md's contract check",
+          },
         },
-        required: ["id", "title", "steps", "expected"],
+        required: ["id", "title", "steps", "expected", "manualReason"],
       },
     },
     failedAt: {
