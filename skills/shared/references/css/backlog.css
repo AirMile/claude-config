@@ -22,6 +22,7 @@
   --orange: #ffa657;
   --purple: #d2a8ff;
   --pink: #f778ba;
+  --teal: #56d4dd;
   --p1: #d1453b;
   --p2: #eb8909;
   --p3: #246fe0;
@@ -1255,6 +1256,10 @@ body {
 .type-tweak {
   background: color-mix(in srgb, var(--pink) 18%, transparent);
   color: var(--pink);
+}
+.type-verify {
+  background: color-mix(in srgb, var(--teal) 18%, transparent);
+  color: var(--teal);
 }
 
 /* ── Meta chips ── */

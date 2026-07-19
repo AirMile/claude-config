@@ -131,11 +131,15 @@ All COVERED passed (AGENT 2) and no open playtest FAIL → complete (but do **no
 1. **Known-issue payload**: scan `checkpoint.playtest.items[]` for every item with
    `verdict: "accepted"` or `verdict: "deferred"` and map each to
    `{ id, title, verdict, reason, source: "ship-ledger" }` — `reason` is a short synthesis of the
-   item's context (same free-text judgment already used elsewhere in this ledger). Pass the result
-   as `payload.knownIssues` on the completion-sync call below (omit the key entirely when empty —
-   never send `[]`). This is what survives the ship checkpoint's eventual deletion (`SKILL.md §
-PHASE 1–4`, on green completion); without it, an explicitly accepted or deferred finding leaves
-   no trace once the ship completes.
+   item's context (same free-text judgment already used elsewhere in this ledger). When a
+   `deferred` item's reason names an existing backlog card, also set `blocker: "{card-name}"` on
+   that entry. Pass the result as `payload.knownIssues` on the completion-sync call below (omit the
+   key entirely when empty — never send `[]`). This is what survives the ship checkpoint's
+   eventual deletion (`SKILL.md § PHASE 1–4`, on green completion); without it, an explicitly
+   accepted or deferred finding leaves no trace once the ship completes. `completion-sync.js`
+   auto-creates/updates a `verify-{feature}` VERIFY card (`source: "/game-ship"`) and sets
+   `hasDeferred: true` whenever a `deferred` entry is present — nothing else to do here
+   (`shared/BACKLOG.md § VERIFY cards`).
 2. Run `game-verify`'s completion-sync to flip the feature to **DONE** (backlog + feature.json
    `tests` section: `finalStatus`, `sessions[]`, `requirements[].status`, `stage → "done"` + learning
    extraction) — Read

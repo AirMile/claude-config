@@ -32,7 +32,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
   "features": [
     {
       "name": "feature-name",
-      "type": "FEATURE|CHANGE|BUG|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|THEME|A11Y|PERF|PAGE-GAP|SECURITY|TWEAK",
+      "type": "FEATURE|CHANGE|BUG|API|INTEGRATION|UI|REFACTOR|PAGE|COMPONENT|THEME|A11Y|PERF|PAGE-GAP|SECURITY|TWEAK|VERIFY",
       "status": "TODO|DEFINED|DOING|DONE|CANCELLED",
       "phase": "P1|P2|P3|P4",
       "description": "Description",
@@ -49,9 +49,11 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
           "title": "...",
           "verdict": "deferred|accepted",
           "reason": "...",
-          "source": "ship-ledger|dev-verify"
+          "source": "ship-ledger|dev-verify",
+          "blocker": "<backlog-card-name>|null"
         }
       ],
+      "hasDeferred": "true|null",
       "audit": {
         "buildScreenshot": "<path>",
         "buildSmokeStatus": "PASS|FAIL|SKIPPED",
@@ -265,6 +267,17 @@ The former resting columns — dev's **To build** (DEFINED) / **To verify** (DOI
 - **Track**: dev-track (not in `DESIGN_TYPES`/`DESIGN_PIPELINE_TYPES` — the track filter and board sections treat it like any other dev-track type).
 - **Game equivalent**: `POLISH` already covers this case on the game side — there is no `TWEAK` type in the GAME inference table (`project-todo/references/inference-rules.md`).
 
+## VERIFY cards
+
+`type: "VERIFY"` is a dev-track type for re-running a **deferred** manual/playtest test after its external blocker has cleared — a verification action, not a code change (unlike TWEAK, it never touches product code). Named `verify-{feature}` — one card aggregates all of that feature's open deferred items.
+
+- **Writer**: `scripts/completion-sync.js`, automatic — created/updated whenever a completion-sync payload carries a `knownIssues[]` entry with `verdict: "deferred"` (see § Known-issue badges). Never created by hand-authored prose; both the ship-walkthrough path (`dev-ship/references/phase-3-manual-finalize.md § Known-issue payload`, `game-ship/references/phase-3-playtest.md`) and the standalone `/dev-verify` path converge on this one script, so capture never drifts between them.
+- **Dependency**: `dependencies[]` holds the `blocker` name(s) named on the triggering knownIssues entries (only names that exist in `backlog.json#features[]` — an unresolvable blocker name stays in the description text only). The board's existing "BLOCKED BY" chip renders it; the chip clears once the blocker feature ships (chips resolve against archived shipped features too).
+- **Lifecycle**: `TODO → shipped` directly — a VERIFY card never enters `DEFINED`/`DOING`/`DONE` and never runs through a ship pipeline.
+- **Pickup**: `/dev-manual {feature}` — when no open ship run exists for `{feature}` but a live `verify-{feature}` card does, `/dev-manual` runs a short deferred-reverify round instead of refusing (`dev-manual/references/deferred-reverify.md`). Game side: no `dev-manual` equivalent exists yet — pick up via `/game-ship {feature}` re-entry.
+- **Completion write**: mirrors TWEAK's card-mode completion (`shared/TWEAK-DISCIPLINE.md § Card pickup`) — only once every deferred item on the card re-verifies (PASS or converts to a BUG card on FAIL): `shipped: true` + `shippedAt` + `shippedSha` + `summary`, archived to `backlog-archive.json#archived[]`, dual-write to `project.json#features[]`. A card with items still `"Still blocked"` gets no completion write and stays `TODO` for a later pickup.
+- **Track**: dev-track (not in `DESIGN_TYPES`/`DESIGN_PIPELINE_TYPES`).
+
 ## Refactor-badges
 
 Items with `status === "DONE"` that have not yet shipped render in the **In progress** section (a ship-run holds them there via `transition: "shipping"`); once shipped they appear in the Dashboard showcase. In both places they show a badge reflecting the refactor outcome:
@@ -295,7 +308,8 @@ on green completion, so `scripts/completion-sync.js` folds any such items into a
     "title": "Empty-state spacing off by 4px",
     "verdict": "deferred",
     "reason": "cosmetic, external design review pending",
-    "source": "ship-ledger"
+    "source": "ship-ledger",
+    "blocker": "dev-server-lan-allowed-origins"
   }
 ]
 ```
@@ -307,12 +321,21 @@ on green completion, so `scripts/completion-sync.js` folds any such items into a
 | `verdict` | `"deferred"` \| `"accepted"` — never a third value; orthogonal to `f.status`                                                  |
 | `reason`  | Free text — why it was accepted/deferred                                                                                      |
 | `source`  | `"ship-ledger"` (dev-ship/game-ship manual/playtest walkthrough) \| `"dev-verify"` (a standalone `/dev-verify` DEFERRED item) |
+| `blocker` | Optional — the name of an existing backlog card that must ship first before this item is re-testable                          |
 
 Optional; absent when a ship completed with no accepted/deferred items. Rendered on the dashboard
 card as a `⚠ N known issue(s)` badge regardless of `f.status` (unlike the refactor-badge, it is not
 gated to DONE — a known issue can persist through shipping), expandable to list each item's title,
 verdict, and reason. Survives archiving: carried verbatim when the feature object moves to
 `backlog-archive.json#archived[]` (same as `refactor`/`summary`).
+
+**A `verdict: "deferred"` entry is not just a badge.** `scripts/completion-sync.js` also (1) sets
+`hasDeferred: true` on both `feature.json#tests` and the backlog entry, and (2) auto-creates/updates
+a `verify-{feature}` VERIFY card (`dependencies` = any valid `blocker` names) — see § VERIFY cards
+below. `"accepted"` entries never do this; they remain badge-only, permanently. On a later re-verify
+PASS (`/dev-manual`'s deferred-reverify round), the deferred entry is removed from `knownIssues[]`
+(badge and VERIFY card retire together); a re-verify FAIL instead converts it into a `BUG` card and
+removes the deferred entry (the BUG card supersedes it).
 
 ## COMPONENT as first-class type
 

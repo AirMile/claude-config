@@ -314,7 +314,7 @@ AskUserQuestion: No, all good (Recommended) | Yes, I noticed something.
 
 Read `references/completion-sync.md` for full logic: feature.json mutation (all fields in one Write), PAGE-seeding, backlog update, project-context.json sync, COMPONENT design sync, learning extraction (Jaccard dedup), pre-commit diagnostics, commit message format, and output block.
 
-DEFERRED items: write per-item `tests.checklist[i] = { status: "deferred", deferredReason: "<reason>" }`. Set feature.json `tests.hasDeferred = true`. In backlog set feature `status: "DONE"` with `hasDeferred: true` so a future `/dev-ship {feature-name}` verify pass can re-test deferred-only items without reopening the whole feature. Also map the same DEFERRED items into `payload.knownIssues: [{ id, title, verdict: "deferred", reason: deferredReason, source: "dev-verify" }]` on the same completion-sync call — this is what puts the known-issue badge on the dashboard card (`shared/BACKLOG.md § Known-issue badges`); it's additive to `hasDeferred`, not a replacement.
+DEFERRED items: write per-item `tests.checklist[i] = { status: "deferred", deferredReason: "<reason>" }`. Map the same DEFERRED items into `payload.knownIssues: [{ id, title, verdict: "deferred", reason: deferredReason, source: "dev-verify", blocker?: "<card-name>" }]` on the same completion-sync call (set `blocker` when the reason names an existing backlog card) — this is what puts the known-issue badge on the dashboard card (`shared/BACKLOG.md § Known-issue badges`). `completion-sync.js` itself sets `feature.json tests.hasDeferred = true` and the backlog entry's `hasDeferred: true` from this payload, and auto-creates/updates a `verify-{feature-name}` VERIFY card — nothing to write for either by hand.
 
 ---
 

@@ -28,7 +28,12 @@
 //     "verificationCheckpoint"?: { gaps, mismatches, adjustments },
 //     "acceptanceTestFile"?: string,
 //     "knownIssues"?: [{ "id", "title", "verdict": "deferred|accepted", "reason",
-//                         "source"?: "ship-ledger|dev-verify" }],
+//                         "source"?: "ship-ledger|dev-verify",
+//                         "blocker"?: "<backlog-card-name>" }],
+//     // A "deferred" knownIssues entry auto-creates/updates a `verify-<name>`
+//     // VERIFY backlog card (dependencies = valid blocker names) and sets
+//     // hasDeferred:true on feature.tests and the backlog entry — see
+//     // shared/BACKLOG.md § VERIFY cards.
 //     "seedPages"?: [{ "name", "routePattern" }],
 //     "componentSync"?: [{ "name", "src": [string], "test": [string] }],
 //     "designComponent"?: string,
@@ -241,8 +246,13 @@ const knownIssues = (payload.knownIssues || []).map((issue) => {
   };
   if (typeof issue.source === "string" && issue.source)
     clean.source = issue.source;
+  if (typeof issue.blocker === "string" && issue.blocker)
+    clean.blocker = issue.blocker;
   return clean;
 });
+const pipeline =
+  typeof payload.pipeline === "string" ? payload.pipeline : "dev";
+const hasDeferredIssue = knownIssues.some((i) => i.verdict === "deferred");
 
 function upsertKnownIssues(existing, incoming) {
   const list = Array.isArray(existing) ? existing.slice() : [];
@@ -327,6 +337,7 @@ if (knownIssues.length)
     feature.tests.knownIssues,
     knownIssues,
   );
+if (hasDeferredIssue) feature.tests.hasDeferred = true;
 
 atomicWrite(featurePath, feature);
 
@@ -363,6 +374,44 @@ delete entry.stage;
 if (entry.transition !== "shipping") delete entry.transition;
 if (knownIssues.length)
   entry.knownIssues = upsertKnownIssues(entry.knownIssues, knownIssues);
+
+if (hasDeferredIssue) {
+  entry.hasDeferred = true;
+  const deferredIssues = knownIssues.filter((i) => i.verdict === "deferred");
+  const blockers = [
+    ...new Set(
+      deferredIssues
+        .map((i) => i.blocker)
+        .filter((b) => b && backlogFeatures.some((f) => f.name === b)),
+    ),
+  ];
+  const cardName = `verify-${name}`;
+  const pickupCmd =
+    pipeline === "game" ? `/game-ship ${name}` : `/dev-manual ${name}`;
+  const description =
+    `Re-run deferred manual test(s) for ${name}: ` +
+    deferredIssues.map((i) => i.title).join("; ") +
+    `. Reason(s): ` +
+    deferredIssues.map((i) => i.reason).join(" | ") +
+    `. Deferred from the ${name} ship on ${today}. Pick up with ${pickupCmd} once the blocker lands.`;
+  const existingVerifyCard = backlogFeatures.find((f) => f.name === cardName);
+  if (existingVerifyCard) {
+    existingVerifyCard.description = description;
+    if (blockers.length) existingVerifyCard.dependencies = blockers;
+  } else {
+    backlogFeatures.push({
+      name: cardName,
+      type: "VERIFY",
+      status: "TODO",
+      phase: entry.phase || "P2",
+      description,
+      source: pipeline === "game" ? "/game-ship" : "/dev-ship",
+      dependencies: blockers,
+      parentFeature: name,
+      auto: true,
+    });
+  }
+}
 
 if (Array.isArray(payload.seedPages)) {
   for (const p of payload.seedPages) {

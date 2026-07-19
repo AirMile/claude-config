@@ -281,10 +281,15 @@ All AUTO passed (AGENT 2) and no open manual FAIL → complete (but do **not** i
    `verdict: "accepted"` or `verdict: "deferred"` and map each to
    `{ id, title, verdict, reason, source: "ship-ledger" }` — `reason` is a short synthesis of the
    item's `expected`/`lightRoundNotes`/context (same free-text judgment already used for
-   `fixSync`/`observations`). Pass the result as `payload.knownIssues` on the completion-sync call
+   `fixSync`/`observations`). When a `deferred` item's reason names an existing backlog card (e.g.
+   the blocking limitation already has its own TWEAK card), also set `blocker: "{card-name}"` on
+   that entry. Pass the result as `payload.knownIssues` on the completion-sync call
    below (omit the key entirely when empty — never send `[]`). This is what survives the ship
    checkpoint's eventual deletion (`SKILL.md § PHASE 1–4`, on green completion); without it, an
    explicitly accepted or deferred finding leaves no trace once the ship completes.
+   `completion-sync.js` auto-creates/updates a `verify-{feature}` VERIFY card and sets
+   `hasDeferred: true` whenever a `deferred` entry is present — nothing else to do here
+   (`shared/BACKLOG.md § VERIFY cards`).
 2. Run `dev-verify`'s completion-sync to flip the feature to **DONE** (backlog + feature.json
    `tests` section + learning extraction) — Read `.claude/skills/dev-ship/references/dev-verify/references/completion-sync.md`
    if the reused flow does not already cover it from the manual step. (This is the DONE write AGENT

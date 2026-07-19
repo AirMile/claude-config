@@ -287,6 +287,8 @@ TODO ADDED
   - /design-ship {name} - Ship the page; its check phase runs the performance and SEO audit
   [If type is PAGE-GAP:]
   - /dev-ship {name} - Define the missing functionality
+  [If type is VERIFY:]
+  - /dev-manual {parentFeature} - Re-run the deferred manual test(s) once the blocker ships
 ```
 
 **[GAME MODE]:**

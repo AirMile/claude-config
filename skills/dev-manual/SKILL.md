@@ -8,6 +8,7 @@ reads:
     feature.tests,
     feature.verificationProfile,
     backlog.status,
+    backlog.features,
     project-context.learnings,
     conventions,
   ]
@@ -60,9 +61,19 @@ all `pending` — seed the ones the checkpoint already shows as done as `complet
 > this first, cwd may already be inside a feature worktree where `.project/session/` is not shared).
 >
 > `test -f "$main_root/.project/session/ship-{feature}.json"` fails → there is no open ship run for
-> this feature. Print: _"No open ship run for `{feature}` — start one with `/dev-ship {feature}`, or
-> if this is a small change rather than an in-flight ship, use `/dev-tweak` instead."_ Stop here —
-> do not seed `TaskCreate`, nothing to track.
+> this feature. Before refusing, check for a live VERIFY pickup card: `node
+~/.claude/scripts/backlog-load.js "$main_root" guard-items`, filter `type === "VERIFY"` and
+> `status !== "CANCELLED"` and not `shipped`, match against `verify-{feature}` (or `{feature}` is
+> itself that card's name — strip the `verify-` prefix to get the underlying feature for the dossier
+> lookup below).
+>
+> - **Found** → Read `.claude/skills/dev-manual/references/deferred-reverify.md` and follow it in
+>   full — this is a short standalone round, not a ship resume: do **not** seed the 4-item
+>   `TaskCreate` list above, nothing here maps to MANUAL 0-3.
+> - **Not found** → Print: _"No open ship run for `{feature}` — start one with `/dev-ship {feature}`,
+>   if this is a small change rather than an in-flight ship use `/dev-tweak` instead, or if a
+>   `verify-{feature}` VERIFY card exists on the backlog once its blocker ships, re-invoke to run its
+>   deferred re-verify round."_ Stop here — do not seed `TaskCreate`, nothing to track.
 >
 > Checkpoint exists → read it, mark MANUAL 0 → `in_progress` (this routing step is the phase's own
 > work), confirm `pipeline: "dev"` (a design/game checkpoint under the same feature name is a

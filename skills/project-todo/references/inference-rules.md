@@ -8,6 +8,8 @@ The governing principle is stated repo-wide in `shared/FEEDBACK-CATEGORIZATION.m
 
 **Ship offload passes `type TWEAK` explicitly.** When `/dev-ship`'s manual/verify rounds offload a tweak-class finding (`shared/TWEAK-DISCIPLINE.md`, `dev-ship/references/phase-3-manual-finalize.md § Findings ledger + routing`), the invocation states `type TWEAK` + `depends on {feature}` up front — this overrides row-based inference below (row 1 of the WEB table still applies to a plain user-typed "tweak" description with no explicit type).
 
+**`VERIFY` is never inferred from a plain description — explicit `type VERIFY` hint only.** These cards are normally created automatically by `scripts/completion-sync.js` from a deferred manual-test verdict (`shared/BACKLOG.md § VERIFY cards`), not by `/project-todo`. There is no keyword row for it in either table below; a card is only created as `VERIFY` when the calling context passes that type explicitly (e.g. a rare manual/ad hoc re-test request) — a plain "re-test X" description with no explicit hint falls through the normal rows below like any other description.
+
 The cost being removed is **per-item friction**: parking three findings used to mean twelve modals. The happy path must be **zero modals** so that parking a finding costs one sentence.
 
 ---

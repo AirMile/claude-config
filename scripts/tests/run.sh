@@ -593,6 +593,41 @@ else
   echo "FAIL  completion-sync: knownIssues invalid verdict (code=$CS_KI_INVALID_CODE out=$CS_KI_INVALID_OUT)"; FAIL=$((FAIL + 1))
 fi
 
+# (m) a deferred knownIssue with a valid blocker → auto-creates a verify-{feature} VERIFY card
+# with dependencies, and sets hasDeferred on both feature.json and the backlog entry.
+cs_reset
+(cd "$CST/wt" && cat "$CSFX/payloads/knownissues-deferred-blocker.json" | node "$CS" sync auth-login) >/dev/null 2>&1
+CS_VC_F=$(node -e 'const f=require(process.argv[1]);process.stdout.write(String(!!f.tests.hasDeferred))' "$CST/.project/features/auth-login/feature.json")
+CS_VC_BL=$(cs_backlog_entry auth-login)
+CS_VC_BL_HD=$(node -e 'const e=JSON.parse(process.argv[1]);process.stdout.write(String(!!e.hasDeferred))' "$CS_VC_BL")
+CS_VC_CARD=$(node -e 'const b=require(process.argv[1]);const c=b.features.find(f=>f.name==="verify-auth-login");process.stdout.write(c?[c.type,c.status,c.parentFeature,JSON.stringify(c.dependencies)].join("|"):"missing")' "$CST/.project/backlog.json")
+if [ "$CS_VC_F" = "true" ] && [ "$CS_VC_BL_HD" = "true" ] \
+  && [ "$CS_VC_CARD" = 'VERIFY|TODO|auth-login|["unrelated-feature"]' ]; then
+  echo "PASS  completion-sync: deferred + blocker → verify-{feature} VERIFY card + hasDeferred"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: deferred + blocker (feature=$CS_VC_F backlogHasDeferred=$CS_VC_BL_HD card=$CS_VC_CARD)"; FAIL=$((FAIL + 1))
+fi
+
+# (n) a second sync with the same deferred+blocker payload upserts the same card, not a duplicate.
+(cd "$CST/wt" && cat "$CSFX/payloads/knownissues-deferred-blocker.json" | node "$CS" sync auth-login) >/dev/null 2>&1
+CS_VC_COUNT=$(node -e 'const b=require(process.argv[1]);process.stdout.write(String(b.features.filter(f=>f.name==="verify-auth-login").length))' "$CST/.project/backlog.json")
+if [ "$CS_VC_COUNT" = "1" ]; then
+  echo "PASS  completion-sync: verify-{feature} card upsert (re-run does not duplicate)"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: verify-{feature} card upsert (count=$CS_VC_COUNT)"; FAIL=$((FAIL + 1))
+fi
+
+# (o) accepted-only knownIssues → no VERIFY card, no hasDeferred.
+cs_reset
+(cd "$CST/wt" && cat "$CSFX/payloads/knownissues-accepted-only.json" | node "$CS" sync auth-login) >/dev/null 2>&1
+CS_ACC_F=$(node -e 'const f=require(process.argv[1]);process.stdout.write(String(!!f.tests.hasDeferred))' "$CST/.project/features/auth-login/feature.json")
+CS_ACC_CARD=$(node -e 'const b=require(process.argv[1]);process.stdout.write(String(b.features.some(f=>f.name==="verify-auth-login")))' "$CST/.project/backlog.json")
+if [ "$CS_ACC_F" = "false" ] && [ "$CS_ACC_CARD" = "false" ]; then
+  echo "PASS  completion-sync: accepted-only knownIssues → no VERIFY card, no hasDeferred"; PASS=$((PASS + 1))
+else
+  echo "FAIL  completion-sync: accepted-only knownIssues (hasDeferred=$CS_ACC_F card-exists=$CS_ACC_CARD)"; FAIL=$((FAIL + 1))
+fi
+
 rm -rf "$CST"
 
 # --- learnings-search.js ---
