@@ -22,6 +22,10 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
 
    **If in update mode (from PHASE 0 Scenario A):**
 
+   **Fast path**: zero existing backlog features have `source` absent or `"/project-plan"`
+   (nothing concept-derived exists yet) → skip `update-reconcile.md` entirely, there is
+   nothing to reconcile. Otherwise:
+
    > **Todo**: Read `.claude/skills/project-plan/references/update-reconcile.md` and run the insight-diff + cancel-proposal flow first.
    - Start from existing backlog features as baseline — do NOT extract from scratch
    - Apply concept changes on top: add NEW features, update MODIFIED descriptions; OBSOLETE items go through the cancel-proposal flow (update-reconcile.md), never silently marked
@@ -163,7 +167,7 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
    continue below; "Adjust features" or "Other" → apply changes, show updated table,
    re-ask. **Loop until confirmed.**
 
-   After confirmation: [GAME MODE] → step 7, then PHASE 2 · [WEB MODE] → step 8, then Page-Discovery.
+   After confirmation: [GAME MODE] → step 7, then PHASE 2 · [WEB MODE] → step 8, then the Page-Discovery phase (tracked in SKILL.md).
 
 7. **[GAME MODE] Core loop validation (only in create mode or when P1 features changed):**
 
@@ -189,9 +193,3 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
 8. **[WEB MODE] THEME signal (optional — only on explicit mention in concept):**
 
    If the concept explicitly mentions "design tokens", "colors", "typography", "theme", or "branding" (no implicit speculation): add `{ "name": "theme-init", "type": "THEME", "status": "TODO", "phase": "P3", "description": "{relevant quote from concept}", "source": "/project-plan" }` to the feature list — `/design-tokens` auto-triggers on THEME items. No match → skip.
-
----
-
-**[WEB MODE, not WEB-MOBILE] Page-Discovery (after feature review confirms):**
-
-> **Todo**: Read `.claude/skills/project-plan/references/page-discovery.md` and follow the Page-Discovery flow before proceeding to PHASE 2.

@@ -54,6 +54,10 @@ Web: {3-5 bullet points: real-world patterns, warnings, recommendations}
 RESEARCH_END
 ```
 
+**Agent failure fallback:** if the Explore agent errors or times out, skip research and
+proceed to PHASE 1 with the concept alone — note this in the research summary line
+(e.g. `Research: skipped — agent error`).
+
 **Step 4: Research Summary**
 
 Parse the agent's `RESEARCH_START...END` block. Display:

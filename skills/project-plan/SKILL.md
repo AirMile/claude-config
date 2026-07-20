@@ -1,11 +1,11 @@
 ---
 name: project-plan
-description: "Use with /project-plan to turn a seed into a gap-checked, prioritized feature backlog."
+description: "Turn a seed into a gap-checked, prioritized feature backlog for /project-plan."
 reads: [backlog.status, concept.seed, backlog.seedDrift, project.thinking]
 writes: [backlog.status, backlog.features, concept.seed, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 2.0.0
+  version: 2.2.0
   category: project
 ---
 
@@ -37,7 +37,23 @@ Accepts markdown from:
 
 ## Workflow
 
+**Phase tracking** — first action of the skill: call `TaskCreate` with these items
+(status `pending`), then use `TaskUpdate` to set each phase to `in_progress` at the
+start and `completed` at the end. During context compaction the task list remains
+visible — no risk of forgetting phases.
+
+1. Stack Detection
+2. PHASE 0: Input Detection
+3. PHASE 0.5: Research (Optional)
+4. PHASE 1: Feature Extraction
+5. Page-Discovery (WEB MODE only)
+6. PHASE 2: Dependency Analysis
+7. PHASE 3: Priority Assignment
+8. PHASE 4: Generate Backlog
+
 ### Stack Detection (pre-PHASE 0)
+
+> **Todo**: call `TaskCreate` with the 8 phase items above (status `pending`). Mark Stack Detection → `in_progress`.
 
 **Goal:** Detect whether this is a web or game project so the correct feature types and terminology are used.
 
@@ -67,17 +83,23 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE
 
 ### PHASE 0: Input Detection
 
-> **Todo**: Read `.claude/skills/project-plan/references/input-detection.md`
+> **Todo**: mark Stack Detection → `completed`, PHASE 0 → `in_progress`. Read `.claude/skills/project-plan/references/input-detection.md`
 
 ### PHASE 0.5: Research (Optional)
 
-> **Todo**: Read `.claude/skills/project-plan/references/research.md`
+> **Todo**: mark PHASE 0 → `completed`, PHASE 0.5 → `in_progress` (declined by the user → mark PHASE 0.5 `completed` immediately, no research runs). Read `.claude/skills/project-plan/references/research.md`
 
 ### PHASE 1: Feature Extraction
 
-> **Todo**: Read `.claude/skills/project-plan/references/feature-extraction.md`
+> **Todo**: mark PHASE 0.5 → `completed`, PHASE 1 → `in_progress`. Read `.claude/skills/project-plan/references/feature-extraction.md`
+
+### Page-Discovery (WEB MODE only)
+
+> **Todo**: mark PHASE 1 → `completed`, Page-Discovery → `in_progress` (GAME MODE or WEB-MOBILE → mark `completed` immediately, no pages proposed). Read `.claude/skills/project-plan/references/page-discovery.md`. On completion mark Page-Discovery → `completed`, PHASE 2 → `in_progress`.
 
 ### PHASE 2: Dependency Analysis
+
+> **Todo**: mark Page-Discovery → `completed`, PHASE 2 → `in_progress`.
 
 **Goal:** Determine implementation order based on dependencies.
 

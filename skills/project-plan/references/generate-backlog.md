@@ -2,7 +2,11 @@
 
 **Goal:** Write the backlog JSON data store — the server renders the kanban board from the template + this data.
 
-**Refer to `shared/BACKLOG.md` for the full data format.**
+**Refer to `shared/BACKLOG.md` §§ "Reading the backlog" (schema), "Description quality",
+"Source field convention", "Status flow (two tracks)", and "COMPONENT as first-class type"
+(pageHint/dependencies convention) for the data format — skip Archiving, TWEAK cards,
+Refactor-badges, Known-issue badges, Impact Check, Lifecycle Protocol, Team context, and
+Parallel sync: those are dev-ship/design-ship runtime concerns this skill never touches.**
 
 1. **New or merge:**
    - **Create mode**: Start a fresh data object (step 2). Create `.project/` if it does not exist. No template copy — the server owns presentation.
