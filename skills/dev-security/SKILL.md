@@ -1,6 +1,6 @@
 ---
 name: dev-security
-description: Run a deep security audit (OWASP Top 10, supply chain, secrets). Use with /dev-security.
+description: OWASP Top 10 + supply-chain + secrets security audit. Use with /dev-security.
 reads:
   [
     project.endpoints,
@@ -8,11 +8,11 @@ reads:
     project-context.context,
     security.shipTriage,
   ]
-writes: [security.audit]
+writes: [security.audit, backlog.status]
 writes-terminal: [security.reports]
 metadata:
   author: claude-config
-  version: 3.0.0
+  version: 3.2.0
   category: dev
 ---
 
@@ -89,7 +89,10 @@ AskUserQuestion:
 - options:
   - _(only when a ship-triage file exists)_ "Ship-triage follow-up (Recommended)" — scope =
     `feature.json#files[]` for `{feature}`; preload `triage.confirmed` from the ship-triage file as
-    known findings (see Step 4)
+    known findings (see Step 4). `feature.json` missing (e.g. the feature already archived after
+    shipping) → fall back to the most recent completed audit's `scope.files[]` for this feature if
+    one exists in `.project/security/audit-*.json`, else fall back to "Full codebase" with a log
+    line (same fallback shape as "Changed features only" below).
   - "Full codebase (Recommended)" — Scan everything except node_modules/vendor/dist
   - "Backend/API only" — Focus on server-side code
   - "Changed features only" — Only pipeline files of DONE/shipped backlog features
@@ -235,6 +238,9 @@ Inside plan mode:
    mapping: CRITICAL/HIGH/MODERATE/LOW → severity 1-to-1.
 2. **Fold in the ship-triage findings** (only when PHASE 1 preloaded `shipTriageRef`) — already-known
    `confirmed[]` items from the dev-ship handoff, deduped against anything the scanners rediscovered.
+   If the relevant category's scanner re-verified the item as fixed (its own findings/verdict no
+   longer show it) → report it as resolved, not as an open finding. Only count a `shipTriageRef`
+   item toward the open-findings tally when its scanner did not independently confirm a fix.
 3. **Anti-fantasy judgment**: `aggregate.antiFantasySuspect` flags 3+ scores of 9-10 — apply
    judgment on top of the mechanical flag: expect justification per high score, reconsider "would a
    pentester give these scores?"

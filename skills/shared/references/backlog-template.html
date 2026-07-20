@@ -639,6 +639,17 @@
             }
             return null;
           }
+          // SECURITY is een triage-offload remediatie-kaart (levenscyclus
+          // TODO→shipped, geen pipeline): pickup via /dev-security op de
+          // parent-feature, niet de ship-flow. Geen game-variant — er is
+          // geen aparte game-security-skill.
+          if (f.type === "SECURITY") {
+            if (f.status === "TODO") {
+              const feat = f.parentFeature || f.name.replace(/^security-/, "");
+              return { cmd: `/dev-security ${feat}` };
+            }
+            return null;
+          }
           if (["TODO", "DEFINED", "DOING", "DONE"].includes(f.status))
             return {
               cmd: isGame ? `/game-ship ${f.name}` : `/dev-ship ${f.name}`,
@@ -1346,6 +1357,9 @@
                   // VERIFY (dev-track) copies /dev-manual — game-track VERIFY
                   // copies /game-ship and is already covered by isShip above.
                   const isReverify = cmd.startsWith("/dev-manual");
+                  // SECURITY copies /dev-security — a remediation round, not
+                  // the define phase, so it gets its own label.
+                  const isSecurity = cmd.startsWith("/dev-security");
                   const tlabels = isDesignTrackType(f.type)
                     ? TRANSITION_LABELS_DESIGN
                     : TRANSITION_LABELS_DEV;
@@ -1355,7 +1369,9 @@
                       ? "tweaking"
                       : isReverify
                         ? "verifying"
-                        : tlabels[f.status] || "active";
+                        : isSecurity
+                          ? "securing"
+                          : tlabels[f.status] || "active";
                   syncJSON();
                   render();
                 }

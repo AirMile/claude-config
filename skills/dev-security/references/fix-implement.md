@@ -13,8 +13,10 @@ state — follow `.claude/skills/dev-security/references/orchestration.md § 3` 
 turn** after launch; the task-notification with the workflow's `{plans, plannersFailed}` result
 wakes you back up.
 
-On return: persist `plans` into the audit state (`orchestration.md § 3`'s "On return" step already
-covers this).
+On return: persist the full `plans` object into the audit state verbatim — every strategy's
+`fixes[]`, `notes`, `coverage`, `effortEstimate`, not a summary (`orchestration.md § 3`'s "On
+return" step already covers this). The file is documented below as the durable audit record; a
+summary breaks that promise for anyone reading it back later.
 
 ## PHASE 5 gate (plan mode)
 
@@ -49,8 +51,10 @@ AskUserQuestion — header: "Fix Strategy", question: "Which fix strategy do you
 - "Minimal" — CRITICAL only, lowest risk
 - "Extensive" — Everything, including preventive measures
 
-Then present the chosen plan's fix list numbered, ask: "Which fixes do you want to apply? Provide
-numbers (e.g. `1, 3` or `all`)." Parse → fix-set.
+Then present the chosen plan's fix list numbered and ask via **free-text input, never
+`AskUserQuestion`** — follow `shared/SKILL-PATTERNS.md § Numbered List Selection` exactly (the user
+must cherry-pick from all findings at once; a modal's preset bundles cannot offer that). Prompt:
+"Which fixes do you want to apply? Provide numbers (e.g. `1, 3` or `all`)." Parse → fix-set.
 
 `ExitPlanMode` once the fix-set is chosen — present the chosen strategy + selected fixes as the plan
 output. Rejected → stay in plan mode, revise, re-present, loop until accepted.
@@ -77,9 +81,26 @@ this skill's own resume signal (PHASE 1), not a ship-pipeline checkpoint; there 
 
 ## Implement
 
-Apply the chosen strategy's selected fixes in the worktree. Per fix: show file:line, apply the
-change, verify syntax. Run the project's test suite if one exists (detect from `package.json` /
-project convention — same detection `debug-round-heavy.md § 7` uses). Commit on the worktree branch:
+Apply the chosen strategy's selected fixes in the worktree. Group fixes that share the same root
+cause/code path into one coherent edit (the fix-plan's own "resolved as side effect of" fixes are
+the common case) — state which finding numbers each edit addresses; apply genuinely independent
+fixes as separate edits. Verify syntax per file after its edits land.
+
+Run the project's test suite if one exists (detect from `package.json` / project convention — same
+detection `debug-round-heavy.md § 7` uses). **First check the worktree has its own installed
+dependencies**: a fresh `git worktree add` only creates a working tree, not `node_modules` — if a
+lockfile exists in the worktree but `node_modules` doesn't, run the project's install command there
+first. Skipping this can produce confusing false results rather than a clean error: some test
+runners' implicit module resolution (e.g. Vite's `import.meta.glob` resolved relative to a package's
+own install location) silently falls back to a _different_ root's code when `node_modules` is
+missing locally.
+
+**A test failing because of the fix's own intentional behavior change is not a regression** —
+update the test to the new (secure) contract; never weaken or revert the fix to keep a stale test
+green. A test failing for an unrelated reason → verify it also fails on the pre-fix branch before
+treating it as pre-existing.
+
+Commit on the worktree branch:
 
 ```
 fix(security): apply {strategy} remediation — {N} fixes
@@ -105,7 +126,28 @@ Patch the audit state `status: "complete"`, `phase: "PHASE 5"` — **the file is
 (unlike the ship checkpoint): it is the durable audit record, and a later `/dev-security {feature}`
 run's ship-triage preload (`SKILL.md § PHASE 1`) may still want to reference it.
 
-> **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
-> read `.claude/skills/shared/NEXT-STEP-OFFER.md`.
-> Recommended command: `/core-finalize security-hardening-{date}` — merges the worktree via
-> `shared/FINALIZE.md`. Do **not** auto-merge here; the user reviews the diff first.
+**Close the originating backlog card.** `shared/BACKLOG.md` declares `SECURITY` as a valid card
+type but documents no lifecycle for it. Find `.project/backlog.json#features[]` entry matching
+`type === "SECURITY" && parentFeature === {scope.feature}` (present whenever the audit ran via the
+ship-triage-follow-up scope). If found: set `status: "DONE"`, `shipped: true`, `shippedAt`
+(today), `shippedSha` (the fix commit — worktree SHA if unmerged, main SHA if the inline merge below
+ran), `summary` (one line, the fix strategy + finding count). Mirrors the TWEAK card lifecycle
+(`shared/BACKLOG.md § TWEAK cards`: "TODO → shipped directly"), since SECURITY cards are also
+created ad hoc outside the main FEATURE ship pipeline. No matching card (e.g. full-codebase scope,
+no `scope.feature`) → skip silently.
+
+> **Todo**: offer to merge now instead of only handing off to a separate command.
+
+AskUserQuestion — header: "Merge", question: "Worktree `security-hardening-{date}` is ready (commit
+shown above). Merge it into main now?":
+
+- "Ja, review diff en merge nu (Aanbevolen)" — show `git diff {default}...worktree-security-hardening-{date}`
+  for user review, then run `shared/FINALIZE.md` inline (same integrated pattern `dev-ship`/
+  `game-ship`/`design-ship` already use for their own PHASE 4 Finalize) with
+  `feature-name: security-hardening-{date}`. On success, re-run the backlog-close step above using
+  the real merge SHA.
+- "Nee, later" — fall through to the Next-Step Clipboard Offer below.
+
+`Nee` chosen (or the merge fails/is declined mid-review) → Apply the Next-Step Clipboard Offer
+(binary Ja/Nee) — read `.claude/skills/shared/NEXT-STEP-OFFER.md`. Recommended command:
+`/core-finalize security-hardening-{date}` — merges the worktree via `shared/FINALIZE.md`.
