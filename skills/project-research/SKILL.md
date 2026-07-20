@@ -327,8 +327,8 @@ Concept: project-seed.md updated with key findings
 Applied techniques: {list}
 
 Next steps:
-- /project-critique - Critically analyze with research context
-- /project-brainstorm - Creatively expand with new insights
+- /project-seed critique - Critically analyze with research context
+- /project-seed brainstorm - Creatively expand with new insights
 - /project-plan - Convert to feature backlog
 ```
 

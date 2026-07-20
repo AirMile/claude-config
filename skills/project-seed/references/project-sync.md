@@ -95,6 +95,7 @@ Source: {backlog: X, codebase: Y, drift: Z}
 File: .project/project-seed.md
 
 Next steps:
-- /project-critique - Analyze the updated seed
-- /project-brainstorm - Brainstorm on the new components
+- /project-seed critique - Analyze the updated seed
+- /project-seed brainstorm - Brainstorm on the new components
+- /project-plan - Turn the updated seed into a gap-checked backlog
 ```

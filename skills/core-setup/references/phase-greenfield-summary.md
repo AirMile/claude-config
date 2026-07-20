@@ -80,14 +80,14 @@ Then only relevant follow-up skills (no repetition of todos already in the backl
 
 - Web/Backend/Fullstack/Mobile/Desktop/CLI: `/dev-ship [new feature]`
 - Game: `/game-ship [feature]`
-- Expand concept: `/project-seed`, `/project-brainstorm`
+- Expand concept: `/project-seed`, `/project-seed brainstorm`
 
 **If `backlog_started = false` or no todos in backlog:**
 
 **1. Explore concept (optional, recommended for greenfield):**
 
 - `/project-seed` — build out project concept with guided questions
-- `/project-brainstorm` — expand ideas via creative techniques
+- `/project-seed brainstorm` — expand ideas via creative techniques
 - `/project-research` — research stack/market/competitors as input for planning
 
 **2. Plan — set up feature backlog:**

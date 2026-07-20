@@ -16,8 +16,8 @@ Skills load learnings during their **context-load phase** (typically PHASE 0 or 
 
 Each skill specifies one or more scopes. No wildcards — choose explicitly. The scope maps 1:1 to a `--scope` in `learnings-search.js`.
 
-- **`component`** — learnings relevant to the current feature/component: scored on feature-name match, shared tags, and summary-keyword overlap; **includes the archive** as a damped tier so a strongly-matching old entry resurfaces. Capped at 10. _Used by_: `dev-ship`, `design-convert`; `project-brainstorm` / `project-critique` (feature/page scope, via `INPUT-PARSING.md § Project Memory Load`).
-- **`architectural`** — `type === "pattern"` with source `synced`, `extracted`, or `consolidated` (exclude `inferred` — too broad for architecture choices). Active list only. With feature/query context relevant patterns float up; otherwise date-ordered. Capped at 15. _Used by_: `project-plan`; `project-seed` / `project-brainstorm` / `project-critique` (via `INPUT-PARSING.md § Project Memory Load`).
+- **`component`** — learnings relevant to the current feature/component: scored on feature-name match, shared tags, and summary-keyword overlap; **includes the archive** as a damped tier so a strongly-matching old entry resurfaces. Capped at 10. _Used by_: `dev-ship`, `design-convert`; `project-seed` brainstorm/critique modes (feature/page scope, via `INPUT-PARSING.md § Project Memory Load`).
+- **`architectural`** — `type === "pattern"` with source `synced`, `extracted`, or `consolidated` (exclude `inferred` — too broad for architecture choices). Active list only. With feature/query context relevant patterns float up; otherwise date-ordered. Capped at 15. _Used by_: `project-plan`; `project-seed` (all modes) (via `INPUT-PARSING.md § Project Memory Load`).
 - **`pitfall-prefix`** — pitfalls scored against the current feature (archive included); with no feature context or no relevant hit it falls back to the **last 5 pitfalls** by date. Default-on prefix for every skill that uses this loader; disable with `pitfall-prefix: false`.
 
 ## Load command

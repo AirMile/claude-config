@@ -1,5 +1,7 @@
 # Creative Analysis Techniques
 
+Detail file. Load only when a technique from this category is selected in PHASE 3.
+
 These techniques are specifically for creative concepts: games, stories, art, music, and other artistic projects.
 
 ## Narrative Structure Analysis
@@ -7,6 +9,7 @@ These techniques are specifically for creative concepts: games, stories, art, mu
 **When to use:** For stories, games with narrative elements, or content-driven experiences.
 
 **Approach:**
+
 - Does the narrative arc work? (setup, conflict, climax, resolution)
 - Are character motivations clear and consistent?
 - Is pacing appropriate for the medium?
@@ -14,6 +17,7 @@ These techniques are specifically for creative concepts: games, stories, art, mu
 - How does the structure serve the theme?
 
 **Output structure:**
+
 - Story structure breakdown
 - Character arc analysis
 - Pacing assessment
@@ -25,6 +29,7 @@ These techniques are specifically for creative concepts: games, stories, art, mu
 **When to use:** For any creative work exploring themes, messages, or artistic concepts.
 
 **Approach:**
+
 - What is the core theme or message?
 - Is the theme communicated effectively through the concept?
 - Are there contradictions between theme and execution?
@@ -32,6 +37,7 @@ These techniques are specifically for creative concepts: games, stories, art, mu
 - Does the concept add something new to this theme?
 
 **Output structure:**
+
 - Core themes identified
 - Theme-execution alignment
 - Depth assessment
@@ -43,6 +49,7 @@ These techniques are specifically for creative concepts: games, stories, art, mu
 **When to use:** For games, interactive experiences, or any creative work the audience engages with over time.
 
 **Approach:**
+
 - How does the user/player/reader experience this step-by-step?
 - Where are friction points or confusion likely?
 - Does the pacing maintain engagement?
@@ -50,6 +57,7 @@ These techniques are specifically for creative concepts: games, stories, art, mu
 - How does the experience evolve over time?
 
 **Output structure:**
+
 - Step-by-step journey map
 - Engagement peaks and valleys
 - Friction points identified
@@ -61,6 +69,7 @@ These techniques are specifically for creative concepts: games, stories, art, mu
 **When to use:** For games, digital art, interactive media, or technically complex creative projects.
 
 **Approach:**
+
 - What technical requirements does this idea have?
 - Are these requirements realistic given current technology?
 - What are the performance/resource limitations?
@@ -68,6 +77,7 @@ These techniques are specifically for creative concepts: games, stories, art, mu
 - Are there simpler technical approaches?
 
 **Output structure:**
+
 - Technical requirements list
 - Feasibility assessment (easy/moderate/hard/impossible)
 - Resource and skill needs
@@ -79,6 +89,7 @@ These techniques are specifically for creative concepts: games, stories, art, mu
 **When to use:** For creative projects that might grow (game content, story series, art collections).
 
 **Approach:**
+
 - Can this concept sustain expansion?
 - What are natural extension points?
 - Will the core concept remain interesting at scale?
@@ -86,8 +97,29 @@ These techniques are specifically for creative concepts: games, stories, art, mu
 - What would break if scaled up?
 
 **Output structure:**
+
 - Scalability potential (high/medium/low)
 - Natural expansion paths
 - Risks of scaling
 - Content sustainability assessment
 - Recommendations for scope
+
+## Core Loop Analysis
+
+**When to use:** For games and interactive concepts — tests whether the core mechanic is intrinsically satisfying, separate from progression or novelty.
+
+**Approach:**
+
+- What is the moment-to-moment loop the player repeats most? (describe it in one sentence)
+- Is that loop satisfying on its own, stripped of rewards, story, and progression?
+- Which player motivation drives repetition — mastery, progression, expression, discovery, social?
+- Where does the loop wear thin, and what varies it before that point?
+- Does every major feature feed back into the core loop, or do some pull away from it?
+
+**Output structure:**
+
+- Core loop described (action → feedback → motivation to repeat)
+- Intrinsic satisfaction assessment (fun without rewards: yes/no/partially)
+- Primary motivation drivers identified
+- Wear-out points and variation mechanisms
+- Features that strengthen vs dilute the loop

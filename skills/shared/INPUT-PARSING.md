@@ -1,6 +1,6 @@
 # Shared: PHASE 1 Parse Input
 
-Used by `/project-brainstorm`, `/project-critique`, and `/project-seed`. The caller's Todo-marker specifies the **variant**:
+Used by the `/project-seed` brainstorm and critique modes. The caller's Todo-marker specifies the **variant**:
 
 - **brainstorm** — action = "brainstorm", confirm: 2 options, no applied-techniques check
 - **critique** — action = "analyze", confirm: 3 options, includes applied-techniques check
@@ -64,13 +64,17 @@ After concept detection, also check for broader scope:
 
 If scope context found AND concept already loaded:
 
+1. Check whether the scope options are actually populated: backlog has ≥1 feature with status TODO/DEFINED/DOING beyond infra/THEME scaffolding tasks, and/or a non-scaffold page file exists.
+2. Neither condition holds → skip the modal, proceed with Concept scope directly.
+3. Otherwise, offer only the populated options (always include Concept and Standalone):
+
 ```yaml
 header: "Scope"
 question: "What do you want to {brainstorm about | analyze}?"
 options:
   - label: "Concept (Recommended)", description: "Work with concept from project.json"
-  - label: "Feature from backlog", description: "Focus on a specific feature"
-  - label: "Page / UX flow", description: "Focus on layout, UX or user flow"
+  - label: "Feature from backlog", description: "Focus on a specific feature"   # only if populated
+  - label: "Page / UX flow", description: "Focus on layout, UX or user flow"   # only if populated
   - label: "Standalone idea", description: "Standalone idea, not linked to the project"
 multiSelect: false
 ```
@@ -114,7 +118,7 @@ Run directly after the scope is known (after § PHASE 1a; seed variant: after th
    - scope = concept (or seed implementation scope): `scopes: [architectural]`, `pitfall-prefix: true`, `current-feature: none`
    - scope = feature or page/UX: `scopes: [component, architectural]`, `pitfall-prefix: true`, `current-feature: {kebab-name}`
 4. **Prior thinking (cheap name match)**: Grep `.project/thinking/*.md` for the concept-title / feature-name tokens (tokens ≥ 3 chars). Report matches as `Prior thinking: {file} — {first H1}` — filenames + H1 only, **never read the full files**. A later phase (or the user) decides whether one is worth reading.
-5. **Compose one `PROJECT MEMORY` block** and show it before the confirm step (and carry it into the plan-mode phases as context):
+5. **Compose one `PROJECT MEMORY` block** and show it as its own message right after composing it — this is informational output, not gated by any confirm step (carry it into the plan-mode phases as context):
 
    ```
    PROJECT MEMORY

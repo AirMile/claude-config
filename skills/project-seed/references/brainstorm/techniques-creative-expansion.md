@@ -10,15 +10,17 @@ Detail file. Load only when a technique from this category is selected in PHASE 
 
 - What if we changed [core element] completely?
 - What if this existed in [different context/world]?
+- What if this existed in a different era, or with a very different technology level?
 - What if we removed [constraint] entirely?
 - What if we added [extreme element]?
 - What if [opposite of current approach]?
+- Escalate to Po-statements for deliberate absurdity ("Po: users never see the interface") — explore the implications, then extract the kernel of valuable insight
 
 **Output structure:**
 
-- 5-10 provocative "what if" scenarios
+- 5-10 provocative "what if" scenarios (including any Po-statements)
 - Brief exploration of each scenario's implications
-- Most promising scenarios highlighted
+- Most promising scenarios highlighted; absurdity translated into viable innovation
 - Unexpected directions discovered
 
 ### 2. Analogical Thinking
@@ -32,17 +34,18 @@ Detail file. Load only when a technique from this category is selected in PHASE 
 - How would [different profession] approach this?
 - What unexpected parallels exist?
 - What can we learn from [unrelated domain]?
+- When one analogy resonates, deepen it into an extended metaphor: map elements ("like a garden": plants=features, soil=foundation), push the metaphor into new areas, ask what it suggests is missing
 
 **Output structure:**
 
-- 3-5 analogies from different domains
+- 3-5 analogies from different domains (or one deep metaphor mapping)
 - Key insights from each analogy
-- Transferable concepts identified
+- Transferable concepts identified; missing elements revealed by the metaphor
 - Novel approaches inspired by analogies
 
 ### 3. Reversal/Inversion
 
-**When to use:** To discover alternatives by flipping the concept upside down.
+**When to use:** To discover alternatives by flipping the concept or its assumptions upside down.
 
 **Approach:**
 
@@ -50,14 +53,14 @@ Detail file. Load only when a technique from this category is selected in PHASE 
 - Instead of [X], what if [opposite of X]?
 - Reverse the user journey—what happens?
 - Invert the problem—what would make this worse?
-- Flip assumptions—what if [assumption] is wrong?
+- List the core assumptions about how things "should" be, then systematically reverse each one: what if [opposite of assumption] were true? Which reversals create value?
 
 **Output structure:**
 
-- Core elements identified
-- Reversals/inversions for each element
+- Core elements and assumptions identified
+- Reversals/inversions for each element and assumption
 - Surprising insights from inversions
-- Viable alternative approaches discovered
+- Valuable reversals and viable alternative approaches discovered
 
 ### 4. First Principles Thinking
 

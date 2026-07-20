@@ -28,7 +28,7 @@ Cross-platform: **macOS** and **Windows**.
 ## Structure
 
 ```
-skills/           44 skills in 8 categories
+skills/           42 skills in 8 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (each with SKILL.md)
 agents/           23 sub-agent definitions (.md with YAML frontmatter)
@@ -45,7 +45,7 @@ CLAUDE.base.md    Template for per-project CLAUDE.md generation
 - **Description**: one short sentence — `<Verb-phrase>. Use with /<skill-name>.` (target 40-80 chars). Descriptions count against `skillListingBudgetFraction` (~1% context budget) and get truncated if too long, breaking auto-routing. Only use a richer description when the skill genuinely auto-triggers from context (e.g. `design-tokens` on THEME backlog status).
 - **Pipeline handoff**: skills that touch shared state declare `reads:` / `writes:` in frontmatter — see `shared/DEVINFO.md` for namespaces. Validate with `python3 scripts/check-handoff.py`.
 - **Language**: skill/agent files in English (hard rule). Runtime output: from `CLAUDE.md § User Preferences → Language:`. See `skills/shared/LANGUAGE.md`.
-- **Phases**: PHASE 0 = pre-flight validation → execution → last phase = report (ASCII table)
+- **Phases**: PHASE 0 = pre-flight validation → execution → last phase = report (ASCII table). Thinking skills (project-seed/brainstorm/critique) are exempt, mirroring the Task Tracking exemption: conversational flows end in THINKING-OUTPUT confirmation blocks, not ASCII reports.
 - **Lazy reference loading**: SKILL.md is a workflow skeleton. Blocks ≥30 lines that are conditionally executed (branch fires only-when-X), static templates/agent-prompts, or end-of-flow phases go into `references/{descriptive-name}.md`. Replace inline with a `> **Todo**: Read '.claude/skills/{skill}/references/{file}.md'` transition marker. Token efficiency: the reference file is only loaded in sessions where that phase actually fires. Canonical pattern: `skills/shared/SKILL-PATTERNS.md § Lazy Reference Loading`.
 - **AskUserQuestion**: first option = recommended, multiSelect default true
 - **Shared infra** (`skills/shared/*`): read-only single source of truth — reference, don't duplicate
@@ -65,7 +65,7 @@ Full pattern: see `skills/shared/SKILL-PATTERNS.md` § Task Tracking.
 
 ## Pipelines
 
-**Dev**: `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (define→build→auto-verify as one auto-mode flow) hands off to `dev-manual` (manual verify→debug→refactor→ship) when manual items remain — both read the same in-ship park-first debug rounds (no standalone debug skill); small 1-3-file changes skip the pipeline via `dev-tweak` (gate/guard: `shared/TWEAK-DISCIPLINE.md`; can also pick up a `TWEAK` backlog card a ship's verify/manual round offloaded); element-pinned frontend edits from a pasted inspect-overlay ref via `dev-inspect` (theme-aware edit + screenshot-verify, no commit — offers `/core-commit`)
+**Dev**: `project-seed` [→ `brainstorm`/`critique` modes] → `project-plan` → `dev-ship` (define→build→auto-verify as one auto-mode flow) hands off to `dev-manual` (manual verify→debug→refactor→ship) when manual items remain — both read the same in-ship park-first debug rounds (no standalone debug skill); small 1-3-file changes skip the pipeline via `dev-tweak` (gate/guard: `shared/TWEAK-DISCIPLINE.md`; can also pick up a `TWEAK` backlog card a ship's verify/manual round offloaded); element-pinned frontend edits from a pasted inspect-overlay ref via `dev-inspect` (theme-aware edit + screenshot-verify, no commit — offers `/core-commit`)
 **Game**: `project-seed` → `project-plan` → `game-ship` (runs define→build→GUT-verify→playtest→refactor as one auto-mode flow) (+ `game-debug` everywhere, Godot 4.x / GUT); small changes via `game-tweak` (same TWEAK-DISCIPLINE fast path)
 **Design**: `design-convert` (spec management, visual→code convert — sketch/wireframe/Figma/Canva/URL → high-fi code — and game `.tscn` codegen) & `design-content` (fill copy) feed `design-ship` — auto-mode build→content→check as one flow (Build lane / web); `design-tokens` for tokens/motion packs; dev-track counterpart: `dev-ship`
 **Marketing**: `marketing-research` → `marketing-content` → `marketing-screenshots`

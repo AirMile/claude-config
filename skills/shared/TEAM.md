@@ -22,7 +22,7 @@ Three signals:
 | ------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------- |
 | Concept / discovery | (not your task — team already has a concept or backlog)                       | `/project-seed`, `/project-plan` (greenfield tools) |
 | Item capture        | `/team-issues` (issues from team tracker), `/project-todo` (own ideas)        | —                                                   |
-| Deep-dive           | `/project-brainstorm`, `/project-critique` (on individual items)              | —                                                   |
+| Deep-dive           | `/project-seed brainstorm`, `/project-seed critique` (on individual items)    | —                                                   |
 | Define              | `/dev-ship` (define phase), `/design-convert`                                 | —                                                   |
 | Build               | `/dev-ship` (build phase), `/design-convert` Build, `/design-convert` Convert | —                                                   |
 | Test                | `/dev-ship` (verify phase), `/design-ship`                                    | —                                                   |

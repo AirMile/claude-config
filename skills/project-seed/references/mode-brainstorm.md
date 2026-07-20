@@ -1,32 +1,12 @@
----
-name: project-brainstorm
-description: Explore ideas using brainstorm techniques. Use with /project-brainstorm.
-reads:
-  [
-    concept.seed,
-    backlog.status,
-    backlog.features,
-    feature.seedDrift,
-    backlog.seedDrift,
-    project.thinking,
-    project-context.architecture,
-    project-context.learnings,
-  ]
-writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
-metadata:
-  author: claude-config
-  version: 2.1.0
-  category: project
----
+# Mode: Brainstorm
+
+Loaded by the project-seed PHASE 0 dispatcher. Topic input (if any) was parsed there.
+
+**Chained entry**: when entered via THINKING-OUTPUT § Continue from another mode in this session, skip PHASE 1 — the just-saved document is the input; scope carries over — and start at Enter Plan Mode.
 
 ## Overview
 
-Creatively expand and explore ideas through interactive application of brainstorm techniques. Works with any concept input (from `/project-seed`, existing documents, or pasted text). One technique at a time through dialogue, then choose: another technique or generate the refined idea as a clean markdown document.
-
-## When to Use
-
-- User wants to explore variations, alternatives, or creative expansion of an idea
-- User starts with `/project-brainstorm` (optionally followed by an idea or `/project-seed` output)
+Creatively expand and explore ideas through interactive application of brainstorm techniques. Works with any concept input (from the seed mode, existing documents, or pasted text). One technique at a time through dialogue, then choose: another technique or generate the refined idea as a clean markdown document.
 
 ## Workflow
 
@@ -36,11 +16,7 @@ Creatively expand and explore ideas through interactive application of brainstor
 
 ### Enter Plan Mode
 
-**Enter Plan Mode** — call `EnterPlanMode` NOW, after PHASE 1 input parsing and before any PHASE 2 analysis. Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol. PHASES 2-6 run in plan mode — technique selection and the technique dialogues must run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model. The refined idea (PHASE 6) is written to the plan file for review; all `.project/` writes wait until after `ExitPlanMode` (PHASE 7).
-
-- **Note on user consent**: `EnterPlanMode` may prompt the user for plan-mode confirmation in some Claude Code UIs. This is intentional — model routers use plan mode as the trigger for upgrading to the planning model. Do not skip the call to avoid the prompt.
-- **Skip-check**: if plan mode is already active (existing system-reminder), skip the call and read the plan-file path from the active reminder.
-- Context7 research (PHASE 3) works normally in plan mode.
+**Enter Plan Mode** — call `EnterPlanMode` NOW, after PHASE 1 input parsing and before any PHASE 2 analysis. Follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Entry protocol. PHASES 2-6 run in plan mode — technique selection and the technique dialogues must run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model. The refined idea (PHASE 6) is written to the plan file for review; all `.project/` writes wait until after `ExitPlanMode` (PHASE 7).
 
 ---
 
@@ -49,7 +25,7 @@ Creatively expand and explore ideas through interactive application of brainstor
 **Goal:** Rank the most relevant techniques for this idea and current exploration state.
 
 1. Analyze: what has been explored (track applied techniques), which aspects need creative expansion, which unexplored directions could be valuable. Weigh the `PROJECT MEMORY` block (if loaded): prefer techniques that explore gaps relative to what is already built — `status: done` components and DOING/DONE backlog items are existing reality, not open design space.
-2. Read `references/technique-index.md` — the index only. Do NOT load detail files here.
+2. Read `.claude/skills/project-seed/references/brainstorm/technique-index.md` — the index only. Do NOT load detail files here.
 3. Select 2-3 most relevant techniques, ranked (1 = most relevant). Recommend 1-2 — after 2 techniques diminishing returns are likely. Already-applied techniques never reappear.
 4. Present via AskUserQuestion (in user's preferred language):
 
@@ -57,9 +33,9 @@ Creatively expand and explore ideas through interactive application of brainstor
    header: "Technique"
    question: "Which technique do you want to apply?"
    options:
-     - label: "1. [Top Technique] (Recommended)", description: "[1-2 sentences why most relevant for THIS idea]"
-     - label: "2. [Technique 2]", description: "[brief description]"
-     - label: "3. [Technique 3]", description: "[brief description]"
+     - label: "[Top Technique] (Recommended)", description: "[1-2 sentences why most relevant for THIS idea]"
+     - label: "[Technique 2]", description: "[brief description]"
+     - label: "[Technique 3]", description: "[brief description]"
    multiSelect: false
    ```
 
@@ -71,7 +47,7 @@ Creatively expand and explore ideas through interactive application of brainstor
 
 1. Read the **detail file of the selected technique** (the index names it) — only that category file.
 
-2. **Question protocol** — follow [shared/QUESTIONING.md](../shared/QUESTIONING.md) for form choice, anchoring, and escalation:
+2. **Question protocol** — follow [shared/QUESTIONING.md](../../shared/QUESTIONING.md) for form choice, anchoring, and escalation:
    - Formulate 4-6 **anchored** questions from the technique's framework — each references something concrete from the idea/seed/dialogue so far, narrowed to a genuine unknown, with example directions where natural. Present them as a numbered menu (the documented exception to one-per-turn) plus 2-3 concrete suggestions.
    - When the technique surfaces an **enumerable fork** (pick between generated variants, prioritize directions), present it as an AskUserQuestion — typically at the end of a dialogue round ("which of these variants do you want to deepen?") — instead of burying it in the menu.
 
@@ -135,13 +111,13 @@ Integrate the most valuable variations and insights from all applied techniques 
 
 - Same structure as the original input (or improved), standalone document
 - **DO NOT include:** original idea, technique names, comparison to old version, changelog
-- Pure markdown, no framing text ("Here's your refined idea:"), wrapped in a code block with `markdown` language tag
+- Pure markdown, no framing text ("Here's your refined idea:"); proper heading formatting (`#` title, `##` sections)
 
-**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 7.
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 7.
 
 ### PHASE 7: Output Destination
 
-> **Todo**: Read `.claude/skills/shared/THINKING-OUTPUT.md` — caller `project-brainstorm`, `{kind}` = `brainstorm`. Add `Applied techniques: {list}` to each confirmation block. Next steps: `/project-critique`, `/project-seed`, `/project-plan`.
+> **Todo**: Read `.claude/skills/shared/THINKING-OUTPUT.md` — mode `brainstorm`, `{kind}` = `brainstorm`. Add `Applied techniques: {list}` to each confirmation block.
 
 ---
 
@@ -151,13 +127,3 @@ Integrate the most valuable variations and insights from all applied techniques 
 - Be exploratory and curious; encourage wild ideas and boundary pushing
 - One technique at a time: select → apply → synthesize → decide; track applied techniques and cumulative insights through the session
 - Respect the user's technique choice even if it differs from your recommendation
-
-### Terminal Formatting
-
-- NEVER use blockquote syntax (`>`) for displaying content — causes unreadable white background in dark terminals
-- NEVER use inline code backticks for emphasis on regular words — use **bold** or plain text
-- Backticks only for actual code, file paths, and command references
-
-### Language
-
-Follow the Language Policy in CLAUDE.md.

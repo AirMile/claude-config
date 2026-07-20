@@ -1,6 +1,6 @@
 ---
 name: project-todo
-description: Add new backlog items to the project. Use with /project-todo.
+description: Use with /project-todo to capture an idea or finding as a backlog item.
 reads: [project.stack, project.design, backlog.status, concept.seed]
 writes:
   [
@@ -13,7 +13,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 2.1.0
+  version: 2.2.0
   category: project
 ---
 
@@ -32,7 +32,7 @@ This matters beyond convenience: `dev-ship` and `game-ship` route out-of-scope f
 - User has a new feature, change, bug fix, improvement, mechanic, or content idea for an existing project
 - User wants to quickly capture an item without full `/project-plan`
 
-NOT for: concept-level ideation (`/project-seed`), iterating on existing items (`/project-brainstorm`, `/project-critique`).
+NOT for: concept-level ideation (`/project-seed`), iterating on existing items (`/project-seed brainstorm`, `/project-seed critique`).
 
 ## Workflow
 
@@ -112,7 +112,7 @@ STACK: game   (→ /game-ship pipeline)
 
      Resolve:
      - **No candidate** → continue.
-     - **Evidently the same thing** → do not add. Report the existing item and its status, suggest `/project-brainstorm {name}` to deepen it. Stop.
+     - **Evidently the same thing** → do not add. Report the existing item and its status, suggest `/project-seed brainstorm {name}` to deepen it. Stop.
      - **Evidently different intent** (name collision only) → silently append a suffix (`-2`, `-3`).
      - **Overlapping but unclear** → gate criterion 3; carry into PHASE 1x.
      - **Multi-item:** also check collisions between queue names. Always resolve silently with a suffix — never gate.
@@ -228,7 +228,7 @@ If criterion 2 (thin description) fired, fold the answers into the sharpened des
 
 ### PHASE 3: Output
 
-Always report what was inferred and why, plus the correction line — the gate buys correctness cheaply after the fact instead of expensively up front.
+Always report what was inferred and why, plus the correction line — the gate buys correctness cheaply after the fact instead of expensively up front. Always print the `Seed:` verdict line — its presence is the forcing function that the PHASE 1 alignment scan actually ran.
 
 **[MULTI-ITEM — when items queue > 1]:**
 
@@ -241,8 +241,7 @@ TODOS ADDED ({n} items — auto-split)
   2. {name-2}    {phase} · {type}     ← depends on: {name-1}
      {description-2}
 
-  Seed: updated — {n} edit(s) applied ← only if step 5 applied edits
-  Seed drift: {n} item(s) recorded    ← only if step 5 recorded drift
+  Seed: {✓ aligned | updated — {n} edit(s) applied | ⚠ drift recorded — {category}}  ← always shown, the PHASE 2 step-5 verdict
   ⚠ {N} pending drift item(s) in backlog — run /project-seed → "Sync with project"
                                       ← only if data.seedDrift[].length ≥ 3 after the write
   Backlog: .project/backlog.json
@@ -259,8 +258,7 @@ TODO ADDED
   {name}                {phase} · {type}
   {description}
   Thinking: .project/thinking/feature-idea-{name}.md    ← only if gate criterion 2 fired
-  Seed: updated — {n} edit(s) applied                   ← only if step 5 applied edits
-  Seed drift: {n} item(s) recorded                      ← only if step 5 recorded drift
+  Seed: {✓ aligned | updated — {n} edit(s) applied | ⚠ drift recorded — {category}}  ← always shown, the PHASE 2 step-5 verdict
   ⚠ {N} pending drift item(s) in backlog — run /project-seed → "Sync with project"
                                                         ← only if data.seedDrift[].length ≥ 3 after the write
 
@@ -269,8 +267,8 @@ TODO ADDED
 
   Backlog: .project/backlog.json
   Next steps:
-  - /project-brainstorm {name} - Deepen the idea with variations
-  - /project-critique {name} - Test the idea critically
+  - /project-seed brainstorm {name} - Deepen the idea with variations
+  - /project-seed critique {name} - Test the idea critically
   [If type is FEATURE, CHANGE, BUG, or API:]
   - /dev-ship {name} - Start with requirements and building
   - /team-outsource {name} - Outsource to a teammate via GitHub/Jira/Linear
@@ -299,8 +297,7 @@ FEATURE ADDED
   {name}                {phase} · {type}
   {description}
   Thinking: .project/thinking/feature-idea-{name}.md    ← only if gate criterion 2 fired
-  Seed: updated — {n} edit(s) applied                   ← only if step 5 applied edits
-  Seed drift: {n} item(s) recorded                      ← only if step 5 recorded drift
+  Seed: {✓ aligned | updated — {n} edit(s) applied | ⚠ drift recorded — {category}}  ← always shown, the PHASE 2 step-5 verdict
   ⚠ {N} pending drift item(s) in backlog — run /project-seed → "Sync with project"
                                                         ← only if data.seedDrift[].length ≥ 3 after the write
 
@@ -310,8 +307,8 @@ FEATURE ADDED
 
   Backlog: .project/backlog.json
   Next steps:
-  - /project-brainstorm {name} - Deepen the idea with variations
-  - /project-critique {name} - Test the idea critically
+  - /project-seed brainstorm {name} - Deepen the idea with variations
+  - /project-seed critique {name} - Test the idea critically
   - /game-ship {name} - Start with requirements and architecture
 ```
 
@@ -319,7 +316,7 @@ FEATURE ADDED
 
 Fires only when the user adjusts a field in the same turn, in response to the PHASE 3 correction line ("make it P1", "type is COMPONENT", "it depends on auth-api"). This is what makes zero-modal inference safe: a wrong guess costs one sentence to undo.
 
-**Correctable fields:** `phase`, `type`, `dependencies`. Anything else (rewriting the description, rethinking the idea) → point at `/project-brainstorm {name}` and stop.
+**Correctable fields:** `phase`, `type`, `dependencies`. Anything else (rewriting the description, rethinking the idea) → point at `/project-seed brainstorm {name}` and stop.
 
 1. **Patch both files.** The card lives in `backlog.json#features[]` (PHASE 2 step 3) _and_ `project.json#features[]` (PHASE 2 step 8). Patching one desyncs the dashboard silently. Use the read-parallel → mutate → write-parallel batch from `shared/BACKLOG.md § Parallel sync`.
 

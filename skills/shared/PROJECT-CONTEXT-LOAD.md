@@ -24,7 +24,7 @@ is absent (treat as empty/degraded, not an error). `$FEAT` not set on `define`: 
 
 ## `ideation` — inline (not script-backed)
 
-For the ideation skills (`project-seed`, `project-brainstorm`, `project-critique`) via
+For the ideation modes of `project-seed` (seed, brainstorm, critique) via
 `INPUT-PARSING.md § Project Memory Load`. Extracts a compact built-state and backlog summary —
 "what exists and what's planned", no file paths, no `connects_to`/`endpoints` detail. Caps (40
 components, 40 active features) bound the combined block at roughly 600–900 tokens.

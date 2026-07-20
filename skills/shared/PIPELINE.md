@@ -13,8 +13,8 @@ Read-only reference — not an executable skill. See BACKLOG.md, FEATURE.md, and
   (thin: task / assignment / large feature)    │
   (rich: concept / product / game)             ▼
                                        project-seed.md
-               [/project-brainstorm] ──────────┤
-               [/project-critique]  ───────────┤
+        [/project-seed brainstorm] ────────────┤
+        [/project-seed critique]  ─────────────┤
                                                ▼
                                  /project-plan ──→ backlog.json
                                                │

@@ -23,7 +23,7 @@ Transforms structured idea markdown into a prioritized feature backlog ready for
 Accepts markdown from:
 
 - `/project-seed` output
-- `/project-brainstorm` output
+- `/project-seed brainstorm` output
 - Any structured concept markdown (web or game)
 
 ## Output
@@ -115,6 +115,8 @@ Dependency tree:
 
 ### PHASE 3: Priority Assignment
 
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`.
+
 **Goal:** Assign priorities (P1–P4).
 
 1. **Propose a P1 set from the dependency graph (do not ask for numbers blind):**
@@ -140,12 +142,22 @@ Dependency tree:
    **[WEB MODE]** framing: "minimum needed for a working prototype".
    **[GAME MODE]** framing: "minimum needed for a playable prototype".
 
+   **Degenerate-graph check**: if the proposed P1 covers ≥90% of all features (a single
+   terminal goal pulling in nearly the whole graph — common in single-deliverable/event
+   projects where nothing is genuinely optional), say so explicitly and surface the 4th
+   option below instead of forcing an artificial P1/P2 split.
+
    Then AskUserQuestion — header "P1 scope", question "Proposed P1 above. Correct?":
    - "Yes, this is correct (Recommended)" → step 2
    - "Adjust goal features" → free-text: accept **names, numbers, OR semantic phrases**
      (e.g. `the pillars`, `1, 5, 6`, `all except home`). Re-resolve transitive
      dependencies on the new goal set, re-show the proposed P1, re-ask.
    - "Start minimal — one slice" → propose the thinnest single goal feature + its deps.
+   - **[only when the degenerate-graph check fires]** "Reindex by build risk" → re-derive
+     phases by build order instead of importance: P1 = foundation + highest-risk features
+     (risk ≥4, or features the concept flags as having no fallback) + one low-risk feature
+     as an end-to-end validation slice; P2+ = remaining features ordered by risk descending.
+     Re-apply the dependency invariant (step 2) afterward.
 
    User can always say "all" or "none" in the adjust free-text.
 
@@ -160,7 +172,9 @@ Dependency tree:
    in the same or an earlier phase — if a dependency landed later, promote it up. Apply
    transitively before showing the review table in step 3.
 
-3. **Review with user:** show the proposed prioritization table, then AskUserQuestion ("Is this prioritization correct? P1 = must-have, P2 = extends P1, P3 = nice-to-have, P4 = later") — "Yes, this is correct (Recommended)" → PHASE 4; any other answer → move features between priorities, show updated prioritization, re-ask. Loop until confirmed.
+3. **Review with user** (mandatory gate — do not proceed to Requirements Coverage Check or the Seed Alignment Check without it):
+
+   > **Todo**: show the proposed prioritization table, then AskUserQuestion ("Is this prioritization correct? P1 = must-have, P2 = extends P1, P3 = nice-to-have, P4 = later") — "Yes, this is correct (Recommended)" → continue below; any other answer → move features between priorities, show updated prioritization, re-ask. Loop until confirmed.
 
 **Output:**
 
@@ -183,6 +197,9 @@ P4:
 
 **Requirements coverage check** (conditional — run before the Seed Alignment Check):
 
+> **Todo**: check `project.json#concept.goals[]` and the seed for a requirements/rubric
+> section now — mandatory to _check_ even when the outcome is silent-skip.
+
 Trigger only when the concept declares explicit requirements/goals — `project.json#concept.goals[]`
 non-empty, OR the seed has a requirements/rubric section (heading/table matching eisen/requirements/
 rubric/criteria). No such source → skip silently (free-form concepts have no formal requirements).
@@ -204,6 +221,9 @@ proceed.
 
 **Seed Alignment Check** (last step in PHASE 3, before ExitPlanMode):
 
+> **Todo**: run this gate now and output the inline log line (`Seed: ✓ aligned` or
+> `Seed: ⚠ drift — N item(s)`) directly in chat — a plan-file copy does not substitute.
+
 Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: new features
 added, features marked INDEPENDENT/CANCELLED (incl. cancel-proposal outcomes from
 `references/update-reconcile.md`), and significant priority
@@ -217,4 +237,4 @@ rewrite go into the plan file alongside the feature plan. On "Yes" → carry
 
 ### PHASE 4: Generate Backlog
 
-> **Todo**: Read `.claude/skills/project-plan/references/generate-backlog.md`
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/project-plan/references/generate-backlog.md`. On completion mark PHASE 4 → `completed`.

@@ -94,7 +94,7 @@
    - Ask user to paste concept:
      ```yaml
      header: "Input"
-     question: "Paste the output of /project-seed or /project-brainstorm"
+     question: "Paste the output of /project-seed or /project-seed brainstorm"
      options:
        - label: "I'll paste it below", description: "Type or paste your idea/brainstorm markdown"
        - label: "Load from file", description: "Load from an existing .md file"

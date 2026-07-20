@@ -1,6 +1,6 @@
 # Adaptive Questioning Protocol
 
-Shared protocol for skills that gather input through user questions — interviews (`dev-ship (define phase)`, `game-ship (define phase)`), exploration rounds (`project-seed`), and technique dialogues (`project-brainstorm`, `project-critique`). Load this file when the question phase starts.
+Shared protocol for skills that gather input through user questions — interviews (`dev-ship (define phase)`, `game-ship (define phase)`), exploration rounds (`project-seed`), and technique dialogues (`project-seed` brainstorm/critique modes). Load this file when the question phase starts.
 
 **Plan-mode precondition**: question phases run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model — see [PLAN-MODE.md](PLAN-MODE.md). Verify plan mode is active before the first question.
 

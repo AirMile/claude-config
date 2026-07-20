@@ -1,32 +1,12 @@
----
-name: project-critique
-description: Stress-test concepts via multi-perspective analysis. Use with /project-critique.
-reads:
-  [
-    concept.seed,
-    backlog.status,
-    backlog.features,
-    feature.seedDrift,
-    backlog.seedDrift,
-    project.thinking,
-    project-context.architecture,
-    project-context.learnings,
-  ]
-writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
-metadata:
-  author: claude-config
-  version: 2.1.0
-  category: project
----
+# Mode: Critique
+
+Loaded by the project-seed PHASE 0 dispatcher. Topic input (if any) was parsed there.
+
+**Chained entry**: when entered via THINKING-OUTPUT § Continue from another mode in this session, skip PHASE 1 — the just-saved document is the input; scope carries over, along with the applied-techniques list — and start at Enter Plan Mode.
 
 ## Overview
 
-Critically analyze and strengthen ideas through interactive application of analysis techniques. Works with any concept input (from `/project-seed`, existing documents, or pasted text). One technique at a time through dialogue, then choose: another technique or generate the refined idea as a clean markdown document.
-
-## When to Use
-
-- User wants to identify weaknesses, test assumptions, or find failure modes in an idea
-- User starts with `/project-critique` (optionally followed by an idea or `/project-seed` output)
+Critically analyze and strengthen ideas through interactive application of analysis techniques. Works with any concept input (from the seed mode, existing documents, or pasted text). One technique at a time through dialogue, then choose: another technique or generate the refined idea as a clean markdown document.
 
 ## Workflow
 
@@ -36,11 +16,7 @@ Critically analyze and strengthen ideas through interactive application of analy
 
 ### Enter Plan Mode
 
-**Enter Plan Mode** — call `EnterPlanMode` NOW, after PHASE 1 input parsing and before any PHASE 2 analysis. Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol. PHASES 2-6 run in plan mode — type analysis, technique selection, and the technique dialogues must run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model. The refined output (PHASE 6) is written to the plan file for review; all `.project/` writes wait until after `ExitPlanMode` (PHASE 7).
-
-- **Note on user consent**: `EnterPlanMode` may prompt the user for plan-mode confirmation in some Claude Code UIs. This is intentional — model routers use plan mode as the trigger for upgrading to the planning model. Do not skip the call to avoid the prompt.
-- **Skip-check**: if plan mode is already active (existing system-reminder), skip the call and read the plan-file path from the active reminder.
-- Context7 research (PHASE 3) works normally in plan mode.
+**Enter Plan Mode** — call `EnterPlanMode` NOW, after PHASE 1 input parsing and before any PHASE 2 analysis. Read only [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) § Entry now (§ Exit later, before PHASE 7) — skip § Conditional entry, § Administrative exit, and § Used by, which document other skills' plan-mode usage, not this one. PHASES 2-6 run in plan mode — type analysis, technique selection, and the technique dialogues must run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model. The refined output (PHASE 6) is written to the plan file for review; all `.project/` writes wait until after `ExitPlanMode` (PHASE 7).
 
 ---
 
@@ -49,7 +25,7 @@ Critically analyze and strengthen ideas through interactive application of analy
 **Goal:** Classify the idea, then rank the most relevant analysis techniques.
 
 1. Determine idea type: **creative** (game, story, art, interactive experience), **product** (app, service, business, SaaS), or **hybrid** (both).
-2. Read `references/technique-index.md` — the index only. Do NOT load detail files here. Candidates: universal techniques always; creative techniques for creative/hybrid; product techniques for product/hybrid.
+2. Read `.claude/skills/project-seed/references/critique/technique-index.md` — the index only. Do NOT load detail files here. Candidates: universal techniques always; creative techniques for creative/hybrid; product techniques for product/hybrid.
 3. Filter and rank: keep only techniques genuinely relevant to THIS idea (e.g. drop Narrative for non-narrative games), exclude already-applied ones, rank by which reveals the most critical weaknesses. More than 5 relevant → top 5 only. With a `PROJECT MEMORY` block loaded: rank by which technique reveals weaknesses **in the not-yet-built remainder** — built components are facts to critique against, not assumptions to challenge; pitfall learnings point at weakness categories this project actually hit.
 4. Present 2-4 techniques via AskUserQuestion (in user's preferred language) — fewer than 3 relevant → show all available:
 
@@ -73,9 +49,9 @@ Critically analyze and strengthen ideas through interactive application of analy
 
 2. **Context7 research (when technical questions arise):** if the technique raises feasibility, implementation, constraint, or performance questions, research first — `mcp__context7__resolve-library-id` + `mcp__context7__query-docs` — and fold findings into your questions. Instead of "Is this technically feasible?", ask "Library X supports Y but has limitation Z — how do you want to handle that?". Also research before answering when the user asks a technical question mid-dialogue.
 
-3. **Question protocol** — follow [shared/QUESTIONING.md](../shared/QUESTIONING.md) for form choice, anchoring, and escalation:
+3. **Question protocol** — follow [shared/QUESTIONING.md](../../shared/QUESTIONING.md) for form choice, anchoring, and escalation:
    - Formulate 4-6 **anchored** questions from the technique's framework — each references something concrete from the idea/seed/research findings, narrowed to a genuine unknown. Present them as a numbered menu (the documented exception to one-per-turn) plus 3 concrete points of attention.
-   - Critique surfaces many **enumerable forks** (which risk to mitigate first, trade-off A vs B, accept/cut a weak element) — present those as AskUserQuestion with your recommended hypothesis first, typically at the end of a dialogue round, instead of burying them in the menu.
+   - **Enumerable-fork rule**: the moment a question you're about to ask has ≤3 plausible concrete answers (which risk to mitigate first, trade-off A vs B, accept/cut a weak element) — ask it as AskUserQuestion with your recommended hypothesis first, never as open prose, even mid-dialogue. Only genuinely open questions (no enumerable answer set) go through free text.
 
 4. Presentation template (in user's preferred language):
 
@@ -147,11 +123,11 @@ Integrate all findings from all applied techniques into one refined idea documen
   ---
   ```
 
-**End of thinking phase**: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 7.
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 7.
 
 ### PHASE 7: Output Destination
 
-> **Todo**: Read `.claude/skills/shared/THINKING-OUTPUT.md` — caller `project-critique`, `{kind}` = `critique`. Add `Applied techniques: {list}` to each confirmation block. Next steps: `/project-brainstorm`, `/project-seed`, `/project-plan`.
+> **Todo**: Read `.claude/skills/shared/THINKING-OUTPUT.md` — mode `critique`, `{kind}` = `critique`. Add `Applied techniques: {list}` to each confirmation block.
 
 ---
 
@@ -160,13 +136,3 @@ Integrate all findings from all applied techniques into one refined idea documen
 - Make every question specific to THIS idea — identify real problems, not surface-level concerns; apply technical and practical scrutiny
 - One technique at a time: select → apply → synthesize → decide; track applied techniques and cumulative findings through the session
 - Respect the user's technique choice even if it differs from your recommendation
-
-### Terminal Formatting
-
-- NEVER use blockquote syntax (`>`) for displaying content — causes unreadable white background in dark terminals
-- NEVER use inline code backticks for emphasis on regular words — use **bold** or plain text
-- Backticks only for actual code, file paths, and command references
-
-### Language
-
-Follow the Language Policy in CLAUDE.md.

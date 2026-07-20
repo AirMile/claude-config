@@ -274,9 +274,9 @@ Append-only at write time. Skills that complete features extract learnings autom
 
 ## thinking-output
 
-Thinking-skills (`/project-research`, `/project-brainstorm`, `/project-critique`) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
+Thinking-skills (`/project-research`, `/project-seed` brainstorm/critique modes) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
 
-Seed-scope thinking-output (`/project-seed`, `/project-brainstorm` concept, `/project-critique` concept, `/project-research` concept) integrates directly into `project-seed.md` — no history log in `project.json`.
+Seed-scope thinking-output (`/project-seed`, `/project-seed brainstorm` concept, `/project-seed critique` concept, `/project-research` concept) integrates directly into `project-seed.md` — no history log in `project.json`.
 
 Skills that consume thinking-output (such as `/dev-ship`, define phase) read directly via Grep on `.project/thinking/*.md` for name matching.
 

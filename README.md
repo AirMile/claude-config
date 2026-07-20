@@ -64,12 +64,12 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 | `project`   | add, app, brainstorm, critique, memory, plan, remove, research, seed, sync, todo, tunnel |
 | `team`      | issues, outsource, review, verify                                                        |
 
-| Pipeline    | Flow                                                                                                                                                                                                                                           |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dev`       | `project-seed` → [`project-brainstorm`] → [`project-critique`] → `project-plan` → `dev-ship` (define → build → auto-verify) → `dev-manual` (manual verify → debug → refactor → ship, when manual items remain; shared park-first debug rounds) |
-| `game`      | `project-seed` → `project-plan` → `game-ship` (define → build → GUT-verify → playtest → refactor) (+ `game-debug` anywhere, Godot 4.x / GUT)                                                                                                   |
-| `design`    | [`/design-tokens`] (incl. motion packs) → `design-convert` (spec / visual→code) & `design-content` (fill copy) feed `design-ship` (build → content → check as one flow, web)                                                                   |
-| `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                                                                                                           |
+| Pipeline    | Flow                                                                                                                                                                                                                             |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dev`       | `project-seed` [→ `brainstorm`/`critique` modes] → `project-plan` → `dev-ship` (define → build → auto-verify) → `dev-manual` (manual verify → debug → refactor → ship, when manual items remain; shared park-first debug rounds) |
+| `game`      | `project-seed` → `project-plan` → `game-ship` (define → build → GUT-verify → playtest → refactor) (+ `game-debug` anywhere, Godot 4.x / GUT)                                                                                     |
+| `design`    | [`/design-tokens`] (incl. motion packs) → `design-convert` (spec / visual→code) & `design-content` (fill copy) feed `design-ship` (build → content → check as one flow, web)                                                     |
+| `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                                                                                             |
 
 Optional `/project-research` enriches the dev seed with market/tech/codebase context before backlog.
 

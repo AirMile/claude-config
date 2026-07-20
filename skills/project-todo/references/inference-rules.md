@@ -155,6 +155,6 @@ header: "Duplicate"
 question: "'{name}' already exists (status: {status}). Same thing?"
 options:
   - label: "Different — add as {name}-2 (Recommended)", description: "{one line contrasting the two descriptions}"
-  - label: "Same — don't add", description: "Deepen the existing item with /project-brainstorm {name}"
+  - label: "Same — don't add", description: "Deepen the existing item with /project-seed brainstorm {name}"
 multiSelect: false
 ```

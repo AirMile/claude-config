@@ -31,6 +31,8 @@ After the call:
 4. The plan file itself may be written during plan mode — that is the review channel.
 5. **Deferral pattern for research-cache appends**: writes to `.claude/research/*.md` (stack-baseline, refactor-patterns, architecture-baseline) discovered during plan mode are blocked too — collect them in memory (`pending*Appends`) and write them in the skill's sync/completion phase after exit. If a write truly cannot be deferred at all, see § Administrative exit.
 
+**User consent prompt** — `EnterPlanMode` may prompt the user for plan-mode confirmation in some Claude Code UIs. This is intentional: model routers use plan mode as the trigger for upgrading to the planning model. Do not skip the call to avoid the prompt.
+
 **Skip if already in plan mode** — if at entry an active plan-mode system-reminder already exists (the user started `/plan-mode` or another plan-mode skill themselves), skip `EnterPlanMode`. In that case read the existing plan-file path from the active system-reminder.
 
 ---
@@ -117,7 +119,7 @@ resume thinking after the decision, the exit follows § Administrative exit shap
 
 ## Used by
 
-Full-phase: `game-debug`, `project-plan`, `project-brainstorm`, `project-seed`, `project-critique`, `project-research`, `dev-ship (define phase)`, `game-ship (define phase)`. The two `*-ship (define phase)` entries are a **full-phase variant**: entry is at PHASE 0 Step 2b (before the interview, so the whole define thinking-block runs on the planning model) and exit is the **plan-approval gate** itself (Step 4b `ExitPlanMode`) — accept writes `feature.json` + starts build, reject stays in plan mode and loops back to revise.
+Full-phase: `game-debug`, `project-plan`, `project-seed` (incl. brainstorm/critique modes), `project-research`, `dev-ship (define phase)`, `game-ship (define phase)`. The two `*-ship (define phase)` entries are a **full-phase variant**: entry is at PHASE 0 Step 2b (before the interview, so the whole define thinking-block runs on the planning model) and exit is the **plan-approval gate** itself (Step 4b `ExitPlanMode`) — accept writes `feature.json` + starts build, reject stays in plan mode and loops back to revise.
 
 `dev-ship`'s in-ship debug rounds (`debug-round.md`, `debug-round-heavy.md`) are a **third full-phase
 variant**, each opening its own session on a parked resume (distinct from the interview walkthrough's

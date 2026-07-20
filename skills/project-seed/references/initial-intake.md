@@ -5,6 +5,7 @@
 1. Check if `.project/` folder exists
    - If folder does NOT exist → proceed to Step 1b (source selection)
 2. Check if `.project/project-seed.md` exists
+   - If it does NOT exist → proceed directly to **Step 1b** (source + scope selection). If `project.json#seed.pitch`/`seed.name` is already set (e.g. a `/core-setup` stub), pass it into Step 1b as prefill context for "Type new idea" — still ask the Source + Scope questions, don't skip them.
 3. If concept exists AND no inline description provided:
    - Read `.project/project-seed.md` for the full concept document. Read `seed.scope` from `.project/project.json`.
    - **Core-setup stub shortcut**: if the seed has NO `#` H1 heading AND `seed.scope` is absent, it is a starter pitch written by `/core-setup`, not a developed concept. Skip the confirmation block and BOTH the "Existing Concept" and scope-confirmation modals below: set scope = `concept`, treat the action as edit/expand, announce one line (e.g. "Starter concept from /core-setup detected — expanding it directly."), and proceed to Step 2 with the stub text as context. In Step 2, derive Round 1 options from the stub and skip aspects it already answers.
@@ -62,7 +63,7 @@
 
      - Set active scope from the answer; write to `seed.scope` on save
      - Ask: "What do you want to change about this {scope} document?"
-     - Proceed to Step 2 with existing content as context AND the confirmed scope
+     - Run Step 1d, then proceed to Step 2 with existing content as context AND the confirmed scope
 
    - **If "Sync with project":**
      - Proceed to Step 1c (Project Sync)
@@ -97,7 +98,7 @@ multiSelect: false
 
 **If "Assignment / Large Feature":**
 
-Free-text intake — these are open questions, not multiple-choice. Ask in one message for: assignment goal, relevant existing context, explicit out-of-scope items, constraints/dependencies, and definition of done (each may be "none yet"). Synthesize the answers into a seed document. Output path: `.project/features/{slug}/thinking.md` or user can choose `.project/project-seed.md` directly.
+Free-text intake — these are open questions, not multiple-choice. Ask in one message for: assignment goal, relevant existing context, explicit out-of-scope items, constraints/dependencies, and definition of done (each may be "none yet"). Run Step 1d, then synthesize the answers into a seed document. Output path: `.project/features/{slug}/thinking.md` or user can choose `.project/project-seed.md` directly.
 
 **If "Implementation project":**
 
@@ -105,27 +106,10 @@ Free-text intake — these are open questions, not multiple-choice. Ask in one m
 - If a Figma URL is provided: check the available tools for any `mcp__*figma*` tool and use it to query the design (pages, components, frames). No Figma MCP detected → suggest `claude mcp add --transport sse figma https://mcp.figma.com/mcp` (re-run `/project-seed` after loading), or fall back to WebFetch on a public Figma URL / screenshots / a page list from the user.
 - Read `package.json` if a repo exists to extract `dependencies` keys (framework, CMS, animation libs) for the Tech Stack question — pre-fill the answer instead of asking blind
 - Probe for: pages/screens in scope, stack confirmation, and known open design questions (annotations, TBDs from the design)
-- Proceed to Step 2 with `scope=implementation` (uses the implementation Round 1 template)
+- Run Step 1d, then proceed to Step 2 with `scope=implementation` (uses the implementation Round 1 template)
 - Output path: `.project/project-seed.md` — treat the implementation scope as the project concept, update `project.json` `seed.name` and `seed.pitch` accordingly
 
-**Output path follows scope automatically:**
-
-- Scope = concept → write to `.project/project-seed.md` + update project.json metadata (name, pitch)
-- Scope = implementation → write to `.project/project-seed.md` + update project.json metadata (name, pitch)
-- Scope = feature → write to `.project/features/{name}/thinking.md`
-- Scope = page/UX → write to `.project/thinking/{topic}.md`
-- Scope = standalone idea → write to `.project/thinking/{topic}.md`
-- Scope = assignment → write to `.project/features/{slug}/thinking.md` (or `.project/project-seed.md` on user choice)
-
-**Step 1d: Project Memory Load (all routes that continue to Step 2)**
-
-Once the active scope is known, run [shared/INPUT-PARSING.md § Project Memory Load](../../shared/INPUT-PARSING.md) (seed variant: implementation and assignment scopes use the concept-scope learnings config). This makes the Edit and New-concept routes mid-project aware: Step 2 question rounds derive Round-1 options from what is actually built, and PHASE 4 output must not silently contradict `status: done` components.
-
-Skip for: the Sync route (Step 1c — `project-sync.md` gathers richer state itself), standalone scope, and projects without `.project/`.
-
-**Step 1c: Project Sync (if "Sync with project" chosen)**
-
-> **Todo**: Read `.claude/skills/project-seed/references/project-sync.md` and execute the sync flow: gather project state → detect gaps (incl. deferred `seedDrift[]`) → select → integrate → write + drift cleanup.
+**Output path follows scope** — routing is canonical in [shared/THINKING-OUTPUT.md](../../shared/THINKING-OUTPUT.md) (loaded in PHASE 5); do not decide paths here. Two seed-only mappings THINKING-OUTPUT does not list: **assignment** behaves as feature scope (`.project/features/{slug}/thinking.md`, or `.project/project-seed.md` on user choice); **implementation** behaves as concept scope (`.project/project-seed.md` + project.json metadata).
 
 **Step 1b: Source + scope selection (if no concept found)**
 
@@ -166,6 +150,16 @@ Ask: "What is your idea? Describe it in 1-2 sentences."
 
 **If description provided (inline argument):**
 
-Proceed to Step 2 with the argument as starting concept.
+Run Step 1d (once scope is set), then proceed to Step 2 with the argument as starting concept.
+
+**Step 1c: Project Sync (if "Sync with project" chosen)**
+
+> **Todo**: Read `.claude/skills/project-seed/references/project-sync.md` and execute the sync flow: gather project state → detect gaps (incl. deferred `seedDrift[]`) → select → integrate → write + drift cleanup.
+
+**Step 1d: Project Memory Load (mandatory — runs right after Step 1a or Step 1b resolves scope, before PHASE 2)**
+
+> **Todo**: Once the active scope is known, read [shared/INPUT-PARSING.md § Project Memory Load](../../shared/INPUT-PARSING.md) and run it (seed variant: implementation and assignment scopes use the concept-scope learnings config). Step 2 question rounds must derive Round-1 options from what is actually built, and PHASE 4 output must not silently contradict `status: done` components.
+
+Skip only for: the Sync route (Step 1c — `project-sync.md` gathers richer state itself), standalone scope, and projects without `.project/`.
 
 **Chat Context flow:** follow [shared/INPUT-PARSING.md § Chat Context flow](../../shared/INPUT-PARSING.md) (seed variant — confirmed summary → Step 2).
