@@ -49,7 +49,7 @@ Steps leads with the backlog/define flow instead of repeating `/project-seed`.
 
 ## Smart Backlog Server Prompt (conditional)
 
-**Step 1 — Detect todos:** Read `.project/backlog.json` (if it exists) and parse `data.features`. Count items with status `TODO` or `DEFINED`.
+**Step 1 — Detect todos:** Read `.project/backlog.json` (if it exists) and parse the root-level `features` array (not nested under a `data` key). Count items with status `TODO` or `DEFINED`.
 
 | Condition                            | Action                                 |
 | ------------------------------------ | -------------------------------------- |

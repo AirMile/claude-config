@@ -21,9 +21,9 @@ Skip this phase entirely if `needsTheme = false`.
 
 ## Step 2 — Seed feature to `.project/backlog.json`
 
-1. If `backlog.json` does not exist: create it with the schemaVersion-2 scaffold (see `shared/BACKLOG.md`), set `data.source = "/core-setup"`
+1. If `backlog.json` does not exist: create it with the schemaVersion-2 scaffold (see `shared/BACKLOG.md`), set `source = "/core-setup"`
 2. Read `.project/backlog.json` → parse as JSON
-3. Check `data.features.find(f => f.name === "setup-design-tokens")` — skip adding if it already exists (idempotent)
+3. Check `features.find(f => f.name === "setup-design-tokens")` — skip adding if it already exists (idempotent)
 4. Add if `needsTheme = true`:
 
 ```json
@@ -38,13 +38,26 @@ Skip this phase entirely if `needsTheme = false`.
 }
 ```
 
-5. Always set `data.flags.hasSeed = true` and `data.flags.seedPath = ".project/project-seed.md"` (even if the design-tokens item already existed) — this makes the `/project-plan` button appear in the backlog dashboard
-6. Set `data.updated` to current date (`YYYY-MM-DD`)
+5. Always set `flags.hasSeed = true` and `flags.seedPath = ".project/project-seed.md"` (even if the design-tokens item already existed) — this makes the `/project-plan` button appear in the backlog dashboard. `flags` is root-level (see `phase-dashboard-init.md`), not nested under a `data` key.
+6. Set `updated` to current date (`YYYY-MM-DD`)
 7. Write the JSON back to `.project/backlog.json`
 
 ## Step 3 — Follow-up per variant
 
-- **`auto-execute: true`** (greenfield): no prompt. Skill chaining is silent — after seeding, exit core-setup and run `/design-tokens` directly. Report in the summary under "Next skill running".
-- **`auto-execute: false`** (mature): no interactive modal — only show `Setup task added to backlog` in stdout. The report "Next steps" section then automatically shows the `/design-tokens` bullet.
+- **`auto-execute: ask`** (greenfield): after seeding, AskUserQuestion:
+
+  ```yaml
+  header: "Design tokens"
+  question: "Set up design tokens now?"
+  options:
+    - label: "Yes, run /design-tokens now (Recommended)"
+      description: "Chain immediately — colors, typography, spacing before UI work begins"
+    - label: "Skip — I'll run /design-tokens myself later"
+      description: "No chain now — it stays listed under Next Steps in the Phase 9 summary"
+  multiSelect: false
+  ```
+
+  On "Yes": exit core-setup and run `/design-tokens` directly. Report in the summary under "Next skill running". On "Skip": no chain — Phase 9's Smart Next Steps lists `/design-tokens` as a follow-up (it's already a `TODO` in the backlog).
+- **`auto-execute: false`** (mature): unchanged — no interactive modal, only show `Setup task added to backlog` in stdout. The report "Next steps" section then automatically shows the `/design-tokens` bullet.
 
 When done: return to the caller's next phase.

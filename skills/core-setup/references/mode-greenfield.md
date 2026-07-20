@@ -358,7 +358,7 @@ Follow `references/stack-baseline-shared.md`.
 > Only if `stack.framework` is a frontend framework (React, Vue, Svelte, Next.js, Nuxt, Astro, Remix, SolidJS) **or** a game framework (Godot / `project.godot` present) → Read `references/phase-setup-task-seeding.md` and follow it with:
 >
 > - variant: greenfield
-> - auto-execute: true (chain to /design-tokens, report under "Next skill running")
+> - auto-execute: ask (offer /design-tokens via AskUserQuestion, see phase-setup-task-seeding.md § Step 3)
 >
 > Otherwise skip to Phase 8.
 

@@ -1,10 +1,30 @@
 ---
 name: core-setup
-description: Use when a project needs initializing or onboarding — greenfield wizard, mature codebase scan, or adding one tier-1 stack module. Not global ~/.claude/ setup (that is /core-bootstrap). Use with /core-setup.
+description: Use when a project needs initializing or onboarding. Use with /core-setup.
 argument-hint: "[--mode=greenfield|mature|audit|resync|install] [module] [--no-llm] [--scope=<dir>]"
+reads:
+  [
+    project.seed,
+    project.stack,
+    project.team,
+    backlog.features,
+    backlog.flags,
+    conventions,
+  ]
+writes:
+  [
+    project.seed,
+    project.stack,
+    project.team,
+    project-context.context,
+    backlog.features,
+    backlog.flags,
+    conventions,
+    CLAUDE.md,
+  ]
 metadata:
   author: claude-config
-  version: 2.6.0
+  version: 2.7.0
   category: core
 ---
 
@@ -14,7 +34,7 @@ metadata:
 
 `--scope=<dir>` applies to mature mode only: limits the codebase scan to one directory (monorepo package) — see `references/mode-mature.md § Scan budget`. Pass through together with `--no-llm`.
 
-Hub skill that detects what the project needs and loads the appropriate flow.
+Hub skill that detects what the project needs and loads the appropriate flow. Not global `~/.claude/` setup — that's `/core-bootstrap`.
 
 ### "Let Claude decide" Option
 

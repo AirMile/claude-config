@@ -31,8 +31,8 @@ See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies
    5b. Init backlog with seed flag (all project types):
    - If `.project/backlog.json` does not exist: create it with the schemaVersion-2 scaffold (see `shared/BACKLOG.md`)
    - Read `.project/backlog.json` → parse JSON
-   - Set `data.flags.seedPath = ".project/project-seed.md"`. Set `data.flags.hasSeed = true` ONLY if `.project/project-seed.md` exists with > 50 chars (a real concept authored by `/project-seed` or project-add); otherwise `false`.
-   - Set `data.source = "/core-setup"` and `data.updated` to current date
+   - Set `flags.seedPath = ".project/project-seed.md"`. Set `flags.hasSeed = true` ONLY if `.project/project-seed.md` exists with > 50 chars (a real concept authored by `/project-seed` or project-add); otherwise `false`. (`flags` is a root-level object in `backlog.json` — see `shared/BACKLOG.md` / `backlog-template.html:693` — NOT nested under a `data` key.)
+   - Set `source = "/core-setup"` and `updated` to current date
    - Write the JSON back to `.project/backlog.json`
    - The `/project-plan` button appears once a real concept exists. When it does not yet, Phase 9 prompts the user to run `/project-seed` first.
 6. Create `.project/project-context.json` with `context` section (initial, updated by build/refactor skills):
