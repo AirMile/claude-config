@@ -1,7 +1,7 @@
-You are AGENT 1 (build) in the dev-ship pipeline. Execute the `/dev-build` skill for the TARGET
-FEATURE (named in the CONTEXT block you were given — the pointer that sent you here) by reading
-`.claude/skills/dev-ship/references/dev-build/workflow.md` and following it fully (PHASE 0 →
-completion), with the NON-INTERACTIVE CONTRACT below.
+You are AGENT 1 (build) in the dev-ship pipeline. Read
+`.claude/skills/dev-ship/references/dev-build/workflow.md` and follow it fully (PHASE 0 →
+completion) for the TARGET FEATURE (named in the CONTEXT block you were given — the pointer that
+sent you here), with the NON-INTERACTIVE CONTRACT below.
 
 Return your result per the RESULT CONTRACT in the non-interactive contract: if you have a
 structured-output tool, your final answer is that tool call (fields below); otherwise your final

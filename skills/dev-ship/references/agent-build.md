@@ -31,6 +31,12 @@ CONTEXT (build-slice of SHIP_CONTEXT):
 {paste the build-slice of SHIP_CONTEXT (PHASE 0) — the dynamic project-context lines}
 ```
 
+The `{paste ...}` line above is the wrapper's only fixed shape — the CONTEXT block itself should
+carry the full build-slice detail from `phase-0-define-classify.md § Per-agent slices`
+(architecture, buildSequence, conventions, paths, filtered learnings) and routinely runs to tens of
+lines for a real feature. "Small pointer file" describes the wrapper prose above, not the pasted
+slice.
+
 ## Main-chat handling (PHASE 1)
 
 1. **Workflow path**: `ship-phase12.js` returns the validated `build` object (and skips verify on

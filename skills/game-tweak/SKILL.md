@@ -6,7 +6,7 @@ reads: [backlog.features, project-context.learnings]
 writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.1.0
+  version: 1.3.0
   category: game
 ---
 
@@ -90,6 +90,11 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
 
 ## PHASE 3 — Verify light
 
+A tweak that changes no runnable code — only docs or gitignored `.project/` state (e.g. recording a
+known issue as a learning) — has nothing to verify and nothing to commit: skip PHASE 3 and PHASE 4
+step 1, say so in the report (no commit sha line), and go straight to the card-completion + learning
+writes. Everything below assumes a code change.
+
 Scoped to the touched scripts/scenes — never the full suite unless it is genuinely fast:
 
 - **Lint**: `gdlint` on changed `.gd` files (gdformat already runs via the format-on-save hook).
@@ -112,9 +117,12 @@ scope → Read `references/escalate.md`.
 2. **Card-mode completion** (skip entirely in free-text mode): per
    [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup completion write — flip
    the card `shipped: true` + `shippedAt` + `shippedSha` + `summary` (this tweak's one-line
-   outcome), move it from `backlog.json#features[]` to
-   `.project/archive/backlog-archive.json#archived[]`, dual-write `project.json#features[]` to
-   match.
+   outcome) and move it from `backlog.json#features[]` to
+   `.project/archive/backlog-archive.json#archived[]`. project.json persists no features list — the
+   dashboard derives features from backlog + archive. **Then re-read `backlog.json` and confirm the
+   card left `features[]` before reporting `shipped`** — a running board app (`serve-backlog.js`)
+   re-serializes that file from its own in-memory store and can silently revert an external write;
+   on a revert, re-apply and re-verify.
 3. **Optional learning (0-1)**: only for a bugfix whose root cause has value beyond this spot
    (filter per [shared/LEARNING-WRITE.md](../shared/LEARNING-WRITE.md) § Writer Append Protocol) —
    append via `learnings-write.js append` with `type: "pitfall"`, `source: "extracted"`, 0-3 tags

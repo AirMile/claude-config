@@ -89,6 +89,13 @@ everywhere above:
    nearly done or the overlap is small) / abort. No warn when `dependencies` is empty or every entry
    already resolved.
 
+   **Stale card**: if the calling skill's PHASE 1 (locate) shows the described defect is already
+   resolved — a later commit fixed it, or it never applied — there is nothing to edit. Do **not**
+   invent a change to justify the card. Skip the implement/verify phases, find the resolving commit
+   (`git log -- <file>`), and run the § Card-mode completion write with `shippedSha` = that commit
+   (or `HEAD` if none pins it) and a `summary` naming the card stale. Registration-policy item 1
+   (one commit) does not apply — a stale-card run commits nothing.
+
 2. **No card argument** (free-text description, as always) — after the existing § Backlog guard
    resolves, run one further, narrower check: filter the same `guard-items` load down to
    `type === "TWEAK"` (dev) / `"POLISH"` (game) only, and token-match the description against just
@@ -101,18 +108,19 @@ everywhere above:
    offloaded from a ship run.
 
 **Card-mode completion write** (PHASE 4 of the calling skill, in addition to its normal steps): flip
-the card `shipped: true` + `shippedAt` + `shippedSha` + `summary` (the tweak's one-line outcome), move
-it from `backlog.json#features[]` to `.project/archive/backlog-archive.json#archived[]`
-([BACKLOG.md § Archiving](BACKLOG.md) — TWEAK/POLISH archive like any other dev-track type), and
-dual-write `project.json#features[]` to match ([BACKLOG.md § Parallel sync](BACKLOG.md)). This is the
-**only** sanctioned backlog write a tweak run ever performs, and only in card mode — a free-text run
-still makes zero backlog writes.
+the card `shipped: true` + `shippedAt` + `shippedSha` + `summary` (the tweak's one-line outcome) and
+move it from `backlog.json#features[]` to `.project/archive/backlog-archive.json#archived[]`
+([BACKLOG.md § Archiving](BACKLOG.md) — TWEAK/POLISH archive like any other dev-track type). The
+dashboard derives its features view from backlog + archive (`DASHBOARD-PROJECT.md § Features`) —
+project.json persists no features list to sync. This is the **only** sanctioned backlog write a
+tweak run ever performs, and only in card mode — a free-text run still makes zero backlog writes.
 
 ## Registration policy
 
 A completed tweak registers as **exactly**:
 
-1. One scoped conventional commit ([SCOPED-COMMIT.md](SCOPED-COMMIT.md)).
+1. One scoped conventional commit ([SCOPED-COMMIT.md](SCOPED-COMMIT.md)) — **except a stale-card
+   no-op** (§ Card pickup → Stale card), which commits nothing.
 2. Optionally **0-1 learning** — only when the tweak was a bugfix whose root cause has value beyond
    this spot (filter per [LEARNING-WRITE.md](LEARNING-WRITE.md) § Writer Append Protocol): `type:
 "pitfall"`, `source: "extracted"`, 0-3 tags — then the Consolidation Gate once

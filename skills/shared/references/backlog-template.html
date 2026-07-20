@@ -617,6 +617,28 @@
         // De granulaire skills (dev-build/verify/refactor + game-equivalenten)
         // bestaan niet meer — een DEFINED/DOING/DONE-kaart hervat via ship.
         if (!DESIGN_TYPES.includes(f.type) || f.type === "PAGE-GAP") {
+          // TWEAK is de fast-path uitzondering: 1-3 bestanden, geen pipeline —
+          // dus de eigen tweak-skill, niet de volledige ship-flow.
+          if (f.type === "TWEAK") {
+            if (["TODO", "DEFINED", "DOING", "DONE"].includes(f.status))
+              return {
+                cmd: isGame ? `/game-tweak ${f.name}` : `/dev-tweak ${f.name}`,
+              };
+            return null;
+          }
+          // VERIFY is een deferred manual re-test (geen code-wijziging): pickup
+          // via de manual-round-skill, niet de ship-pipeline. Levenscyclus is
+          // TODO→shipped. Argument is de parent-feature (canoniek), niet de
+          // verify-{feature} kaartnaam.
+          if (f.type === "VERIFY") {
+            if (f.status === "TODO") {
+              const feat = f.parentFeature || f.name.replace(/^verify-/, "");
+              return {
+                cmd: isGame ? `/game-ship ${feat}` : `/dev-manual ${feat}`,
+              };
+            }
+            return null;
+          }
           if (["TODO", "DEFINED", "DOING", "DONE"].includes(f.status))
             return {
               cmd: isGame ? `/game-ship ${f.name}` : `/dev-ship ${f.name}`,
@@ -854,14 +876,60 @@
             body.appendChild(emptyEl);
           } else {
             const phaseOrder = ["P1", "P2", "P3", "P4", "—"];
-            const phases = [...new Set(items.map((f) => f.phase || "—"))].sort(
-              (a, b) => phaseOrder.indexOf(a) - phaseOrder.indexOf(b),
+
+            // A blocker always outranks the card(s) it blocks: it is bumped
+            // into the highest-priority phase-bucket among its (transitive)
+            // dependents, so it visually renders above them even cross-phase.
+            // Stored f.phase is untouched — this only affects bucket display.
+            const byName = new Map(items.map((f) => [f.name, f]));
+            const blocks = new Map(); // dep name -> items this section blocks
+            items.forEach((x) => {
+              (x.dependencies || []).forEach((dep) => {
+                if (!byName.has(dep)) return;
+                if (!blocks.has(dep)) blocks.set(dep, []);
+                blocks.get(dep).push(x);
+              });
+            });
+            const effMemo = new Map();
+            const effInProg = new Set();
+            function effIdx(f) {
+              if (effMemo.has(f.name)) return effMemo.get(f.name);
+              if (effInProg.has(f.name))
+                return phaseOrder.indexOf(f.phase || "—"); // cycle guard
+              effInProg.add(f.name);
+              let idx = phaseOrder.indexOf(f.phase || "—");
+              (blocks.get(f.name) || []).forEach((dependent) => {
+                idx = Math.min(idx, effIdx(dependent));
+              });
+              effInProg.delete(f.name);
+              effMemo.set(f.name, idx);
+              return idx;
+            }
+
+            const bucketIdxs = [...new Set(items.map(effIdx))].sort(
+              (a, b) => a - b,
             );
 
-            phases.forEach((phase) => {
-              const phaseItems = items.filter(
-                (f) => (f.phase || "—") === phase,
-              );
+            bucketIdxs.forEach((idx) => {
+              const phase = phaseOrder[idx];
+              const bucketItems = items.filter((f) => effIdx(f) === idx);
+              const bucketByName = new Map(bucketItems.map((f) => [f.name, f]));
+
+              // Stable topo-order within the bucket: a same-bucket blocker
+              // renders before the card(s) it blocks.
+              const ordered = [];
+              const seen = new Set();
+              function visit(f) {
+                if (seen.has(f.name)) return;
+                seen.add(f.name);
+                (f.dependencies || []).forEach((dep) => {
+                  const blocker = bucketByName.get(dep);
+                  if (blocker) visit(blocker);
+                });
+                ordered.push(f);
+              }
+              bucketItems.forEach(visit);
+
               const phaseGroup = document.createElement("div");
               phaseGroup.className = "phase-group";
               phaseGroup.dataset.collapseKey = "phase:" + status + ":" + phase;
@@ -883,7 +951,7 @@
               };
               phaseGroup.appendChild(phaseHeader);
 
-              phaseItems.forEach((f) => {
+              ordered.forEach((f) => {
                 phaseGroup.appendChild(renderRow(f));
               });
 
@@ -1272,12 +1340,22 @@
                   const isShip =
                     cmd.startsWith("/dev-ship") ||
                     cmd.startsWith("/design-ship");
+                  const isTweak =
+                    cmd.startsWith("/dev-tweak") ||
+                    cmd.startsWith("/game-tweak");
+                  // VERIFY (dev-track) copies /dev-manual — game-track VERIFY
+                  // copies /game-ship and is already covered by isShip above.
+                  const isReverify = cmd.startsWith("/dev-manual");
                   const tlabels = isDesignTrackType(f.type)
                     ? TRANSITION_LABELS_DESIGN
                     : TRANSITION_LABELS_DEV;
                   found.item.transition = isShip
                     ? "shipping"
-                    : tlabels[f.status] || "active";
+                    : isTweak
+                      ? "tweaking"
+                      : isReverify
+                        ? "verifying"
+                        : tlabels[f.status] || "active";
                   syncJSON();
                   render();
                 }

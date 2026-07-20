@@ -17,8 +17,7 @@ Runtime-only audit hub for performance (Lighthouse/CWV), SEO, responsive layout,
 ## References
 
 - `.claude/skills/shared/BACKLOG.md` — Backlog HTML+JSON format, read/write protocol
-- `.claude/skills/shared/DOMAIN.md` — Domain resolution (web / game / native) — selects the audit path
-- `references/scan-godot.md` — Game-domain static audit; runtime/playtest deferred to a human (loaded when `$DOMAIN === "game"`)
+- `.claude/skills/shared/DOMAIN.md` — Domain resolution (design-ship's own PHASE 0 guard already restricts every target to `web`)
 - `.claude/skills/shared/CODING-RULES.md` — General (R009)
 - `.claude/skills/shared/FRONTEND-RULES.md` — P-series (performance), A-series (accessibility), H-series (responsive/HTML), E-series, F-series
 - `.claude/skills/shared/DESIGN.md` — Anti-patterns (AI design tells), motion timing, interaction states
@@ -153,18 +152,9 @@ If scope contains **Flow**:
 
 ### 0.3 Domain & Project Detection
 
-**First resolve `$DOMAIN`** per `shared/DOMAIN.md` (explicit `theme.domain` → infer from
-`stack.framework`/`language` → codebase fallback → ask).
-
-- **game** → this is the **static** audit path. Skip the web scope menu (0.2), the Build & Serve
-  health gate (0.3.5), and the entire Playwright PHASE 1 (1.1–1.x). Instead run the static
-  Theme-consistency checks and defer the runtime/playtest to a human (the interactive playtest lives
-  in `/game-ship` PHASE 3). PHASE 2 (report), PHASE 3 (fix), and PHASE 4 (completion) run unchanged
-  on the static findings.
-  > **Todo**: Read '.claude/skills/design-ship/references/design-check/references/scan-godot.md' and run G1–G5; then jump to PHASE 2.
-- **native** → no renderer/runtime yet: print the `shared/DOMAIN.md` native fallback line, run only
-  G3 design-principle adherence statically if a spec exists, and stop (no code audit).
-- **web** → continue below (the historical runtime path).
+`$DOMAIN` is already guaranteed `web` — design-ship's PHASE 0 target guard stops any non-web
+target before a worktree (and this file) is ever reached. Continue directly below (the runtime
+path).
 
 Detect framework, bundler, CSS approach, rendering strategy (SSR/SSG/CSR).
 

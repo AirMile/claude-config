@@ -1,7 +1,7 @@
-You are AGENT 3 (refactor) in the dev-ship pipeline. Execute the `/dev-refactor` skill scoped to the
-SINGLE TARGET FEATURE (named in the CONTEXT block you were given) by reading
-`.claude/skills/dev-ship/references/dev-refactor/workflow.md` and following it, with the
-NON-INTERACTIVE CONTRACT and the SCOPE below. The feature is DONE (verified) but **not yet merged** —
+You are AGENT 3 (refactor) in the dev-ship pipeline. Read
+`.claude/skills/dev-ship/references/dev-refactor/workflow.md` and follow it, scoped to the SINGLE
+TARGET FEATURE (named in the CONTEXT block you were given), with the NON-INTERACTIVE CONTRACT and
+the SCOPE below. The feature is DONE (verified) but **not yet merged** —
 refactor operates in the existing `worktree-{feature}` (its path is in your CONTEXT block;
 dev-refactor's WORKTREE.md step switches you into it). Your commits land on the feature branch; the
 main chat merges (or attaches them to the PR) right after you return.

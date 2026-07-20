@@ -89,9 +89,14 @@ Recommended — "Houd worktree open" is.
 2. **Merge** — run the copied Build route Step 12.2 dispatch table (`TEAM_MODE` + PR state →
    `shared/FINALIZE.md` mode). On a Halt row (open PR / team no-PR): print the halt message, skip
    step 3's shipped-fields (the merge did not happen), still do the cleanup in step 4, and report
-   the halt in PHASE 5.
+   the halt in PHASE 5. `FINALIZE.md`'s Solo-Merge step 1 calls `ExitWorktree(action: keep)` — this
+   always no-ops here (design-ship's main chat only ever `cd`s into the worktree via Bash, never via
+   `EnterWorktree`); treat the printed no-op as expected, not a break. Skip `FINALIZE.md`'s own
+   Cleanup-Procedure backlog-sync sub-step — step 3 below supersedes it with the fuller
+   shipped-field set.
 3. **Backlog completion** (after a successful merge; per `shared/BACKLOG.md → Lifecycle Protocol
-→ Write`) — find the entry by `name`:
+→ Write`; this supersedes `FINALIZE.md`'s own backlog-sync dispatch — do not let both run) — find
+the entry by `name`:
    - PAGE: `status: "DONE"`, `shipped: true`, `shippedAt: "{YYYY-MM-DD}"`,
      `shippedSha: "{merge SHA}"`, `lastCheckedSha: "{merge SHA}"`, remove `stage` and
      `transition` (including `"shipping"`). `contentStatus: "filled"` is already set by AGENT 2.

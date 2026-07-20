@@ -67,15 +67,23 @@ returned `build`/`verify` objects into `results`. Then branch:
 
 **Empty-input safety net** (rare, check first): the script normalizes `args`, so string-delivery
 failure is handled at the source. If an agent still reports no/`undefined` input (`testsTotal: 0`,
-no worktree created), retry once via §7 (fallback path) before routing anywhere. Only a genuine
+no worktree created), retry the same `Workflow(...)` launch once (fresh — not `resumeFromRunId`,
+since a dead-agent result would just replay `null` from cache) before routing anywhere. Only a genuine
 code/test failure follows the branches below.
 
 - `status: "green"` → mark `completedPhases += ["PHASE 1","PHASE 2"]`, `phase: "PHASE 3"`.
   Re-read `.project/` from disk. **Offload flush**: non-empty `verify.improvementNotes` → for each
-  note, invoke `/project-todo` with `"{note}, type TWEAK, depends on {feature}, parked from /dev-ship
-auto-verify"` (batch ≤3 per invocation, same cap as
-  `phase-3-manual-finalize.md § Offload flush`) — these are AGENT 2's own observations, never a
-  ledger item, so there's no `offload` field to upsert. Do this before either branch below, since it
+  note, first check `backlog.json#features[]` for an existing TODO card whose `description` already
+  covers it (a concurrent sibling `/dev-ship` run shares this project's `.project/`, not a
+  per-worktree copy, and may have already logged the same observation) — skip the `/project-todo`
+  call for that note if a match exists. Otherwise invoke `/project-todo` **once per uncovered note**
+  with `"{note}, type TWEAK, depends on {feature}, parked from /dev-ship auto-verify"` — these are
+  independent single-sentence TWEAK cards, not a cross-domain cluster, so do not concatenate
+  multiple notes into one call (`/project-todo`'s own multi-item split is content-signal-based, not
+  a manual-batch interface). **Completion check**: after the loop, confirm `cards created + notes
+  already covered` equals `verify.improvementNotes.length` before
+  proceeding — these are AGENT 2's own observations, never a ledger item, so there's no `offload`
+  field to upsert. Do this before either branch below, since it
   applies regardless of which one fires. Branch on `verify.remainingManualItems`:
   - **Empty** → go to **§4 PHASE 3 completion (no-manual path)**.
   - **Non-empty** → `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}` (board renders
@@ -92,8 +100,10 @@ auto-verify"` (batch ≤3 per invocation, same cap as
     The board shows this run as parked (⏸) with the same resume button.
     Prefer to continue here instead? Say so and I'll run PHASE 3 in this session.
     ```
-    **Same-session escape hatch**: if the user replies "continue here" (or equivalent), continue with
-    **§ 4** (PHASE 3 completion) inline in this chat instead of parking.
+    **Same-session escape hatch**: if the user replies "continue here" (or equivalent), continue inline
+    in this chat instead of parking: re-arm the live signal and run the full manual walkthrough per
+    `SKILL.md § PHASE 3` (`phase-3-manual-finalize.md`, Step 1 + Step 2 + Step 3) — **not** the no-manual
+    shortcut in **§ 4** below, which only applies when `remainingManualItems` was empty.
 - `failedPhase: "build"` → patch `{"status":"failed"}` (keep everything else),
   `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`, print the failure recovery
   message (SKILL.md § PHASE 1–4), proceed to PHASE 5's failure path.
@@ -158,7 +168,8 @@ On return, write point 3: clear `activeWorkflow`/`workflowRunId`/`prompts`, merg
 {worktreePath} reset --hard {preRefactorSha}`, non-fatal, note `reverted:true` for the report) —
 still finalize.
 
-**Persist the triage** (only if `results.triage` is non-null — `scanners` was empty otherwise): the
+**Persist the triage** (only if `results.triage` is non-null — `scanners` was empty, or ran with 0
+findings above threshold, otherwise): the
 ship checkpoint is deleted on `status: "complete"` (SKILL.md § PHASE 5's checkpoint cleanup), so
 without this the triage vanishes the moment the feature finishes shipping and PHASE 5's "run
 `/dev-security {feature}`" offer would point at nothing. Write a durable copy that survives it:

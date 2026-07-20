@@ -74,7 +74,13 @@ Before any merge or cleanup:
 cd "{worktree_path}" && git status --porcelain
 ```
 
-If non-empty → **AskUserQuestion**:
+**Optional caller parameter**: `knownDirtyPaths` (string[], default `[]`) — paths the caller
+already surfaced as pre-existing/unrelated at its own PHASE 0 preflight. If every line in
+`git status --porcelain` matches an entry in `knownDirtyPaths`, skip the modal and proceed
+(log: `Uncommitted: {n} pre-existing, unrelated path(s) — proceeding`). Any line NOT in
+`knownDirtyPaths` still triggers the check below — one new dirty file blocks the fast path.
+
+If non-empty (and not fully covered by `knownDirtyPaths`) → **AskUserQuestion**:
 
 ```yaml
 header: "Uncommitted changes"

@@ -87,7 +87,9 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
      >
      > Parse `PRIOR_DECISIONS_START/END` block from response. Store for PHASE 1a "Surface relevant past decisions" render. Empty or missing block → silent skip (no output).
 
-   - **Learnings load** (via [shared/LEARNINGS-LOAD.md](.claude/skills/shared/LEARNINGS-LOAD.md)):
+   - **Learnings load** (via [shared/LEARNINGS-LOAD.md](.claude/skills/shared/LEARNINGS-LOAD.md)) —
+     **run this unconditionally, before PHASE 1a's opening question; this is the only load point**
+     (Step 3 of `phase-0-define-classify.md` reuses this result — it does not re-run the load):
 
      ```
      scopes: [component]
@@ -95,7 +97,7 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
      current-feature: {feature-name}
      ```
 
-     **Dev-define-specific extra filter**: also include learnings whose `feature` matches a **direct** dependency of the current feature AND `type === "pitfall"` — lessons that bit us last time in code we're about to touch. Show a `RELEVANT LEARNINGS` block before the first AskUserQuestion of PHASE 1 (max 5 entries, pitfalls first, then patterns) — only on ≥1 match. No match → silent.
+     **Dev-define-specific extra filter**: also include learnings whose `feature` matches a **direct** dependency of the current feature AND `type === "pitfall"` — lessons that bit us last time in code we're about to touch. Show a `RELEVANT LEARNINGS` block before the first AskUserQuestion of PHASE 1 (max 5 entries, pitfalls first, then patterns) — only on ≥1 match. No match → silent (the load still ran; only the display is conditional).
 
 ### PHASE 0b: Update-mode (only if feature.json already exists)
 
@@ -116,6 +118,12 @@ Conduct the open interview per the reference — one anchored open question at a
 ---
 
 ### PHASE 1b: Requirements Synthesis
+
+> **Precondition — do not enter PHASE 1b without this:** the PHASE 1a closing recap (§ Stop
+> Condition: a 1–3 sentence statement of goal/success/key constraints) must already be visible
+> earlier in this conversation. A single `AskUserQuestion` covering design forks is PHASE 1b's own
+> step below, not a substitute for the PHASE 1a open interview — if no recap was shown, go back and
+> run the PHASE 1a interview now (`references/phase1a-interview.md`) before continuing.
 
 **Design choices** (only for architecture-changing branches — storage strategy, route shape, auth model, data model boundary, external service contract; **not** a pure implementation/library choice with no user-visible behavioral difference, e.g. which rendering library, which parser — auto-decide those, record the rationale as a `durableDecision`, and don't ask): if the interview revealed a fork with concrete A vs B vs C options on a genuine architecture-changing branch, resolve these now via AskUserQuestion before extracting requirements. **Baseline gate (run first):** for each candidate fork, check the `stack-baseline.md` content loaded in PHASE 0 §4 — if the baseline already standardizes the answer (e.g. "use @react-navigation/stack"), do NOT raise the modal; record it directly as a `clarification` (and a `durableDecision` if architecture-wide) citing the baseline, and show `Baseline: ✓ resolved fork — {pattern-name}`. Only forks the baseline leaves open reach the user. Each remaining sub-question must be a **design choice**. Include "Not relevant to scope" if applicable. Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` (written to `feature.json#clarifications` if ≥1 entry). Edge cases (validation rules, input notation, format defaults) → add directly as acceptance criteria, no AskUserQuestion.
 
@@ -173,6 +181,10 @@ The full requirements table with acceptance criteria and the feature overview ta
 
 > **Todo**: Read `.claude/skills/dev-ship/references/dev-define/references/frontend-discovery.md` and execute both steps: Reuse-Discovery (UI-keyword scan → `discoveredComponents[]` + `dependencies[]`) and Page-placement sparring (→ `pageHint[]` + PAGE backlog back-write).
 
+> **Gate — before PHASE 1c:** confirm both ran (or were genuinely skipped by type): the risk-check
+> line (if `feature.risk >= 4`, PHASE 1a) and frontend discovery above. Neither has a downstream
+> artifact check if skipped — this line is the only place that catches a missed one.
+
 ---
 
 ### PHASE 1c: Scope Analysis & Feature Splitting
@@ -203,9 +215,17 @@ The full requirements table with acceptance criteria and the feature overview ta
 
 ### PHASE 2: Architecture
 
+> **Precondition — do not enter PHASE 2 without this:** (a) the PHASE 1b REQ-checkpoint chat
+> message (numbered REQ-ID list with acceptance scenarios) must already be visible earlier in
+> this conversation — if it is not, stop and emit it now before continuing; (b) for feature types
+> outside `COMPONENT`/`INTEGRATION`/`THEME`/`A11Y`/`PERF`/`INFRA`/`DOCS`, `frontend-discovery.md`
+> must have actually been Read this turn (Reuse-Discovery + Page-placement sparring executed, even
+> if both find nothing) — if it was not, go back and run it now before continuing. Neither
+> precondition may be satisfied retroactively by writing a plan-file line that assumes the step ran.
+
 > **Todo**: mark PHASE 0+1a+1b → `completed`, PHASE 2 → `in_progress`.
 
-**Output rule for this entire phase**: hold the design in the **in-memory draft** — do **not** write a plan file here (dev-ship's Step 4b gate writes it from the draft). **Do not show design output inline in chat** — only a short progress marker (e.g. `Architecture designed: N files, K build steps.`). **Exception**: for visual features the ASCII wireframe may appear inline in an AskUserQuestion description (see "Design sketch" in step 3).
+**Output rule for this entire phase**: hold the design in the **in-memory draft** — do **not** write a plan file here (dev-ship's Step 4b gate writes it from the draft). **Do not show design output inline in chat** — **do** show one required chat line: `Architecture designed: N files, K build steps.`. **Exception**: for visual features the ASCII wireframe may appear inline in an AskUserQuestion description (see "Design sketch" in step 3).
 
 **Strict boundary — design vs implementation**:
 
@@ -218,8 +238,12 @@ Design in three steps:
 
 1. **Baseline check** (internally):
    - Reuse the `stack-baseline.md` section(s) loaded in PHASE 0 §4 (re-read only if not yet in memory); match patterns relevant to this feature.
-   - **Pattern found** → use as basis, no research topic. Show: `Baseline: ✓ pattern hit — {pattern-name}`. In PHASE 3: omit the `research` field in feature.json entirely (baseline hit is not research).
-   - **Pattern not found / no baseline file** → do **not** research inline. Collect the open question as a `researchTopics[]` entry (topic + why) for the scout in step 2. Show: `Baseline: ⚙ research queued — {topic}`. Do NOT create a baseline file (that is /core-setup).
+   - **Pattern found** → use as basis, no research topic. In PHASE 3: omit the `research` field in feature.json entirely (baseline hit is not research).
+   - **Pattern not found / no baseline file** → do **not** research inline. Collect the open question as a `researchTopics[]` entry (topic + why) for the scout in step 2. Do NOT create a baseline file (that is /core-setup).
+
+   > **Todo — before continuing to step 2:** print one line to chat now, not only into the
+   > plan-file draft — `Baseline: ✓ pattern hit — {pattern-name}` or `Baseline: ⚙ research queued —
+   > {topic}`.
 
 2. **Scout: existing code + research** (delegated — keeps the file reads and library lookups out of the main context):
 
@@ -231,13 +255,20 @@ Design in three steps:
    >
    > Parse the `DEFINE_SCOUT_START/END` digest: `PATTERNS`/`INTEGRATION` feed step 3's design; `RESEARCH` → `feature.json#research` in PHASE 3 (only when non-empty); `PENDING_BASELINE` → `pendingBaselineAppends` for the PHASE 4 sync (`stack-baseline.md` append).
    >
-   > **Fallback** (greenfield gate hit, empty digest, or scout unavailable): inline `Glob + Read` at most 3 closest-match files and, for any `researchTopics`, one Context7/WebSearch lookup each — same outputs, just in-context. Never design without either the digest or this fallback.
+   > **Fallback** (greenfield gate hit, empty digest, or scout unavailable): inline `Glob + Read` **at most 3** closest-match files total, and, for any `researchTopics`, one Context7/WebSearch lookup each — same outputs, just in-context. **Hard cap**: reading a 4th file, or reading any file directly when the greenfield gate does NOT apply (prior `feature.json`s exist or the import scan found matches), is a protocol violation — spawn `define-scout` instead of continuing to read. Never design without either the digest or this bounded fallback.
 
 3. **Design** → into the in-memory draft:
    - **Feature flow**: compact `→` chain. Conditional paths in `[brackets]`, parallel with `+`.
    - **File structure**: create/modify table (path, action, purpose, requirements).
    - **Routes registration** (frontend projects with `stack.framework` only): only `page`/`route` files with `action: CREATE` get an entry in `feature.architecture.routes[]` with `{ path, file, action, requirements[] }`. MODIFY-only route files: skip — `project-context.json#context.routing` leaves existing routes unchanged in PHASE 4. **Skip entirely** if no CREATE route/page files — omit the `routes[]` field from feature.json.
-   - **Design sketch**: visual features only — author the ASCII wireframe + states (loading/empty/error) into the draft. **No inline confirm** — the wireframe becomes a **required section of the gate review surface** (Step 4b), where the user reviews the visual design alongside everything else and reject-feedback adjusts it. Use token names (`bg-primary`, `text-foreground`), no hex. See `shared/TOKENS.md`.
+   > **Todo — visual-feature trigger (check before finishing step 3):** the wireframe below is
+   > mandatory whenever `files[]` contains **any** route/page file (`action: CREATE` or `MODIFY`,
+   > e.g. `src/app/**/page.tsx`) or any REQ's acceptance criteria describe on-screen rendering — even
+   > when most of the feature's requirements are backend (a 6-backend/3-frontend-REQ split still
+   > triggers it). Skip only when neither is true (pure API/backend/game-logic feature) — state
+   > `Design sketch: n/a — no rendering surface` in the draft, mirroring the Seed/Backlog "n/a:
+   > {reason}" pattern.
+   - **Design sketch**: author the ASCII wireframe + states (loading/empty/error) into the draft for every route/page file the trigger above matches. **No inline confirm** — the wireframe becomes a **required section of the gate review surface** (Step 4b), where the user reviews the visual design alongside everything else and reject-feedback adjusts it. Use token names (`bg-primary`, `text-foreground`), no hex. See `shared/TOKENS.md`.
    - **Durable decisions** (1-line each for plan-file review): full rationale and canonical form go to feature.json in PHASE 3.
    - **Machine contract appendix** — author the **complete feature.json draft** NOW (held in memory; dev-ship's gate materializes it as the plan-file appendix at Step 4b) as a single ```json fenced block under a `## Appendix — machine contract (skip review)` heading, **compact single-line JSON (no indentation)** — halves the token cost of the plan-file echo. Include every define-owned field per [shared/feature-json-schema.md](../../../shared/feature-json-schema.md): `name`, `status` (`"DEFINED"`), `created`, `depends`, `summary`, `requirements` (with full `acceptance[]`), `files`, `architecture` (incl. `interfaces[].definition` — type declarations only, per the Strict boundary above), `buildSequence`, `testStrategy`, plus the conditional fields (`design`, `apiContract`, `clarifications`, `durableDecisions`, `research`, `externalRef`, `pageHint`, `seedDrift`). The appendix is not part of the review surface — the heading tells the reviewer to skip it; the review sections above (context, REQ 1-liners, file table, flow, verification, durable-decision 1-liners) are the human review surface. Gate-accept extracts this block mechanically into feature.json — no re-authoring. Dependency analysis stays implicit — derived from `buildSequence[].dependsOn`, no separate section.
    - **AI-navigability** (skip if ≤6 files AND no new registry): when applicable, identify new registries and record them in `architecture.registries[]` (written to feature.json in PHASE 3). Omit module-export lists, colocation notes, and import constraints — covered by project conventions.
@@ -245,10 +276,16 @@ Design in three steps:
 **Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision OR ≥1 clarification was recorded; below that skip silently, trivial features yield only drift-noise):
 
 > **Todo**: Follow [shared/SEED.md](.claude/skills/shared/SEED.md) § Alignment Check — but **run only the detection**, not its `AskUserQuestion`. When drift is found, record the drift table + proposed rewrite in the draft as a `## Proposed seed update` gate section (default action: apply on accept). Carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4 (seed + backlog-overview co-update — same description in two places) so accept applies it; the user can reject just that section at the gate, in which case carry `seedDrift[]` to PHASE 3 instead (written to `feature.json#seedDrift`). No drift detected → no section, no carry. `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
+>
+> **Todo — before continuing:** print the resulting `Seed: ✓ aligned` / `Seed: ⚠ drift — N item(s)`
+> line to chat now, not only into the plan-file draft.
 
 **Backlog Impact Check** (last step in PHASE 2, directly after the Seed Alignment Check — no size threshold; a two-REQ feature can still obsolete a card):
 
 > **Todo**: Follow [shared/BACKLOG.md](.claude/skills/shared/BACKLOG.md) § Impact Check — but **run only the detection**, not its `AskUserQuestion`. When ≥1 card is impacted, record the impact table in the draft as a `## Backlog impact` gate section (default action: apply the proposed verdicts on accept). Carry those verdicts to PHASE 4 as `backlogImpact[]`; the mutations happen in the accept sync batch, and the user can reject just that section at the gate. No impact → no section, no carry.
+>
+> **Todo — before continuing:** print the resulting `Backlog: ✓ open items unaffected` / `Backlog: ⚠
+> impact — N item(s)` line to chat now, not only into the plan-file draft.
 
 **End of PHASE 2**: the complete in-memory draft (incl. the machine-contract appendix) is ready — **return to dev-ship Step 3** (`phase-0-define-classify.md`). dev-ship's Step 4b gate presents the draft for approval and, on accept, runs PHASE 3+4 below.
 

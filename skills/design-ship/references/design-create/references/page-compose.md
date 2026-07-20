@@ -35,6 +35,10 @@ Label each by status:
 
 ## Step 2: Composition question
 
+Both candidate lists empty (no `pageHint`/dependency-matched features, no `design.components[]`
+entries) → skip this modal entirely, set `$COMPOSITION = {"features": [], "components": []}`,
+continue to Step 5.
+
 ```yaml
 header: "Page composition"
 question: "What goes on '{$TARGET}'? Select all that apply."

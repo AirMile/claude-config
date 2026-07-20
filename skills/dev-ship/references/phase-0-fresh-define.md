@@ -19,9 +19,13 @@ Everything from here to the gate runs in plan mode: `Read`/`Glob`/`Grep`, read-o
 
 ## Step 2c — Run `dev-define` inline (PHASE 0→2) in plan mode
 
-Execute `dev-define` by reading `.claude/skills/dev-ship/references/dev-define/workflow.md` and
-following it. That copy is **already adapted** for dev-ship — it carries no plan-mode machinery of its
-own (dev-ship owns the enclosing plan mode) and no phase tracking. Notes for this enclosing context:
+> **STOP — Read `.claude/skills/dev-ship/references/dev-define/workflow.md` now and execute it.**
+> Do not improvise the interview/requirements/architecture from context alone, even when the
+> feature seems simple — that file's PHASE 1b/2 checks (Frontend Discovery, Seed Alignment, Backlog
+> Impact) and the machine-contract appendix authored *before* the gate are not optional shortcuts.
+
+That copy is **already adapted** for dev-ship — it carries no plan-mode machinery of its own
+(dev-ship owns the enclosing plan mode) and no phase tracking. Notes for this enclosing context:
 
 - It runs **PHASE 0→2 only** now (interview, requirements, architecture, and the **complete
   feature.json draft** held **in memory** — no `feature.json` write, no plan-file write yet). This is
@@ -47,8 +51,16 @@ reason.
 > **Todo — before writing the plan file (Step 4b):** for each of the three checks, confirm you can
 > cite a concrete outcome — a real finding (e.g. "found existing SettingsPanel.tsx pattern"), a real
 > "no drift"/"no impact" comparison against the actual seed/backlog content you read, or an explicit
-> skip reason tied to the feature's type/fields. A process-trail value of "run" with nothing citable
-> behind it is not permitted — write "n/a: {reason}" instead of fabricating a pass.
+> skip reason tied to the feature's type/fields. **Name the file path you actually read this turn**
+> for each non-skip outcome (`frontend-discovery.md` Reuse-Discovery, `shared/SEED.md` § Alignment
+> Check, `shared/BACKLOG.md` § Impact Check) — a process-trail value of "run" with nothing citable
+> behind it, or citing a file not opened this turn, is not permitted — write "n/a: {reason}" instead
+> of fabricating a pass.
+>
+> **Hard check**: before writing "run" for any of the three, confirm a `Read` (or the matching script
+> call) on that exact file already appears earlier in this turn's transcript. If it doesn't, the
+> citation MUST read `n/a: skipped this run` — never write "run" from memory of what the check usually
+> finds.
 
 Then continue **in plan mode** to Step 3 (classify) and Step 4 (technique plan), back in
 `phase-0-define-classify.md`, then Step 4b below (the gate). Do not end the skill.
@@ -74,11 +86,14 @@ surface for the whole plan. It always runs (no env-var opt-out).
      `buildSequence` + key interfaces; **for visual features the ASCII wireframe + states** (this is
      the design review — it replaces the removed inline sketch-confirm); the Step 3 "Verification
      profile" line (~N auto, ~N manual); the auto-derived technique plan (`refactorLenses`,
-     `securityDeep` scanners, or "security off"); a **process-trail line** — `Discovery: run → {1-line
-     finding or "no reuse candidates"} | n/a: {reason} · Seed check: run → {1-line drift result or "no
-     drift"} | n/a: {reason} · Backlog impact: run → {1-line impact result or "no impact"} | n/a:
-     {reason}` — each check cites its actual outcome, not just the word "run", so a skipped-with-reason
-     check is visible at the gate and a fabricated pass is structurally harder to write. Then any
+     `securityDeep` scanners, or "security off"); a **process-trail line** — `Discovery: run ({file}) → {1-line
+     finding or "no reuse candidates"} | n/a: {reason} · Seed check: run ({file}) → {1-line drift result or "no
+     drift"} | n/a: {reason} · Backlog impact: run ({file}) → {1-line impact result or "no impact"} | n/a:
+     {reason}` — the `({file})` slot echoes the exact path the Hard check above just verified was Read
+     this turn (`frontend-discovery.md` / `shared/SEED.md` / `shared/BACKLOG.md`) — never blank, never
+     a file not opened this turn. Each check cites its actual outcome, not just the word "run", so a
+     skipped-with-reason check is visible at the gate and a fabricated pass is structurally harder to
+     write. Then any
      **proposal sections** the draft carries,
      each with its default action stated (accept applies it; reject-feedback can drop just that one):
      `## Proposed seed update` (from the Seed Alignment Check), `## Backlog impact` (obsoleted/adjusted

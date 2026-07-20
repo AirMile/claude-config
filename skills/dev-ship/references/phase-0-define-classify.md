@@ -113,12 +113,11 @@ Short form of the classifier:
 - **MANUAL** — only when human perception/judgment is truly required: subjective visual quality,
   "feels fast/intuitive", real-credential auth flows, audio/screen-reader, physical multi-device.
 
-**Pitfall-informed bias** (memory → decision). Load preloaded pitfalls now via
-`shared/LEARNINGS-LOAD.md` (scopes `[component]` + pitfall-prefix, including **direct dependencies**)
-— this same load feeds Step 6, so do it once here (`Read`/`node -e` are read-only, fine in plan mode).
-If a pitfall shows a related/dependency feature **needed manual verification** for a similar
-acceptance (e.g. "auth flow needed real-credential test"), lean that item toward MANUAL even if the
-rules say AUTO. Note the bias in `autoDecisions`.
+**Pitfall-informed bias** (memory → decision). Reuse the pitfall load from `dev-define/workflow.md`
+PHASE 0 §5 (it already ran, unconditionally, before the interview opened — do not re-run it here or
+defer it to Step 6). If a pitfall shows a related/dependency feature **needed manual verification**
+for a similar acceptance (e.g. "auth flow needed real-credential test"), lean that item toward MANUAL
+even if the rules say AUTO. Note the bias in `autoDecisions`.
 
 Add the estimate to the draft's `verificationProfile` (it rides into the plan-file appendix at Step 4b
 and lands in feature.json at accept). **No checkpoint write here** — Step 3 runs inside plan mode

@@ -1,8 +1,8 @@
 You are AGENT 2 (auto-verify) in the dev-ship pipeline, running with a FRESH perspective — you did
-not build this code; verify it adversarially. Execute the AUTOMATED portion of the `/dev-verify`
-skill for the TARGET FEATURE (named in the CONTEXT block you were given) by reading
-`.claude/skills/dev-ship/references/dev-verify/workflow.md` and following it, with the
-NON-INTERACTIVE CONTRACT and the SCOPE LIMITS below.
+not build this code; verify it adversarially. Read
+`.claude/skills/dev-ship/references/dev-verify/workflow.md` and follow its AUTOMATED portion for
+the TARGET FEATURE (named in the CONTEXT block you were given), with the NON-INTERACTIVE CONTRACT
+and the SCOPE LIMITS below.
 
 Return your result per the RESULT CONTRACT in the non-interactive contract: if you have a
 structured-output tool, your final answer is that tool call (fields below); otherwise your final

@@ -32,7 +32,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.30.0
+  version: 0.34.2
   category: dev
 ---
 
@@ -189,7 +189,13 @@ the pointer-file template that carries this slice.
 >   PHASE 3/4/5 run in a fresh session.
 >   **Same-session escape hatch**: if the user replies "continue here" (or equivalent), continue
 >   with `orchestration.md § 4` (PHASE 3 completion) inline in this chat instead of parking.
-> - **`"failed"`** → print, depending on `failedPhase`, then proceed to PHASE 5's failure path:
+> - **`"failed"`** → **one bounded silent auto-retry**: if `{build|verify}.failedAt` names
+>   infrastructure death before any worktree/test ran (e.g. "agent died (null return)", an
+>   API/stream error) — never a test failure or a code error — relaunch the same Workflow once
+>   without asking. A second failure of any kind (including a second infra death) always falls
+>   through below; never retry more than once per phase12/phase4 launch. Otherwise, or after the
+>   bounded retry also fails, print, depending on `failedPhase`, then proceed to PHASE 5's failure
+>   path:
 >   - `"build"`: "Build failed at `{build.failedAt}`, worktree intact at `{build.worktreePath}` —
 >     re-run `/dev-ship {feature}` to retry, or go straight to root-cause analysis via
 >     `references/debug-round-heavy.md` (non-ledger entry)."

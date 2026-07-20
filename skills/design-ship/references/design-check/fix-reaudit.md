@@ -114,6 +114,12 @@ Instead:
 
    Commit message language follows `CLAUDE.md → Language`.
 
+1b. **Token-drift producer** — if a fix substituted a literal for a design token that doesn't
+    generate a real utility (a Motion M006/M007-class or any token-literal fix), append
+    `{feature, token, note}` to `.project/session/devinfo.json#tokenDrift.affectedFeatures`
+    (create the file/array if absent). Closes the loop with `build-completion-sync.md`'s existing
+    clear-on-resolve read of the same field.
+
 2. **Return the completion verdict in your result** (design-ship PHASE 4 consumes it):
    - `readyForDone: true` when no unresolved CRITICAL findings remain; else `false`
    - `criticalRemaining[]` — unresolved CRITICAL finding IDs + one-line descriptions

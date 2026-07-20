@@ -19,6 +19,7 @@ All required dimensions covered → trigger the [Stop Condition](#stop-condition
 
 ## Tone Rules
 
+- **`AskUserQuestion` is not an opener** — open each dimension with a plain anchored question in chat, not a modal. `AskUserQuestion` appears only as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after two "I don't know"s on the same dimension). Reaching for it as your first move on an architecture-flavored dimension skips the open interview entirely — restated here because this file is read standalone as "the full interview protocol."
 - **One question at a time** — never list multiple questions in a single turn.
 - **No solution proposals** — do not propose solutions, technical approaches, or design choices in this phase. Example directions inside the question text ARE allowed and encouraged — they describe the problem space, not the implementation (see `shared/QUESTIONING.md § Anchored open question rules`).
 - **Paraphrase** after each substantive answer: "So you mean that…" or "If I understand correctly, you want…". Ask "is that right?" only when genuinely uncertain — not as a ritual after every answer.

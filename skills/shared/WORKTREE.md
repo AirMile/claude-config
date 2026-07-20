@@ -193,8 +193,9 @@ DEFAULT=$(git -C "$main_root" symbolic-ref --short HEAD 2>/dev/null || echo main
 UPSTREAM=$(git -C "$main_root" rev-parse --abbrev-ref --symbolic-full-name "$DEFAULT@{u}" 2>/dev/null || echo "")
 if [ -n "$UPSTREAM" ]; then
   REMOTE=$(echo "$UPSTREAM" | cut -d/ -f1)
-  if git -C "$main_root" fetch --quiet "$REMOTE" "$DEFAULT" 2>/dev/null; then
-    git -C "$main_root" pull --ff-only --quiet "$REMOTE" "$DEFAULT" 2>/dev/null || true
+  # bounded: abort a stalled transfer instead of hanging for the full tool timeout
+  if git -C "$main_root" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 fetch --quiet "$REMOTE" "$DEFAULT" 2>/dev/null; then
+    git -C "$main_root" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 pull --ff-only --quiet "$REMOTE" "$DEFAULT" 2>/dev/null || true
   fi
 fi
 COMPARE_REF="$DEFAULT"

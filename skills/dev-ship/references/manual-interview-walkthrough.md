@@ -142,22 +142,21 @@ One `AskUserQuestion` per item (not batched — the user asked for item-by-item 
   external prereq for Defer — account, CORS-origin, API-token, third-party config). **Defer is for
   external blockers only** — "it is broken" is by definition a **Fail**, never a Defer.
 
-**Evidence gate (soft) — evidence-class items only.** When the user answers `Pass` on an
-evidence-class item and Step A2 produced no evidence for it:
+**Evidence gate (soft, opt-in) — evidence-class items only.** A plain `Pass` from the user IS the
+verdict — do not follow it with a separate evidence request by default. When the user answers
+`Pass` on an evidence-class item and Step A2 produced no evidence for it, record `verdict: "pass"`,
+`evidence: "none"` immediately (**unproven**, surfaced later in the routing summary/report) and move
+on to the next item.
 
-0. **If the user's own reply already carries the evidence** (an attached screenshot, a pasted
-   image, or a description precise enough to verify against `expected` — common when a user
-   narrates what they saw instead of clicking an option, including a rejected tool-call followed
-   by a plain message) → skip straight to step 2 using that evidence; do not ask again.
-1. Otherwise, ask for the evidence named in Step B: drag the screenshot file into the chat (a path
-   you can `Read`) or paste the image directly.
-2. Verify it yourself against the item's `expected` — this is the factual check the automation could
-   not run. Match → record `verdict: "pass"` with the evidence (`{path}`, or `"in-chat"` for a
-   pasted image — **always set this field**, never leave it unset). Discrepancy → show the user
-   what you see vs `expected`; the user decides (fail / tweak / pass anyway — a pass-anyway keeps
-   the evidence but notes the discrepancy in `observed`).
-3. User declines or cannot provide evidence → Pass still stands (**soft gate**), recorded with
-   `evidence: "none"` — it surfaces as **unproven** in the routing summary and the final report.
+0. **If the user's own reply already carries evidence** (an attached screenshot, a pasted image, or
+   a description precise enough to verify against `expected`) → verify it yourself against
+   `expected` now. Match → record `verdict: "pass"` with that evidence (`{path}` or `"in-chat"`).
+   Discrepancy → show the user what you see vs `expected`; the user decides (fail / tweak / pass
+   anyway — a pass-anyway keeps the evidence but notes the discrepancy in `observed`).
+1. **Only ask for evidence when the item's own `manualReason` is `real-credentials` or
+   `tooling-gap`** (verification genuinely impossible without it) — for `physical-device`/
+   `screen-reader` a plain Pass from the person at the device already IS the strongest available
+   evidence; asking for a photo on top of a verbal Pass is redundant, not rigorous.
 
 Judgment-class items (`perception`, `audio`) never trigger this gate — the verdict itself is the
 evidence.

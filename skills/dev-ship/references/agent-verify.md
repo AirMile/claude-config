@@ -33,6 +33,12 @@ CONTEXT (verify-slice of SHIP_CONTEXT; worktree path = {worktreePath}):
 {paste the verify-slice of SHIP_CONTEXT (PHASE 0) — the dynamic project-context lines}
 ```
 
+The `{paste ...}` line above is the wrapper's only fixed shape — the CONTEXT block itself should
+carry the full verify-slice detail from `phase-0-define-classify.md § Per-agent slices`
+(`acceptance[]` + `testStrategy`, `verificationProfile`, `paths`, filtered learnings) and routinely
+runs to tens of lines for a real feature. "Small pointer file" describes the wrapper prose above,
+not the pasted slice.
+
 ## Main-chat handling (PHASE 2)
 
 1. **Workflow path**: `ship-phase12.js` returns the validated `verify` object — read fields

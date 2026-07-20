@@ -1,6 +1,6 @@
 ---
 name: design-ship
-description: Use to run design build→content→check as one auto-mode flow. Use with /design-ship.
+description: Use when a PAGE/COMPONENT spec is ready to build+ship. Use with /design-ship.
 argument-hint: "[page-or-component-name]"
 reads:
   [
@@ -24,7 +24,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 0.4.1
+  version: 0.5.0
   category: design
 ---
 
@@ -171,10 +171,15 @@ routing anywhere. Only a genuine build/check failure follows the branches below.
 - `failedPhase: "build"` → leave PHASE 1 `in_progress`; checkpoint `status: "failed"`, skip to
   PHASE 5: "Build failed at `{build.failedAt}`, worktree intact at `{build.worktreePath}` — inspect
   it or run `/design-convert {target}` to patch, or re-run `/design-ship {target}` to resume."
-- `failedPhase: "check"` → mark PHASE 1+2 `completed`, leave PHASE 3 `in_progress`; checkpoint
-  `status: "failed"`, `completedPhases += ["PHASE 1", "PHASE 2"]`, skip to PHASE 5: "Check failed at
-  `{check.failedAt}` (app does not build/serve), worktree intact — fix the build error, then
-  re-run `/design-ship {target}` to resume." Do not finalize.
+- `failedPhase: "check"` with `failedAt` indicating a transient agent death (API error / null
+  return — not an audit or build-error message) → retry **once**: relaunch the Workflow with
+  `resume: {build, content}` (the already-green results) so only AGENT 3 re-runs. Second failure
+  of the same kind → fall through to the branch below.
+- `failedPhase: "check"` (genuine audit/build failure, or a transient-death retry that failed
+  again) → mark PHASE 1+2 `completed`, leave PHASE 3 `in_progress`; checkpoint `status: "failed"`,
+  `completedPhases += ["PHASE 1", "PHASE 2"]`, skip to PHASE 5: "Check failed at
+  `{check.failedAt}`, worktree intact — fix the underlying error, then re-run
+  `/design-ship {target}` to resume." Do not finalize.
 
 **Fallback** (Workflow tool unavailable): spawn AGENT 1 → 2 → 3 sequentially via the Agent tool
 per the Spawn sections in the three `agent-*.md` files (models per the § Design matrix, effort not

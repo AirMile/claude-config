@@ -68,7 +68,9 @@ rework."`
 ## Step 3 — Spec gate
 
 Run the copied Build route's Step 2.5 (read it in
-`.claude/skills/design-ship/references/design-create/route-build.md` — resolve spec from
+`.claude/skills/design-ship/references/design-create/route-build.md` — Steps 0-2 and 8-12 of that
+file are context-only/AGENT-1-only for this main-chat read; §2.5, §4-5, and §7, plus the file's
+own header note, cover everything this step needs, so a scoped read suffices — resolve spec from
 `feature.json` → `design.*` → inline questions; show the SPEC block; gate with
 Build it / Edit spec / Cancel). Deviation from stock: the "Save spec only — don't build" option
 becomes **"Cancel ship"** — design-ship without a build is pointless; point the user to
@@ -125,6 +127,11 @@ SHIP_PLAN:
 ```
 
 ## Step 8 — SHIP PLAN + plan-mode exit
+
+**Before calling `ExitPlanMode`, confirm every prior gate actually ran**: Step 3 (spec shown +
+Build it/Edit spec/Cancel answered), Step 5 (direction `AskUserQuestion` answered — including the
+visual-preview `Todo`), Step 6 (brief confirm answered). Any not yet run → run it now, in order,
+before continuing. `ExitPlanMode` is the single approval gate; nothing downstream re-checks these.
 
 > **Todo**: Use the `ExitPlanMode` tool — present the Build route's BUILD PLAN block (from the
 > copied Step 7) plus `SHIP_PLAN` as the plan output. Plan rejection covers "adjust plan". Skip

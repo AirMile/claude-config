@@ -18,6 +18,22 @@ other feature/commit collided and on what shared surface) before spending time r
 is exactly the kind of "hard to reverse, needs judgment" work that warrants a heads-up, even inside
 an otherwise-autonomous ship run.
 
+## Step 1b — Generated files: don't hand-splice, regenerate
+
+A conflict confined to a generated/codegen-output file (e.g. Convex `convex/_generated/*`, GraphQL
+codegen, protobuf output) is not a real logic conflict — both sides independently regenerated the
+same derived artifact from their own subset of source files. Do not diff/splice it by hand:
+
+1. Resolve the conflict by picking either side (`git checkout --ours <path>` or `--theirs` — the
+   content is about to be overwritten anyway).
+2. `git add <path>`.
+3. Regenerate for real from the now-merged source (the project's own codegen command — e.g.
+   `npx convex dev --once` for Convex) so the output reflects every merged module, not just one
+   side's.
+4. Continue to Step 5 (verify) on the regenerated file.
+
+Skip Steps 2–4 below for this file; they apply to hand-written source conflicts.
+
 ## Step 2 — Extract both full versions
 
 Re-trigger the merge (`git merge --no-ff <branch> -m "..."`) to regenerate conflict markers, then
@@ -69,6 +85,11 @@ Catching an unclosed-delimiter error immediately (one file, fresh in context) is
 discovering it after several more hunks are resolved on top.
 
 ## Step 5 — Verify before completing the merge commit
+
+**If the merge touched a dependency manifest** (`package.json`, `pyproject.toml`, `Cargo.toml`, …):
+install/sync first (`npm install`, `pip install -e .`, …) — a clean manifest merge does not
+materialize new packages into `node_modules`/the venv/etc. on its own, and skipping this step
+produces spurious "Cannot find module" failures that look like a real merge regression.
 
 Once every conflict marker is gone: run the full test suite for **every language/toolchain** the
 touched files belong to (not just the one most associated with this feature) — a cross-feature
