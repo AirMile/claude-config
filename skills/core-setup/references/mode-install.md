@@ -9,14 +9,14 @@ Incremental installer for frontend tooling and libraries in **existing** project
 
 **Tier-1 modules** (curated guides):
 
-| Category  | Modules                 |
-| --------- | ----------------------- |
-| Dev tools | inspect-overlay         |
-| Styling   | tailwind, shadcn-ui     |
-| Testing   | vitest, playwright      |
-| Linting   | biome, eslint-prettier  |
-| State     | zustand, tanstack-query |
-| Forms     | react-hook-form-zod     |
+| Category  | Modules                    |
+| --------- | -------------------------- |
+| Dev tools | inspect-overlay, tauri-mcp |
+| Styling   | tailwind, shadcn-ui        |
+| Testing   | vitest, playwright         |
+| Linting   | biome, eslint-prettier     |
+| State     | zustand, tanstack-query    |
+| Forms     | react-hook-form-zod        |
 
 Everything outside this set is handled via `references/research-flow.md`.
 
@@ -43,7 +43,7 @@ Everything outside this set is handled via `references/research-flow.md`.
 If the skill was invoked with an argument (e.g. `/core-setup tailwind`):
 
 1. Match argument (case-insensitive) against tier-1 module names:
-   `inspect-overlay`, `tailwind`, `shadcn-ui`, `vitest`, `playwright`, `biome`, `eslint-prettier`, `zustand`, `tanstack-query`, `react-hook-form-zod`
+   `inspect-overlay`, `tauri-mcp`, `tailwind`, `shadcn-ui`, `vitest`, `playwright`, `biome`, `eslint-prettier`, `zustand`, `tanstack-query`, `react-hook-form-zod`
 
 2. **Match found** → save module as `direct_module`, skip PHASE 1-3, go directly to PHASE 4 Path A after PHASE 0.1-0.2.
 
@@ -63,6 +63,12 @@ Check `package.json` dependencies:
 - No match and no `index.html` → abort: "No supported frontend framework detected."
 
 When framework is **Plain** or **non-React Vite**: only `inspect-overlay` is offered in PHASE 1, all other tier-1 modules are skipped (they assume React or a build toolchain that exists). Research-flow remains available for free-text input.
+
+**Tauri detection (independent flag)** — regardless of the frontend `framework` value above (a
+Tauri app's root `package.json` is its frontend, e.g. React+Vite, and stays classified as such for
+category-gating purposes): check `src-tauri/Cargo.toml` for a `tauri` dependency. If found, set
+`$IS_TAURI = true`. This only gates whether `## Pre-PHASE 2: Tauri MCP` (below) offers the
+`tauri-mcp` module — it does not change `framework` or the PHASE 3 category flow.
 
 ### 0.2 Package Manager Detection
 
@@ -94,6 +100,7 @@ On every successful install, PHASE 5 step 5b writes the module choice to `projec
 | tanstack-query      | `stack.state.server = "tanstack-query"` |
 | react-hook-form-zod | `stack.forms = "react-hook-form-zod"`   |
 | inspect-overlay     | (none — dev-only tool)                  |
+| tauri-mcp           | (none — dev-only tool)                  |
 
 `stack.packages[]` is **derived from `package.json`** after the install — not from a hardcoded list (see PHASE 5 step 5a). This works automatically and correctly for every library, including research-mode and multi-package installs (shadcn-ui, eslint+prettier).
 
@@ -155,6 +162,48 @@ When **Skip** → go directly to PHASE 2.
 ### 1.4 Framework Guard (Plain)
 
 When `framework === "plain"` (detected in PHASE 0.1), inspect-overlay is the only meaningful module — other tier-1 modules assume `npm install` and a React-or-bundler toolchain. After PHASE 1.3 completes (install or skip), jump directly to PHASE 6 (Report). Skip PHASE 2-5.
+
+---
+
+## Pre-PHASE 2: Tauri MCP (conditional)
+
+Only runs when `$IS_TAURI` is `true` (set in PHASE 0.1). Otherwise skip straight to PHASE 2 — no
+output, this section doesn't exist for non-Tauri projects.
+
+### Status
+
+Check whether `tauri-mcp` is already installed: `src-tauri/Cargo.toml` has a `tauri-plugin-mcp`
+dependency AND a project `.mcp.json` registers a `tauri-mcp` server entry.
+
+### Question
+
+```yaml
+header: "Tauri MCP"
+question: >
+  This is a Tauri app. tauri-mcp lets Claude drive the real app window (WKWebView/WebView2) for
+  interactive verification — no CDP needed, works where Chrome-based tooling can't reach. Debug-only,
+  refuses release builds. Set this up?
+options:
+  # When not installed:
+  - label: "Install (Recommended)", description: "Debug-gated Rust plugin + dev-only frontend init + project .mcp.json"
+  - label: "Skip", description: "Skip, continue to next step"
+  # When already installed:
+  - label: "Skip (Recommended)", description: "Already installed, keep it"
+  - label: "Teardown", description: "Remove tauri-mcp from project"
+multiSelect: false
+```
+
+### Execute
+
+When **Install** or **Teardown**:
+
+```
+Read("references/modules/tauri-mcp/setup-guide.md")
+```
+
+Follow the guide's Install or Teardown section. After completion, continue to PHASE 2.
+
+When **Skip** → go directly to PHASE 2.
 
 ---
 

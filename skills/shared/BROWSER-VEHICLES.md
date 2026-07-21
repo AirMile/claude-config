@@ -1,14 +1,18 @@
 # Browser Vehicles — Routing Decision
 
-Canonical decision source for which browser-automation vehicle to use. Four vehicles exist, each
+Canonical decision source for which browser-automation vehicle to use. Five vehicles exist, each
 owning exactly one lane — **no overlap, no judgment call**. Vehicle-specific tool-loading rituals
 and command references live in their own docs (`CLAUDE-IN-CHROME.md`, `PLAYWRIGHT.md`,
-`PLAYWRIGHT-MCP.md`); this file only decides **which** vehicle a skill should reach for. Skills
-reference this file rather than restating the rule.
+`PLAYWRIGHT-MCP.md`, `TAURI-VEHICLE.md`); this file only decides **which** vehicle a skill should
+reach for. Skills reference this file rather than restating the rule.
+
+**Despite the name, lane 0 below isn't a browser at all.** A Tauri desktop app's window has no URL
+and no CDP — none of the other four vehicles can reach it. That lane is checked first, before any
+of the URL-based reasoning below even applies.
 
 ---
 
-## Why four vehicles, not one
+## Why four browser vehicles, not one
 
 - **Playwright CLI (daemon)** and **the Playwright runner** (`@playwright/test`) carry zero
   context-window cost — plain Bash calls, no MCP schema loaded.
@@ -18,13 +22,16 @@ reference this file rather than restating the rule.
 - Each vehicle has exactly one capability the others lack (real user session vs. headless
   determinism vs. zero-cost scripting vs. regression baselines) — the table below routes on
   that capability, not preference.
+- The fifth vehicle (**Tauri app**) sits outside this reasoning entirely — it's not competing for
+  "which browser," it owns the case where there is no browser to compete for.
 
 ---
 
-## The four lanes
+## The five lanes
 
 | Vehicle                                           | Owns this lane                                                                                                 | Cost                                    |
 | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **Tauri app** (`mcp__tauri-mcp__*`)               | Target is a Tauri desktop app's **native window**, not a URL — no CDP reaches it (`TAURI-VEHICLE.md`)          | MCP schema cost, project-install gated  |
 | **Playwright CLI** (daemon)                       | Scriptable / repeatable ad-hoc checks — the **default** for automated browser verification                     | Zero context cost (Bash)                |
 | **Playwright CLI** (runner, `@playwright/test`)   | Regression baselines, HiDPI 2×, multi-viewport sweeps, network throttling/offline                              | Zero context cost (Bash)                |
 | **Playwright MCP** (`mcp__playwright__*`)         | Interactive, turn-by-turn exploration with **no live Chrome connected** and no pre-written script              | MCP schema cost, no Chrome interference |
@@ -36,6 +43,12 @@ reference this file rather than restating the rule.
 
 Evaluate top to bottom — the first lane whose conditions are ALL true owns the item. Never pick a
 vehicle by preference once a lane matches.
+
+0. **Target is a Tauri desktop app's native window** (see `TAURI-VEHICLE.md § Detection` —
+   `project.json#stack.framework == "Tauri"` or a `src-tauri/` directory) → **Tauri app**
+   (`TAURI-VEHICLE.md`), unconditionally. Checked before everything below — a native window has no
+   URL, so none of the URL-based reasoning in steps 1-4 applies. If the vehicle isn't installed or
+   connected, follow `TAURI-VEHICLE.md § Smart-install gate` — never fall through to a browser lane.
 
 1. **Regression / HiDPI / multi-viewport sweep / network throttling** → **Playwright runner or CLI
    daemon** (`PLAYWRIGHT.md`). Always — never flips to an MCP vehicle, regardless of Chrome
@@ -63,6 +76,7 @@ vehicle by preference once a lane matches.
 
 | Item                                                                      | Lane                               |
 | ------------------------------------------------------------------------- | ---------------------------------- |
+| Verify a click opens the right panel in a Tauri desktop app               | Tauri app                          |
 | AGENT 2 verify: "clicking Save shows a success toast"                     | Playwright CLI daemon (scriptable) |
 | Visual regression baseline for the pricing page                           | Playwright runner                  |
 | Debug round: poke around an unfamiliar page to find a bug, no live Chrome | Playwright MCP                     |
@@ -73,6 +87,7 @@ vehicle by preference once a lane matches.
 
 ## Cross-references
 
-- Tool-loading + command mapping: `CLAUDE-IN-CHROME.md`, `PLAYWRIGHT-MCP.md`, `PLAYWRIGHT.md`.
+- Tool-loading + command mapping: `CLAUDE-IN-CHROME.md`, `PLAYWRIGHT-MCP.md`, `PLAYWRIGHT.md`,
+  `TAURI-VEHICLE.md`.
 - Visual verification loop pattern (compare/fix rounds): `VERIFICATION.md`.
 - `dev-ship`/`dev-verify` classification that feeds into this routing: `dev-ship/references/dev-verify/references/test-classification.md`.

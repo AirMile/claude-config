@@ -5,7 +5,7 @@ argument-hint: "[pasted [ref] block(s) + change description]"
 reads: [project.theme]
 metadata:
   author: claude-config
-  version: 1.1.0
+  version: 1.2.0
   category: dev
 ---
 
@@ -146,17 +146,23 @@ Motion docs; cite rule IDs, don't restate them):
 
 Always runs — the edit is not done until it is seen working.
 
-1. **Tooling**: `playwright-cli` daemon by default (scriptable single-shot verify — see
+1. **Tooling**: **Tauri project** (`src-tauri/` present or `project.json#stack.framework ==
+"Tauri"`) → the target is a native window, not a URL — use the Tauri app vehicle per
+   [shared/TAURI-VEHICLE.md](../shared/TAURI-VEHICLE.md) instead of any browser vehicle below;
+   follow its smart-install gate if `mcp__tauri-mcp__*` isn't connected yet. **Otherwise**:
+   `playwright-cli` daemon by default (scriptable single-shot verify — see
    [shared/BROWSER-VEHICLES.md](../shared/BROWSER-VEHICLES.md)). **Opt into Claude-in-Chrome**
    only when `tabs_context_mcp` finds the exact page already open in a live Chrome tab — the user
    just clicked the overlay there, so reusing that tab (real session, no fresh navigation) is
    faster than a cold CLI launch. Mechanics per
    [shared/CLAUDE-IN-CHROME.md](../shared/CLAUDE-IN-CHROME.md) and
    [shared/PLAYWRIGHT.md](../shared/PLAYWRIGHT.md) § Pre-flight Validation.
-2. **URL**: an open tab showing the app → use it. Otherwise derive the route from the ref path
-   (Next.js `app/`/`pages/` conventions) on the detected dev-server port (Vite `server.port` /
-   `--port` script flag / fallback 5173/3000). Still unclear → one short question. Dev server not
-   running → ask: start it, or skip verify.
+2. **URL**: skip this step entirely for a Tauri project — the running app window is already
+   showing the current state, there's nothing to navigate to. Otherwise: an open tab showing the
+   app → use it. Otherwise derive the route from the ref path (Next.js `app/`/`pages/`
+   conventions) on the detected dev-server port (Vite `server.port` / `--port` script flag /
+   fallback 5173/3000). Still unclear → one short question. Dev server not running → ask: start
+   it, or skip verify.
 3. **Locate the element live**: full mode → the overlay's attrs are in the dev DOM — selector
    `[data-inspector-relative-path="<path>"][data-inspector-line="<line>"]` (deterministic);
    degraded → the CSS selector from the ref. Scroll into view; brief wait for HMR after edits.

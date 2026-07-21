@@ -112,6 +112,25 @@ function populateFromProject(projectDir, dashData) {
     !dashData.stack || (!dashData.stack.framework && !dashData.stack.language);
 
   if (stackStillEmpty) {
+    // ── src-tauri/Cargo.toml (Tauri desktop shell) — checked BEFORE the root
+    // package.json branch below. A Tauri app's root package.json is the
+    // frontend (React/Vue/...) and its deps would otherwise win the
+    // framework match, mislabeling a desktop app as "React"/"Vue". The
+    // existing Cargo.toml→"Tauri" mapping further down only fires when
+    // there's no root package.json at all, which is never true for Tauri.
+    let isTauri = false;
+    const tauriCargoFile = path.join(projectPath, "src-tauri", "Cargo.toml");
+    if (fs.existsSync(tauriCargoFile)) {
+      try {
+        const content = fs.readFileSync(tauriCargoFile, "utf8");
+        if (/^\s*tauri\s*=/m.test(content)) {
+          if (!dashData.stack) dashData.stack = {};
+          dashData.stack.framework = "Tauri";
+          isTauri = true;
+        }
+      } catch {}
+    }
+
     // ── package.json (Node.js / JavaScript) ──
     const pkgFile = path.join(projectPath, "package.json");
     if (fs.existsSync(pkgFile)) {
@@ -122,7 +141,9 @@ function populateFromProject(projectDir, dashData) {
         const devDeps = pkg.devDependencies || {};
         const allDeps = { ...deps, ...devDeps };
 
-        // Framework detection
+        // Framework detection — skipped when isTauri: the Tauri check above
+        // already set the correct framework, and a Tauri app's frontend lib
+        // (React/Vue/...) isn't the app's framework, just its UI layer.
         const frameworkMap = [
           ["next", "Next.js"],
           ["nuxt", "Nuxt"],
@@ -139,10 +160,12 @@ function populateFromProject(projectDir, dashData) {
           ["@remix-run/react", "Remix"],
           ["astro", "Astro"],
         ];
-        for (const [dep, name] of frameworkMap) {
-          if (allDeps[dep]) {
-            dashData.stack.framework = name;
-            break;
+        if (!isTauri) {
+          for (const [dep, name] of frameworkMap) {
+            if (allDeps[dep]) {
+              dashData.stack.framework = name;
+              break;
+            }
           }
         }
 

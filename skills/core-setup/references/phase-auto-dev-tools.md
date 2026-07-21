@@ -1,6 +1,6 @@
 # Auto Dev Tools (shared: greenfield Phase 5b / mature PHASE 5.65)
 
-Install dev-tools that are framework-conditional and have no `stack.*` slot: inspect-overlay and playwright-toolchain. Tier-1 modules with a stack slot go through Module Gap (mature PHASE 0.6/5.8) or `/core-setup [module]` — never through this phase.
+Install dev-tools that are framework-conditional and have no `stack.*` slot: inspect-overlay, playwright-toolchain, and tauri-mcp. Tier-1 modules with a stack slot go through Module Gap (mature PHASE 0.6/5.8) or `/core-setup [module]` — never through this phase.
 
 ## Parameters
 
@@ -99,6 +99,49 @@ npx @playwright/cli install chromium
 ```
 
 **Track**: append `playwright-toolchain` to `{track-to}`. No project.json update — playwright is dev-only, no `stack.*` key.
+
+---
+
+## Tool 3: tauri-mcp
+
+**Detect** — trigger only when the project is a Tauri app (a **positive** detect, unlike Tools 1-2's
+Web-Frontend/Fullstack gate — this is the one tool in this phase that applies to Desktop):
+
+| Variant           | Extra condition                                                                                                                                                                                               |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `greenfield-auto` | Phase 2.4 tech stack choice contains "Tauri" (case-insensitive)                                                                                                                                               |
+| `mature-ask`      | `stack.framework == "Tauri"` (from `stack-source`) **OR** `src-tauri/Cargo.toml` exists with a `tauri` dependency (file probe fallback, e.g. a dashboard not yet re-synced since the `populate.js` Tauri fix) |
+
+All other stacks: skip silently — no output.
+
+**Gate** (`mature-ask` only):
+
+```yaml
+header: "Tauri MCP"
+question: >
+  This is a Tauri app. tauri-mcp lets Claude drive the real app window (WKWebView/WebView2) for
+  interactive verification — no CDP needed, works where Chrome-based tooling can't reach. Debug-only,
+  refuses release builds. Install?
+options:
+  - label: "Install (Recommended)"
+    description: "Debug-gated Rust plugin + dev-only frontend init + project .mcp.json"
+  - label: "Skip"
+    description: "Do not install"
+multiSelect: false
+```
+
+On "Skip": no action. On "Install": proceed.
+
+**Install:**
+
+```
+Read("references/modules/tauri-mcp/setup-guide.md")
+```
+
+Follow the guide's Install section. `greenfield-auto`: no modal, install automatically (mirrors
+inspect-overlay's greenfield-auto pattern).
+
+**Track**: append `tauri-mcp` to `{track-to}`. No project.json update — dev-only, no `stack.*` key.
 
 ---
 

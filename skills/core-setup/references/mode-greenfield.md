@@ -291,7 +291,11 @@ Install dependencies and run build to verify setup compiles. Non-blocking: conti
 
 > **Todo**: mark Phase 5 → `completed`, Phase 5b → `in_progress`.
 >
-> **Skip-guard**: both auto-dev-tools (inspect-overlay, playwright) require Phase 2.3 project type ∈ {Web Frontend, Fullstack}. If the project type is anything else (Mobile, Game, Desktop, CLI, Web Backend), skip this phase entirely — do NOT load the reference — and mark Phase 5b `completed`. `dev_tools_installed[]` stays empty.
+> **Skip-guard**: Tools 1-2 (inspect-overlay, playwright) require Phase 2.3 project type ∈ {Web
+> Frontend, Fullstack}; Tool 3 (tauri-mcp) requires Phase 2.4 tech stack choice to contain "Tauri"
+> (Desktop project type). If project type is anything else (Mobile, Game, CLI, Web Backend) **and**
+> the stack choice isn't Tauri, skip this phase entirely — do NOT load the reference — and mark
+> Phase 5b `completed`. `dev_tools_installed[]` stays empty.
 >
 > Otherwise Read `references/phase-auto-dev-tools.md` and follow it with:
 >
