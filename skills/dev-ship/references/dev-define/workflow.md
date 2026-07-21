@@ -29,6 +29,13 @@ PHASE 1 of the dev workflow: define → build → test.
 - **No implementation code anywhere.** Plan file and feature.json contain only type signatures, structure, decisions. Function bodies, `(set, get) => ({...})` blocks, JSX, hook internals → the build phase. Detail: see PHASE 2 "Strict boundary."
 - **No requirements skipping** — every feature gets PHASE 1 extraction with acceptance criteria.
 - **No phase-jump without checkpoint** — user confirms scope (PHASE 1) before architecture; the plan-approval gate (dev-ship Step 4b) is the review surface before feature.json is written.
+- **Standing park escape (PHASE 0→2, up to the gate).** At any point — an open interview
+  question, any `AskUserQuestion` (including a free-text "Other" answer), or plain chat — the
+  user may signal this feature should not be built now: "park", "park this", "not now", "wrong
+  order", "another feature first", or equivalent. Treat it as **PARK-ESCAPE**: stop the current
+  phase immediately and Read `.claude/skills/dev-ship/references/define-park.md`. A feature does
+  not have to be built just because define started — a different build order is a legitimate
+  outcome.
 
 ## Workflow
 
@@ -71,7 +78,7 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
    - Project context load: `node ~/.claude/scripts/context-load.js "$REPO" define "{feature-name}"` → `{ project, projectContext }` (see [shared/PROJECT-CONTEXT-LOAD.md](.claude/skills/shared/PROJECT-CONTEXT-LOAD.md) for field rationale).
    - **Onboarding check** (after the extract): `project === null` → warn `⚠️ No project.json found. Consider /core-setup.`; present but `stack === null && features.length === 0` → warn `ℹ️ project.json lacks codebase context. /core-setup can fill this in.`; present with content → continue silently. Non-blocking.
    - Read `.claude/research/stack-baseline.md` — **decision input, not just fallback**: extract the section(s) matching this feature's stack area (e.g. navigation, storage, maps) into memory so PHASE 1b's baseline gate and PHASE 2's baseline check can reuse them without re-reading. If absent, use `project.json.stack` as basis.
-   - **Backlog read-only** (required — feeds the PHASE 1 risk-check + PHASE 3 externalRef passthrough): `node ~/.claude/scripts/backlog-load.js "$REPO" read-feature "{feature-name}"` → `{ present, risk, dependencies, externalRef, description, ... }` (see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). Keep `risk`, `dependencies`, `externalRef`, and `description` in memory for PHASE 1 and PHASE 3 — `description` feeds the PHASE 1a context echo and coverage check. Mutations (status, date, `auto` flag) happen in PHASE 4. `present: false` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
+   - **Backlog read-only** (required — feeds the PHASE 1 risk-check + PHASE 3 externalRef passthrough): `node ~/.claude/scripts/backlog-load.js "$REPO" read-feature "{feature-name}"` → `{ present, risk, dependencies, externalRef, description, note, ... }` (see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). Keep `risk`, `dependencies`, `externalRef`, `description`, and `note` in memory for PHASE 1 and PHASE 3 — `description` feeds the PHASE 1a context echo and coverage check; a non-null `note` is a prior park — surface it verbatim as a `PARKED PREVIOUSLY: {note}` line before the first interview question (PHASE 1a). Mutations (status, date, `auto` flag) happen in PHASE 4. `present: false` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
    - **Open-items load** (same batch — feeds the PHASE 2 Backlog Impact Check): `node ~/.claude/scripts/backlog-load.js "$REPO" open-items "{feature-name}"` → `{ backlogPresent, items }` and keep the compact list in memory. `backlogPresent: false` or empty `items` → the Impact Check will skip silently.
 
 5. **Optional context** (skip each item if results would be empty):
@@ -118,6 +125,8 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
 **Risk-check (only if `feature.risk >= 4`):** show one line before opening the interview — `⚠ HIGH RISK ({risk}/5): consider splitting this feature, verify dependencies, clarify scope before defining.`
 
 **Surface relevant past decisions** (only with ≥1 match from PHASE 0 scan, otherwise skip silently): render a short `PREVIOUSLY DECIDED` list (`[scope] {decision} → chose {chosen} (constraint: {constraint})`) before the first interview question — context only, no action required.
+
+**Park-note surfacing** (only when the PHASE 0 §4 `note` is non-null): show `PARKED PREVIOUSLY: {note}` before the first question — context only.
 
 Conduct the open interview per the reference — one anchored open question at a time. **AskUserQuestion is not an opener in this phase** — it is allowed only as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after two "I don't know"s on the same dimension). Close with the reference's explicit summary + confirmation; proceed to PHASE 1b only after the user confirms.
 

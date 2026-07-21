@@ -39,6 +39,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
       "source": "/project-plan",
       "dependencies": ["other-feature"],
       "risk": "1-5|null",
+      "note": "free text|null — park context, see § Park notes",
       "date": "2026-01-15|null",
       "auto": "true|null",
       "refactor": "REFACTORED|ROLLED_BACK|null",
@@ -521,6 +522,35 @@ The GAME pipeline's standalone skills use `transition` values `"defining"` / `"b
 | `game-ship`      | `transition === "shipping" && type !== PAGE/COMPONENT` (game project; no-arg pickup)       | full pipeline → `shipped: true` via refactor    |
 
 ---
+
+## Park notes (define-time)
+
+`note` — optional free-text field on a card, written when a define run parks the card back to
+`TODO` (dev-ship/game-ship gate Abort, or the mid-define park escape —
+`{dev,game}-ship/references/define-park.md`). It records why the card was parked plus any context
+the aborted interview gained ("parked 2026-07: needs payment-provider decision first; interview
+established EU-only scope"). Read by the next define pickup (`backlog-load.js read-feature` /
+`game-read-feature` return it; the interview surfaces it before the first question) and removed
+in the same sync that flips the card to `DEFINED`. Never rendered as a board badge.
+
+## Define-time split (park outcome)
+
+When a define run concludes the card is better built as 2+ smaller cards (park-escape "Split"
+outcome — `{dev,game}-ship/references/define-park.md`), the mutation is:
+
+- **Parent** → `status: "CANCELLED"`, `cancelledReason: "split into: {child-a}, {child-b}"`,
+  `cancelledAt: <YYYY-MM-DD>`, remove `transition`. Restorable via the board's Archived section.
+- **Children** → new cards pushed with the standard dedup check (§ Writing the backlog):
+  `status: "TODO"`, `source` = the splitting ship skill (e.g. `"/dev-ship"` — INDEPENDENT under
+  § Source field convention), `phase` inherited from the parent, `dependencies[]` inherited from
+  the parent (plus any inter-child dependency), descriptions per § Description quality. Small
+  1–3-file children may be `type: "TWEAK"` (game: `"POLISH"`).
+- **Dependents repointed** — every other card with the parent in `dependencies[]` gets the parent
+  name replaced by the child(ren) that cover what it needs; when unclear, all children.
+
+This differs from BOTH the Impact Check `partial` rescope (a rescope shrinks a card that stays
+alive) AND dev-define's PHASE 1c split (`00-split.md` — sub-features built within one ship run):
+a define-time split replaces an unbuilt card with separate backlog cards.
 
 ## Impact Check (consumer protocol)
 

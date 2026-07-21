@@ -96,6 +96,7 @@ switch (profile) {
       dependencies: feat.dependencies || [],
       externalRef: feat.externalRef || null,
       transition: feat.transition || null,
+      note: feat.note || null,
       pageHint: feat.pageHint || [],
     });
     break;
@@ -249,6 +250,7 @@ switch (profile) {
       dependencies: feat.dependencies || [],
       externalRef: feat.externalRef || null,
       transition: feat.transition || null,
+      note: feat.note || null,
       pageHint: feat.pageHint || [],
     });
     break;

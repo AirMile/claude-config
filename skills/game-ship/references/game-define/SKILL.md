@@ -128,7 +128,7 @@ Find feature by name → keep `"status": "TODO"`, set `"stage": "defining"`, `da
 Write back via Edit.
 Not found → skip (feature is added to backlog at PHASE 5).
 The card stays in TODO but gets a pulsing `defining` stage-badge.
-Keep the card's `description`, `risk`, and `dependencies` in memory — `description` feeds the PHASE 1a context echo and coverage check, `risk` the risk-check line.
+Keep the card's `description`, `risk`, `dependencies`, and `note` in memory — `description` feeds the PHASE 1a context echo and coverage check, `risk` the risk-check line, and a non-null `note` is a prior park — surface it verbatim as a `PARKED PREVIOUSLY: {note}` line before the first interview question (PHASE 1a).
 
 2b. **Feature existence check** (after name determination, before context-load):
 
@@ -200,6 +200,14 @@ Check: `.project/features/{feature-name}/feature.json` exists?
 
 ### PHASE 1a: Interview
 
+**Standing park escape (PHASE 1a→3, up to the gate).** At any point — an open interview
+question, any `AskUserQuestion` (including a free-text "Other" answer), or plain chat — the
+user may signal this feature should not be built now: "park", "park this", "not now", "wrong
+order", "another feature first", or equivalent. Treat it as **PARK-ESCAPE**: stop the current
+phase immediately and Read `.claude/skills/game-ship/references/define-park.md`. A feature does
+not have to be built just because define started — a different build order is a legitimate
+outcome.
+
 > **Todo**: Read `.claude/skills/game-ship/references/game-define/references/phase1a-interview.md` for the full interview protocol — dimension checklist, tone rules, one-question-at-a-time flow, escape-hatch, and adaptive stop condition.
 
 **Risk-check (only if `feature.risk >= 4`):** show one line before opening the interview — `⚠ HIGH RISK ({risk}/5): consider splitting this feature, verify dependencies, clarify scope before defining.`
@@ -213,6 +221,8 @@ PREVIOUSLY DECIDED (possibly relevant)
 ```
 
 Show before the first interview question. No action required — context only, so interview answers don't conflict with previously decided directions.
+
+**Park-note surfacing** (only when the PHASE 0 `note` is non-null): show `PARKED PREVIOUSLY: {note}` before the first question — context only.
 
 **Interview opening**: context echo + freshly composed anchored opening question per `references/phase1a-interview.md § Interview Start` — never a canned scaffold.
 

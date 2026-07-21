@@ -121,6 +121,11 @@ own (game-ship owns the enclosing plan mode) and no phase tracking. Notes for th
   `.project/{backlog,project,project-context}.json` writes — including the backlog `DEFINED` flip with
   `auto: true` — are deferred to that accept, so a rejected-and-abandoned define leaves no orphan card.
   Any conditional define writes (`00-split.md` + sub-feature `mkdir`s on a split) defer to accept too.
+- **Standing park escape** — every interview/decision question from here to the gate implicitly
+  allows "park this" (wrong moment, wrong order). On any park intent, stop and Read
+  `.claude/skills/game-ship/references/define-park.md` (the rule itself lives in
+  `game-define/SKILL.md`'s Constraints). At the gate itself, Step 4b's Abort covers the same
+  decision.
 
 Then continue **in plan mode** to Step 3 (classify) and Step 4 (technique plan), then Step 4b (the
 gate). Do not end the skill.
@@ -243,6 +248,26 @@ update` (from the Seed Alignment Check), `## Backlog impact` (obsoleted/adjusted
      whole interview. Re-run Step 3 (reclassify) + Step 4 (re-derive) if the change affected them,
      rewrite the plan file, and `ExitPlanMode` again. Loop until accepted (mirrors `game-debug`'s
      plan-rejection-revises pattern).
+   - **Abort (park the whole feature — a decision _not to build_, distinct from Reject)** → the
+     interview or the gate can legitimately end in "don't build this now" (scope grew, priorities
+     changed). This is a terminal outcome, **not** a revise-loop. If the user's reason is about
+     _ordering_ rather than "don't build" ("wrong order", "another feature first", "split this"),
+     Read `.claude/skills/game-ship/references/define-park.md § 1` and offer the Swap/Split
+     outcomes instead of the plain park below — its § 4 cleanup is these same four steps.
+     Otherwise, `ExitPlanMode` to leave plan mode, then revert Step 2a's bookkeeping (nothing was
+     built and no `feature.json` was written, but the pre-plan-mode writes orphan otherwise — a
+     stale board badge and a spurious resume into `PHASE 0 · define` on the next
+     `/game-ship {feature}`):
+     1. `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}` — clears the board badge.
+     2. `rm -f .project/session/ship-{feature}.json` — removes the init checkpoint (no green
+        completion, no resume intended).
+     3. `rmdir .project/features/{feature}` — the dir is empty (no `feature.json`).
+     4. In `backlog.json`, strip `transition: "shipping"` from the card, leaving `status` at its
+        prior value (normally `TODO`); add a `note` recording why it was parked (and any context
+        the interview established) so a later pickup keeps the context — see `shared/BACKLOG.md
+§ Park notes`.
+
+     Then **stop** — do not continue to Step 5.
 
 **Resume note.** Same-session interruption between Step 2b and Accept: just continue (plan mode + the
 plan file persist in the session). Cross-session death re-runs the interview — see Step 0's
