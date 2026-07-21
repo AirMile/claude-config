@@ -31,10 +31,14 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
    `SHIP_CONTEXT` covers them (dev-verify PHASE 0 Explore for context synthesis; dev-define
    `context-aggregator`). Keep the task-specific analysis such a spawn also does (e.g. verify's
    `httpContractTested` / `acceptanceTests` probing) — run it inline if you cannot spawn (rule 9).
-7. **Worktree — role-bound.** Build-agent: create the worktree, commit, **never merge**.
-   Verify/refactor-agent: use the existing worktree; **never** finalize/merge/`ExitWorktree`/
-   `git worktree remove`. The main chat owns finalize (PHASE 4, after refactor). Ignore the
-   workflow's Finalize / `FINALIZE.md` / `ExitWorktree` phase entirely.
+7. **Worktree — role-bound.** Build-agent: create the worktree, commit, **never merge**. Do
+   **not** call `EnterWorktree` — it reliably rejects a pinned-cwd background subagent
+   ("not inside an isolated worktree"), a documented recurring failure; go straight to
+   `git worktree add` + absolute-path/`git -C` Bash calls for the whole build.
+   Verify/refactor-agent: use the existing worktree (same absolute-path pattern, no
+   `EnterWorktree`); **never** finalize/merge/`ExitWorktree`/`git worktree remove`. The main
+   chat owns finalize (PHASE 4, after refactor). Ignore the workflow's Finalize /
+   `FINALIZE.md` / `ExitWorktree` phase entirely.
 8. **No browser side-effects** — skip HTML-preview generation + `HTML-PRESENT.md` (dev-define visual
    preview). No browser in a subagent.
 9. **Nested analysis agents** — spawning your own analysis sub-agents (dev-refactor lens agents;

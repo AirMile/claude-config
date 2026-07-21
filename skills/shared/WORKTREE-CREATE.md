@@ -41,7 +41,16 @@ DIRTY_COUNT=$(git -C "$main_root" status --porcelain | wc -l | tr -d ' ')
 
 `DIRTY_COUNT = 0` → skip silently, continue to Step 2.
 
-`DIRTY_COUNT > 0` → AskUserQuestion:
+**Optional caller parameter**: `knownUnrelatedScope` (string[], default `[]`) — file paths the
+caller's own run touches (e.g. `scope.files`). If every line in `git -C "$main_root" status
+--porcelain` names a path outside every entry of `knownUnrelatedScope` (and outside their
+directories), the dirty work is provably unrelated to this run — skip the modal and proceed as
+"Create the worktree anyway" (log: `Uncommitted: {n} unrelated path(s), no overlap with scope —
+creating worktree anyway`). Any dirty path that DOES overlap (or when the caller passes no
+`knownUnrelatedScope`) still triggers the check below unchanged — mirrors `shared/FINALIZE.md`'s
+existing `knownDirtyPaths` pattern for its own uncommitted-changes check.
+
+`DIRTY_COUNT > 0` (and not fully unrelated per above) → AskUserQuestion:
 
 - header: "Uncommitted work"
 - question: "`$main_root` has {DIRTY_COUNT} uncommitted change(s) that would NOT be included in the new worktree (it branches from the last commit). How do you want to proceed?"
@@ -274,6 +283,14 @@ ln -sfn "$MP/screenshots"          "$WT/.project/screenshots"
 ln -sfn "$MP/thinking"             "$WT/.project/thinking"
 ln -sfn "$MP/project.json"         "$WT/.project/project.json"
 ln -sfn "$MP/project-context.json" "$WT/.project/project-context.json"
+
+# convex-test's import.meta.glob resolves relative to node_modules' physical location, not
+# the worktree — a symlinked/parent-resolved node_modules silently bundles main's stale
+# convex/*.ts instead of the worktree's edited copy (documented pitfall, scoring-engine +
+# duo-double-claim-bug). Run npm install when the feature touches convex/*.ts.
+if [ -d "$WT/convex" ] && ! [ -d "$WT/node_modules/.bin" ]; then
+  (cd "$WT" && npm install --silent)
+fi
 
 # Integrity check
 FAILED=()

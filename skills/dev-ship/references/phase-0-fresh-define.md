@@ -22,7 +22,7 @@ Everything from here to the gate runs in plan mode: `Read`/`Glob`/`Grep`, read-o
 > **STOP — Read `.claude/skills/dev-ship/references/dev-define/workflow.md` now and execute it.**
 > Do not improvise the interview/requirements/architecture from context alone, even when the
 > feature seems simple — that file's PHASE 1b/2 checks (Frontend Discovery, Seed Alignment, Backlog
-> Impact) and the machine-contract appendix authored *before* the gate are not optional shortcuts.
+> Impact) and the machine-contract appendix authored _before_ the gate are not optional shortcuts.
 
 That copy is **already adapted** for dev-ship — it carries no plan-mode machinery of its own
 (dev-ship owns the enclosing plan mode) and no phase tracking. Notes for this enclosing context:
@@ -60,7 +60,11 @@ reason.
 > **Hard check**: before writing "run" for any of the three, confirm a `Read` (or the matching script
 > call) on that exact file already appears earlier in this turn's transcript. If it doesn't, the
 > citation MUST read `n/a: skipped this run` — never write "run" from memory of what the check usually
-> finds.
+> finds. **Before writing "n/a" for Frontend Discovery or the Seed Alignment Check specifically**,
+> confirm the objective skip condition actually holds — Frontend Discovery: current feature `type` is
+> in `COMPONENT/INTEGRATION/THEME/A11Y/PERF/INFRA/DOCS`; Seed Alignment: `requirements.length < 4 AND
+durableDecisions == 0 AND clarifications == 0`. If the condition does NOT hold, the check is
+> mandatory — go back and run it; a self-authored reason ("bugfix, no drift") is not a valid n/a.
 
 Then continue **in plan mode** to Step 3 (classify) and Step 4 (technique plan), back in
 `phase-0-define-classify.md`, then Step 4b below (the gate). Do not end the skill.
@@ -87,9 +91,9 @@ surface for the whole plan. It always runs (no env-var opt-out).
      the design review — it replaces the removed inline sketch-confirm); the Step 3 "Verification
      profile" line (~N auto, ~N manual); the auto-derived technique plan (`refactorLenses`,
      `securityDeep` scanners, or "security off"); a **process-trail line** — `Discovery: run ({file}) → {1-line
-     finding or "no reuse candidates"} | n/a: {reason} · Seed check: run ({file}) → {1-line drift result or "no
-     drift"} | n/a: {reason} · Backlog impact: run ({file}) → {1-line impact result or "no impact"} | n/a:
-     {reason}` — the `({file})` slot echoes the exact path the Hard check above just verified was Read
+finding or "no reuse candidates"} | n/a: {reason} · Seed check: run ({file}) → {1-line drift result or "no
+drift"} | n/a: {reason} · Backlog impact: run ({file}) → {1-line impact result or "no impact"} | n/a:
+{reason}` — the `({file})` slot echoes the exact path the Hard check above just verified was Read
      this turn (`frontend-discovery.md` / `shared/SEED.md` / `shared/BACKLOG.md`) — never blank, never
      a file not opened this turn. Each check cites its actual outcome, not just the word "run", so a
      skipped-with-reason check is visible at the gate and a fabricated pass is structurally harder to

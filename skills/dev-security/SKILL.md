@@ -1,6 +1,6 @@
 ---
 name: dev-security
-description: OWASP Top 10 + supply-chain + secrets security audit. Use with /dev-security.
+description: Use when a security audit of the codebase is needed. Use with /dev-security.
 reads:
   [
     project.endpoints,
@@ -12,7 +12,7 @@ writes: [security.audit, backlog.status]
 writes-terminal: [security.reports]
 metadata:
   author: claude-config
-  version: 3.2.0
+  version: 3.7.0
   category: dev
 ---
 
@@ -70,7 +70,8 @@ No matches → continue to Step 1.
 
 ### Step 1: Detect tech stack
 
-Scan project for languages, frameworks, and entry points:
+Project CLAUDE.md or `.project/project.json#stack` already documents the stack → reuse it, skip
+the scan. Otherwise, scan the project for languages, frameworks, and entry points:
 
 - Glob for `package.json`, `requirements.txt`, `composer.json`, `go.mod`, `Cargo.toml`, `Gemfile`
 - Identify framework (Express, Django, Laravel, Rails, Next.js, etc.)
@@ -78,21 +79,27 @@ Scan project for languages, frameworks, and entry points:
 
 ### Step 2: Confirm scope
 
-When invoked as `/dev-security {feature}` (an explicit feature-name arg) and
-`.project/security/ship-triage-{feature}.json` exists, add a first option (the dev-ship handoff —
-`shared/DEVINFO.md`'s `security.shipTriage`):
+**Explicit feature-arg auto-resolve** — when invoked as `/dev-security {feature}` (an explicit
+feature-name arg), resolve scope automatically, no modal:
 
-AskUserQuestion:
+1. `.project/security/ship-triage-{feature}.json` exists → scope = "Ship-triage follow-up":
+   `feature.json#files[]` for `{feature}` — check `.project/features/{feature}/feature.json` first,
+   then `.project/features/archive/*-{feature}/feature.json` (ship-triage is inherently post-ship,
+   so the archived path is the common case, not the exception); preload `triage.confirmed` from the
+   ship-triage file as known findings (see Step 4). Log: `Scope: ship-triage follow-up voor {feature}
+(auto, feature-arg gegeven)`.
+2. No ship-triage file, but `.project/features/{feature}/feature.json#files[]` exists → scope =
+   that file list. Log: `Scope: {feature}#files[] (auto, feature-arg gegeven)`.
+3. Neither exists → fall back to the most recent completed audit's `scope.files[]` for this
+   feature if one exists in `.project/security/audit-*.json`.
+4. None of the above resolve anything → fall through to the modal below (the only remaining case
+   where scope is genuinely ambiguous even with a feature name given).
+
+**No feature-arg (bare `/dev-security`)** → always ask. AskUserQuestion:
 
 - header: "Scan Scope"
 - question: "Which parts of the codebase do you want to scan?"
 - options:
-  - _(only when a ship-triage file exists)_ "Ship-triage follow-up (Recommended)" — scope =
-    `feature.json#files[]` for `{feature}`; preload `triage.confirmed` from the ship-triage file as
-    known findings (see Step 4). `feature.json` missing (e.g. the feature already archived after
-    shipping) → fall back to the most recent completed audit's `scope.files[]` for this feature if
-    one exists in `.project/security/audit-*.json`, else fall back to "Full codebase" with a log
-    line (same fallback shape as "Changed features only" below).
   - "Full codebase (Recommended)" — Scan everything except node_modules/vendor/dist
   - "Backend/API only" — Focus on server-side code
   - "Changed features only" — Only pipeline files of DONE/shipped backlog features
@@ -192,22 +199,25 @@ Patch the audit state's `tooling` field with each tool's status (`ran` / `skippe
 ## PHASE 2b: Parallel OWASP scan
 
 > **Todo**: mark PHASE 2 → `completed`, PHASE 2b → `in_progress`.
+> On a resume (`§ PHASE 1 Step 0`), OWASP_CONTEXT is not persisted in the audit state — re-derive
+> it now via PHASE 1 Step 4 (`project.json`/`project-context.json`) before writing scanner
+> prompts. On a fresh (non-resumed) run it is already in hand from Step 4.
 > Read `.claude/skills/dev-security/references/orchestration.md § 2` and follow it: write the 10
 > scanner prompt files, launch `security-scan.js`, patch the audit state. **End the turn** — no
 > further tool calls until the task-notification arrives.
 
-| Agent             | Category                    | Risk     |
-| ----------------- | --------------------------- | -------- |
-| owasp-a01-scanner | Broken Access Control       | CRITICAL |
-| owasp-a02-scanner | Security Misconfiguration   | HIGH     |
-| owasp-a03-scanner | Supply Chain Failures       | HIGH     |
-| owasp-a04-scanner | Cryptographic Failures      | HIGH     |
-| owasp-a05-scanner | Injection                   | CRITICAL |
-| owasp-a06-scanner | Insecure Design             | MEDIUM   |
-| owasp-a07-scanner | Authentication Failures     | HIGH     |
-| owasp-a08-scanner | Data Integrity Failures     | MEDIUM   |
-| owasp-a09-scanner | Logging & Alerting Failures | MEDIUM   |
-| owasp-a10-scanner | Exceptional Conditions      | MEDIUM   |
+| Agent             | Category                    | Risk     | Focus                                                            |
+| ----------------- | --------------------------- | -------- | ---------------------------------------------------------------- |
+| owasp-a01-scanner | Broken Access Control       | CRITICAL | Missing authz on mutations/routes; IDOR via client-supplied IDs  |
+| owasp-a02-scanner | Security Misconfiguration   | HIGH     | Insecure defaults, headers, env exposure, verbose errors         |
+| owasp-a03-scanner | Supply Chain Failures       | HIGH     | Unpinned/vulnerable deps, untrusted script/CDN sources           |
+| owasp-a04-scanner | Cryptographic Failures      | HIGH     | Weak/missing hashing, secret exposure, premature data reveal     |
+| owasp-a05-scanner | Injection                   | CRITICAL | SQL/NoSQL/XSS/command/template injection, unvalidated input      |
+| owasp-a06-scanner | Insecure Design             | MEDIUM   | Abuse cases, missing rate limits, race conditions                |
+| owasp-a07-scanner | Authentication Failures     | HIGH     | Session/device binding, PIN/lockout robustness                   |
+| owasp-a08-scanner | Data Integrity Failures     | MEDIUM   | Client-trusted state affecting scoring/results integrity         |
+| owasp-a09-scanner | Logging & Alerting Failures | MEDIUM   | Missing audit trail on privileged/destructive actions            |
+| owasp-a10-scanner | Exceptional Conditions      | MEDIUM   | Malformed input handling, unhandled rejections, DoS via bad data |
 
 Each agent receives: tech stack summary, file list (grouped by type), OWASP_CONTEXT (from PHASE 1
 Step 4), project root path. Each agent returns structured output (schema-validated by the workflow):
@@ -268,11 +278,19 @@ CRITICAL: [N] | HIGH: [N] | MEDIUM: [N] | LOW: [N]
 TOP CRITICAL/HIGH FINDINGS:
 1. [severity] [category] — [issue] — [file:line]
 2. ...
+(findings sharing one root cause/fix → group under a shared heading instead of listing flatly;
+each finding still cites its own severity/category/file:line within the group)
 
 Verdict: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OR CRITICAL findings)
 ```
 
-AskUserQuestion:
+**Explicit feature-arg auto-proceed** — when PHASE 1 was invoked with an explicit `{feature}`
+arg, skip the modal: proceed straight to "Yes, generate fix plans" (log: `Next step: fix-plannen
+genereren (auto, feature-arg gegeven)`). `ExitPlanMode` first (a Workflow cannot launch from
+inside plan mode — this closes the aggregation session with the report as its output), then Read
+`.claude/skills/dev-security/references/fix-implement.md` and continue there (PHASE 4).
+
+**No feature-arg (full-codebase run)** → AskUserQuestion:
 
 - header: "Next step"
 - question: "Do you want to generate fix plans for the found issues?"

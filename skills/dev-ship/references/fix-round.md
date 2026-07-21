@@ -75,6 +75,11 @@ protect:
 
 Write the plan file (path from `EnterPlanMode`):
 
+> **STOP — the appendix below is not optional prose, it is a required write.** Write it into the
+> plan file itself, in this same `Write`/`Edit` call, before calling `ExitPlanMode` — never author it
+> later from memory. `§ Accept → extraction` step 1 reads `manual.fixPlan` FROM this block; if it
+> isn't in the plan file, there is nothing to parse.
+
 - **Review surface** — per finding: what/why, the proposed fix, how it'll be verified; then the wave
   table (wave → groups → dispatch → files).
 - **`## Appendix — machine contract (skip review)`** — one ```json block, authored as **compact
@@ -124,7 +129,9 @@ parses it directly (a resume that lands back in the gate simply re-plans instead
    same exit, so go straight to step 3 below's plain `signal` rewrite (drop only the `waiting` key —
    this is NOT the `signal-clear` subcommand, which would wrongly park the board mid-dispatch). (On a
    round 2+ gate, both writes already happened in `§ Hoisted bookkeeping` — skip this step.)
-1. Patch the checkpoint: `manual.fixPlan` = the appendix object.
+1. Patch the checkpoint: `manual.fixPlan` = the appendix object **read from the plan file's
+   `## Appendix` block** — do not re-author it from memory. Missing block = a process error: go back
+   and add it to the plan file first, do not reconstruct it ad hoc in the patch call.
 2. For every `agent`-dispatch group, write one rich descriptor file to
    `.project/session/ship-prompts/{feature}-fix-{groupId}.txt` — that group's findings (title, steps,
    observed, expected, screenshot path, element pointer, root cause, fix approach, verification step),
@@ -134,11 +141,15 @@ parses it directly (a resume that lands back in the gate simply re-plans instead
 
 ## § Dispatch
 
+**`scriptPath` must be absolute** — resolve `main_root` first (`git worktree list --porcelain | head
+-1`) and pass an absolute path; a relative path resolves against cwd, which is inside
+`worktree-{feature}` here where `.claude/` isn't checked out, so it fails outright.
+
 Launch:
 
 ```js
 Workflow({
-  scriptPath: ".claude/skills/dev-ship/references/workflows/ship-fix.js",
+  scriptPath: "{main_root}/.claude/skills/dev-ship/references/workflows/ship-fix.js",
   args: { feature, worktreePath, waves /* [[{id, promptPath}], …] */, resume },
 });
 ```

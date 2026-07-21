@@ -107,6 +107,12 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
 
 ### PHASE 1a: Interview
 
+> **Precondition — do not open with `AskUserQuestion`:** the open-ended interview
+> (`phase1a-interview.md`) must run first, one anchored question at a time; `AskUserQuestion` is
+> only escalation step 2 of `shared/QUESTIONING.md`'s ladder, never the opener. If you are about to
+> call `AskUserQuestion` before any open question has been asked this turn, stop and run the
+> interview first.
+
 > **Todo**: Read `.claude/skills/dev-ship/references/dev-define/references/phase1a-interview.md` for the full interview protocol — dimension checklist, tone rules, one-question-at-a-time flow, and adaptive stop condition.
 
 **Risk-check (only if `feature.risk >= 4`):** show one line before opening the interview — `⚠ HIGH RISK ({risk}/5): consider splitting this feature, verify dependencies, clarify scope before defining.`
@@ -181,6 +187,10 @@ The full requirements table with acceptance criteria and the feature overview ta
 
 > **Todo**: Read `.claude/skills/dev-ship/references/dev-define/references/frontend-discovery.md` and execute both steps: Reuse-Discovery (UI-keyword scan → `discoveredComponents[]` + `dependencies[]`) and Page-placement sparring (→ `pageHint[]` + PAGE backlog back-write).
 
+> **Precondition — do not enter PHASE 1c without this:** the PHASE 1b numbered REQ-checklist
+> (REQ-ID + acceptance scenarios, output as its own chat message) must already be visible earlier in
+> this conversation — if it is not, stop and emit it now before continuing.
+
 > **Gate — before PHASE 1c:** confirm both ran (or were genuinely skipped by type): the risk-check
 > line (if `feature.risk >= 4`, PHASE 1a) and frontend discovery above. Neither has a downstream
 > artifact check if skipped — this line is the only place that catches a missed one.
@@ -243,9 +253,13 @@ Design in three steps:
 
    > **Todo — before continuing to step 2:** print one line to chat now, not only into the
    > plan-file draft — `Baseline: ✓ pattern hit — {pattern-name}` or `Baseline: ⚙ research queued —
-   > {topic}`.
+{topic}`.
 
 2. **Scout: existing code + research** (delegated — keeps the file reads and library lookups out of the main context):
+
+   > **Gate — before Design:** if you have already Read >3 project files directly in this turn (outside
+   > `define-scout`) and the greenfield gate below does not apply, that already violated the hard cap —
+   > do not repeat the pattern for any further research this feature needs; spawn `define-scout` for it.
 
    > **Todo**: unless this is a greenfield area (no prior `feature.json` under `.project/features/` **and** the PHASE 0 §4 import scan found no matches), spawn the `define-scout` agent via the `Task` tool with:
    >
@@ -285,7 +299,7 @@ Design in three steps:
 > **Todo**: Follow [shared/BACKLOG.md](.claude/skills/shared/BACKLOG.md) § Impact Check — but **run only the detection**, not its `AskUserQuestion`. When ≥1 card is impacted, record the impact table in the draft as a `## Backlog impact` gate section (default action: apply the proposed verdicts on accept). Carry those verdicts to PHASE 4 as `backlogImpact[]`; the mutations happen in the accept sync batch, and the user can reject just that section at the gate. No impact → no section, no carry.
 >
 > **Todo — before continuing:** print the resulting `Backlog: ✓ open items unaffected` / `Backlog: ⚠
-> impact — N item(s)` line to chat now, not only into the plan-file draft.
+impact — N item(s)` line to chat now, not only into the plan-file draft.
 
 **End of PHASE 2**: the complete in-memory draft (incl. the machine-contract appendix) is ready — **return to dev-ship Step 3** (`phase-0-define-classify.md`). dev-ship's Step 4b gate presents the draft for approval and, on accept, runs PHASE 3+4 below.
 

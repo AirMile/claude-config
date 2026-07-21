@@ -20,9 +20,37 @@ on return.
 
 ## 2. PHASE 2b: OWASP scan — Workflow 1
 
-Write the 10 scanner prompt files (one per code, per `SKILL.md § PHASE 2b`'s prompt template) to
-`.project/security/prompts/{code}.md` — **absolute paths**, since PHASE 5 later changes cwd into a
-worktree and these files must still resolve.
+Write the 10 scanner prompt files to `.project/security/prompts/{auditId}/{code}.md` —
+**absolute paths** (since PHASE 5 later changes cwd into a worktree and these files must still
+resolve) **and namespaced by `auditId`** — a bare `prompts/{code}.md` path collides when two
+`/dev-security` runs are in flight at once (each run silently overwrites the other's scanner
+prompts mid-write, corrupting both runs' findings with no error). The audit-state file is already
+id-namespaced (`audit-{id}.json`); this brings the prompts directory in line with that convention.
+
+Use this template per code (SKILL.md's PHASE 2b table gives `{category name}`/`{risk}` per code;
+keep a one-line `{focus}` per category alongside that table):
+
+```
+# OWASP {CODE} Scanner — {feature or "full codebase"} audit
+
+## Project root
+{mainRoot}
+
+## Tech stack
+{stack summary}
+
+## Scan scope
+{file list, grouped by type: data/schema, backend logic, tests, frontend, config}
+
+## OWASP_CONTEXT
+API SURFACE: {endpoints or "not available"}
+DATA MODEL: {entities or "not available"}
+AUTH PATTERNS: {patterns or "not available"}
+
+## Your task
+Scan the files listed above for {category name} ({risk} risk) issues per your agent instructions.
+Focus specifically on: {focus}. Report findings only within the scanned file list above.
+```
 
 Launch: `Workflow({scriptPath: ".claude/skills/dev-security/references/workflows/security-scan.js",
 args: {auditId, scanners: [{code, promptPath}, ...], resume}})` — `scanners` is all 10 codes on a
@@ -42,8 +70,10 @@ the aggregation/report plan-mode session (a Workflow cannot launch from inside p
 
 Write the findings file `.project/security/audit-{id}-findings.json` (the merged, threshold-filtered
 findings from PHASE 3 — tool findings included) plus 3 small pointer-prompt files, one per strategy,
-each: "Read `.claude/skills/dev-security/references/fix-implement.md`'s findings file at
-`{findingsPath}` and the fix philosophy in your own agent definition, then produce your fix plan."
+at `.project/security/prompts/{auditId}/fix-{strategy}.md` (same auditId-namespacing as § 2's
+scanner prompts, and § 3 previously specified no directory for these at all), each: "Read
+`.claude/skills/dev-security/references/fix-implement.md`'s findings file at `{findingsPath}` and
+the fix philosophy in your own agent definition, then produce your fix plan."
 
 Launch:
 `Workflow({scriptPath: ".claude/skills/dev-security/references/workflows/security-fix-plans.js",

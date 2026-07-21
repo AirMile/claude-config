@@ -19,6 +19,7 @@ Order significant changes by impact, highest first.
 - Preserve unique project-specific knowledge and AskUserQuestion UX
 - Don't sacrifice clarity for brevity — if a longer explanation prevents mistakes, keep it
 - Harden skip-prone steps structurally (`> **Todo**` markers, **STOP** gates, artifact anchoring, script-ification of judgment calls) — not with added prose emphasis; and only where skipping is costly, since every hard gate adds tokens and friction
+- Offload per criteria: fork/scout for heavy intermediate output, parallel dispatch for independent subtasks, plan-mode entry for thought-heavy phases (`SKILL-PATTERNS.md § Fork Delegation` / `§ Parallel Dispatch`, `shared/PLAN-MODE.md`) — never add delegation or plan-mode machinery to skills that run fine inline
 
 ## 5.2 Selective Approval
 
