@@ -67,22 +67,35 @@ rework."`
 
 ## Step 3 — Spec gate
 
-Run the copied Build route's Step 2.5 (read it in
-`.claude/skills/design-ship/references/design-create/route-build.md` — Steps 0-2 and 8-12 of that
-file are context-only/AGENT-1-only for this main-chat read; §2.5, §4-5, and §7, plus the file's
-own header note, cover everything this step needs, so a scoped read suffices — resolve spec from
-`feature.json` → `design.*` → inline questions; show the SPEC block; gate with
-Build it / Edit spec / Cancel). Deviation from stock: the "Save spec only — don't build" option
-becomes **"Cancel ship"** — design-ship without a build is pointless; point the user to
-`/design-convert` for spec-only work. Store `$SPEC` (and `$INLINE_SPEC` when captured fresh — its
-deferred write happens in the build agent's completion sync 10f).
+> **Todo**: Run the copied Build route's Step 2.5 now, as its own explicit pass — Claude Code's
+> native plan-mode research does not substitute for it. Read it in
+> `.claude/skills/design-ship/references/design-create/route-build.md` — Steps 0-2 and 8-12 of
+> that file are context-only/AGENT-1-only for this main-chat read; §2.5, §4-5, and §7, plus the
+> file's own header note, cover everything this step needs — read it in 3 scoped passes instead of
+> one full read: offset=84 limit=82 (§2.5 spec gate), offset=167 limit=147 (§4-§5 build context +
+> directions), offset=261 limit=54 (§7 BUILD PLAN + exit). These offsets assume the file's current
+> section boundaries — if a section header (`#### Step 2.5`, `#### Step 4`, `#### Step 7`) isn't
+> found at/near the given offset, the file has been restructured since; fall back to a full read
+> rather than guessing stale offsets. Resolve spec from `feature.json` → `design.*` → inline
+> questions; show the SPEC block; gate with
+> Build it / Edit spec / Cancel. Deviation from stock: the "Save spec only — don't build" option
+> becomes **"Cancel ship"** — design-ship without a build is pointless; point the user to
+> `/design-convert` for spec-only work. Store `$SPEC`, and **always assemble `$INLINE_SPEC`** when
+> no richer existing spec was found (fresh capture): `build-completion-sync.md:107` writes it to
+> `design.pages[]`/`design.components[]` on this signal alone — skip this and that write silently
+> never happens, even though the rest of the ship succeeds. Store the literal gate answer as
+> `$SPEC_GATE_ANSWER` ("Build it" / "Edit spec" / "Cancel ship") — Step 8's `SHIP_PLAN` must cite
+> it.
 
 ## Step 4 — Build context
 
-Follow the copied Build route's Step 4 + 4b **in the main chat**: seed context (`shared/SEED.md`
-reader → `SEED_CONTEXT`), design-levers pre-flight (→ `$DESIGN_LEVERS`, warn-only), and — PAGE
-only — page composition per design-ship's vendored `.claude/skills/design-ship/references/design-create/references/page-compose.md` (→ `$COMPOSITION`,
-`$PENDING_DESIGN_WRITES` travel to the build agent via the build-slice for sync 10f).
+> **Todo**: Follow the copied Build route's Step 4 + 4b **in the main chat** — run these as their
+> own explicit reads, not an ad hoc inline substitute: seed context (`shared/SEED.md` reader →
+> `SEED_CONTEXT`), design-levers pre-flight (→ `$DESIGN_LEVERS`, warn-only), and — PAGE only —
+> page composition per design-ship's vendored
+> `.claude/skills/design-ship/references/design-create/references/page-compose.md` (→
+> `$COMPOSITION`, `$PENDING_DESIGN_WRITES` travel to the build agent via the build-slice for
+> sync 10f).
 
 ## Step 5 — Design directions (visualized)
 
@@ -100,15 +113,30 @@ ascii, recommended }] }` — `ascii` = the same mockup used in the modal below),
 Then present the `AskUserQuestion` with ASCII `preview`s (identical to the Build route's Step 5
 modal — the browser preview and the modal show the same options; the modal is the decision).
 "Other" free text → recompose once, re-render the preview, re-present. Store
-`$DESIGN_DIRECTION` + `$CHOSEN_LAYOUT`.
+`$DESIGN_DIRECTION` + `$CHOSEN_LAYOUT`, and store `$PREVIEW_PATH` (the rendered file:// path) +
+`$PREVIEW_OPENED` (yes/no, from the `HTML-PRESENT.md` open attempt) — Step 8's `SHIP_PLAN` must
+cite both.
+
+**Second-opinion hook** (still in plan mode; consult agent is read-only) — if the modal answered
+"Other" and the recompose loop ran, or the chosen direction conflicts with a `$DESIGN_LEVERS`
+warning or the seed's tone:
+
+> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — confirm modal, then
+> the consult with INPUT per the design-direction row of § Brief contents (spec, the 2–3
+> direction summaries inline, lever warnings, seed name+pitch). On DISAGREE re-present the
+> direction modal once with the digest visible; set `secondOpinionUsed`; carry the outcome to
+> PHASE 5's `Consult:` row.
 
 ## Step 6 — Content brief
 
-Run design-ship's vendored `.claude/skills/design-ship/references/design-content/references/scope-intent.md` §1.1–1.3 in the
-main chat: archetype classification (→ `$ARCHETYPE`), marketing-research hook (marketing
-archetype only — offer `/marketing-research` stop as stock), brief inference + the confirm modal
-(→ `$BRIEF`). Skip §1.4's separate CHECKPOINT — the §1.3 confirm is the checkpoint here (one
-modal less; the PHASE 4 review re-checks the result against the live page).
+> **Todo**: Run design-ship's vendored
+> `.claude/skills/design-ship/references/design-content/references/scope-intent.md` §1.1–1.3 in
+> the main chat, as its own explicit pass: archetype classification (→ `$ARCHETYPE`),
+> marketing-research hook (marketing archetype only — offer `/marketing-research` stop as stock),
+> brief inference + the confirm modal (→ `$BRIEF`). Skip §1.4's separate CHECKPOINT — the §1.3
+> confirm is the checkpoint here (one modal less; the PHASE 4 review re-checks the result against
+> the live page). Store the literal confirm answer as `$BRIEF_CONFIRM_ANSWER` — Step 8's
+> `SHIP_PLAN` must cite it.
 
 ## Step 7 — Check scope (auto — no question)
 
@@ -128,10 +156,12 @@ SHIP_PLAN:
 
 ## Step 8 — SHIP PLAN + plan-mode exit
 
-**Before calling `ExitPlanMode`, confirm every prior gate actually ran**: Step 3 (spec shown +
-Build it/Edit spec/Cancel answered), Step 5 (direction `AskUserQuestion` answered — including the
-visual-preview `Todo`), Step 6 (brief confirm answered). Any not yet run → run it now, in order,
-before continuing. `ExitPlanMode` is the single approval gate; nothing downstream re-checks these.
+**`SHIP_PLAN` must literally include these three fields before `ExitPlanMode` is callable** —
+a presence check, not a prose reminder: `specGate: {$SPEC_GATE_ANSWER}`,
+`visualPreview: {$PREVIEW_PATH} — opened: {$PREVIEW_OPENED}`,
+`briefConfirm: {$BRIEF_CONFIRM_ANSWER}`. Any field empty/missing → the corresponding gate
+(Step 3 / Step 5 / Step 6) was skipped — run it now, in order, before continuing. `ExitPlanMode`
+is the single approval gate; nothing downstream re-checks these.
 
 > **Todo**: Use the `ExitPlanMode` tool — present the Build route's BUILD PLAN block (from the
 > copied Step 7) plus `SHIP_PLAN` as the plan output. Plan rejection covers "adjust plan". Skip

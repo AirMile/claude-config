@@ -144,6 +144,8 @@ Conduct the open interview per the reference — one anchored open question at a
 
 **>4 open forks** → handle the remainder inline during requirement extraction as edge cases.
 
+**Second-opinion signal** (bookkeeping only, no action here): if any fork above kept ≥2 viable options past the baseline gate — the user hesitated, chose "Other", or asked for the recommendation — note `secondOpinionSignal: "tied fork — {branch}"` in memory for dev-ship's Step 4b hook (`shared/SECOND-OPINION.md`).
+
 #### Requirement Extraction + Checkpoint
 
 Extract testable requirements **internally** (no table output to chat). Write each acceptance scenario as a separate `{ when, then, category }` object (`category` ∈ `"happy" | "edge" | "boundary"`). Multiple conditions → multiple objects (do not combine in one sentence).
@@ -309,6 +311,8 @@ Design in three steps:
 >
 > **Todo — before continuing:** print the resulting `Backlog: ✓ open items unaffected` / `Backlog: ⚠
 impact — N item(s)` line to chat now, not only into the plan-file draft.
+
+**Second-opinion signal** (bookkeeping only): if the draft's `files[]` spans ≥3 top-level modules/dirs, note `secondOpinionSignal: "cross-cutting architecture"` in memory for dev-ship's Step 4b hook.
 
 **End of PHASE 2**: the complete in-memory draft (incl. the machine-contract appendix) is ready — **return to dev-ship Step 3** (`phase-0-define-classify.md`). dev-ship's Step 4b gate presents the draft for approval and, on accept, runs PHASE 3+4 below.
 

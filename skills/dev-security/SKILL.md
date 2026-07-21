@@ -255,6 +255,16 @@ Inside plan mode:
    judgment on top of the mechanical flag: expect justification per high score, reconsider "would a
    pentester give these scores?"
 4. **Verdict**: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OR CRITICAL findings).
+5. **Second-opinion escalation** (still in plan mode — the consult agent is read-only): if
+   (a) two sources conflict on the same finding (scanner vs PHASE 2 tool vs `shipTriageRef`), or
+   (b) ≥1 CRITICAL finding has confidence < 80%, or (c) `antiFantasySuspect` fired AND the
+   verdict flips on judgment —
+
+   > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — confirm modal,
+   > then the consult with INPUT = the audit state file + the disputed findings' cited source
+   > files, disputed findings inline as compact JSON (security row of § Brief contents). Apply
+   > the digest's per-finding verdicts to the report below (advisory — flips are shown, not
+   > silent), set `secondOpinionUsed`.
 
 Present consolidated report:
 
@@ -282,6 +292,7 @@ TOP CRITICAL/HIGH FINDINGS:
 each finding still cites its own severity/category/file:line within the group)
 
 Verdict: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OR CRITICAL findings)
+Second opinion: {consulted ({trigger}) — {n} finding verdict(s) revised | declined | not triggered | unavailable}
 ```
 
 **Explicit feature-arg auto-proceed** — when PHASE 1 was invoked with an explicit `{feature}`

@@ -248,6 +248,8 @@ still fuzzy is surfaced in the gate plan file, not re-litigated here.
 
 **>3 open forks** → handle the remainder inline during requirement extraction as edge cases.
 
+**Second-opinion signal** (bookkeeping only, no action here): if any fork above kept ≥2 viable options past the baseline gate — the user hesitated, chose "Other", or asked for the recommendation — note `secondOpinionSignal: "tied fork — {branch}"` in memory for game-ship's Step 4b hook (`shared/SECOND-OPINION.md`).
+
 #### Requirement Extraction
 
 After questions, extract testable requirements:
@@ -558,6 +560,8 @@ the accept sync batch, and the user can reject just that section at the gate. No
 impact → no section, no carry.
 
 **Machine contract appendix**: author the **complete feature.json draft** NOW (held in memory; game-ship's gate materializes it as the plan-file appendix at Step 4b) as a single ```json fenced block under a `## Appendix — machine contract (skip review)` heading, **compact single-line JSON (no indentation)** — halves the token cost of the plan-file echo. Include every define-owned field per the PHASE 4 field table below (name/status/created/depends/summary, requirements with full `acceptance[]` + game fields `tuningLevers`/`errorScenarios`, files, architecture, buildSequence, testStrategy, and the conditional fields). `interfaces[].definition` holds signal/resource/script declarations only — no method bodies. The heading marks it non-review; the design narrative above it (scene tree, flow, verification) is the review surface. Gate-accept extracts this block mechanically — no re-authoring.
+
+**Second-opinion signal** (bookkeeping only): if the draft's scripts/scenes span ≥3 top-level dirs, note `secondOpinionSignal: "cross-cutting architecture"` in memory for game-ship's Step 4b hook.
 
 **End of PHASE 3**: the complete in-memory draft (incl. the machine-contract appendix) is ready — **return to game-ship Step 3** (`phase-0-define-classify.md`). game-ship's Step 4b gate presents the draft for approval and, on accept, runs PHASE 4+5 below.
 

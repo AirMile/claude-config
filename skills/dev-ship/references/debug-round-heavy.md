@@ -224,7 +224,8 @@ entry`'s per-item precedence.
   evidence too, even with nowhere further to escalate; the updated score is still worth recording
   for whoever reviews the accept/park outcome). Patch the item (`heavyRoundFailed: true`, keep
   `debugTier: "heavy"`, the re-scored `difficulty`/`difficultySignals`), `signal-clear`, then a
-  single `AskUserQuestion` — no "another round" option, nothing left to escalate to:
+  single `AskUserQuestion` — no "another round" option; the only escalation left is a one-time
+  second opinion (option 3):
   1. **"Accept anyway (Recommended)"** — mark the item `verdict: "accepted"` with the failure noted as a known
      limitation (never silently DONE — this requires the explicit choice). Also **clear the ladder
      markers**: the `item` subcommand upserts by id and replaces the whole object, so re-send the
@@ -244,3 +245,11 @@ entry`'s per-item precedence.
      (different `debugTier`/no attempt yet) and are file-disjoint from this one, they may be finished
      in the same session before the turn actually ends — see
      `phase-3-manual-finalize.md § Resume entry`'s "handle each via its own highest-matching bullet."
+  3. **"Second opinion (Fable) first"** — only offered when no consult ran this round
+     (`secondOpinionUsed` unset; choosing it is the cost confirmation — no extra modal). Read
+     `.claude/skills/shared/SECOND-OPINION.md § Spawn` and consult with INPUT = the reproduction
+     test path, this round's plan file, the failed-fix file paths (`git diff --stat`), and ≤10
+     lines of failing output (debug-ceiling row of § Brief contents). Show the digest, set
+     `secondOpinionUsed`, then re-present this same modal **without this option** — the digest's
+     RECOMMENDATION informs Accept-vs-Park; it never picks for the user. Carry the outcome to the
+     report's `Consult:` row.

@@ -24,7 +24,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 0.5.0
+  version: 0.9.0
   category: design
 ---
 
@@ -221,19 +221,22 @@ Direction: {$DESIGN_DIRECTION.name}
 Build:     {filesCreated} file(s) · {tokensUsed} token refs · smoke {smoke}
 Copy:      {itemsApplied} applied ({regenRounds} regen round(s)) | DEGRADED
 Check:     {findingsResolved}/{findingsTotal} resolved · critical remaining: {n}
+Consult:   {none | "direction: consulted ({trigger})" | "direction: declined" | "direction: unavailable"}
 Merged:    {yes → main | no → {reason}}
 
 Auto-decisions ({N}):
 - {agent}: {decision}
 ```
 
-**Ship-level learning extraction** (the layer the agents cannot see). The agents already wrote
-their domain learnings/glossary during their phases. Cross-phase signals only exist here — extract
-a small set (0-2) to `project-context.json#learnings[]` via `shared/LEARNING-WRITE.md`
-(`source: "extracted"`, same dedup): a recurring `autoDecisions` pattern, a direction axis the
-user consistently overrides, or copy the user regenerated repeatedly (signals a brief gap). Only
-write genuinely reusable signals — skip if none. Then run the consolidation gate per
-`shared/LEARNING-WRITE.md § Consolidation Gate` (trigger `> 60` → merge, archive, target ≤40).
+> **Todo**: before marking PHASE 5 complete, run ship-level learning extraction (the layer the
+> agents cannot see). The agents already wrote their domain learnings/glossary during their
+> phases. Cross-phase signals only exist here — extract a small set (0-2) to
+> `project-context.json#learnings[]` via `shared/LEARNING-WRITE.md` (`source: "extracted"`, same
+> dedup): a recurring `autoDecisions` pattern, a direction axis the user consistently overrides,
+> copy the user regenerated repeatedly (signals a brief gap), **or a concrete gap surfaced during
+> the run itself** (a skipped/broken step, an environment issue found while reviewing). Only write
+> genuinely reusable signals — skip if none. Then run the consolidation gate per
+> `shared/LEARNING-WRITE.md § Consolidation Gate` (trigger `> 60` → merge, archive, target ≤40).
 
 > **Todo**: mark PHASE 5 → `completed`.
 

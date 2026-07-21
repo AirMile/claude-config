@@ -95,4 +95,5 @@ Server: http://localhost:9876/{project-dir}
 
 View backlog:  /project-app
 Start building: /{dev|game}-define {first-P1-feature}
+Second opinion: {consulted ({trigger}) | declined | not triggered | unavailable}
 ```

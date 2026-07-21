@@ -230,6 +230,15 @@ update` (from the Seed Alignment Check), `## Backlog impact` (obsoleted/adjusted
    - **`## Appendix — machine contract (skip review)`** — the complete `featureDraft` (incl.
      `playtestProfile`) as a single ```json block, **compact single-line JSON (no indentation)** —
      halves the token cost of the plan-file echo. This is what the extract reads on Accept.
+     **Second-opinion hook (between the plan-file write and `ExitPlanMode`)** — only when a
+     `secondOpinionSignal` was noted (PHASE 1b/PHASE 3) and `secondOpinionUsed` is not set:
+
+   > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — confirm modal,
+   > then the consult agent with INPUT = the plan file just written + dependency `feature.json`
+   > paths (define-gate row of § Brief contents). Show the digest, fold DISAGREE items into the
+   > review surface before exiting, set `secondOpinionUsed`, and carry the outcome to the PHASE 5
+   > report's `Consult:` row.
+
 2. **`ExitPlanMode`** to present it for approval (this exits plan mode; the session returns to its
    prior permission mode).
    - **Accept** → writes are allowed again; run define's hoisted PHASE 4+5 now:
@@ -247,7 +256,9 @@ update` (from the Seed Alignment Check), `## Backlog impact` (obsoleted/adjusted
      feedback touches** (e.g. reopen one scene-layout fork, adjust one requirement) — do not re-run the
      whole interview. Re-run Step 3 (reclassify) + Step 4 (re-derive) if the change affected them,
      rewrite the plan file, and `ExitPlanMode` again. Loop until accepted (mirrors `game-debug`'s
-     plan-rejection-revises pattern).
+     plan-rejection-revises pattern). If the feedback disputes the architecture itself (not
+     wording) and no consult ran this run, the "plan rejected at gate" trigger fires — run the
+     Second-opinion hook above before the next `ExitPlanMode`.
    - **Abort (park the whole feature — a decision _not to build_, distinct from Reject)** → the
      interview or the gate can legitimately end in "don't build this now" (scope grew, priorities
      changed). This is a terminal outcome, **not** a revise-loop. If the user's reason is about

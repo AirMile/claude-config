@@ -17,7 +17,7 @@ reads:
 writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 2.0.0
+  version: 2.1.0
   category: project
 ---
 

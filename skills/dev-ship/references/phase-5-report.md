@@ -43,9 +43,10 @@ and log one line instead. Otherwise push to `backlog.json#data.features[]`:
 Then patch `backlogTodo: "security-{feature}"` into the ship-triage file.
 
 Print the ship summary (ASCII table): feature, build test counts, verify results, manual outcomes,
-refactor result, security findings (if any), and the collected `autoDecisions[]` (choices the
-agents auto-made in non-interactive mode) for your review. All fields come from the checkpoint's
-`results` (and, on the manual path, the in-context PHASE 3 walkthrough).
+refactor result, security findings (if any), second-opinion consults, and the collected
+`autoDecisions[]` (choices the agents auto-made in non-interactive mode) for your review. All
+fields come from the checkpoint's `results` (and, on the manual path, the in-context PHASE 3
+walkthrough).
 
 ```
 SHIP COMPLETE: {feature}
@@ -55,6 +56,7 @@ Build:    {passed}/{total} PASS
 Verify:   AUTO {n} PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}/{accepted}) · {rounds} fix round(s){, plus {N} debug-ladder escalation(s) if this run used debug-round.md/debug-round-heavy.md — the two counters don't compose into one number}
 Refactor: {lenses applied} · {techniques} applied ({reverted} reverted)
 Security: {triage: {confirmed} confirmed · {dismissed} dismissed → persisted + todo security-{feature}, or just persisted if below the auto-todo threshold, or "not run"}
+Consult:  {none | "{context}: consulted ({trigger})" | "{context}: declined" | "{context}: unavailable"}
 Merged:   {yes → main | no → {reason}}
 
 Auto-decisions ({N}):

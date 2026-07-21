@@ -29,7 +29,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.7.0
+  version: 0.9.0
   category: game
 ---
 
@@ -245,9 +245,9 @@ above.
 > can resume; surface its `baselineSha` in the failure report as the rollback anchor.
 
 Print the ship summary (ASCII table): feature, build test counts, GUT auto-verify results, playtest
-outcomes, refactor result, and the collected `autoDecisions[]` (choices the agents auto-made in
-non-interactive mode) for your review. All fields come from the checkpoint's `results` (and, on the
-playtest path, the in-context PHASE 3 walkthrough).
+outcomes, refactor result, second-opinion consults, and the collected `autoDecisions[]` (choices
+the agents auto-made in non-interactive mode) for your review. All fields come from the
+checkpoint's `results` (and, on the playtest path, the in-context PHASE 3 walkthrough).
 
 ```
 SHIP COMPLETE: {feature}
@@ -256,6 +256,7 @@ Plan:      auto-derived → lenses {refactorLenses}
 Build:     {passed}/{total} GUT PASS
 Verify:    COVERED {n} GUT PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}) · {rounds} fix round(s)
 Refactor:  {lenses applied} · {improvements} applied ({reverted} reverted)
+Consult:   {none | "{context}: consulted ({trigger})" | "{context}: declined" | "{context}: unavailable"}
 Merged:    {yes → main | no → {reason}}
 
 Auto-decisions ({N}):

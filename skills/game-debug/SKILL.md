@@ -5,7 +5,7 @@ reads: [project-context.learnings, feature.requirements]
 writes: [project-context.learnings]
 metadata:
   author: claude-config
-  version: 3.1.0
+  version: 3.2.0
   category: game
 ---
 
@@ -350,7 +350,7 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gtest=tests/regression/tes
 ```
 
 - PASS → fix provably works for the reproduced bug
-- FAIL → fix incomplete, back to PHASE 8 (max 3 iterations, then AskUserQuestion: Other strategy | More research | Accept as incomplete)
+- FAIL → fix incomplete, back to PHASE 8 (max 3 iterations, then AskUserQuestion: Other strategy | More research | Second opinion (Fable — only offered when no consult ran this run; read `shared/SECOND-OPINION.md § Spawn` and consult with INPUT = the reproduction test, this round's plan, the failed-fix file paths, ≤10 lines of failing output — debug-ceiling row of § Brief contents; show the digest, set `secondOpinionUsed`, then re-ask this same modal without this option) | Accept as incomplete)
 
 ### Step 2: Full GUT suite
 
@@ -449,6 +449,7 @@ Fix: {what was changed, file:line refs}
 Reproduction test: {path, or "skipped: {reason}"}
 Regression: {N tests, X PASS, Y FAIL}
 Learning: {pitfall summary added, or "no extraction"}
+Second opinion: {consulted (fix dead-end) | declined | not offered}
 
 Next steps:
   1. /game-ship {feature} → re-verify or rebuild as needed

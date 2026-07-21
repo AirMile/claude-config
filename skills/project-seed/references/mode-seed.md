@@ -108,6 +108,14 @@ Create a structured markdown document (pure markdown, no preamble or "Here's you
 - Implementation projects (design → code): Source of Truth, Page/Screen Structure, Tech Stack, Implementation Approach, Open Decisions
 - Features/assignments (scoped work in an existing project): Goal, Existing Context, Out of Scope, Constraints/Dependencies, Definition of Done
 
+**Second-opinion hook** (after writing the plan file, before `ExitPlanMode`) — only if the
+synthesis carries ≥2 unresolved mutually exclusive directions in Open Decisions:
+
+> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — confirm modal, then
+> the consult with INPUT = the plan file (project-seed row of § Brief contents). Fold the digest
+> into the concept doc before exiting, print the one-line log (§ Logging — no report table
+> here), set `secondOpinionUsed`.
+
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol — write the concept document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 5 (output destination and `.project/` writes).
 
 ### PHASE 5: Output Destination
