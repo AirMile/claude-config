@@ -5,7 +5,7 @@ reads: [feature.externalRef]
 writes: [team.commitConvention, team.ticketPrefix]
 metadata:
   author: claude-config
-  version: 1.1.0
+  version: 1.2.0
   category: core
 ---
 
@@ -54,6 +54,7 @@ Once per project (cache in `project.json#team`). Skip if `team.commitConvention`
    - `^\[[A-Z-]+\]` → `"bracket"` (bracket-tag style)
    - Otherwise → `"freeform"`
    - Cache in `project.json#team.commitConvention`. For ticket-prefix: extract prefix (e.g. `"JIRA"`) → `project.json#team.ticketPrefix`.
+   - No `.project/project.json` present (e.g. this tool's own meta-repo) → skip caching; detect convention fresh each session from `git log` only.
 
 2. **externalRef detect** (per commit, always):
    - Search `feature.json` for current branch → check `externalRef`:
@@ -65,7 +66,12 @@ Once per project (cache in `project.json#team`). Skip if `team.commitConvention`
 
 ### 2. Stage Changes (if needed)
 
-If there are unstaged changes but nothing staged:
+**Before asking to stage anything**: run Step 3's Mixed concerns detection against the
+unstaged diff. If it triggers the multi-commit-split path, skip straight to
+`references/multi-commit-split.md` — staging happens per-commit inside that flow, never via
+the blanket ask below.
+
+If there are unstaged changes but nothing staged, and no split was triggered:
 
 - Show an overview of unstaged files
 
@@ -240,7 +246,9 @@ Show the generated message and ask for confirmation (AskUserQuestion):
 > **STOP — before every `git commit` call, including every commit in a multi-commit split.** Do
 > not call `git commit` until this gate returned "Commit" for _this specific_ message. A
 > multi-commit session does not carry one approval across commits — each commit gets its own
-> gate.
+> gate — **except when "Auto-commit all" gating was chosen** (`multi-commit-split.md § 1`): one
+> upfront approval of the full numbered commit list covers the whole split; do not re-ask per
+> commit.
 
 **Execute commit with HEREDOC** (safe for quotes and multilines):
 
@@ -280,8 +288,9 @@ git log -1 --oneline
 
 ### 7. Push Option
 
-> **STOP — ask this after every successful commit, including each commit in a multi-commit
-> split.** Do not silently move on to the next commit or end the turn without this gate.
+> **STOP — for a single commit, ask this after it succeeds.** For a multi-commit split, ask
+> **once**, after the last commit in the split — never per-commit (this applies regardless of
+> which Step 5 gating mode was chosen). Do not silently end the turn without this gate.
 
 After a successful commit, ask with AskUserQuestion:
 
