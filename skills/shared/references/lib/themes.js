@@ -297,6 +297,77 @@
         "--done-color": "#a3be8c",
       },
     },
+    zed: {
+      name: "Zed",
+      dark: {
+        // One Dark
+        "--bg": "#282c33",
+        "--surface": "#2f343e",
+        "--surface-hover": "#363c46",
+        "--border": "#464b57",
+        "--text": "#dce0e5",
+        "--text-muted": "#a9afbc",
+        "--text-dim": "#5d636f",
+        "--accent": "#74ade8",
+        "--accent-subtle": "#74ade808",
+        "--accent-tint": "#74ade811",
+        "--active-bg": "rgba(116, 173, 232, 0.12)",
+        "--danger": "#d07277",
+        "--danger-bg": "#d0727722",
+        "--done": "#a1c281",
+        "--warn": "#dec184",
+        "--orange": "#d9a35f",
+        "--purple": "#b477cf",
+        "--pink": "#cc7eb0",
+        "--todo": "#5d636f",
+        "--def": "#74ade8",
+        "--blt": "#dec184",
+        "--tst": "#d9a35f",
+        "--p1": "#d07277",
+        "--p2": "#d9a35f",
+        "--p3": "#74ade8",
+        "--p4": "#5d636f",
+        "--todo-color": "#a9afbc",
+        "--def-color": "#b477cf",
+        "--blt-color": "#74ade8",
+        "--tst-color": "#d9a35f",
+        "--done-color": "#a1c281",
+      },
+      light: {
+        // One Light
+        "--bg": "#fafafa",
+        "--surface": "#ebebec",
+        "--surface-hover": "#e0e0e1",
+        "--border": "#dcdcdd",
+        "--text": "#383a41",
+        "--text-muted": "#7f8188",
+        "--text-dim": "#a1a1a3",
+        "--accent": "#5c78e2",
+        "--accent-subtle": "#5c78e208",
+        "--accent-tint": "#5c78e211",
+        "--active-bg": "rgba(92, 120, 226, 0.12)",
+        "--danger": "#d36151",
+        "--danger-bg": "#d3615122",
+        "--done": "#669900",
+        "--warn": "#dfa000",
+        "--orange": "#c5622c",
+        "--purple": "#8a3fa8",
+        "--pink": "#a01f8f",
+        "--todo": "#a1a1a3",
+        "--def": "#5c78e2",
+        "--blt": "#dfa000",
+        "--tst": "#c5622c",
+        "--p1": "#d36151",
+        "--p2": "#c5622c",
+        "--p3": "#5c78e2",
+        "--p4": "#a1a1a3",
+        "--todo-color": "#7f8188",
+        "--def-color": "#8a3fa8",
+        "--blt-color": "#5c78e2",
+        "--tst-color": "#c5622c",
+        "--done-color": "#669900",
+      },
+    },
   };
 
   // ─── Core functions ─────────────────────────────────────────
@@ -389,6 +460,7 @@
             <button data-profile="catppuccin" class="theme-profile-btn">Catppuccin</button>
             <button data-profile="tokyonight" class="theme-profile-btn">Tokyo Night</button>
             <button data-profile="nord" class="theme-profile-btn">Nord</button>
+            <button data-profile="zed" class="theme-profile-btn">Zed</button>
             <button data-profile="custom" class="theme-profile-btn">Custom</button>
           </div>
         </div>

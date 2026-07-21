@@ -180,6 +180,10 @@ function getNavBarHtml(projectDir, activePage, projects) {
   #pn-theme-slot .theme-picker-dropdown { position:static !important; box-shadow:none !important; border:none !important; padding:0 !important; display:block !important; min-width:0 !important; }
   #pn-theme-slot .theme-picker-toggle { display:none !important; }
 
+  .pn-mode-section { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .pn-mode-section:has(#pn-mode-slot:empty) { display:none; }
+  .pn-mode-label { font-size:13px; color:var(--text, #e6edf3); }
+
   .pn-config-btn { display:block; width:100%; text-align:left; padding:8px 12px; border-radius:6px; font-size:13px; font-family:inherit; color:var(--text-muted, #8b949e); background:none; border:1px solid var(--border, #30363d); cursor:pointer; }
   .pn-config-btn:hover { color:var(--text); background:var(--surface-hover, rgba(255,255,255,0.06)); }
 
@@ -205,6 +209,10 @@ function getNavBarHtml(projectDir, activePage, projects) {
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
     <div class="pn-menu" id="pn-prefs-menu">
+      <div class="pn-prefs-section pn-mode-section" id="pn-mode-section">
+        <span class="pn-mode-label">Team mode</span>
+        <span id="pn-mode-slot"></span>
+      </div>
       <div class="pn-prefs-section" id="pn-theme-slot"></div>
       <div class="pn-prefs-section">
         <button class="pn-config-btn" id="config-open">Global Config (CLAUDE.md)</button>

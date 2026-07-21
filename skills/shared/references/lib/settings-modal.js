@@ -241,8 +241,7 @@
       '.team-mode-icon[data-tooltip]::before{content:"";position:absolute;top:calc(100% + 2px);right:10px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:6px solid var(--border,#30363d);pointer-events:none;opacity:0;transition:opacity .15s;z-index:10000}' +
       ".team-mode-icon[data-tooltip]:hover::after,.team-mode-icon[data-tooltip]:focus-visible::after{opacity:1;transform:translateY(0)}" +
       ".team-mode-icon[data-tooltip]:hover::before,.team-mode-icon[data-tooltip]:focus-visible::before{opacity:1}" +
-      ".team-mode-toggle-error{font-size:11px;color:var(--danger,#f85149);margin-left:4px}" +
-      "@media(max-width:640px){.top-nav-toggle,.content-toolbar-mode-toggle{display:none}}";
+      ".team-mode-toggle-error{font-size:11px;color:var(--danger,#f85149);margin-left:4px}";
     document.head.appendChild(s);
   }
 

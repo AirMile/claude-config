@@ -71,11 +71,34 @@ body {
 
 /* ── Section chips (jump-links, replace the old sidebar) ── */
 
+/* Full-width scrollable rail below the search/action row, so the chip count
+   never has to fight the search bar for room in a corner. Scrolls instead of
+   wrapping — a wrap here would grow .board-toolbar unpredictably. */
+.section-nav {
+  display: flex;
+  /* Centers the chip row under the search bar when it fits; falls back to
+     start-alignment when it overflows so the first chip stays reachable by
+     scrolling instead of being centered off-screen. */
+  justify-content: safe center;
+  padding: 0 22px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.section-nav::-webkit-scrollbar {
+  display: none;
+}
+/* Collapses along with #section-chips[hidden] (set in JS when <=1 chip). */
+.section-nav:has(#section-chips[hidden]) {
+  display: none;
+  padding: 0;
+}
+
 .section-chips {
   display: flex;
   gap: 6px;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: max-content;
 }
 
 .section-chips a {
@@ -140,31 +163,24 @@ body {
 
 /* ── Top nav ── */
 
-.top-nav {
+/* Sticky wrapper around both toolbar rows (search/actions + the section-nav
+   jump-rail below it). JS measures this element's real height into
+   --toolbar-h so sticky headers/anchors never assume a fixed toolbar size
+   (see .group-header and the scroll-margin-top rule further down). */
+.board-toolbar {
   position: sticky;
   top: 48px;
   z-index: 10;
+  background: var(--bg);
+}
+
+.top-nav {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 400px) minmax(0, 1fr);
   align-items: center;
   column-gap: 12px;
   padding: 0 22px;
-  background: var(--bg);
-  height: 55px;
-}
-
-/* Status/type filters sit on the right of the centered search; the action
-   toolbar mirrors it on the left (see .action-btns below) so both flanks stay
-   visually balanced. */
-.top-nav-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  min-width: 0;
-  grid-column: 3;
-  grid-row: 1;
-  justify-self: end;
+  min-height: 55px;
 }
 
 .top-nav-center {
@@ -172,6 +188,36 @@ body {
   grid-row: 1;
   justify-self: center;
   width: 100%;
+  position: relative;
+}
+
+.search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  opacity: 0.6;
+  cursor: pointer;
+  border-radius: 4px;
+  transition:
+    opacity 0.12s,
+    color 0.12s,
+    background 0.12s;
+}
+
+.search-clear:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+  opacity: 1;
+}
+
+.top-nav-search:placeholder-shown ~ .search-clear {
+  display: none;
 }
 
 .top-nav-btn {
@@ -206,7 +252,7 @@ body {
   color: var(--text);
   font-size: 12px;
   font-family: inherit;
-  padding: 7px 12px;
+  padding: 7px 30px 7px 12px;
   outline: none;
   width: 100%;
   transition:
@@ -246,8 +292,10 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: 8px;
   flex-shrink: 0;
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
 }
 
 .type-pill {
@@ -300,7 +348,10 @@ body {
   user-select: none;
   background: var(--bg);
   position: sticky;
-  top: 103px;
+  /* --toolbar-h is measured live by JS (backlog-template.html) from the real
+     .board-toolbar height, since the section-nav jump-rail can add a row at
+     any screen width — a fixed px offset here would drift out of sync. */
+  top: calc(48px + var(--toolbar-h, 55px));
   z-index: 5;
   /* Top + side outline lives here (not on .group) so the rounded top corners
      stay with the sticky header while scrolling. */
@@ -309,6 +360,12 @@ body {
      weight stays consistent when phase headers scroll under the sticky header. */
   border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
   border-radius: 12px 12px 0 0;
+}
+
+/* Section-chip jump-links (#inprogress-section etc.) land just below the
+   sticky toolbar instead of underneath it. */
+[id$="-section"] {
+  scroll-margin-top: calc(48px + var(--toolbar-h, 55px) + 10px);
 }
 
 /* While pinned, scrolled body content (and the body's straight side borders)
@@ -344,6 +401,19 @@ body {
 
 .group-header:hover {
   background: var(--surface);
+}
+
+/* Skill-owner accent — subtle left border tying the Tweaks/Verify/Security
+   sections back to the same colors used by their row type-tags/icons, so the
+   split from "To do" reads at a glance without repeating the label. */
+.group-header[data-owner="tweak"] {
+  border-left: 2px solid var(--pink);
+}
+.group-header[data-owner="verify"] {
+  border-left: 2px solid var(--teal);
+}
+.group-header[data-owner="security"] {
+  border-left: 2px solid var(--danger);
 }
 
 .group-header h2 {
@@ -1776,12 +1846,14 @@ body {
 /* ── Responsive: top nav wraps, description op tweede regel ── */
 
 @media (max-width: 700px) {
-  /* .top-nav is a 3-column grid on desktop; on narrow screens the wrapping
-     .section-chips would overflow it. Let the whole bar wrap instead: search
-     claims row 1, chips + pills + actions share row 2. */
+  /* .top-nav (search + actions + type-pills) is a 3-column grid on desktop;
+     on narrow screens let it wrap instead: search claims row 1, actions +
+     type-pills share row 2. The .section-chips jump-rail lives in the sibling
+     .section-nav and already scrolls horizontally at any width (see base
+     rules above), so it needs no override here. */
   .top-nav {
     display: flex;
-    height: auto;
+    min-height: 0;
     flex-wrap: wrap;
     row-gap: 8px;
     padding: 8px 16px 10px;
@@ -1796,21 +1868,14 @@ body {
     flex: 1 1 100%;
     max-width: none;
   }
-  .top-nav-left {
-    flex: 1 1 auto;
-    order: 1;
-    justify-self: unset;
-  }
-  .section-chips {
-    flex: 1 1 auto;
-  }
-  .type-pills,
-  .action-btns {
-    margin-left: 0;
+  .type-pills {
     justify-self: unset;
   }
   .action-btns {
     order: 0;
+  }
+  .section-nav {
+    padding: 0 16px 8px;
   }
 
   .row-summary {

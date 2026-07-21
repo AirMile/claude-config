@@ -22,7 +22,6 @@
   --blt-color: #60a5fa;
   --tst-color: #fb923c;
   --done-color: #34d399;
-  --sidebar-w: 170px;
 }
 
 * {
@@ -61,28 +60,20 @@ body {
   align-items: flex-start;
 }
 
-/* Sidebar */
-.sidebar {
-  width: var(--sidebar-w);
-  flex-shrink: 0;
-  border-right: 1px solid var(--border);
-  padding: 55px 0 0 0;
+/* Sticky wrapper around both toolbar rows (search + the section-nav jump-tag
+   rail below it, replacing the old left sidebar). JS measures this element's
+   real height into --toolbar-h so sticky section-headers/anchors never assume
+   a fixed toolbar size (see .section-header and its scroll-margin-top rule
+   further down). Mirrors Backlog's .board-toolbar. */
+.board-toolbar {
   position: sticky;
   top: 48px;
-  height: calc(100vh - 48px);
-  overflow-y: auto;
-}
-
-.layout--no-sidebar .sidebar a {
-  visibility: hidden;
+  z-index: 10;
+  background: var(--bg);
 }
 
 .content-toolbar {
-  position: sticky;
-  top: 48px;
-  z-index: 6;
   padding: 12px 22px;
-  background: var(--bg);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 400px) minmax(0, 1fr);
   align-items: center;
@@ -101,14 +92,7 @@ body {
   grid-row: 1;
   justify-self: center;
   width: 100%;
-}
-
-.content-toolbar-mode-toggle {
-  grid-column: 3;
-  grid-row: 1;
-  display: flex;
-  align-items: center;
-  justify-self: end;
+  position: relative;
 }
 
 .content-toolbar-search {
@@ -116,7 +100,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 7px 12px;
+  padding: 7px 30px 7px 12px;
   border-radius: 6px;
   font-size: 12px;
   font-family: inherit;
@@ -131,6 +115,84 @@ body {
 .content-toolbar-search:focus {
   border-color: var(--accent);
   background: var(--surface-hover);
+}
+
+.content-toolbar-center .search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 3px;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: 4px;
+}
+.content-toolbar-center .search-clear:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.content-toolbar-search:placeholder-shown ~ .search-clear {
+  display: none;
+}
+
+/* ── Section chips (jump-tags, replace the old left sidebar) ── */
+
+/* Full-width scrollable rail below the search row, so the tag count never
+   has to fight the search bar for room in a corner. Scrolls instead of
+   wrapping — a wrap here would grow .board-toolbar unpredictably. */
+.section-nav {
+  display: flex;
+  /* Centers the tag row under the search bar when it fits; falls back to
+     start-alignment when it overflows so the first tag stays reachable by
+     scrolling instead of being centered off-screen. */
+  justify-content: safe center;
+  padding: 0 22px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.section-nav::-webkit-scrollbar {
+  display: none;
+}
+/* Collapses along with #dash-section-chips[hidden] (set in JS when <=1 tab). */
+.section-nav:has(#dash-section-chips[hidden]) {
+  display: none;
+  padding: 0;
+}
+
+.section-chips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: max-content;
+}
+
+.section-chips a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.12s;
+}
+
+.section-chips a:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.section-chips a.active {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--accent);
 }
 
 @media (max-width: 700px) {
@@ -148,49 +210,19 @@ body {
     justify-self: unset;
     width: auto;
   }
-  .content-toolbar-mode-toggle {
-    margin-left: 0;
+  .section-nav {
+    padding: 0 16px 8px;
   }
-  /* Toolbar wraps to two rows here, so it's taller than the desktop
-     single-row version the 102px offset below assumes. */
-  .section-header {
-    top: 148px;
-  }
-}
-
-.sidebar a {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 13px;
-  transition: all 0.12s;
-  line-height: 1.3;
-}
-
-.sidebar a:hover {
-  color: var(--text);
-  background: var(--surface);
-}
-
-.sidebar a.active {
-  color: var(--text);
-  background: var(--surface);
 }
 
 /* Content */
-/* Center on the full viewport (like Backlog's sidebar-less .board-area),
-   not on the space left over after the sidebar — otherwise the sidebar's
-   width shifts the visual center and the search bar jumps when switching
-   between Backlog and Dashboard. */
+/* Center on the full viewport (like Backlog's .board-area) — no sidebar
+   width to compensate for anymore now the jump-tags live in .section-nav. */
 .content {
   flex: 1;
   min-width: 0;
   max-width: 1240px;
-  margin-left: max(0px, calc((100vw - 1240px) / 2 - var(--sidebar-w)));
-  margin-right: auto;
+  margin: 0 auto;
   width: 100%;
   padding: 0;
 }
@@ -201,7 +233,11 @@ body {
   /* No divider here — each section's own .section-header is a fully bordered,
      rounded card that already closes/separates itself; a divider on top of
      that read as a redundant extra line right above the header. */
-  scroll-margin-top: 48px;
+  /* --toolbar-h is measured live by JS (dashboard-template.html) from the
+     real .board-toolbar height, since the section-nav jump-tag rail can add
+     a row at any screen width — a fixed px offset here would drift out of
+     sync. Sections are the jump-tag anchor targets themselves. */
+  scroll-margin-top: calc(48px + var(--toolbar-h, 54px) + 10px);
 }
 
 /* Design System section: the inline styleguide provides its own padding and
@@ -231,7 +267,7 @@ body {
   border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
   border-radius: 12px;
   position: sticky;
-  top: 102px;
+  top: calc(48px + var(--toolbar-h, 54px));
   z-index: 5;
   cursor: pointer;
   user-select: none;
@@ -3199,46 +3235,6 @@ hr.divider {
 #back-to-top:hover {
   background: var(--surface-hover);
   color: var(--text);
-}
-
-/* ── Responsive: sidebar krimpt op smaller viewport ── */
-
-@media (max-width: 1024px) {
-  :root {
-    --sidebar-w: 140px;
-  }
-  .sidebar a {
-    padding: 6px 12px;
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 768px) {
-  :root {
-    --sidebar-w: 110px;
-  }
-  .sidebar a {
-    padding: 5px 10px;
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 500px) {
-  .sidebar {
-    display: none;
-  }
-}
-
-/* ── Responsive: sidebar groeit op grote schermen ── */
-
-@media (min-width: 1600px) {
-  :root {
-    --sidebar-w: 220px;
-  }
-  .sidebar a {
-    padding: 8px 20px;
-    font-size: 14px;
-  }
 }
 
 /* ── Frontend detail: screenshot ── */

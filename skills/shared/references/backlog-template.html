@@ -11,8 +11,9 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <script src="/lib/pwa-register.js" defer></script>
     <script src="/lib/themes.js"></script>
+    <script src="/lib/settings-modal.js"></script>
     <script src="/lib/collapse-store.js"></script>
-    <link rel="stylesheet" href="/css/backlog.css?v=13" />
+    <link rel="stylesheet" href="/css/backlog.css?v=16" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
     <link
@@ -40,21 +41,46 @@
     <!-- Page structure -->
     <div class="layout">
       <main class="board-area">
-        <nav class="top-nav">
-          <div class="top-nav-left">
-            <div class="section-chips" id="section-chips"></div>
+        <div class="board-toolbar" id="board-toolbar">
+          <nav class="top-nav">
+            <div class="action-btns" id="action-btns"></div>
+            <div class="top-nav-center">
+              <input
+                class="top-nav-search"
+                id="search-input"
+                placeholder="Search..."
+                oninput="render()"
+              />
+              <button
+                type="button"
+                class="search-clear"
+                aria-label="Clear search"
+                onclick="
+                  const i = document.getElementById('search-input');
+                  i.value = '';
+                  i.focus();
+                  render();
+                "
+              >
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                >
+                  <path d="M3 3l10 10M13 3L3 13" />
+                </svg>
+              </button>
+            </div>
             <div class="type-pills" id="type-pills"></div>
+          </nav>
+          <div class="section-nav">
+            <div class="section-chips" id="section-chips"></div>
           </div>
-          <div class="top-nav-center">
-            <input
-              class="top-nav-search"
-              id="search-input"
-              placeholder="Search..."
-              oninput="render()"
-            />
-          </div>
-          <div class="action-btns" id="action-btns"></div>
-        </nav>
+        </div>
         <div id="board"></div>
       </main>
     </div>
@@ -173,8 +199,30 @@
 
       let _trackFilter = "ALL"; // "ALL" | "DESIGN" | "DEV"
 
-      // team.mode is read-only here (gates the outsource + batch buttons below).
-      // The solo/team toggle lives on the dashboard toolbar only.
+      // Wire up project settings modal + team-mode toggle (lives in the
+      // gear/prefs menu's #pn-mode-slot, shared nav chrome from
+      // lib/templates.js — team.mode itself still just gates the
+      // outsource/batch buttons below). That nav markup is emitted after
+      // this script in the document, so #pn-mode-slot doesn't exist yet
+      // here — mount on DOMContentLoaded, same pattern themes.js uses for
+      // #pn-theme-slot.
+      if (window.SettingsModal) {
+        const _projectDir =
+          location.pathname.split("/").filter(Boolean)[0] || "";
+        window.SettingsModal.configure({
+          projectDir: _projectDir,
+          getMode: () => (data.team && data.team.mode) || "solo",
+          onSaved: (mode) => {
+            if (!data.team) data.team = {};
+            data.team.mode = mode;
+            if (typeof render === "function") render();
+          },
+        });
+        document.addEventListener("DOMContentLoaded", () => {
+          const _modeSlot = document.getElementById("pn-mode-slot");
+          if (_modeSlot) window.SettingsModal.mountToggle(_modeSlot);
+        });
+      }
 
       const STATUSES = ["TODO", "DEFINED", "DOING", "DONE"];
       const ARCHIVED_STATUSES = ["CANCELLED"];
@@ -305,6 +353,17 @@
         "PAGE-GAP": "gap",
         SECURITY: "security",
       };
+
+      // Copy-button (row action) kleurt op de OWNING skill/sectie, niet op het
+      // fijne card-type — zo leest heel To do (dev-ship + design) blauw en
+      // matchen de ad-hoc secties hun sectie-accent (Tweaks roze, Verify teal,
+      // Security rood). De detail-drawer blijft wel type-accuraat (zie daar).
+      const OWNER_CLS = {
+        TWEAK: "type-tweak",
+        VERIFY: "type-verify",
+        SECURITY: "type-bug",
+      };
+      const ownerCls = (type) => OWNER_CLS[type] || "type-feature";
 
       const DESIGN_TYPES = [
         "PAGE",
@@ -803,10 +862,12 @@
           section.className = "group";
           section.id = sectionId;
           section.dataset.status = status;
+          section.dataset.owner = id;
 
           const header = document.createElement("div");
           header.className = "group-header";
           header.dataset.status = status;
+          header.dataset.owner = id;
 
           let batchBtnHtml = "";
           if (batchSkill && items.length > 0 && data.team?.mode !== "team") {
@@ -823,12 +884,11 @@
                  </button>`;
           }
 
-          const addBtnHtml =
-            status === "TODO"
-              ? `<button class="group-add-btn" data-cmd="/project-todo" title="Copy /project-todo" aria-label="Add todo">
+          const addBtnHtml = isTodoSection
+            ? `<button class="group-add-btn" data-cmd="/project-todo" title="Copy /project-todo" aria-label="Add todo">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
                  </button>`
-              : "";
+            : "";
 
           header.innerHTML = `<h2>${esc(label)}</h2>${batchBtnHtml}${addBtnHtml}`;
 
@@ -945,10 +1005,11 @@
               phaseGroup.className = "phase-group";
               phaseGroup.dataset.collapseKey = "phase:" + status + ":" + phase;
               phaseGroup.dataset.phase = phase;
-              // Drag-to-reorder only applies to the To do section — other
-              // sections compute their own order (progressRank, parked
-              // timestamp, …) and would just fight a manual drop.
-              if (status === "TODO") wirePhaseGroupDrop(phaseGroup);
+              // Drag-to-reorder only applies to the main To do section — the
+              // Tweaks/Verify/Security sections are single-type and their own
+              // order (progressRank, parked timestamp, …) would just fight a
+              // manual drop.
+              if (isTodoSection) wirePhaseGroupDrop(phaseGroup);
 
               const phaseHeader = document.createElement("header");
               phaseHeader.className = "phase-header";
@@ -987,7 +1048,31 @@
             id: "todo",
             label: "To do",
             status: "TODO",
-            typeFilter: () => true,
+            typeFilter: (t) => !["TWEAK", "VERIFY", "SECURITY"].includes(t),
+            batchSkill: null,
+            transitionLabels: TRANSITION_LABELS_DEV,
+          },
+          {
+            id: "tweak",
+            label: "Tweaks",
+            status: "TODO",
+            typeFilter: (t) => t === "TWEAK",
+            batchSkill: null,
+            transitionLabels: TRANSITION_LABELS_DEV,
+          },
+          {
+            id: "verify",
+            label: "Verify",
+            status: "TODO",
+            typeFilter: (t) => t === "VERIFY",
+            batchSkill: null,
+            transitionLabels: TRANSITION_LABELS_DEV,
+          },
+          {
+            id: "security",
+            label: "Security",
+            status: "TODO",
+            typeFilter: (t) => t === "SECURITY",
             batchSkill: null,
             transitionLabels: TRANSITION_LABELS_DEV,
           },
@@ -1216,8 +1301,7 @@
       function computeCardMeta(f) {
         if (f.shipped && f.transition) delete f.transition;
 
-        const primaryType = PRIMARY_TYPE[f.type] || "FEATURE";
-        const typeInfo = TYPE_ICONS[primaryType] || TYPE_ICONS.FEATURE;
+        const rowCls = ownerCls(f.type);
 
         const live = getLiveSignal(f);
         const isParked = !!(live && live.parked);
@@ -1243,7 +1327,7 @@
         // live → pulsing dot (skill is running, not cancellable from the board)
         // queued → cancel button (undo the copy) · idle → copy button
         const actionBtnHtml = isParked
-          ? `<button class="row-copy-btn ${typeInfo.cls}" title="parked at ${esc(live.phase || "")} — copy to resume" data-cmd="${esc(parkedResumeCmd)}">
+          ? `<button class="row-copy-btn ${rowCls}" title="parked at ${esc(live.phase || "")} — copy to resume" data-cmd="${esc(parkedResumeCmd)}">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
              </button>`
           : live
@@ -1252,7 +1336,7 @@
               ? `<button class="row-annuleer-btn" title="Cancel">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 2l12 12M14 2L2 14"/></svg>
              </button>`
-              : `<button class="row-copy-btn ${typeInfo.cls}" title="${copyTitle}" data-cmd="${copyCmd || ""}">
+              : `<button class="row-copy-btn ${rowCls}" title="${copyTitle}" data-cmd="${copyCmd || ""}">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5"/></svg>
              </button>`;
 
@@ -1589,7 +1673,10 @@
       }
 
       function renderRow(f) {
-        const subLabel = SUB_TYPE_LABELS[f.type] || null;
+        // Security rows already read via the section's red accent + red copy
+        // icon — the "security" text tag would just repeat that.
+        const subLabel =
+          f.type === "SECURITY" ? null : SUB_TYPE_LABELS[f.type] || null;
 
         let metaHtml = "";
         const deps = f.dependencies || [];
@@ -2108,6 +2195,20 @@
         }
       });
       render();
+
+      // Sticky group-headers and jump-anchor scroll-offsets read --toolbar-h
+      // (see backlog.css) instead of a hardcoded px value, so they stay correct
+      // whichever rows the toolbar wraps onto at any screen width.
+      const _toolbarEl = document.getElementById("board-toolbar");
+      if (_toolbarEl) {
+        const _syncToolbarHeight = () =>
+          document.documentElement.style.setProperty(
+            "--toolbar-h",
+            _toolbarEl.offsetHeight + "px",
+          );
+        new ResizeObserver(_syncToolbarHeight).observe(_toolbarEl);
+        _syncToolbarHeight();
+      }
 
       window.addEventListener("hashchange", () => {
         const id = location.hash.slice(1);

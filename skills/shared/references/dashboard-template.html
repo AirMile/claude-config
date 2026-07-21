@@ -13,7 +13,7 @@
     <script src="/lib/themes.js"></script>
     <script src="/lib/settings-modal.js"></script>
     <script src="/lib/collapse-store.js"></script>
-    <link rel="stylesheet" href="/css/dashboard.css?v=36" />
+    <link rel="stylesheet" href="/css/dashboard.css?v=37" />
     <link rel="stylesheet" href="/css/theme-picker.css" />
     <style id="sg-tokens-scope"></style>
     <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
@@ -297,7 +297,12 @@
       initCollapseStore("dashboard", data.seed?.name || data.name);
       let modalContext = null;
 
-      // Wire up project settings modal (⚙ button auto-mounted by /lib/settings-modal.js)
+      // Wire up project settings modal + team-mode toggle (lives in the
+      // gear/prefs menu's #pn-mode-slot, part of the shared nav chrome from
+      // lib/templates.js — not in the board toolbar). That nav markup is
+      // emitted after this script in the document, so #pn-mode-slot doesn't
+      // exist yet here — mount on DOMContentLoaded, same pattern themes.js
+      // uses for #pn-theme-slot.
       if (window.SettingsModal) {
         const _projectDir =
           location.pathname.split("/").filter(Boolean)[0] || "";
@@ -309,6 +314,10 @@
             data.team.mode = mode;
             if (typeof render === "function") render();
           },
+        });
+        document.addEventListener("DOMContentLoaded", () => {
+          const _modeSlot = document.getElementById("pn-mode-slot");
+          if (_modeSlot) window.SettingsModal.mountToggle(_modeSlot);
         });
       }
 
@@ -1900,12 +1909,12 @@
           document.body.appendChild(layoutEl);
         }
 
-        // Sidebar
-        let sidebarEl = layoutEl.querySelector(".sidebar");
-        if (!sidebarEl) {
-          sidebarEl = document.createElement("nav");
-          sidebarEl.className = "sidebar";
-          layoutEl.prepend(sidebarEl);
+        // Content: all sections simultaneously
+        let contentEl = layoutEl.querySelector(".content");
+        if (!contentEl) {
+          contentEl = document.createElement("main");
+          contentEl.className = "content";
+          layoutEl.appendChild(contentEl);
         }
 
         // Determine which sections to show (skip empty optional ones)
@@ -1933,34 +1942,40 @@
 
         const visibleTabs = TABS.filter((t) => !hiddenSections[t.id]);
 
-        // Sidebar: anchor links (no tab switching)
-        sidebarEl.innerHTML = visibleTabs
+        // Toolbar — created once at top of content (preserves search focus +
+        // scroll position). Row 1 is the search bar, row 2 the jump-tag rail
+        // (replaces the old left sidebar — same anchor-link model as the
+        // Backlog board's status chips). Both rows share one sticky wrapper
+        // so JS can measure its real height into --toolbar-h (see
+        // .section-header in dashboard.css) instead of assuming a fixed size.
+        let toolbarWrapEl = contentEl.querySelector(".board-toolbar");
+        if (!toolbarWrapEl) {
+          toolbarWrapEl = document.createElement("div");
+          toolbarWrapEl.className = "board-toolbar";
+          toolbarWrapEl.id = "board-toolbar";
+          contentEl.prepend(toolbarWrapEl);
+
+          const toolbar = document.createElement("div");
+          toolbar.className = "content-toolbar";
+          toolbar.innerHTML = `<div class="content-toolbar-side"></div><div class="content-toolbar-center"><input id="dash-search" class="content-toolbar-search" placeholder="Search..." oninput="render()" /><button type="button" class="search-clear" aria-label="Clear search" onclick="const i=document.getElementById('dash-search');i.value='';i.focus();render()"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button></div>`;
+          toolbarWrapEl.appendChild(toolbar);
+
+          const sectionNav = document.createElement("div");
+          sectionNav.className = "section-nav";
+          sectionNav.innerHTML = `<div class="section-chips" id="dash-section-chips"></div>`;
+          toolbarWrapEl.appendChild(sectionNav);
+        }
+
+        // Jump-tag rail: anchor links, refilled every render (tab visibility
+        // can change as data loads).
+        const chipsEl = document.getElementById("dash-section-chips");
+        chipsEl.innerHTML = visibleTabs
           .map(
             (t) =>
               `<a href="#${t.id}" data-section="${t.id}">${esc(t.label)}</a>`,
           )
           .join("");
-
-        // Content: all sections simultaneously
-        let contentEl = layoutEl.querySelector(".content");
-        if (!contentEl) {
-          contentEl = document.createElement("main");
-          contentEl.className = "content";
-          layoutEl.appendChild(contentEl);
-        }
-
-        // Toolbar — created once at top of content (preserves search focus)
-        if (!contentEl.querySelector(".content-toolbar")) {
-          const toolbar = document.createElement("div");
-          toolbar.className = "content-toolbar";
-          toolbar.innerHTML = `<div class="content-toolbar-side"></div><div class="content-toolbar-center"><input id="dash-search" class="content-toolbar-search" placeholder="Search..." oninput="render()" /></div><div class="content-toolbar-mode-toggle" id="team-mode-toggle-slot"></div>`;
-          contentEl.appendChild(toolbar);
-          if (window.SettingsModal && window.SettingsModal.mountToggle) {
-            window.SettingsModal.mountToggle(
-              toolbar.querySelector("#team-mode-toggle-slot"),
-            );
-          }
-        }
+        chipsEl.hidden = visibleTabs.length <= 1;
 
         // Sections: replace on each render
         let sectionsEl = contentEl.querySelector(".dash-sections");
@@ -2026,11 +2041,11 @@
           }
         };
 
-        // Sidebar active state: pick section closest to top of viewport
+        // Jump-tag active state: pick section closest to top of viewport
         let _dashClickFrozen = false;
         let _dashClickTimer = null;
         function setDashActive(id) {
-          sidebarEl.querySelectorAll("a[data-section]").forEach((a) => {
+          chipsEl.querySelectorAll("a[data-section]").forEach((a) => {
             a.classList.toggle("active", a.dataset.section === id);
           });
         }
@@ -2054,7 +2069,7 @@
           setDashActive(best.id);
         }
         // On click: freeze scroll-based updates for 800ms so click wins
-        sidebarEl.querySelectorAll("a[data-section]").forEach((a) => {
+        chipsEl.querySelectorAll("a[data-section]").forEach((a) => {
           a.addEventListener("click", () => {
             const sec = document.getElementById(a.dataset.section);
             if (sec && sec.classList.contains("collapsed")) {
@@ -2075,7 +2090,6 @@
           passive: true,
         });
         updateDashSidebarActive();
-        requestAnimationFrame(updateSidebarVisibility);
       }
 
       function applyCollapseState() {
@@ -2098,25 +2112,7 @@
           });
       }
 
-      function updateSidebarVisibility() {
-        const layoutEl = document.querySelector(".layout");
-        const sidebarEl = layoutEl ? layoutEl.querySelector(".sidebar") : null;
-        if (!layoutEl || !sidebarEl) return;
-        const linkCount = sidebarEl.querySelectorAll("a").length;
-        const fitsViewport =
-          document.documentElement.scrollHeight <= window.innerHeight + 1;
-        layoutEl.classList.toggle(
-          "layout--no-sidebar",
-          linkCount <= 1 || fitsViewport,
-        );
-      }
-
       // ─── Init ───────────────────────────────────────────────
-      let _sidebarResizeT;
-      window.addEventListener("resize", () => {
-        clearTimeout(_sidebarResizeT);
-        _sidebarResizeT = setTimeout(updateSidebarVisibility, 150);
-      });
       document.addEventListener("click", (e) => {
         const openBtn = e.target.closest(".bk-file-open-btn");
         if (openBtn) {
@@ -2155,6 +2151,20 @@
         }
       });
       render();
+
+      // Sticky section-headers and jump-anchor scroll-offsets read --toolbar-h
+      // (see dashboard.css) instead of a hardcoded px value, so they stay
+      // correct at any screen width.
+      const _toolbarEl = document.getElementById("board-toolbar");
+      if (_toolbarEl) {
+        const _syncToolbarHeight = () =>
+          document.documentElement.style.setProperty(
+            "--toolbar-h",
+            _toolbarEl.offsetHeight + "px",
+          );
+        new ResizeObserver(_syncToolbarHeight).observe(_toolbarEl);
+        _syncToolbarHeight();
+      }
 
       window.addEventListener("hashchange", () => {
         const id = location.hash.slice(1);
