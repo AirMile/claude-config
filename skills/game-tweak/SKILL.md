@@ -6,7 +6,7 @@ reads: [backlog.features, project-context.learnings]
 writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.3.0
+  version: 1.5.0
   category: game
 ---
 
@@ -64,6 +64,22 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
 1. **Locate** the change with minimal reads (Grep → targeted Read; `.tscn` files: read only the
    relevant node sections). The files found here feed the size-gate re-check and the learnings load
    below.
+
+   > **Todo** (card mode): locate shows the described defect is already resolved on `main` — a later
+   > commit fixed it, or it never applied → **stale card**. Do not invent a change to justify the
+   > card. Skip PHASE 2, PHASE 3, and PHASE 4 step 1 entirely (including step 2's learnings load);
+   > go straight to the PHASE 4 card-completion write per
+   > [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup → Stale card:
+   > `shippedSha` = the resolving commit (`git log -- <file>`), or `HEAD` if none pins it; `summary`
+   > names the card stale; commit nothing.
+
+   > **Todo** (card mode): locate/analysis (or an explicit user call mid-run) shows the card's whole
+   > reason to exist is **superseded** by a different, wider card — not fixed, just made moot →
+   > **obsolete/superseded card**. Confirm with one `AskUserQuestion` naming the superseding card
+   > before touching anything. On confirmation: skip PHASE 2, PHASE 3, and PHASE 4 step 1 entirely;
+   > go straight to the § Card pickup → Obsolete/superseded card cancellation write. On decline:
+   > continue the tweak as originally scoped.
+
 2. **Learnings** — loaded _after_ locating, so the query carries the real file anchors instead of
    only the description-derived slug. Load via
    [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
@@ -91,8 +107,9 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
 ## PHASE 3 — Verify light
 
 A tweak that changes no runnable code — only docs or gitignored `.project/` state (e.g. recording a
-known issue as a learning) — has nothing to verify and nothing to commit: skip PHASE 3 and PHASE 4
-step 1, say so in the report (no commit sha line), and go straight to the card-completion + learning
+known issue as a learning) — or a stale or obsolete/superseded card with nothing to edit (see
+PHASE 1) — has nothing to verify and nothing to commit: skip PHASE 3 and PHASE 4 step 1, say so in
+the report (no commit sha line), and go straight to the card-completion (or cancellation) + learning
 writes. Everything below assumes a code change.
 
 Scoped to the touched scripts/scenes — never the full suite unless it is genuinely fast:
@@ -123,6 +140,13 @@ scope → Read `references/escalate.md`.
    card left `features[]` before reporting `shipped`** — a running board app (`serve-backlog.js`)
    re-serializes that file from its own in-memory store and can silently revert an external write;
    on a revert, re-apply and re-verify.
+
+   **Obsolete/superseded card instead** (PHASE 1's confirmed obsolete branch): run the § Card pickup
+   → Obsolete/superseded card cancellation write instead — in place within `features[]`, flip
+   `status: "CANCELLED"`, add `cancelledReason: "superseded by {card}: {one-line why}"` and
+   `cancelledAt`, remove `transition`. The card stays in `features[]` (never moves to the archive —
+   that move is shipped-only). Same board-app revert guard: re-read `backlog.json` and confirm
+   `status: "CANCELLED"` survived before reporting; re-apply on a revert.
 3. **Optional learning (0-1)**: only for a bugfix whose root cause has value beyond this spot
    (filter per [shared/LEARNING-WRITE.md](../shared/LEARNING-WRITE.md) § Writer Append Protocol) —
    append via `learnings-write.js append` with `type: "pitfall"`, `source: "extracted"`, 0-3 tags
@@ -131,7 +155,8 @@ scope → Read `references/escalate.md`.
    (TWEAK-DISCIPLINE § Registration policy).
 4. **Report** (compact prose, no rigid table): what changed with `file:line` refs, checks run,
    commit sha, a `Guard:` line repeating any card overlap (card mode prints `Card: {name} →
-shipped` instead), a `Learning:` line when one was written, and `Escalation overridden:
-{criterion}` when applicable. Add `Next steps: /game-ship {card}` only when the guard flagged a
-   TODO card (free-text mode only — card mode is already terminal). A tweak is terminal — no
-   next-step offer otherwise.
+shipped`, or `Card: {name} → cancelled (superseded by {card})` for the obsolete/superseded outcome),
+   a `Learning:` line when one was written, and `Escalation overridden: {criterion}` when
+   applicable. Add `Next steps: /game-ship {card}` only when the guard flagged a TODO card
+   (free-text mode only — card mode is already terminal). A tweak is terminal — no next-step offer
+   otherwise.

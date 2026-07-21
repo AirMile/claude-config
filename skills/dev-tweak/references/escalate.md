@@ -17,14 +17,20 @@ the mechanics.
 One AskUserQuestion (`multiSelect: false`). When the trigger is a tier-3 debug signal
 (TWEAK-DISCIPLINE size-gate criterion 6), swap option (b)'s label/description for the debug target.
 
+**Park-as-TODO is the default, and stays the default even when a plan already exists in this chat.**
+The reason is context, not effort: `/dev-ship`'s define phase runs cleaner on a fresh chat than
+continued inside this tweak+planning-loaded session — no compaction pressure, no carried-over intake
+history. "Hand off now" only wins when the user explicitly wants to keep going this instant. Do not
+promote (b) to Recommended because a design already got approved.
+
 ```yaml
 header: "Tweak escalation"
 question: "This exceeds tweak scope ({criterion}). How to proceed?"
 options:
   - label: "Park as TODO (Recommended)"
-    description: "One backlog card via /project-todo — pick it up later with /dev-ship"
+    description: "One backlog card via /project-todo — pick it up with a fresh /dev-ship in a NEW chat (clean context, no tweak-run history carried in)"
   - label: "Hand off to /dev-ship now"
-    description: "Runs the full define→build→verify→refactor pipeline on this change"
+    description: "Runs the full pipeline in THIS chat — only if the user wants to continue immediately; carries this run's context forward"
   - label: "Continue as tweak (override)"
     description: "Proceed anyway — logged in the report"
 ```
@@ -35,21 +41,31 @@ when no feature/worktree is active"`.
 
 ## 3. Execute the choice
 
-**(a) Park as TODO** — invoke the `project-todo` skill (Skill tool) with one sentence: the change
-description + the escalation reason + touched-file hints (e.g. _"Add bulk-select to the file
-navigator — parked from /dev-tweak escalation (net-new surface); touches src/components/navigator"_).
-project-todo owns naming, type/phase inference, dedup, and the backlog/project dual sync — this
-skill performs zero backlog writes. Then finish the tweak run with a two-line report: the card name
+**(a) Park as TODO** — **a live card is already in play** (card mode, or a free-text guard match) →
+this skill performs **zero** backlog writes: the card already exists as `TODO`, so parking is a
+no-op on the backlog. Do **not** invoke `project-todo` here — at best it dedups back to the same
+card, at worst a token-overlap miss creates a stray `-2` duplicate. Just finish the tweak run with a
+two-line report: the card name
 
 - `Pick it up with /dev-ship {name}.` Revert or keep mid-run edits per the § 1 decision.
 
+**No live card** (a genuine free-text run with no guard match) — invoke the `project-todo` skill
+(Skill tool) with one sentence: the change description + the escalation reason + touched-file hints
+(e.g. _"Add bulk-select to the file navigator — parked from /dev-tweak escalation (net-new surface);
+touches src/components/navigator"_). project-todo owns naming, type/phase inference, dedup, and the
+backlog/project dual sync — this skill performs zero backlog writes. Then finish with the same
+two-line report using the name project-todo returns.
+
 **(b) Hand off to the pipeline** — resolve mid-run edits first (§ 1), then invoke the `dev-ship`
-skill (Skill tool) with the change description as args — or, when the guard matched an existing
-card, with that card's name so its define phase resumes the card instead of creating a duplicate.
-Do **not** pre-create a card: define owns registration. For tier-3 debug signals, follow
-DEBUG-LADDER's dev route instead: an active feature → `/dev-ship {feature}` (its debug round);
-no feature context → apply the tier-3 discipline inline per `DEBUG-LADDER.md`. If the user prefers
-a fresh session, fall back to (a) and print the `/dev-ship {name}` command.
+skill (Skill tool). **A live card is already in play** (card mode, or a free-text guard match) →
+always pass that card's exact `name` as args, never a re-derived description — its define phase
+resumes the card in place (and promotes it out of `type: "TWEAK"`, see
+`dev-ship/references/dev-define/references/phase4-sync.md` § TWEAK promotion) instead of
+creating a duplicate. **No live card** → pass the change description as args; define registers a
+fresh feature as it always does. Do **not** pre-create a card: define owns registration. For tier-3
+debug signals, follow DEBUG-LADDER's dev route instead: an active feature → `/dev-ship {feature}`
+(its debug round); no feature context → apply the tier-3 discipline inline per `DEBUG-LADDER.md`. If
+the user prefers a fresh session, fall back to (a) and print the `/dev-ship {name}` command.
 
 **(c) Override** — return to the phase that was interrupted and continue as a tweak. The PHASE 4
 report must carry `Escalation overridden: {criterion}`. One override covers one criterion — a

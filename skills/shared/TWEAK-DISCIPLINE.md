@@ -96,6 +96,16 @@ everywhere above:
    (or `HEAD` if none pins it) and a `summary` naming the card stale. Registration-policy item 1
    (one commit) does not apply — a stale-card run commits nothing.
 
+   **Obsolete/superseded card**: distinct from stale — nothing fixed the defect, but PHASE 1
+   locate/analysis (or an explicit user call mid-run) shows the card's whole reason to exist has
+   been absorbed by a different, wider card (typically a FEATURE the described change turns out to
+   be a fragment of). Do **not** invent a change to justify the card, and do **not** silently
+   cancel it — a "superseded" judgment can be wrong in a way "already fixed by commit X" cannot. One
+   `AskUserQuestion` naming the superseding card first: proceed with cancellation, or keep the card
+   and continue the tweak as scoped. On confirmation: skip the implement/verify phases and run the
+   § Card-mode cancellation write with `cancelledReason: "superseded by {card}: {one-line why}"`.
+   Registration-policy item 1 (one commit) does not apply — an obsolete-card run commits nothing.
+
 2. **No card argument** (free-text description, as always) — after the existing § Backlog guard
    resolves, run one further, narrower check: filter the same `guard-items` load down to
    `type === "TWEAK"` (dev) / `"POLISH"` (game) only, and token-match the description against just
@@ -113,19 +123,35 @@ move it from `backlog.json#features[]` to `.project/archive/backlog-archive.json
 ([BACKLOG.md § Archiving](BACKLOG.md) — TWEAK/POLISH archive like any other dev-track type). The
 dashboard derives its features view from backlog + archive (`DASHBOARD-PROJECT.md § Features`) —
 project.json persists no features list to sync. This is the **only** sanctioned backlog write a
-tweak run ever performs, and only in card mode — a free-text run still makes zero backlog writes.
+tweak run ever performs in the shipped outcome, and only in card mode — a free-text run still makes
+zero backlog writes.
+
+**Card-mode cancellation write** (§ Card pickup → Obsolete/superseded card, in addition to the
+calling skill's normal steps): a different outcome from the completion write above — the card is
+**not** shipped, so it never moves to the archive and never gets `shipped`/`shippedSha`. Instead,
+in place within `backlog.json#features[]`: flip `status: "CANCELLED"`, add `cancelledReason:
+"superseded by {card}: {one-line why}"` and `cancelledAt` (`YYYY-MM-DD`), and remove `transition`.
+This is the exact mutation [BACKLOG.md § Impact Check](BACKLOG.md)'s `obsolete` verdict already
+applies from the ship define phases — reuse its shape verbatim rather than inventing a new one. The
+card stays in `features[]`, restorable via the board's collapsed Archived (CANCELLED) lane, and
+`backlog-load.js guard-items` excludes it from every future guard/pickup scan. A running board app
+(`serve-backlog.js`) can silently revert this write from its in-memory store the same way it can
+revert the completion write above — re-read `backlog.json` and confirm `status: "CANCELLED"`
+survived before reporting the outcome; re-apply on a revert.
 
 ## Registration policy
 
 A completed tweak registers as **exactly**:
 
-1. One scoped conventional commit ([SCOPED-COMMIT.md](SCOPED-COMMIT.md)) — **except a stale-card
-   no-op** (§ Card pickup → Stale card), which commits nothing.
+1. One scoped conventional commit ([SCOPED-COMMIT.md](SCOPED-COMMIT.md)) — **except a stale-card or
+   obsolete-card no-op** (§ Card pickup → Stale card / Obsolete/superseded card), either of which
+   commits nothing.
 2. Optionally **0-1 learning** — only when the tweak was a bugfix whose root cause has value beyond
    this spot (filter per [LEARNING-WRITE.md](LEARNING-WRITE.md) § Writer Append Protocol): `type:
 "pitfall"`, `source: "extracted"`, 0-3 tags — then the Consolidation Gate once
    (`LEARNING-WRITE.md § Consolidation Gate`).
-3. **Card mode only**: the § Card pickup completion write.
+3. **Card mode only**: the § Card pickup completion write, or — for an obsolete/superseded card —
+   the § Card pickup cancellation write.
 
 Nothing else. No backlog card creation, no `feature.json`, no dashboard writes, no board signal
 (`active-*.json` / ship checkpoint) — tweaks are not board-visible pipeline runs. **No state
@@ -139,13 +165,20 @@ When the size gate fires (at intake or mid-implement), the skill **stops and ask
 silently. Three options, semantics fixed here (the AskUserQuestion block and the invocation mechanics
 live in each skill's `references/escalate.md`):
 
-- **(a) Park as TODO** _(recommended default)_ — invoke the `project-todo` skill with one sentence:
-  description + escalation reason + touched-file hints. project-todo owns naming, type/phase
-  inference, dedup, and the backlog/project dual sync — the tweak skill performs **zero** backlog
-  writes itself. Provenance goes in the description text ("parked from /dev-tweak escalation").
-- **(b) Hand off to the pipeline** — invoke the ship skill (or debug skill, for tier-3 signals)
-  directly with the change description — or, on a guard match, with the existing card's name. Do
-  **not** pre-create a card on this path: the ship's define phase owns registration.
+- **(a) Park as TODO** _(recommended default)_ — **a live card is already in play** (card mode, or a
+  free-text guard match) → zero backlog writes, full stop: the card already sits at `TODO`, so
+  parking it is a no-op — do **not** invoke `project-todo` here (it can only skip back to the same
+  card or, on a token-overlap miss, mint a stray duplicate). **No live card** → invoke the
+  `project-todo` skill with one sentence: description + escalation reason + touched-file hints.
+  project-todo owns naming, type/phase inference, dedup, and the backlog/project dual sync — the
+  tweak skill performs **zero** backlog writes itself either way. Provenance goes in the description
+  text ("parked from /dev-tweak escalation").
+- **(b) Hand off to the pipeline** — invoke the ship skill (or debug skill, for tier-3 signals).
+  **A live card is already in play** (card mode, or a free-text guard match) → always pass that
+  card's exact name, never a re-derived description, so define's find-by-name resumes the same card
+  instead of creating a duplicate — and promotes it out of `type: "TWEAK"`/`"POLISH"` (see § Never
+  below). **No live card** → pass the change description; define registers a fresh feature as it
+  always does. Do **not** pre-create a card on this path: the ship's define phase owns registration.
 - **(c) Conscious override** — continue as a tweak; the final report carries
   `Escalation overridden: {criterion}`.
 
@@ -157,8 +190,14 @@ A tweak run must never:
   ship refactor phase via `completion-sync.js`, **except the § Card pickup completion write, and only
   for the exact TWEAK/POLISH card this run was invoked with**;
 - flip a card's `status` or set/clear its `transition` — owned by the ship pipelines and the board,
-  **except that same § Card pickup completion write** (a TWEAK/POLISH card's lifecycle is
-  `TODO → shipped` directly — there is no intermediate `transition` to protect);
+  **except that same § Card pickup completion write, or the § Card pickup cancellation write** (a
+  TWEAK/POLISH card's lifecycle is `TODO → shipped` or `TODO → CANCELLED (superseded)` directly —
+  there is no intermediate `transition` to protect in either direction). **Escalation exception**: on
+  a § Escalation gate (b) handoff, the invoked ship skill's define phase (not this tweak run) is the
+  one that flips the card to `DEFINED` and rewrites its `type` away from `TWEAK`/`POLISH` — see
+  `dev-ship/references/dev-define/references/phase4-sync.md` § TWEAK promotion (dev) /
+  `game-ship/references/game-define/references/phase5-sync.md` § POLISH promotion (game). That write
+  belongs to define, never to this skill;
 - create a card by hand — the backlog/project dual write ([BACKLOG.md](BACKLOG.md) § Parallel sync)
   is project-todo's job; the park path _invokes_ that skill; card pickup only ever mutates an
   **existing** TWEAK/POLISH card, never creates one;

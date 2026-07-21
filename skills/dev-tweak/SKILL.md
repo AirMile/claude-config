@@ -6,7 +6,7 @@ reads: [backlog.features, project-context.learnings]
 writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.5.0
+  version: 1.10.0
   category: dev
 ---
 
@@ -41,8 +41,10 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    load, not two). The invocation argument matches a live `TWEAK` card — exact name, or an
    unambiguous ≥2-shared-token match — per
    [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup path 1?
-   - **Match → card mode.** Description = the card's `description`. Run the dependency check now
-     (one `AskUserQuestion` only if the card has an open, unshipped dependency).
+   - **Match → card mode.** Description = the card's `description`. Dependency check: `guard-items`
+     omits `dependencies[]`, so read the matched card's `dependencies` from `backlog.json` directly —
+     one `AskUserQuestion` only when a dependency is present and not yet `shipped`/`DONE` (per
+     TWEAK-DISCIPLINE § Card pickup); no dependencies field → skip silently.
    - **No match, or `.project/` absent → free-text mode.** Description from the invocation argument;
      if empty, ask one short question.
 3. **Branch guard**.
@@ -82,18 +84,44 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
 
 1. **Locate** the change with minimal reads (Grep → targeted Read). The files found here feed the
    size-gate re-check and the learnings load below.
-2. **Learnings** — run this now, after locating (so the query carries the real file anchors instead
-   of only the description-derived slug); only the printed output is conditional on being non-empty,
-   not the load itself. Load via
-   [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+
+   > **Todo**: an intake step here — a clarifying `AskUserQuestion`, or what the located code reveals —
+   > can surface that the real scope exceeds the size gate (the described 1-file tweak is actually a
+   > schema/sequencer/multi-file change). The moment it does, Read `references/escalate.md` and escalate
+   > **before** any design work — do not run an Explore/plan/`EnterPlanMode` cycle on the out-of-scope
+   > shape first (that is the intake-side twin of PHASE 2's "do not finish the edit first"). Holds even
+   > when the session is already in harness plan mode.
+
+   > **Todo** (card mode): locate shows the described defect is already resolved on `main` — a later
+   > commit fixed it, or it never applied → **stale card**. Do not invent a change to justify the
+   > card. Skip PHASE 2, PHASE 3, and PHASE 4 step 1 entirely (including step 2's learnings load —
+   > there is no implementation to inform); go straight to the PHASE 4 card-completion write per
+   > [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup → Stale card:
+   > `shippedSha` = the resolving commit (`git log -- <file>`), or `HEAD` if none pins it; `summary`
+   > names the card stale; commit nothing. Report carries no `Verdict:`/commit-sha line.
+
+   > **Todo** (card mode): locate/analysis (or an explicit user call mid-run) shows the card's whole
+   > reason to exist is **superseded** by a different, wider card — not fixed, just made moot →
+   > **obsolete/superseded card**. Never confuse with stale: nothing resolved the defect, another
+   > card just absorbed it. Confirm with one `AskUserQuestion` naming the superseding card before
+   > touching anything (a wrong "superseded" call is easy to make and costs more to undo than a
+   > wrong stale call). On confirmation: skip PHASE 2, PHASE 3, and PHASE 4 step 1 entirely (same as
+   > stale); go straight to the § Card pickup → Obsolete/superseded card cancellation write. On
+   > decline: continue the tweak as originally scoped. Report carries no `Verdict:`/commit-sha line.
+
+2. **Learnings**.
+
+   > **Todo**: run the `learnings-search.js load` now, after locating — **mandatory, not gated on
+   > tweak size**. The load always runs; only whether its output is _printed_ is conditional (print
+   > verbatim when non-empty, skip the print silently when empty). Query anchors on the located
+   > files, so it must run after step 1.
+
+   Load via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
 
    - scopes: [component]
    - pitfall-prefix: true
    - current-feature: {slug}
    - paths: {located files, comma-separated, repo-relative}
-
-   One `learnings-search.js load` call; include the printed block verbatim when non-empty, skip
-   silently otherwise.
 
 ## PHASE 2 — Implement
 
@@ -113,9 +141,10 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
 ## PHASE 3 — Verify light
 
 A tweak that changes no runnable code — only docs or gitignored `.project/` state (e.g. recording a
-known issue as a learning) — has nothing to verify and nothing to commit: skip PHASE 3 and PHASE 4
-step 1, say so in the report (no `Verdict:`/commit sha lines), and go straight to the
-card-completion + learning writes. Everything below assumes a code change.
+known issue as a learning) — or a stale or obsolete/superseded card with nothing to edit (see
+PHASE 1) — has nothing to verify and nothing to commit: skip PHASE 3 and PHASE 4 step 1, say so in
+the report (no `Verdict:`/commit sha lines), and go straight to the card-completion (or
+cancellation) + learning writes. Everything below assumes a code change.
 
 Scoped to the touched modules — never the full suite unless it is genuinely fast:
 
@@ -150,7 +179,8 @@ proof only, never a self-assessment of "this is trivial":
 Any one of these failing → Tier 2.
 
 **Tier 2 — ask.** Correctness rests on human judgment → one `AskUserQuestion` before wrap-up, four
-options:
+options (use these four verbatim — do not improvise replacements even when a live check was
+blocked; a blocked live check maps to `I'll test it myself`):
 
 - `Pass (Recommended)` → continue to PHASE 4.
 - `I'll test it myself` → state plainly what to test and what "pass" looks like, then **wait** —
@@ -181,6 +211,13 @@ options:
    card left `features[]` before reporting `shipped`** — a running board app (`serve-backlog.js`)
    re-serializes that file from its own in-memory store and can silently revert an external write;
    on a revert, re-apply and re-verify.
+
+   **Obsolete/superseded card instead** (PHASE 1's confirmed obsolete branch): run the § Card pickup
+   → Obsolete/superseded card cancellation write instead — in place within `features[]`, flip
+   `status: "CANCELLED"`, add `cancelledReason: "superseded by {card}: {one-line why}"` and
+   `cancelledAt`, remove `transition`. The card stays in `features[]` (never moves to the archive —
+   that move is shipped-only). Same board-app revert guard: re-read `backlog.json` and confirm
+   `status: "CANCELLED"` survived before reporting; re-apply on a revert.
 3. **Optional learning (0-1)**: only for a bugfix whose root cause has value beyond this spot
    (filter per [shared/LEARNING-WRITE.md](../shared/LEARNING-WRITE.md) § Writer Append Protocol) —
    append via `learnings-write.js append` with `type: "pitfall"`, `source: "extracted"`, 0-3 tags,
@@ -189,7 +226,8 @@ options:
 4. **Report** — compact prose, no rigid table. Include:
    - what changed, with `file:line` refs; checks run; commit sha
    - a `Guard:` line reflecting PHASE 0's actual result — never assert "no card overlap" if the
-     guard didn't run (say so instead); card mode prints `Card: {name} → shipped`
+     guard didn't run (say so instead); card mode prints `Card: {name} → shipped`, or
+     `Card: {name} → cancelled (superseded by {card})` for the obsolete/superseded outcome
    - a `Verdict:` line — `auto-passed on green checks ({n} tests + lint)` for a Tier 1 auto-pass,
      or `user-confirmed` / `self-tested` for whichever Tier 2 path was taken. Auto-pass is never
      silent — the report always states why the modal didn't fire.

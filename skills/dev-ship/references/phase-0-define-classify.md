@@ -44,7 +44,10 @@ match → first TODO → concept → suggestions), with one dev-ship-specific ad
 define-style transition match: a feature with `transition: "shipping"` (queued via the board's
 ⚡ Ship (auto) menu item) wins the no-arg resolution — but only on **dev-track types**: skip
 entries with `type === "PAGE"` or `"COMPONENT"` (those belong to `/design-ship`; `PAGE-GAP` is
-dev-track and stays here). Then check
+dev-track and stays here). An arg that resolves to a `type === "TWEAK"` entry (a `/dev-tweak`
+escalation handoff, per `shared/TWEAK-DISCIPLINE.md § Escalation gate`) is a normal resolution here —
+no special-casing at this step; Step 4b's gate-accept sync is what promotes it out of `TWEAK` (see
+`phase4-sync.md § TWEAK promotion`). Then check
 `.project/features/{feature-name}/feature.json` to set the `defineNeeded` flag for the rest of PHASE 0:
 
 - **Exists with `status` ≥ DEFINED** (has `requirements[]` + `architecture`) → `defineNeeded = false`.
@@ -166,7 +169,8 @@ past incidents in nearby code are a strong signal. Note it in `autoDecisions`.
 
 Read `.claude/skills/dev-ship/references/phase-0-fresh-define.md § Step 4b` and follow it — the
 go/no-go gate before build: writes the plan file, `ExitPlanMode`, and on accept writes `feature.json`
-+ runs the sync. **`defineNeeded == false`** → already skipped per Step 1; go straight to Step 5.
+
+- runs the sync. **`defineNeeded == false`** → already skipped per Step 1; go straight to Step 5.
 
 ## Step 5 — Store the derived plan in memory + advance the checkpoint
 

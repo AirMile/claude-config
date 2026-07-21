@@ -42,7 +42,10 @@ to the checkpoint in Step 2a.
 Resolve `feature-name` exactly as `game-define` PHASE 0 does (arg → backlog `transition` match →
 first TODO → concept → open question), with one game-ship-specific addition **before** the
 define-style transition match: a feature with `transition: "shipping"` (queued via the board's
-⚡ Ship (auto) menu item) wins the no-arg resolution. Then check
+⚡ Ship (auto) menu item) wins the no-arg resolution. An arg that resolves to a `type === "POLISH"`
+entry (a `/game-tweak` escalation handoff, per `shared/TWEAK-DISCIPLINE.md § Escalation gate`) is a
+normal resolution here — no special-casing at this step; Step 4b's gate-accept sync is what promotes
+it out of `POLISH` (see `phase5-sync.md § POLISH promotion`). Then check
 `.project/features/{feature-name}/feature.json` to set the `defineNeeded` flag for the rest of PHASE 0:
 
 - **Exists with `status` ≥ DEFINED** (has `requirements[]` + `architecture`) → `defineNeeded = false`.

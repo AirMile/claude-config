@@ -264,8 +264,9 @@ The former resting columns — dev's **To build** (DEFINED) / **To verify** (DOI
 
 - **Dependency**: a ship-offloaded TWEAK card always carries `dependencies: ["{feature}"]` — the parent feature it was observed against. This isn't cosmetic bookkeeping: `/dev-tweak` warns before picking up a card whose dependency hasn't shipped yet, because the tweak targets code that may not be on `main`.
 - **Lifecycle**: `TODO → shipped` directly — a TWEAK card never enters `DEFINED`/`DOING`/`DONE` and never runs through a ship pipeline. `/dev-tweak {card-name}` executes it on `main` (no worktree) and flips it straight to `shipped: true` + archive on completion (`shared/TWEAK-DISCIPLINE.md § Card pickup`).
+  - **Escalation exception**: when a tweak run escalates and hands the card off to `/dev-ship` (`shared/TWEAK-DISCIPLINE.md § Escalation gate` (b)), the card leaves the TWEAK lifecycle instead — `dev-ship`'s define phase overwrites its `type` away from `TWEAK` in the same write that sets `status: "DEFINED"` (`dev-ship/references/dev-define/references/phase4-sync.md` § TWEAK promotion), so it never sits as `type: "TWEAK"` + `status: "DEFINED"`. From that point it is an ordinary feature card and follows the normal `TODO → DEFINED → DOING → DONE → shipped` track.
 - **Track**: dev-track (not in `DESIGN_TYPES`/`DESIGN_PIPELINE_TYPES` — the track filter and board sections treat it like any other dev-track type).
-- **Game equivalent**: `POLISH` already covers this case on the game side — there is no `TWEAK` type in the GAME inference table (`project-todo/references/inference-rules.md`).
+- **Game equivalent**: `POLISH` already covers this case on the game side — there is no `TWEAK` type in the GAME inference table (`project-todo/references/inference-rules.md`). The same escalation exception applies: `/game-ship`'s define phase promotes a `type: "POLISH"` card away from `POLISH` on handoff (`game-ship/references/game-define/references/phase5-sync.md` § POLISH promotion).
 
 ## VERIFY cards
 
