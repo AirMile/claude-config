@@ -121,6 +121,15 @@ The `source` field on a backlog item indicates which skill created it. Conventio
 
 Readers also accept slash-less variants (`"project-todo"`) and legacy values (`"dev-todo"`) — both are still INDEPENDENT under the rule above.
 
+## Reordering (array position is order)
+
+There is no `order`/`priority` field: the render order of open cards is the `features[]` array
+position, grouped by `phase`. Two writers may permute it: the board's drag-reorder
+(`backlog-template.html` `reorderFeature()` — TODO rows only, may reassign `phase`) and
+`/project-plan reorg` (proposal + user confirmation, TODO dev-track cards only — see
+`project-plan/references/reorg-mode.md`). Reordering never changes `status`, `transition`,
+`source`, or card content; INDEPENDENT cards may move (order is not ownership).
+
 ## Team context
 
 In team repos where colleagues do not use claude-config: backlog remains local (`.project/` is gitignored), team uses its own tracker. See `shared/TEAM.md` for the full workflow.

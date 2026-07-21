@@ -5,7 +5,7 @@ reads: [backlog.status, concept.seed, backlog.seedDrift, project.thinking]
 writes: [backlog.status, backlog.features, concept.seed, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 2.2.0
+  version: 2.3.0
   category: project
 ---
 
@@ -16,7 +16,7 @@ metadata:
 This is the **bridge** between the seed document and the dev or game pipeline.
 Transforms structured idea markdown into a prioritized feature backlog ready for `/dev-ship (define phase)` (web) or `/game-ship (define phase)` (game). Along the way it actively hunts for **technical holes** the seed doesn't mention and proposes its own **improvements** (PHASE 1, step 6a) — the output is a plan, not just a transcription.
 
-**Trigger**: `/project-plan` or `/project-plan [paste markdown]`
+**Trigger**: `/project-plan`, `/project-plan [paste markdown]`, or `/project-plan reorg` (backlog re-order only)
 
 ## Input
 
@@ -36,6 +36,13 @@ Accepts markdown from:
 - Direct links to `/dev-ship {feature}` (web) or `/game-ship {feature}` (game)
 
 ## Workflow
+
+### Mode dispatch (first — before any TaskCreate)
+
+Arg `reorg` → **reorg mode**: a lightweight backlog re-order, not the pipeline below. Do not
+create the 8-phase task list and do not enter plan mode. Read
+`.claude/skills/project-plan/references/reorg-mode.md`, follow it, then stop. Any other
+invocation → continue below.
 
 **Phase tracking** — first action of the skill: call `TaskCreate` with these items
 (status `pending`), then use `TaskUpdate` to set each phase to `in_progress` at the
