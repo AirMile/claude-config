@@ -3,7 +3,7 @@ name: core-bootstrap
 description: Bootstrap ~/.claude/ config, symlinks, and settings. Use with /core-bootstrap.
 metadata:
   author: claude-config
-  version: 1.4.0
+  version: 1.5.0
   category: core
 ---
 
@@ -551,6 +551,38 @@ Store the outcome as `BOARD_SERVICE_STATUS`: `installed-now` (from `INSTALLED_NO
 
 ---
 
+## PHASE 2.6: Usage-window opener routine (optional, opt-in)
+
+Best-effort, opt-in — asks once, defaults to Skip. Sets up a daily **cloud** routine (via the
+`RemoteTrigger` harness tool, same mechanism as the `/schedule` skill) that pings a minimal Haiku
+turn three times a day so the account's rolling 5-hour usage window opens at predictable anchors
+instead of drifting with whenever the user happens to first prompt. This is per-**account**, not
+per-machine — re-running bootstrap on a second machine must not create a duplicate routine (the
+reference below dedups by name before creating).
+
+```yaml
+header: "Window opener"
+question: "Set up a daily cloud routine that opens your 5h usage window at fixed times (08:00 / 18:00 / 23:00 Europe/Amsterdam, Haiku model)?"
+options:
+  - label: "Skip (Recommended)"
+    description: "Don't create a routine. You can set this up later via /schedule or re-run bootstrap."
+  - label: "Create"
+    description: "Creates a cloud routine now (uses account quota for 3 minimal Haiku pings/day)."
+multiSelect: false
+```
+
+Store the choice in `WINDOW_OPENER`. If "Skip (Recommended)" → `WINDOW_OPENER_STATUS="skipped (declined)"`, no further action this phase.
+
+If "Create":
+
+> **Todo**: Read `.claude/skills/core-bootstrap/references/usage-window-opener.md` and follow it.
+
+That reference is fully self-contained (tool loading, account-level dedup, environment/repo
+resolution, routine creation) and sets `WINDOW_OPENER_STATUS` to one of: `created` ·
+`already-exists (account)` · `skipped (<reason>)`. A failure here must never block PHASE 3.
+
+---
+
 ## PHASE 3: Report
 
 Show ASCII table with outcome per item:
@@ -575,6 +607,7 @@ Bootstrap complete
  Claude plan                Max 5x
  Paths (paths.local.yaml)   written
  Board background service   installed
+ Window opener routine      created
 ══════════════════════════════════════════════════════
 ```
 
@@ -584,6 +617,15 @@ For the Board background service row: `installed` (from `BOARD_SERVICE_STATUS=in
 `already installed` (from `already-installed`), or `skipped (<reason>)` (from `skipped: <reason>`
 — e.g. `skipped (Node.js not found)`). This never blocks the rest of the report or a `skipped`
 overall bootstrap outcome — it's its own independent row.
+
+For the Window opener routine row: show `WINDOW_OPENER_STATUS` verbatim (`created` ·
+`already-exists (account)` · `skipped (declined)` · `skipped (<reason>)`). If `created`, also
+show the routine link in the closing tip:
+
+> Window opener routine created: https://claude.ai/code/routines/{id}
+> Ticks daily at 08:00 / 18:00 / 23:00 Europe/Amsterdam (fixed UTC — shifts an hour earlier in winter). Adjust anytime via /schedule or https://claude.ai/code/routines.
+
+Show this extra tip block only when `WINDOW_OPENER_STATUS="created"`.
 
 For the Language row: show the chosen language, or the current value with `(already set)` suffix if `LANGUAGE_CHOICE=skip`. Read the current value via:
 
