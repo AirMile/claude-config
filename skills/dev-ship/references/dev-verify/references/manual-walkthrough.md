@@ -18,7 +18,8 @@ After the last item is answered (all Pass/Fail/Skip/Defer collected), rewrite it
 
 **Playwright smoke pre-check** — for each MANUAL item: if the item is DOM-observable
 (navigate + check load / element-present / no-console-error / screenshot), Claude runs it
-first via the playwright-cli daemon (see `references/test-classification.md → AUTO/BROWSER`):
+first via the playwright-cli daemon (scriptable smoke check — the default vehicle per
+`shared/BROWSER-VEHICLES.md`; see `references/test-classification.md → AUTO/BROWSER`):
 
 - Pass + clear screenshot → present screenshot as evidence, AskUserQuestion: Confirm Pass
   (Recommended) | Mark Fail | Inspect manually

@@ -29,7 +29,7 @@ For `$INPUT_SOURCE = "figma-make"` without spec text: the 0.1 detection row alre
 
 ## Step 2: Live observation (`source: observed`) — `url` / `figma-make` sources only
 
-The source is real DOM — capture what interactions actually do. Follow `shared/PLAYWRIGHT.md § Use Cases: Interaction State Capture` (hover-delta sequence, animation inventory, scroll-triggered check). Claude-in-Chrome preferred when connected (required for `figma-make` — the preview needs the user's logged-in session); `playwright-cli` fallback for public URLs.
+The source is real DOM — capture what interactions actually do. Follow `shared/PLAYWRIGHT.md § Use Cases: Interaction State Capture` (hover-delta sequence, animation inventory, scroll-triggered check). Claude-in-Chrome is **required** for `figma-make` (the preview needs the user's logged-in session — no substitute). For public URLs (no session dependency), `playwright-cli` is the default — scriptable, see `shared/BROWSER-VEHICLES.md`.
 
 1. **Candidate discovery:** run the ready-made eval from `shared/PLAYWRIGHT.md § Candidate Discovery` (route-convert 0.2's interaction probe already ran it — reuse those results instead of re-running). Its candidate rows carry the selector hints; `count > 1` marks a repeated pattern — probe one representative and note "applies to all N instances" in the row. Cap the hover work at ~10 candidates.
 2. **Per candidate:** hover-delta sequence → `effect` from the computed diff (transform as matrix — record the human-readable equivalent, e.g. `matrix(1.04, …)` → `scale(1.04)`), `timing` from the baseline `transition` value.

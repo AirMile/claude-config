@@ -53,9 +53,11 @@ entirely — no vehicle means no evidence, in a fork or otherwise. Evidence-clas
 **Primary — fork dispatch** (`shared/SKILL-PATTERNS.md § Fork Delegation`). Dispatch one fork (`Agent`
 tool, `subagent_type: "fork"`): it inherits this session's context — the items, the app URL, the
 launch state — so the prompt states only the task, no context re-statement. The fork exercises each
-pre-checkable item via Claude-in-Chrome (preferred — see `shared/CLAUDE-IN-CHROME.md` for the
-tool-loading ritual and the Chrome/Playwright decision rule) or the `playwright-cli` daemon (fallback,
-no live browser connected), saves one screenshot per item to `.project/screenshots/`, and returns
+pre-checkable item via the `playwright-cli` daemon by default (scriptable pre-check — see
+`shared/BROWSER-VEHICLES.md` for the full routing rule); Claude-in-Chrome only applies when an
+item genuinely needs the real user session (real-credentials/session-dependent items — rare for a
+pre-check sweep by definition) and a live browser is connected — see `shared/CLAUDE-IN-CHROME.md`
+for that tool-loading ritual. Saves one screenshot per item to `.project/screenshots/`, and returns
 ONLY:
 
 ```
@@ -66,8 +68,8 @@ EVIDENCE_SWEEP_END
 ```
 
 End the turn after the dispatch and wake on the fork's task-notification. Do **not** touch the browser
-while the fork runs — it shares the same Chrome session. On wake, parse the block and note each
-item's screenshot path (you'll attach it in Step B/D), then proceed to Step A3.
+while the fork runs — it shares the same session/daemon instance. On wake, parse the block and note
+each item's screenshot path (you'll attach it in Step B/D), then proceed to Step A3.
 
 **Fallback — inline sweep** (fork dispatch unavailable or errored): exercise each pre-checkable item
 yourself via the same vehicles and capture one screenshot per item (note its path). Same output
@@ -125,6 +127,14 @@ screenshot fits less).
 If Step A2 produced evidence for this item, lead with it: "already exercised — here's the evidence
 (screenshot); confirm, or test it yourself." Otherwise wait for the user to actually run it before
 asking for a verdict — this is a live check, not a read-through.
+
+**When the user delegates live execution to Claude itself** (not just Step A2's pre-check evidence,
+but running the actual item and producing the verdict) — apply `shared/BROWSER-VEHICLES.md`'s
+routing ladder the same way Step A2 does. Most manual items have no real-user-session requirement (no
+login state/extensions Claude needs), so this routes to Playwright MCP by default; Claude-in-Chrome
+only when the item genuinely needs the real session and a live browser is connected. Step C's verdict
+gate (`AskUserQuestion`, never self-classify) still applies in full — Claude driving the clicks
+doesn't exempt it from asking for an explicit verdict per item.
 
 ## Step C — Verdict for this item
 

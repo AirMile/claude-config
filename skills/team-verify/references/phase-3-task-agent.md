@@ -25,10 +25,17 @@ ITEMS:
   Pattern: {matching test pattern from test-classification.md}
 
 INSTRUCTIONS:
-1. Browser setup: if a live local Chrome is connected, prefer Claude-in-Chrome — load its tools via one `ToolSearch` call (`select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome__navigate,mcp__claude-in-chrome__computer,mcp__claude-in-chrome__read_page,mcp__claude-in-chrome__read_console_messages,mcp__claude-in-chrome__javascript_tool`), call `tabs_context_mcp` first (see `shared/CLAUDE-IN-CHROME.md`). If no Chrome is connected, fall back to the `playwright-cli` daemon (see `shared/PLAYWRIGHT.md`).
+1. Browser setup: use the `playwright-cli` daemon by default — these items are a scripted, known
+   sequence (see `shared/BROWSER-VEHICLES.md`). Only prefer Claude-in-Chrome when an item genuinely
+   needs the real user session and a live local Chrome is connected — load its tools via one
+   `ToolSearch` call (`select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome__navigate,mcp__claude-in-chrome__computer,mcp__claude-in-chrome__read_page,mcp__claude-in-chrome__read_console_messages,mcp__claude-in-chrome__javascript_tool`), call `tabs_context_mcp` first (see `shared/CLAUDE-IN-CHROME.md`).
 2. Navigate to the dev server URL and verify it is running
 3. For each item:
-   a. Execute the steps using the chosen browser tools (`navigate`/`computer`/`read_page`, or `playwright-cli` daemon fallback) or bash commands. For runtime-state assertions beyond DOM-snapshot (computed values, store contents, framework-internals), use `javascript_tool` (fallback: `playwright-cli eval "() => ({ ... })"`).
+   a. Execute the steps using `playwright-cli` daemon commands (or Claude-in-Chrome's
+   `navigate`/`computer`/`read_page` tools when that opt-in applies) or bash commands. For
+   runtime-state assertions beyond DOM-snapshot (computed values, store contents,
+   framework-internals), use `playwright-cli eval "() => ({ ... })"` (or `javascript_tool` when
+   using Claude-in-Chrome).
    b. Analyze the result and determine PASS or FAIL with evidence
 4. If a browser tool fails for an item, mark as TOOL_ERROR
 

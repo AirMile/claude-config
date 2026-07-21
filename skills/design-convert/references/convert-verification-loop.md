@@ -2,7 +2,11 @@
 
 Self-verify by comparing the source image against a screenshot of the generated output. Max 3 rounds. See `skills/shared/VERIFICATION.md` for the generic loop pattern, round management, and code quality checks.
 
-Prefer Claude-in-Chrome (`navigate` + `computer` + `read_console_messages`) for the smoke/console steps below when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md`. Fall back to `playwright-cli` otherwise. The **runner verification** block (pixel-baseline / aria-snapshot regression) is unaffected — that stays on Playwright always.
+`playwright-cli` daemon by default for the smoke/console steps below — a fixed, scriptable
+navigate→screenshot→console-check sequence against a local dev server, see
+`shared/BROWSER-VEHICLES.md`. Claude-in-Chrome only applies if the page genuinely needs the real
+user session (rare for a local-dev-server verify loop). The **runner verification** block
+(pixel-baseline / aria-snapshot regression) is unaffected — that stays on Playwright always.
 
 Thresholds come from the loaded `convert-mode-{$MODE}.md → Verification Thresholds`: `$VERIFY_PIXEL_RATIO` (copy 0.01, inspiration/sketch 0.03). Default to `0.03` when no mode file is loaded (patch fast-path).
 
@@ -14,13 +18,13 @@ Thresholds come from the loaded `convert-mode-{$MODE}.md → Verification Thresh
 
 ### 3.0 Pre-flight
 
-Check for a live local Chrome (`tabs_context_mcp`) or, as fallback, Playwright CLI available: `playwright-cli --version`. If neither is available: skip with message `"No browser available — open the page manually to verify."`, proceed to PHASE 4.
+Check Playwright CLI available: `playwright-cli --version`. If unavailable: skip with message `"No browser available — open the page manually to verify."`, proceed to PHASE 4.
 
 ### 3.1 Dev Server
 
 Detect or start dev server:
 
-1. Check if dev server already running on expected port (try `navigate` to `http://localhost:[port]`, or `playwright-cli open http://localhost:[port]` as fallback)
+1. Check if dev server already running on expected port: `playwright-cli open http://localhost:[port]`
 2. If not running: start in background (`npm run dev` / `npx next dev` based on framework)
 3. Wait for server ready
 
@@ -33,10 +37,10 @@ VERIFICATION ROUND [N]/3
 
 **Sequence:**
 
-1. `navigate` to `http://localhost:[port]/[page-path]` (fallback: `playwright-cli goto ...`)
-2. Wait for hydration — Claude-in-Chrome: brief pause before reading; fallback: `playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"`
-3. `computer` screenshot → capture generated page (fallback: `playwright-cli screenshot --filename=.project/tmp/verify-round-[N].png` + `Read`)
-4. `read_console_messages` (fallback: `playwright-cli console error`) → check for runtime JS errors (see `skills/shared/PLAYWRIGHT.md` → Console Error Inspection)
+1. `playwright-cli goto http://localhost:[port]/[page-path]`
+2. Wait for hydration — `playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"`
+3. `playwright-cli screenshot --filename=.project/tmp/verify-round-[N].png` + `Read` → capture generated page
+4. `playwright-cli console error` → check for runtime JS errors (see `skills/shared/PLAYWRIGHT.md` → Console Error Inspection)
    → Filter output against PLAYWRIGHT.md → Default Ignore Patterns before reporting; only unfiltered lines become findings.
 
 **Runner verification (round 1 only — create or compare baseline):**
@@ -195,7 +199,7 @@ This makes the loop non-self-referential for these properties: the compare targe
 
 ### 3.2d Interaction check (when `$INTERACTION_SPEC` is set)
 
-Static screenshots can't tell whether an interaction fires — verify positively, per `$INTERACTION_SPEC` row, on the rendered localhost page. Follow `shared/PLAYWRIGHT.md § Use Cases: Interaction State Capture` (Claude-in-Chrome preferred, `playwright-cli` fallback):
+Static screenshots can't tell whether an interaction fires — verify positively, per `$INTERACTION_SPEC` row, on the rendered localhost page. Follow `shared/PLAYWRIGHT.md § Use Cases: Interaction State Capture` (`playwright-cli` daemon by default — scriptable, see `shared/BROWSER-VEHICLES.md`):
 
 1. **Drive the trigger**: `hover` → hover-delta sequence on the row's element; `scroll-into-view` → scroll the section in, then run the animation inventory; `focus`/`press` → focus the element / read `active:` styles.
 2. **Compare against the spec's `expected:` line** — a plain string compare, no conversion reasoning here: the eval's computed values (transform matrix, `transition-duration`, `transition-timing-function`) must equal the row's precomputed `expected` strings (filled during capture, `convert-interactions.md` Step 4). Fallback for rows without an `expected` line: transform as matrix equivalent (`scale(1.04)` ↔ `matrix(1.04, 0, 0, 1.04, 0, 0)`), duration/easing from the baseline computed `transition`.
@@ -243,4 +247,4 @@ Remaining:
 ════════════════════════════════════════════════════════════
 ```
 
-Close browser: `tabs_close_mcp` (fallback: `playwright-cli close`)
+Close browser: `playwright-cli close` (or `tabs_close_mcp` if Claude-in-Chrome was used, e.g. a `figma-make` session)

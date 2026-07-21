@@ -364,7 +364,7 @@ multiSelect: false
 
 #### Step 8b: Render smoke check
 
-Single-round render check — catches crashes and broken imports, NOT visual quality (that stays /design-ship's job). Prefer Claude-in-Chrome when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md`; fall back to `playwright-cli`. If neither a browser nor a dev server is available (detection per `shared/PLAYWRIGHT.md`): skip silently, set `$SMOKE = "SKIPPED"`.
+Single-round render check — catches crashes and broken imports, NOT visual quality (that stays /design-ship's job). `playwright-cli` daemon by default — a single scriptable check, see `shared/BROWSER-VEHICLES.md`. If no browser vehicle nor a dev server is available (detection per `shared/PLAYWRIGHT.md`): skip silently, set `$SMOKE = "SKIPPED"`.
 
 **Determine the smoke target first.** PAGE → its route pattern (browser path below). COMPONENT with an auto-created demo route (file-based routing, Step 7) → demo route `/_dev/components/{name}` (browser path below). COMPONENT **without** a demo route (explicit-router frameworks — Angular, Vue Router) → use the **non-browser fallback** below; skip the browser steps.
 

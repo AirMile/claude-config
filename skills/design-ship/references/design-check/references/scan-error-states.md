@@ -5,9 +5,10 @@ Loaded when scope contains **Error states**.
 Test how the app responds to error scenarios:
 
 ```
-1. 404: prefer Claude-in-Chrome — navigate {url}/this-route-does-not-exist-404test + read_page
-        (see shared/CLAUDE-IN-CHROME.md; fallback: playwright-cli goto {url}/this-route-does-not-exist-404test
-        + playwright-cli snapshot + screenshot) → check if app-404 renders (not browser-default)
+1. 404: `playwright-cli` daemon by default (scriptable — see shared/BROWSER-VEHICLES.md):
+        playwright-cli goto {url}/this-route-does-not-exist-404test + playwright-cli snapshot + screenshot
+        (Claude-in-Chrome opt-in only if a live Chrome tab already has this exact page open) → check if
+        app-404 renders (not browser-default)
 
 2. Offline (no Claude-in-Chrome equivalent — stays on Playwright): playwright-cli run-code "async page => {
      await page.context().setOffline(true);

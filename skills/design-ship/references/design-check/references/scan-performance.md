@@ -12,12 +12,13 @@ Extract: Performance score, LCP, CLS, INP, FCP, TTFB, opportunities.
 
 **Fallback**: Playwright CLI CWV via PerformanceObserver (see `PLAYWRIGHT.md` → Use Cases: Performance Measurement).
 
-**Network inspection** (prefer Claude-in-Chrome when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md`; fall back to Playwright CLI, see `PLAYWRIGHT.md` → Use Cases: Network Inspection):
+**Network inspection** (`playwright-cli` daemon by default — scriptable scan, see
+`shared/BROWSER-VEHICLES.md`; see `PLAYWRIGHT.md` → Use Cases: Network Inspection):
 
 ```
-navigate {url}                                              # fallback: playwright-cli goto {url}
-(wait for load)                                             # fallback: playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
-read_network_requests                                       # fallback: playwright-cli requests
+playwright-cli goto {url}
+playwright-cli run-code "async p => { await p.waitForLoadState('networkidle'); }"
+playwright-cli requests
 ```
 
 Parse the request list → findings:
@@ -26,10 +27,11 @@ Parse the request list → findings:
 - **P108 (HIGH)**: payloads > 500KB — `request <i>` for details, candidate for compression/code-splitting
 - **P109 (HIGH)**: missing cache headers on static assets — `response-headers <i>` → check `cache-control`/`etag`
 
-**Runtime errors** (prefer Claude-in-Chrome — see `shared/CLAUDE-IN-CHROME.md`; fall back to Playwright CLI, see `PLAYWRIGHT.md` → Use Cases: Console Error Inspection):
+**Runtime errors** (`playwright-cli` daemon by default — see `shared/BROWSER-VEHICLES.md`;
+see `PLAYWRIGHT.md` → Use Cases: Console Error Inspection):
 
 ```
-read_console_messages                                       # fallback: playwright-cli console error
+playwright-cli console error
 ```
 
 → Filter output against PLAYWRIGHT.md → Default Ignore Patterns before reporting; only unfiltered lines become findings.

@@ -5,7 +5,7 @@ argument-hint: "[pasted [ref] block(s) + change description]"
 reads: [project.theme]
 metadata:
   author: claude-config
-  version: 1.0.0
+  version: 1.1.0
   category: dev
 ---
 
@@ -146,11 +146,13 @@ Motion docs; cite rule IDs, don't restate them):
 
 Always runs — the edit is not done until it is seen working.
 
-1. **Tooling**: Claude-in-Chrome when a live Chrome is connected, `playwright-cli` otherwise —
-   decision and mechanics per [shared/CLAUDE-IN-CHROME.md](../shared/CLAUDE-IN-CHROME.md)
-   § Preference / fallback decision and [shared/PLAYWRIGHT.md](../shared/PLAYWRIGHT.md)
-   § Pre-flight Validation. The Chrome path usually finds the exact page still open — the user
-   just clicked the overlay there (`tabs_context_mcp` first).
+1. **Tooling**: `playwright-cli` daemon by default (scriptable single-shot verify — see
+   [shared/BROWSER-VEHICLES.md](../shared/BROWSER-VEHICLES.md)). **Opt into Claude-in-Chrome**
+   only when `tabs_context_mcp` finds the exact page already open in a live Chrome tab — the user
+   just clicked the overlay there, so reusing that tab (real session, no fresh navigation) is
+   faster than a cold CLI launch. Mechanics per
+   [shared/CLAUDE-IN-CHROME.md](../shared/CLAUDE-IN-CHROME.md) and
+   [shared/PLAYWRIGHT.md](../shared/PLAYWRIGHT.md) § Pre-flight Validation.
 2. **URL**: an open tab showing the app → use it. Otherwise derive the route from the ref path
    (Next.js `app/`/`pages/` conventions) on the detected dev-server port (Vite `server.port` /
    `--port` script flag / fallback 5173/3000). Still unclear → one short question. Dev server not

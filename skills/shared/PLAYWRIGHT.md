@@ -4,7 +4,12 @@ Reusable Playwright CLI patterns for visual validation, accessibility checks, an
 
 **CLI:** `playwright-cli` (global via `@playwright/cli`). Check: `playwright-cli --version`.
 
-> **Prefer Claude-in-Chrome for interactive/ad-hoc browser work** when a live local Chrome is connected — see `CLAUDE-IN-CHROME.md`. This CLI is the fallback, and remains the sole owner of all regression, HiDPI, and multi-viewport sweep work.
+> **This CLI daemon is the default vehicle for scriptable/repeatable browser verification** — zero
+> context-window cost (plain Bash, no MCP schema). It remains the sole owner of all regression,
+> HiDPI, and multi-viewport sweep work regardless of what else is available. For genuinely
+> interactive work (steps discovered live, or a human watching), see `shared/BROWSER-VEHICLES.md`
+> for the routing decision between Claude-in-Chrome (`CLAUDE-IN-CHROME.md`, real user session) and
+> Playwright MCP (`PLAYWRIGHT-MCP.md`, no live Chrome / clean session).
 
 ---
 
@@ -638,7 +643,10 @@ NETWORK INSPECTION
 
 ## Daemon vs Runner — Decision Tree
 
-> The DAEMON branch below is Chrome-preferred when a live local Chrome is connected — see `CLAUDE-IN-CHROME.md`; `playwright-cli` daemon is the fallback. The RUNNER branch (regression) is unaffected — always Playwright.
+> Full 4-vehicle routing (daemon vs. runner vs. Claude-in-Chrome vs. Playwright MCP):
+> `shared/BROWSER-VEHICLES.md`. The DAEMON branch below is the default for scriptable/repeatable
+> ad-hoc work; genuinely interactive work routes to Claude-in-Chrome or Playwright MCP per that
+> file. The RUNNER branch (regression) is unaffected — always Playwright.
 
 ```
 What do you need?

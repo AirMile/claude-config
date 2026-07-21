@@ -24,11 +24,11 @@ SCOPE LIMITS (critical — this is a partial verify):
 
 - Run dev-verify PHASE 0 (load + classify AUTO/MANUAL/COVERED per test-classification.md) and the
   automated testing of AUTO/COVERED items — this includes AUTO/BROWSER items: execute them yourself
-  via Claude-in-Chrome (preferred) or the `playwright-cli` daemon (fallback — see
-  `shared/CLAUDE-IN-CHROME.md`), same as any other AUTO item — including any fix-loop needed to make
-  failing AUTO items pass. The worktree already exists (branch worktree-{feature} at the path in your
-  CONTEXT block) — dev-verify's PHASE 0 detects and switches into it via WORKTREE.md; .project/ is
-  shared so feature.json is present (the git-show reconciliation branch will not fire).
+  via the `playwright-cli` daemon by default (scriptable — see `shared/BROWSER-VEHICLES.md`), same as
+  any other AUTO item — including any fix-loop needed to make failing AUTO items pass. The worktree
+  already exists (branch worktree-{feature} at the path in your CONTEXT block) — dev-verify's PHASE 0
+  detects and switches into it via WORKTREE.md; .project/ is shared so feature.json is present (the
+  git-show reconciliation branch will not fire).
 - **Classification discipline**: assign MANUAL only when `test-classification.md § MANUAL`'s
   criteria are genuinely met, and attach the matching `manualReason`
   (`perception`/`real-credentials`/`audio`/`physical-device`/`screen-reader`/`tooling-gap`) to every

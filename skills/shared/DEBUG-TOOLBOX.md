@@ -10,11 +10,11 @@ source (a regex, a specific request, a specific scope dump), not after reading e
 
 ## Triage-to-technique map
 
-| Score | Default move                                                                                                                                                                                                 |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **S** | Static read + fix (the normal tier-1 flow). If frontend-facing, one filtered console check via Claude-in-Chrome before concluding "no error" — never skip straight to "looks fine."                          |
-| **M** | Gather evidence first: § Instrumentation or § Browser-driven, whichever matches where the symptom lives, before writing the hypothesis down.                                                                 |
-| **L** | § Heavy techniques — `git bisect run` for a regression, a scripted CDP breakpoint dump for a value mystery, a state-diff for corruption, § User-in-the-loop when the agent itself can't reproduce the issue. |
+| Score | Default move                                                                                                                                                                                                                  |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **S** | Static read + fix (the normal tier-1 flow). If frontend-facing, one filtered console check (playwright-cli daemon by default — see `BROWSER-VEHICLES.md`) before concluding "no error" — never skip straight to "looks fine." |
+| **M** | Gather evidence first: § Instrumentation or § Browser-driven, whichever matches where the symptom lives, before writing the hypothesis down.                                                                                  |
+| **L** | § Heavy techniques — `git bisect run` for a regression, a scripted CDP breakpoint dump for a value mystery, a state-diff for corruption, § User-in-the-loop when the agent itself can't reproduce the issue.                  |
 
 ## Instrumentation
 
@@ -31,23 +31,31 @@ source (a regex, a specific request, a specific scope dump), not after reading e
 - **Node runtime flags**: `NODE_OPTIONS='--enable-source-maps --unhandled-rejections=strict
 --trace-warnings'` surfaces silent failures and bad stacks for free — no code change, no cleanup.
 
-## Browser-driven (Claude-in-Chrome — see [CLAUDE-IN-CHROME.md](CLAUDE-IN-CHROME.md))
+## Browser-driven
 
-- **Console read, filtered**: `read_console_messages` with a regex on the session's `DBG:` prefix,
-  or `level:error` — never an unfiltered read, it floods context.
-- **Network inspection**: `read_network_requests` filtered to the failing call's URL/status —
-  request AND response body of that one call, not the whole log. Catches contract bugs: wrong
-  payload shape, missing header, unexpected CORS, a duplicate fire.
-- **Probe JS in page**: `javascript_tool` to evaluate state directly — `window.__state`,
-  `localStorage`/`sessionStorage`/cookies, `getComputedStyle`, or a temporary `fetch` monkey-patch
-  logging args before a repro. Patches vanish on reload — no cleanup needed, but note they won't
-  persist across a hard refresh.
+Interactive, hypothesis-driven investigation — steps are discovered as you go, not scripted in
+advance. Vehicle per `BROWSER-VEHICLES.md`: **Playwright MCP** (`PLAYWRIGHT-MCP.md`) by default —
+most repro runs against a dev server the agent itself launched, no real user session needed.
+**Claude-in-Chrome** (`CLAUDE-IN-CHROME.md`) only when the repro genuinely depends on the real user's
+session (already-logged-in state, extensions).
+
+- **Console read, filtered**: `browser_console_messages` (Playwright MCP) / `read_console_messages`
+  (Claude-in-Chrome) with a regex on the session's `DBG:` prefix, or `level:error` — never an
+  unfiltered read, it floods context.
+- **Network inspection**: `browser_network_requests` / `read_network_requests` filtered to the
+  failing call's URL/status — request AND response body of that one call, not the whole log.
+  Catches contract bugs: wrong payload shape, missing header, unexpected CORS, a duplicate fire.
+- **Probe JS in page**: `browser_evaluate` / `javascript_tool` to evaluate state directly —
+  `window.__state`, `localStorage`/`sessionStorage`/cookies, `getComputedStyle`, or a temporary
+  `fetch` monkey-patch logging args before a repro. Patches vanish on reload — no cleanup needed,
+  but note they won't persist across a hard refresh.
 - **Agent-driven repro**: when the failing flow is reproducible, drive it yourself
-  (`navigate` + `computer` clicks) instead of asking the user to — then read console/network from
-  that exact run. Faster than a round-trip when you can actually execute the steps.
-- **DOM snapshot**: `read_page` (accessibility tree) or `get_page_text` for state assertions;
-  screenshot only when a DOM assertion genuinely can't tell the story (layout/rendering bugs) —
-  screenshots are token-heavy, prefer text-based checks first.
+  (`browser_navigate`+`browser_click` / `navigate`+`computer`) instead of asking the user to — then
+  read console/network from that exact run. Faster than a round-trip when you can actually execute
+  the steps.
+- **DOM snapshot**: `browser_snapshot`/`read_page` (accessibility tree) or `get_page_text` for state
+  assertions; screenshot only when a DOM assertion genuinely can't tell the story (layout/rendering
+  bugs) — screenshots are token-heavy, prefer text-based checks first.
 
 ## User-in-the-loop repro
 

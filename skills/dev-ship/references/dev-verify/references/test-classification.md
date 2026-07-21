@@ -88,7 +88,7 @@ Each test item is classified as **COVERED**, **AUTO**, or **MANUAL** before test
 
 AUTO items have three sub-methods — the Task agent picks the best one per item:
 
-### AUTO/BROWSER (Claude-in-Chrome, or the playwright-cli daemon)
+### AUTO/BROWSER (playwright-cli daemon, by default)
 
 Assign AUTO/BROWSER when ALL of the following are true:
 
@@ -96,12 +96,13 @@ Assign AUTO/BROWSER when ALL of the following are true:
 - **Simple interactions**: test steps are limited to: navigate, click, type, fill_form, select_option, press_key, resize, wait_for
 - **Observable outcome**: result is visible in a snapshot, screenshot, or URL
 
-Execution vehicle: prefer Claude-in-Chrome when a live local Chrome is connected (interactive,
-ad-hoc — the common case for a single verify item); fall back to the `playwright-cli` daemon
-otherwise, or for a scripted/repeatable sweep. See `shared/CLAUDE-IN-CHROME.md` for the tool-loading
-ritual and the full decision rule. Caveat for workflow subagents: they reach the
-`mcp__claude-in-chrome__*` tools via `ToolSearch` like any other agent, but a headless/remote run
-with no live Chrome connected always falls back to Playwright.
+Execution vehicle: these steps are knowable in advance (scriptable), so the `playwright-cli` daemon
+is the default — zero context cost, deterministic, headless-safe. See `shared/BROWSER-VEHICLES.md`
+for the full 4-vehicle routing rule; Claude-in-Chrome or Playwright MCP only apply if an item turns
+out to need genuine live back-and-forth (rare for AUTO/BROWSER items by definition — see the
+mechanical criteria above). Caveat for workflow subagents: they reach any browser MCP the same way
+as any other agent via `ToolSearch`, but a headless/remote run has no live Chrome, so the CLI daemon
+is what actually runs there in practice.
 
 ### AUTO/CLI (bash commands)
 

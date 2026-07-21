@@ -24,9 +24,7 @@ Copy-mode counterpart to token mapping: capture exact source values instead of m
 
 MCP values are labeled `computed` in the fidelity table. Skip the browser-eval sequence below.
 
-**For `$INPUT_SOURCE = "url"` or `"figma-make"`:** extract computed styles instead of estimating from pixels. The browser session from PHASE 0.1 is closed — re-open the URL. For `figma-make` this must run via Claude-in-Chrome (the preview needs the user's logged-in session — see route-convert 0.1).
-
-Prefer `navigate` + `javascript_tool` (Claude-in-Chrome) when a live local Chrome is connected — see `shared/CLAUDE-IN-CHROME.md` for the tool-loading ritual. Fall back to the `playwright-cli` sequence below otherwise:
+**For `$INPUT_SOURCE = "url"` or `"figma-make"`:** extract computed styles instead of estimating from pixels. The browser session from PHASE 0.1 is closed — re-open the URL. For `figma-make` this must run via Claude-in-Chrome (the preview needs the user's logged-in session — see route-convert 0.1) — its `navigate` + `javascript_tool` per `shared/CLAUDE-IN-CHROME.md`. For a plain `url` source (no session dependency), use the `playwright-cli` sequence below by default (scriptable — see `shared/BROWSER-VEHICLES.md`):
 
 ```
 playwright-cli open [url]

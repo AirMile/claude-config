@@ -15,11 +15,37 @@ echo '{"skill":"ship","waiting":"review"}' | node ~/.claude/scripts/ship-checkpo
 
 ## Step 2 — Live preview
 
-1. Probe `build.smokeUrl`; if the dev server is down, start it in the background **in the
-   worktree** (`cd {worktreePath} && npm run dev`), wait until it responds, remember the PID.
-2. Present the URL via `.claude/skills/shared/HTML-PRESENT.md` (an `http://` target — auto-opens
-   the real, interactive page). Set `$PREVIEW_OPENED = true` on success. No URL at all (smoke
-   SKIPPED and no route) → skip, note it in the review block.
+1. **Check for a known serve method first.** Scan `build.autoDecisions[]` and
+   `check.autoDecisions[]` (already in hand from the PHASE 1-3 return) for any note about how
+   the app was actually served/verified (e.g. "dev mode blocked, used production build"). If
+   found, use that same method below instead of defaulting to `npm run dev`.
+2. Probe `build.smokeUrl`; if the dev server is down, start it in the background **in the
+   worktree** — chain the `cd` with a verification in the SAME command
+   (`cd {worktreePath} && pwd && git branch --show-current && npm run dev`) so a cwd/branch
+   mismatch is caught immediately instead of discovered later. Wait until it responds, remember
+   the PID.
+3. **Confirm an actual render before presenting anything** — one lightweight check (`curl` for
+   a 200 + a known string from the built page, or a headless Playwright navigate + wait)
+   against the started server. Stuck on a loading state, a CSP/console error, or stale content
+   (e.g. an old copy string AGENT 2 should have replaced) → this is a preview-infrastructure
+   failure, not a project bug: retry ONCE via `npm run build && npm run start` on the same
+   `pwd`-verified worktree path. Still failing after the retry → skip to Step 4 but replace the
+   "Ship review" gate with a smaller one: report the failure plainly and ask only "Fix and
+   retry the preview" vs "Proceed without a live preview" — never silently open a broken page.
+4. Present the URL via `.claude/skills/shared/HTML-PRESENT.md` (an `http://` target — auto-opens
+   the real, interactive page **in the user's own browser**). Set `$PREVIEW_OPENED = true` on
+   success. No URL at all (smoke SKIPPED and no route) → skip, note it in the review block.
+
+   **This step does not drive the browser** beyond the render-confirmation in step 3. The user
+   reviews the live page themselves; Step 4's gate is the interaction surface, not Claude
+   clicking through it. If extra automated confidence is genuinely wanted beyond AGENT 3's
+   check-audit, route it per `shared/BROWSER-VEHICLES.md` — a scriptable spot-check goes to the
+   Playwright CLI daemon; **never Claude-in-Chrome here** (no real user session is at stake, and
+   it is the highest-flake vehicle for this exact situation). If the page renders but appears
+   non-interactive in a way step 3's check didn't catch (console errors, unresponsive
+   controls), record it as a review-block finding rather than opening an ad hoc debugging
+   session in the main chat — route anything outside this feature's own diff to
+   `/project-todo`.
 
 ## Step 3 — Review block
 

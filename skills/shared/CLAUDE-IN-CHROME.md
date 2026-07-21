@@ -1,6 +1,12 @@
 # Claude-in-Chrome Browser Automation
 
-Preferred path for interactive / ad-hoc browser work when a live local Chrome is connected. Built-in MCP tool set (`mcp__claude-in-chrome__*`) — no install required. For pixel/aria regression, HiDPI 2x screenshots, and token-heavy multi-viewport sweeps, use `PLAYWRIGHT.md` instead (fallback + regression owner).
+Vehicle for interactive browser work where the **real user session matters** (logged-in state,
+extensions, "check my own browser") **and** a live local Chrome is connected. Built-in MCP tool set
+(`mcp__claude-in-chrome__*`) — no install required. See `shared/BROWSER-VEHICLES.md` for the full
+routing decision: scriptable/repeatable work stays on `PLAYWRIGHT.md` (zero context cost);
+interactive work with no live Chrome or no session dependency goes to `PLAYWRIGHT-MCP.md`; pixel/aria
+regression, HiDPI 2x screenshots, multi-viewport sweeps, and network throttling always stay on
+`PLAYWRIGHT.md` regardless of Chrome availability.
 
 ---
 
@@ -35,14 +41,19 @@ The `mcp__claude-in-chrome__*` tools are deferred: their schemas are not loaded 
 
 ## Preference / fallback decision
 
-1. **Ad-hoc or interactive browser work, live local Chrome connected** → Claude-in-Chrome (**preferred**).
-2. **No live Chrome connected, or a scripted/repeatable capture is needed** → `playwright-cli` daemon (**fallback**).
-3. **Regression** (`toHaveScreenshot()`, `toMatchAriaSnapshot()`, trace, persistent `.spec.ts`), **HiDPI 2x marketing screenshots**, or **token-heavy multi-viewport sweeps / precise viewport sizing** → Playwright, **never flip to Chrome**. See `PLAYWRIGHT.md`.
+Full 4-way routing lives in `shared/BROWSER-VEHICLES.md`. Summary for this vehicle's own lane:
+
+1. **Real user session matters, live local Chrome connected** → Claude-in-Chrome (this file).
+2. **Scriptable/repeatable, or no live Chrome** → `playwright-cli` daemon (`PLAYWRIGHT.md`) — the
+   default for automated verification, not a fallback from here.
+3. **Interactive but no session dependency, or no live Chrome** → Playwright MCP
+   (`PLAYWRIGHT-MCP.md`).
+4. **Regression** (`toHaveScreenshot()`, `toMatchAriaSnapshot()`, trace, persistent `.spec.ts`), **HiDPI 2x marketing screenshots**, or **token-heavy multi-viewport sweeps / precise viewport sizing** → Playwright, **never flip to Chrome**. See `PLAYWRIGHT.md`.
 
 ---
 
 ## Graceful degradation
 
 - Verify a live browser is connected: `tabs_context_mcp` (or `list_connected_browsers`) succeeding is the signal.
-- If no browser is connected, or the tool-loading ritual fails → fall back to the `playwright-cli` daemon (see `PLAYWRIGHT.md` § Graceful Degradation), then the runner for regression needs.
+- If no browser is connected, or the tool-loading ritual fails → fall back to the `playwright-cli` daemon (see `PLAYWRIGHT.md` § Graceful Degradation) or Playwright MCP (`PLAYWRIGHT-MCP.md`) for interactive work, then the runner for regression needs.
 - Network throttling / offline emulation (`context.setOffline`, slow-3G) has **no Claude-in-Chrome equivalent** — those checks always stay on Playwright regardless of Chrome availability.
