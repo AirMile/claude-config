@@ -88,7 +88,7 @@ For gitleaks findings: map to category `A04` (Cryptographic Failures — secret 
 
 ---
 
-## Guided remediation (OSV-Scanner `fix`)
+## Guided remediation (OSV-Scanner `fix`) — manual follow-up, not part of the automated PHASE 2 flow
 
 ```bash
 osv-scanner fix --strategy=in-place -L package-lock.json --non-interactive

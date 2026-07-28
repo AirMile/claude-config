@@ -667,7 +667,16 @@ if (invokedAsMain) {
   }
   const root = argv[0];
   const cmd = argv[1] && !argv[1].startsWith("--") ? argv[1] : "search";
-  if (!root || root.startsWith("--")) {
+  // A subcommand name in argv[0] means the <project-root> positional was
+  // omitted; without this check the script would search a directory named
+  // "load" and exit 0 with no output — indistinguishable from no matches.
+  const SUBCOMMANDS = new Set(["load", "search", "suggest-tags"]);
+  if (
+    !root ||
+    root.startsWith("--") ||
+    SUBCOMMANDS.has(root) ||
+    !existsSync(root)
+  ) {
     console.error(
       "Usage: learnings-search.js <project-root> [load|search|suggest-tags] [flags]   (or --print-vocab)",
     );
