@@ -29,7 +29,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.9.5
+  version: 0.9.6
   category: game
 ---
 
@@ -46,12 +46,28 @@ workflows under
 
 **Trigger**: `/game-ship` or `/game-ship {feature-name}`
 
+## When not to use this
+
+- **1-3 files, no net-new surface** — `/game-tweak`. The plan-approval gate (PHASE 0 Step 4b) checks
+  this itself against the completed define draft and offers the handoff when nothing escalates — see
+  § Design's de-escalation-gate note below — but catching it before define opens the interview is
+  cheaper still.
+- **Tier-3 debug signals** (intermittent, cross-module, a prior fix already failed) — `/game-debug`,
+  not a fresh define.
+- **A parked run** — `/game-ship {feature-name}` again resumes it from the checkpoint; a fresh no-arg
+  invocation starts a different feature instead.
+
 ## Design
 
 - **Two human touchpoints**: PHASE 0 (define + plan-approval gate) up front, PHASE 3 (live playtest)
   mid-run **and its fix-plan gate**; everything else hands-off. Merge happens at the end of PHASE 4.
   The playtest classification (COVERED=GUT vs MANUAL=playtest) is advisory; AGENT 2's
   `remainingManualItems` is authoritative for PHASE 3.
+- **De-escalation gate** — the plan-approval gate (Step 4b) runs the size-gate criteria from
+  `shared/TWEAK-DISCIPLINE.md § Size gate` against the completed draft; none firing offers a fourth
+  gate outcome, handoff to `/game-tweak`, alongside Accept/Reject/Abort. See
+  `references/phase-0-define-classify.md § Step 4b` and
+  `shared/TWEAK-DISCIPLINE.md § De-escalation gate`.
 - **Difficulty escalation** — any main-chat decision point that turns out genuinely hard (triggers
   in `shared/PLAN-MODE.md § Difficulty escalation`: multi-approach architecture calls, twice-failed
   fixes, plan-invalidating surprises — e.g. choosing recovery after a `"failed"` workflow return)
