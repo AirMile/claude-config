@@ -31,11 +31,13 @@ still completes since nothing remains open).
 
 ## Step 3 — Run
 
-Launch the app per `phase-3-manual-finalize.md`'s **App-launch rule** — resolve the project's own run
-command, match it to what the item actually needs (native-shell vs web vs CLI). When a deferred
-item's `reason` names a limitation a dev server can't clear (e.g. LAN/multi-device access), prefer a
-production build over the dev server if the project has one — that is very often exactly why the item
-was deferred in the first place.
+Launch the app for what the item needs: resolve the project's own run command (a run skill, the
+`CLAUDE.md` Commands table, or `package.json#scripts`) and match it to the item — native-shell vs web
+vs CLI. When a deferred item's `reason` names a limitation a dev server can't clear (e.g.
+LAN/multi-device access), prefer a production build over the dev server if the project has one — that
+is very often exactly why the item was deferred. (Native-shell/backend launch nuance:
+`phase-3-manual-finalize.md § App-launch rule` — read only if the inline guidance leaves the launch
+shape unclear.)
 
 Present each item in the same format as `manual-interview-walkthrough.md § Step B`:
 
@@ -52,8 +54,12 @@ One `AskUserQuestion` per item (not batched):
 - `Still blocked` — the external blocker hasn't actually cleared; ask for a one-line reason update if
   it differs from the recorded one.
 
-When done, teardown the launched app the same way `phase-3-manual-finalize.md § Step 2 teardown`
-does.
+When done, kill the process(es) you launched (same as `phase-3-manual-finalize.md § Step 2
+teardown`) **and restore any shared deployment/db state the test mutated** — seeded rows, advanced
+round/cursor pointers, score writes. A deferred test that drives a stateful backend (Convex, a DB)
+almost always writes shared state; leaving it behind means a later re-pickup — or the real event —
+inherits the test data. Note what you seed as you go so the restore is a checklist, not a
+reconstruction.
 
 ## Step 4 — Outcome writes (one batch, after all items are answered)
 
@@ -69,7 +75,13 @@ Collect every item's verdict, then write once:
   (the new BUG card supersedes it) and note the BUG card's name against this item in the VERIFY
   card's final summary.
 - **Still blocked** — leave the checklist entry and `knownIssues[]` entry untouched; update `reason`
-  only if the user gave a new one.
+  only if the user gave a new one. **Different blocker than recorded** (the original cleared or was
+  never the real cause, but a newly-found *external* limitation still blocks the test — a
+  feature-code fault is the **Fail** branch above instead): invoke `/project-todo` for the new
+  blocker (one sentence, `type TWEAK`, `depends on {feature}`), then repoint **both**
+  `knownIssues[].blocker` (feature.json) and the `verify-{feature}` card's `dependencies[]` to the
+  new card's name, so a later pickup gates on the right blocker. Still no card write (Step 5) — the
+  VERIFY card stays open.
 
 After applying all three: if no `knownIssues[]` entries with `verdict: "deferred"` remain in
 feature.json, clear `tests.hasDeferred` there; do the same on the backlog/archive entry's
