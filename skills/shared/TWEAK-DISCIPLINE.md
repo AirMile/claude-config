@@ -42,6 +42,13 @@ the tweak fast path only to bounce straight back out at this file's own § Escal
 and 6 stay intake-only there (5 needs a live backlog scan this pre-check doesn't have; 6 is
 fail-class and never reaches offload).
 
+**Third consumer: ship de-escalation.** Criteria 1-4 are also the test `dev-ship`/`game-ship` run at
+their plan-approval gate against the completed define draft (`feature.json` in memory —
+`dev-ship/references/phase-0-define-classify.md § Step 4b`). None of the four fires → the feature is
+tweak-sized and the gate offers the handoff (see § De-escalation gate). Criteria 5 and 6 stay
+intake-only there too (5 needs a live backlog scan the gate doesn't run; 6 is fail-class and never
+reaches define).
+
 ## Lane routing
 
 Once a tweak clears the size gate, it still needs a process depth: build it straight away, design it
@@ -238,6 +245,22 @@ live in each skill's `references/escalate.md`):
   always does. Do **not** pre-create a card on this path: the ship's define phase owns registration.
 - **(c) Conscious override** — continue as a tweak; the final report carries
   `Escalation overridden: {criterion}`.
+
+## De-escalation gate
+
+The mirror of § Escalation gate, run by `dev-ship`/`game-ship` at their plan-approval gate
+(`dev-ship/references/phase-0-define-classify.md § Step 4b`) when none of size-gate criteria 1-4
+fires against the completed define draft — see § Size gate, third consumer. The ship skill **stops
+and asks** there too, folded into the existing plan-approval gate rather than a second question:
+
+- **(a) Hand off to the tweak skill** _(recommended default)_ — no `feature.json` write; unwind the
+  ship's pre-plan-mode bookkeeping (backlog `transition`, live signal, checkpoint — the ship skill's
+  own reference names the exact fields/order) so the card doesn't strand in the board's IN PROGRESS
+  lane; pass the card's exact name into `/dev-tweak` (`/game-tweak`) so it resumes the same card
+  instead of minting a new one.
+- **(b) Continue with the pipeline** — conscious override; the final report carries
+  `De-escalation overridden: tweak-sized ({N} files, no net-new surface)`.
+- **(c) Park** — reject the plan, card returns to `TODO`.
 
 ## Never (drift traps, with owners)
 
