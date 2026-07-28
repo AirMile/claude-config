@@ -6,7 +6,7 @@ reads: [backlog.features, project-context.learnings]
 writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.5.0
+  version: 1.6.0
   category: game
 ---
 
@@ -80,17 +80,19 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    > go straight to the § Card pickup → Obsolete/superseded card cancellation write. On decline:
    > continue the tweak as originally scoped.
 
-2. **Learnings** — loaded _after_ locating, so the query carries the real file anchors instead of
-   only the description-derived slug. Load via
-   [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
+2. **Learnings** — mandatory, not gated on tweak size. Run exactly this, after locate so `--paths`
+   carries the real file anchors (see [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md) for
+   the full parameter/relevance model):
 
-   - scopes: [component]
-   - pitfall-prefix: true
-   - current-feature: {slug}
-   - paths: {located files, comma-separated, repo-relative}
+   ```bash
+   node ~/.claude/scripts/learnings-search.js "$REPO" load \
+     --feature "{slug}" --scopes component --pitfall-prefix true \
+     --paths "{located files, comma-separated, repo-relative}"
+   ```
 
-   One `learnings-search.js load` call; include the printed block verbatim when non-empty, skip
-   silently otherwise.
+   Any non-zero exit is a failed step, not a zero-match result — fix the invocation and re-run.
+   Only exit 0 with empty stdout is a genuine zero. Include the printed block verbatim when
+   non-empty, skip silently otherwise.
 
 ## PHASE 2 — Implement
 
@@ -134,12 +136,13 @@ scope → Read `references/escalate.md`.
 2. **Card-mode completion** (skip entirely in free-text mode): per
    [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup completion write — flip
    the card `shipped: true` + `shippedAt` + `shippedSha` + `summary` (this tweak's one-line
-   outcome) and move it from `backlog.json#features[]` to
-   `.project/archive/backlog-archive.json#archived[]`. project.json persists no features list — the
-   dashboard derives features from backlog + archive. **Then re-read `backlog.json` and confirm the
-   card left `features[]` before reporting `shipped`** — a running board app (`serve-backlog.js`)
-   re-serializes that file from its own in-memory store and can silently revert an external write;
-   on a revert, re-apply and re-verify.
+   outcome), remove a board-set `transition` field if present (it was only ever the board's
+   queue-marker, never a lifecycle state — see § Never), and move it from
+   `backlog.json#features[]` to `.project/archive/backlog-archive.json#archived[]`. project.json
+   persists no features list — the dashboard derives features from backlog + archive. **Then
+   re-read `backlog.json` and confirm the card left `features[]` before reporting `shipped`** — a
+   running board app (`serve-backlog.js`) re-serializes that file from its own in-memory store and
+   can silently revert an external write; on a revert, re-apply and re-verify.
 
    **Obsolete/superseded card instead** (PHASE 1's confirmed obsolete branch): run the § Card pickup
    → Obsolete/superseded card cancellation write instead — in place within `features[]`, flip
@@ -147,6 +150,7 @@ scope → Read `references/escalate.md`.
    `cancelledAt`, remove `transition`. The card stays in `features[]` (never moves to the archive —
    that move is shipped-only). Same board-app revert guard: re-read `backlog.json` and confirm
    `status: "CANCELLED"` survived before reporting; re-apply on a revert.
+
 3. **Optional learning (0-1)**: only for a bugfix whose root cause has value beyond this spot
    (filter per [shared/LEARNING-WRITE.md](../shared/LEARNING-WRITE.md) § Writer Append Protocol) —
    append via `learnings-write.js append` with `type: "pitfall"`, `source: "extracted"`, 0-3 tags

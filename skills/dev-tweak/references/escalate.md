@@ -28,9 +28,12 @@ header: "Tweak escalation"
 question: "This exceeds tweak scope ({criterion}). How to proceed?"
 options:
   - label: "Park as TODO (Recommended)"
-    description: "One backlog card via /project-todo — pick it up with a fresh /dev-ship in a NEW chat (clean context, no tweak-run history carried in)"
+    description: "One backlog card via /project-todo — pick it up with a
+      fresh /dev-ship in a NEW chat (clean context, no tweak-run history
+      carried in)"
   - label: "Hand off to /dev-ship now"
-    description: "Runs the full pipeline in THIS chat — only if the user wants to continue immediately; carries this run's context forward"
+    description: "Runs the full pipeline in THIS chat — only if the user
+      wants to continue immediately; carries this run's context forward"
   - label: "Continue as tweak (override)"
     description: "Proceed anyway — logged in the report"
 ```
@@ -42,12 +45,26 @@ when no feature/worktree is active"`.
 ## 3. Execute the choice
 
 **(a) Park as TODO** — **a live card is already in play** (card mode, or a free-text guard match) →
-this skill performs **zero** backlog writes: the card already exists as `TODO`, so parking is a
-no-op on the backlog. Do **not** invoke `project-todo` here — at best it dedups back to the same
-card, at worst a token-overlap miss creates a stray `-2` duplicate. Just finish the tweak run with a
-two-line report: the card name
+the card already exists as `TODO`, so parking touches no status/type field. Do **not** invoke
+`project-todo` here — at best it dedups back to the same card, at worst a token-overlap miss creates
+a stray `-2` duplicate.
 
-- `Pick it up with /dev-ship {name}.` Revert or keep mid-run edits per the § 1 decision.
+**Un-queue the board marker first.** If this card carries `transition: "tweaking"` — the board sets
+that the moment its `/dev-tweak` copy button was clicked (`shared/TWEAK-DISCIPLINE.md` § Escalation
+gate (a)) — remove that one field from `backlog.json#features[]` via a targeted `Edit` before
+reporting. Nothing else consumes it once this run bails instead of finishing the tweak, so skipping
+this leaves the card stuck rendering "tweaking · queued" in the board's IN PROGRESS lane forever.
+Re-read `backlog.json` and confirm the field is gone before reporting — same board-app revert guard
+as the completion/cancellation writes (`shared/TWEAK-DISCIPLINE.md` § Card pickup): a running
+`serve-backlog.js` can silently revert an external write from its in-memory store; re-apply on a
+revert. No `transition` present → nothing to do here. Either way, `status` stays `TODO` — never
+touched.
+
+Then finish the tweak run with a two-line report:
+
+- the card name and `Pick it up with /dev-ship {name}.` (add `Card: {name} → un-queued` when the
+  marker was cleared)
+- revert or keep mid-run edits per the § 1 decision
 
 **No live card** (a genuine free-text run with no guard match) — invoke the `project-todo` skill
 (Skill tool) with one sentence: the change description + the escalation reason + touched-file hints

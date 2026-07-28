@@ -42,6 +42,46 @@ the tweak fast path only to bounce straight back out at this file's own § Escal
 and 6 stay intake-only there (5 needs a live backlog scan this pre-check doesn't have; 6 is
 fail-class and never reaches offload).
 
+## Lane routing
+
+Once a tweak clears the size gate, it still needs a process depth: build it straight away, design it
+first, or design it with a second opinion. Judge the table below **in order** — the first row that
+matches picks the lane, never a score or a sum:
+
+| #   | Condition                                                                                                         | Lane |
+| --- | ----------------------------------------------------------------------------------------------------------------- | ---- |
+| 1   | Stale or obsolete/superseded card, or a docs-only / `.project`-only change                                        | A    |
+| 2   | A verify round in this run failed, **or** a size-gate escalation was consciously overridden (§ Escalation gate c) | C    |
+| 3   | PHASE 1 locate left ≥2 candidate sites open, or landed on none                                                    | B    |
+| 4   | A `pitfall` learning from the learnings load touches a located path                                               | B    |
+| 5   | Otherwise                                                                                                         | A    |
+
+Why these are Sonnet-safe: none of them asks "how sure are you" — each reads off an artifact that
+already exists at evaluation time. Row 3 counts candidate sites in the locate result just produced;
+row 4 is a grep-shaped learnings-load hit; row 2 is this run's own history.
+
+- **A — direct.** No `EnterPlanMode`. Identical to the pre-lane behavior.
+- **B — designed.** `EnterPlanMode` (skip if already active) → design → write the decision to the
+  plan file → `ExitPlanMode` → implement.
+- **C — designed + second opinion.** Lane B, plus a `Plan` agent (`model: "opus"`) for the design and
+  a Fable consult on the written plan file before `ExitPlanMode`, per
+  [SECOND-OPINION.md](SECOND-OPINION.md).
+
+Hard rules:
+
+- **Lane routing never overrules the size gate.** A fired gate criterion always routes to
+  `references/escalate.md` first — row 2's override branch is not an exception: the gate already
+  fired there and the user consciously chose (c). The lane only decides how much process the
+  continuing tweak gets, never whether it continues as a tweak.
+- **Two failed rounds end the tweak, not a fourth lane.** The first failed verify round lifts to Lane
+  C; a second failed round on the same issue routes to `references/escalate.md` instead of staying in
+  the skill — mirrors [DEBUG-LADDER.md](DEBUG-LADDER.md)'s "every failed fix round escalates exactly
+  one tier".
+- **A lane only moves up during a run, never down.**
+- **`.project/` absent** → the learnings load (PHASE 1 step 2) is skipped, so row 4 can't be
+  evaluated — skip it silently for lane purposes, but if a lane above A fires anyway (rows 1-3), note
+  the missing learnings check in the printed lane line rather than treating the row as a silent 0.
+
 ## Branch guard
 
 A tweak commits on **whatever branch is checked out** — standing in a ship's feature worktree would
@@ -176,13 +216,19 @@ silently. Three options, semantics fixed here (the AskUserQuestion block and the
 live in each skill's `references/escalate.md`):
 
 - **(a) Park as TODO** _(recommended default)_ — **a live card is already in play** (card mode, or a
-  free-text guard match) → zero backlog writes, full stop: the card already sits at `TODO`, so
-  parking it is a no-op — do **not** invoke `project-todo` here (it can only skip back to the same
-  card or, on a token-overlap miss, mint a stray duplicate). **No live card** → invoke the
-  `project-todo` skill with one sentence: description + escalation reason + touched-file hints.
-  project-todo owns naming, type/phase inference, dedup, and the backlog/project dual sync — the
-  tweak skill performs **zero** backlog writes itself either way. Provenance goes in the description
-  text ("parked from /dev-tweak escalation").
+  free-text guard match) → the card already sits at `TODO`, so parking touches no status/type/
+  lifecycle field — do **not** invoke `project-todo` here (it can only skip back to the same card
+  or, on a token-overlap miss, mint a stray duplicate). The one exception: if the board's pickup
+  action already set `transition: "tweaking"` on this card — the queue-marker the board writes for
+  both stacks the moment its `/dev-tweak`/`/game-tweak` copy button was clicked, not a lifecycle
+  state — **remove that field** as part of parking. Skipping this leaves the card
+  stuck rendering "tweaking · queued" in the board's IN PROGRESS lane forever, since nothing else
+  ever clears it once the run that would have consumed it (this one) bails out instead. No other
+  field changes: `status` stays `TODO`. **No live card** → invoke the `project-todo` skill with one
+  sentence: description + escalation reason + touched-file hints. project-todo owns naming,
+  type/phase inference, dedup, and the backlog/project dual sync — the tweak skill performs **zero**
+  backlog writes on this path (no board transition was ever set here). Provenance goes in the
+  description text ("parked from /dev-tweak escalation").
 - **(b) Hand off to the pipeline** — invoke the ship skill (or debug skill, for tier-3 signals).
   **A live card is already in play** (card mode, or a free-text guard match) → always pass that
   card's exact name, never a re-derived description, so define's find-by-name resumes the same card
@@ -201,13 +247,17 @@ A tweak run must never:
   for the exact TWEAK/POLISH card this run was invoked with**;
 - flip a card's `status` or set/clear its `transition` — owned by the ship pipelines and the board,
   **except that same § Card pickup completion write, or the § Card pickup cancellation write** (a
-  TWEAK/POLISH card's lifecycle is `TODO → shipped` or `TODO → CANCELLED (superseded)` directly —
-  there is no intermediate `transition` to protect in either direction). **Escalation exception**: on
-  a § Escalation gate (b) handoff, the invoked ship skill's define phase (not this tweak run) is the
-  one that flips the card to `DEFINED` and rewrites its `type` away from `TWEAK`/`POLISH` — see
+  TWEAK/POLISH card's lifecycle is `TODO → shipped` or `TODO → CANCELLED (superseded)` directly).
+  A card can carry a board-set `transition: "tweaking"` while still at `TODO` — that is the board's
+  queue-marker from the copy action (§ Card pickup), not a lifecycle state, so it is not protected
+  the way `status` is. **Escalation exception**: on a § Escalation gate (b) handoff, the invoked ship
+  skill's define phase (not this tweak run) is the one that flips the card to `DEFINED` and rewrites
+  its `type` away from `TWEAK`/`POLISH`, clearing that same `transition` in the process — see
   `dev-ship/references/dev-define/references/phase4-sync.md` § TWEAK promotion (dev) /
   `game-ship/references/game-define/references/phase5-sync.md` § POLISH promotion (game). That write
-  belongs to define, never to this skill;
+  belongs to define, never to this skill. **§ Escalation gate (a) exception**: parking a live card
+  that carries this board-set `transition` clears that one field (never `status`, never `type`) —
+  see § Escalation gate (a) above;
 - create a card by hand — the backlog/project dual write ([BACKLOG.md](BACKLOG.md) § Parallel sync)
   is project-todo's job; the park path _invokes_ that skill; card pickup only ever mutates an
   **existing** TWEAK/POLISH card, never creates one;
