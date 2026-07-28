@@ -41,7 +41,10 @@ by hunk boundary — treat it as two sequential edits, not one hunk.
 
 For each commit, in dependency order:
 
-1. `git add` every file wholly owned by this commit.
+1. Before staging, apply `staging-safety.md`'s secret blocklist (`.env*`, `*.key`, `*.pem`,
+   `*.pfx`, `*.p12`, `*.crt`, `credentials.json`, `secrets.*`, `**/service-account*.json`) to
+   every file about to be added — block and warn on a match, exactly as the single-commit path
+   does. Then `git add` every file wholly owned by this commit.
 2. For each shared file this commit touches, pick one technique:
    - **Progressive Read+Edit** (default — works for any file, no patch-format risk): the
      working tree already holds the _final_ state. Temporarily Edit out every hunk that
