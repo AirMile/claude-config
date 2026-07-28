@@ -31,6 +31,21 @@ _why_ the flow is built this way — it is not needed to execute a run.
     The human gates (`AskUserQuestion`, `EnterPlanMode`/`ExitPlanMode`, the live game window) only work
     in the main chat anyway — which is why define and the PHASE 3 playtest round were always going to
     stay there.
+- **The real cache-rebuild cost is `opusplan`, not idling — and it is asymmetric, not "both sides".**
+  Every plan-mode entry/exit under `/model opusplan` is a **model switch**, and a model switch
+  invalidates the cache regardless of how long the wait was — see `shared/PROMPT-CACHE.md`. But the
+  PHASE 0 gate's `EnterPlanMode` (mirrors `dev-ship/references/phase-0-fresh-define.md:9`) lands right
+  after the last mandatory pre-plan-mode write, while the main chat still holds only `SKILL.md` +
+  `phase-0-define-classify.md` — a cheap Opus write. Everything expensive (context loads, the
+  interview, architecture, the plan file) then accumulates **inside** plan mode, so the costly
+  rebuild is the single `ExitPlanMode` at gate exit, reading the full ~40-60k-token chat on Sonnet —
+  not a rebuild on both sides. PHASE 3's playtest gate runs in a fresh, small-context session after
+  the deliberate PHASE 2→3 park (`SKILL.md:98`), so this pattern costs roughly **one** significant
+  uncached read per run, not "1-3 full rebuilds". `opusplan` is kept anyway — the define architecture
+  is built around it (`SKILL.md § Design`, the OpusPlan-style paragraph) and the quality gain from
+  planning on Opus is worth that one read. The design lesson for new plan-mode gates: enter as early
+  as possible in the context (right after the last write that must precede it), so the cheap side of
+  the switch is the entry, not the exit.
 - **Build and verify are separate agents (separate context windows)** — a fresh verify agent is
   unbiased/adversarial, which is the whole value of verify. See `references/agent-verify.md`.
 - **No game window in a subagent.** Build and GUT auto-verify run **headless** (`gut_cmdln.gd`) — a
