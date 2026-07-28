@@ -101,6 +101,12 @@ Show the loaded output. Architectural patterns guide feature decomposition. Pitf
    the seed describes what the user imagined, not what the build technically needs.
    Two lenses:
 
+   **Feasibility check (before presenting any GAP/IDEA):** if a proposal depends
+   on an external paid or account-gated service (API tier, subscription, paid
+   export, licensed dataset), confirm availability with the user before or
+   alongside presenting it — don't let a downstream modal surface the blocker
+   after the proposal has already shaped the feature list.
+
    - **GAP — technical holes:** features the plan needs to actually work but that no
      extracted feature covers. Walk this checklist per project (not exhaustive):
      - [WEB MODE] auth/session handling, input validation, error/empty/loading states,
