@@ -87,7 +87,7 @@ Reads `.project/features/{feature-name}/feature.json`: requirements, files, buil
 
 ### PHASE 0: Batch Context Loading + Refactor Patterns
 
-> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`. If the tools didn't resolve, skip seeding and continue.
 
 1. **Read backlog for pipeline status:**
 

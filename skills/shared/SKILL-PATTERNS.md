@@ -217,7 +217,10 @@ Rules:
 **Phase tracking** — first action of the skill: call `TaskCreate` with these N items
 (status `pending`), then use `TaskUpdate` to set each phase to `in_progress` at the
 start and `completed` at the end. During context compaction the task list remains
-visible — no risk of forgetting phases.
+visible — no risk of forgetting phases. If `ToolSearch` cannot resolve
+`TaskCreate`/`TaskUpdate` (unavailable this session), skip phase tracking silently
+and proceed — the phase headers below (and any durable state/checkpoint file the
+skill already writes) remain the resumability signal regardless.
 
 1. PHASE 0: ...
 2. PHASE 1: ...
@@ -228,7 +231,7 @@ visible — no risk of forgetting phases.
 **PHASE 0 marker** — directly under the first phase header:
 
 ```markdown
-> **Todo**: call `TaskCreate` with the N phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the N phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`. If the tools didn't resolve, skip seeding and continue.
 ```
 
 **Inline transition marker** — directly under each subsequent phase header:
@@ -250,6 +253,20 @@ visible — no risk of forgetting phases.
 - Statuses always in backticks: `pending`, `in_progress`, `completed`
 - Skills using "Step" or "Phase" instead of "PHASE" keep their own word
 - Every seeded phase has a matching header and is marked `in_progress` and `completed` somewhere in the skill (N seed items = N headers; PHASE 0 marker + N-1 transitions + 1 completion = N+1 markers)
+
+**Skip-`in_progress` marker** — for a phase whose entire work is a synchronous routing/resolution
+check with no meaningful "in progress" duration (it starts and finishes in the same step), skip the
+`in_progress` marker and say so explicitly, right where that phase is marked `completed`:
+
+```markdown
+> ... this routing step is the phase's own work — PHASE 0 skips `in_progress` and marks straight to
+> `completed` once resolved ...
+```
+
+The validator treats an explicit "skips `in_progress`" statement for a phase as satisfying that
+phase's `in_progress` requirement — it still requires the phase to reach `completed` somewhere; this
+only waives the intermediate marker, not the phase itself. Reference:
+`dev-manual/SKILL.md`'s MANUAL 0.
 
 **Validator:** `python3 scripts/check-task-markers.py` enforces the seed = headers = status-coverage invariant (run per skill via `--skill <name>`; wired into `scripts/tests/run.sh`).
 

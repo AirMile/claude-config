@@ -155,7 +155,7 @@ Use `TaskUpdate` to set each phase `in_progress` at the start and `completed` at
 
 ### PHASE 0: Load Context
 
-> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 4 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 4 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`. If the tools didn't resolve, skip seeding and continue.
 
 **Goal:** Load playtest checklist from build phase and prepare for feedback.
 

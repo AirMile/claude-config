@@ -45,7 +45,7 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
 
 ### PHASE 0: Load Context and Classify
 
-> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 5 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 5 mandatory phases (see Workflow above). Mark PHASE 0 → `in_progress` via `TaskUpdate`. If the tools didn't resolve, skip seeding and continue — but still print one line at every PHASE N → PHASE N+1 transition below (e.g. "PHASE 0 → PHASE 1: context loaded, verification starting") so a run without the tool still carries a visible progress signal instead of silence between phases.
 
 1. **Read backlog**: `node ~/.claude/scripts/backlog-load.js "$REPO" queue DOING verifying` → `{ backlogPresent, items }` (see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). Empty `items` → re-run with no transition arg (`queue DOING`) to list all DOING features.
 

@@ -25,7 +25,10 @@ parallel scanners → aggregated report → 3 fix strategies → worktree'd impl
 
 **Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items (status
 `pending`), then use `TaskUpdate` to set each phase `in_progress` at start and `completed` at end.
-During context compaction the task list remains visible — no risk of forgotten phases.
+During context compaction the task list remains visible — no risk of forgotten phases. If
+`ToolSearch` cannot resolve `TaskCreate`/`TaskUpdate` (unavailable this session), skip phase
+tracking silently and proceed — the audit-state file's own `phase` field (§ Step 5 below, patched
+at every phase boundary) remains the durable resumability signal regardless.
 
 **Durable audit state (lightweight, not a full ship checkpoint)** — beyond the compaction-safe
 `TaskCreate` list, PHASE 1 writes `.project/security/audit-{id}.json` and every later phase patches
@@ -44,7 +47,8 @@ is **kept on completion** (it is the durable audit record, not a transient in-fl
 
 > **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate,Workflow"` first — deferred tools
 > are unusable without their schemas, and PHASE 2b needs `Workflow` loaded regardless of which
-> branch below fires.
+> branch below fires. If `TaskCreate`/`TaskUpdate` don't resolve, skip task tracking and continue —
+> `Workflow` is still required.
 
 ### Step 0: Resume check (before seeding tasks)
 

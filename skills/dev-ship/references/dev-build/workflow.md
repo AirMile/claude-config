@@ -30,7 +30,7 @@ Six phases run sequentially:
 
 ### PHASE 0: Context Loading
 
-> **Todo**: Call `ToolSearch query="select:TaskCreate,TaskUpdate"` — both tools are deferred and unusable without their schemas. Then `TaskCreate` with the 6 phase items above (status `pending`); use `TaskUpdate` to flip each PHASE to `in_progress` at start and `completed` at end (task list survives context compaction). Mark PHASE 0 → `in_progress`. Read `.claude/skills/dev-ship/references/dev-build/references/context-loading.md` and follow all steps in order.
+> **Todo**: Call `ToolSearch query="select:TaskCreate,TaskUpdate"` — both tools are deferred and unusable without their schemas. Then `TaskCreate` with the 6 phase items above (status `pending`); use `TaskUpdate` to flip each PHASE to `in_progress` at start and `completed` at end (task list survives context compaction). Mark PHASE 0 → `in_progress`. If the tools didn't resolve, skip task tracking and continue — but still print one line at every PHASE N → PHASE N+1 transition below (e.g. "PHASE 2 → PHASE 2b: build done, regression gate starting") so a run without the tool still carries a visible progress signal instead of silence between phases. Read `.claude/skills/dev-ship/references/dev-build/references/context-loading.md` and follow all steps in order.
 
 ### PHASE 1: Technique Mapping
 

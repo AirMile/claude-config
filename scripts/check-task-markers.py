@@ -7,7 +7,9 @@ numbered phase list) is a *tracking unit*. For every seeded phase this script
 checks, across the unit's file and its sibling .md files in the same skill:
 
   1. a phase header exists (## / ### / #### containing "WORD ID"),
-  2. the phase is marked `in_progress` somewhere (bootstrap or transition),
+  2. the phase is marked `in_progress` somewhere (bootstrap or transition), OR
+     explicitly waives it ("skips `in_progress`" — a synchronous phase with no
+     meaningful in-progress duration, e.g. dev-manual's MANUAL 0),
   3. the phase is marked `completed` somewhere (transition or completion marker).
 
 Whitespace is normalized before matching (markers wrap across quoted lines) and
@@ -110,6 +112,17 @@ def status_marked(word: str, pid: str, status: str, norm_texts: list[str]) -> bo
     return any(pat.search(t) for t in norm_texts)
 
 
+def in_progress_waived(word: str, pid: str, norm_texts: list[str]) -> bool:
+    # SKILL-PATTERNS.md § Task Tracking → Skip-`in_progress` marker: a phase whose
+    # entire work is a synchronous routing/resolution check (no meaningful
+    # in-progress duration) may say so explicitly instead of ever marking
+    # `in_progress` — e.g. dev-manual's MANUAL 0.
+    pat = re.compile(
+        rf"\b{re.escape(word)}\s+{re.escape(pid)}\b[^.]{{0,80}}skips\s*`in_progress`"
+    )
+    return any(pat.search(t) for t in norm_texts)
+
+
 def sibling_mds(path: Path, scope_root: Path) -> list[Path]:
     """All .md files in the tracking unit's skill dir (or parent dir for loose files)."""
     base = path.parent
@@ -153,7 +166,9 @@ def check_file(path: Path, scope_root: Path, warns: list[str], skips: list[str])
             where = f"{rel}:{lineno}"
             if not phase_header_exists(word, pid, sib_texts):
                 warns.append(f"WARN: {where} — seeded {word} {pid} has no matching header in the skill")
-            if not status_marked(word, pid, "in_progress", sib_norms):
+            if not status_marked(word, pid, "in_progress", sib_norms) and not in_progress_waived(
+                word, pid, sib_norms
+            ):
                 warns.append(f"WARN: {where} — {word} {pid} is never marked `in_progress`")
             if not status_marked(word, pid, "completed", sib_norms):
                 warns.append(f"WARN: {where} — {word} {pid} is never marked `completed`")

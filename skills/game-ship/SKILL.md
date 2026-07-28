@@ -108,7 +108,8 @@ stop**: park, then a fresh-session resume into the playtest when playtest items 
 
 > **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred
 > and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above).
-> Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> Mark PHASE 0 → `in_progress` via `TaskUpdate`. If the tools didn't resolve, skip seeding and
+> continue.
 > **Then route in two steps** (the resume path skips the fresh-run PHASE 0 file):
 >
 > 1. **Resume check first.** If `/game-ship` was called with an **explicit** `{feature}` arg and
@@ -183,13 +184,14 @@ this slice.
 >   is the English source:
 >   ```
 >   PHASE 1+2 green — {testsTotal} tests pass, {N} playtest items remain.
->   To keep this chat cheap the run stops here; the checkpoint is ready to resume.
+>   To keep this chat cheap, the run stops here — checkpoint ready.
 >
 >   → Run /clear (or open a new chat), then: /game-ship {feature}
->     You land directly in the playtest round (worktree + game window are relaunched automatically).
+>     Lands directly in the playtest round (worktree + game window
+>     relaunch automatically).
 >
 >   The board shows this run as parked (⏸) with the same resume button.
->   Prefer to continue here instead? Say so and I'll run PHASE 3 in this session.
+>   Prefer to continue here? Say so and I'll run PHASE 3 in this session.
 >   ```
 >   **Same-session escape hatch**: if the user replies "continue here" (or equivalent), continue
 >   with `orchestration.md § 4` (PHASE 3 completion) inline in this chat instead of parking.

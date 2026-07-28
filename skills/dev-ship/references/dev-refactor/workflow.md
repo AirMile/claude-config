@@ -46,7 +46,7 @@ Writes only to `.project/features/{name}/feature.json` (enriched: refactor secti
 
 ### PHASE 0: Batch Context Loading + Refactor Patterns
 
-> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`. If the tools didn't resolve, skip seeding and continue — but still print one line at every PHASE N → PHASE N+1 transition below (e.g. "PHASE 1 → PHASE 2: lens analysis done, research decision starting") so a run without the tool still carries a visible progress signal instead of silence between phases.
 
 **Pre-flight (setup, before numbered steps):**
 

@@ -24,7 +24,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 1.1.1
+  version: 1.4.4
   category: dev
 ---
 
@@ -57,8 +57,12 @@ as done, setting it `completed` directly — never leave all 4 sitting `pending`
 
 ## MANUAL 0 — Resume + worktree/app
 
-> **Todo**: `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred.
-> Resolve `main_root` (`git worktree list --porcelain | head -1 | awk '{print $2}'` — always resolve
+> **Todo**: `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred (unused
+> on the VERIFY-card branch below, but MANUAL 0's own routing needs them regardless of which branch
+> it resolves to). If they don't resolve, skip task tracking and continue — but still print one
+> line at every MANUAL N → MANUAL N+1 transition below (e.g. "MANUAL 1 → MANUAL 2: manual round
+> done, refactor starting") so a run without the tool still carries a visible progress signal
+> instead of silence between phases. Resolve `main_root` (`git worktree list --porcelain | head -1 | awk '{print $2}'` — always resolve
 > this first, cwd may already be inside a feature worktree where `.project/session/` is not shared).
 >
 > `test -f "$main_root/.project/session/ship-{feature}.json"` fails → there is no open ship run for

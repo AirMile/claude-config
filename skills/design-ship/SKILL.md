@@ -109,7 +109,8 @@ below are the only checkpoint detail restated here.
 
 > **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred
 > and unusable without their schemas. Then call `TaskCreate` with the 6 phase items (see above).
-> Mark PHASE 0 → `in_progress` via `TaskUpdate`.
+> Mark PHASE 0 → `in_progress` via `TaskUpdate`. If the tools didn't resolve, skip seeding and
+> continue.
 > **Then route in two steps** (the resume path skips the fresh-run PHASE 0 file):
 >
 > 1. **Resume check first.** If `/design-ship` was called with an **explicit** `{target}` arg and
