@@ -3,7 +3,7 @@ name: core-audit
 description: Use with /core-audit to analyze and refine a skill from this conversation.
 metadata:
   author: claude-config
-  version: 4.4.0
+  version: 4.6.0
   category: core
 ---
 
@@ -11,13 +11,19 @@ metadata:
 
 Audit a skill from the current conversation: load its full surface (SKILL.md + lazy references), gather evidence from the real run, score it against house conventions, and apply a selective refactor via numbered-list approval.
 
-**Trigger**: `/core-audit [skill-name]`
+**Trigger**: `/core-audit [skill-name] [observation]`
 
 ## Step 1: Load Skill from Chat
 
-**Argument**: `/core-audit <skill-name>` with an existing skill → skip detection, select that skill directly (static mode unless it also ran in this conversation).
+**Argument parsing**: split the argument on the first whitespace-run.
 
-No argument → scan the conversation above for unique skill invocations (slash commands like `/dev-ship`, or skill names in `<command-name>` tags). Exclude `core-audit` itself from detection (it is always present via its own invocation).
+- First token names an existing skill (`.claude/skills/<token>/` exists) → that token is the skill (skip detection, static mode unless it also ran in this conversation); anything remaining after it is the **observation note** — carry it into Step 2.2.
+- First token doesn't match an existing skill → the whole argument is the observation note; resolve the skill via the conversation scan below instead.
+- No argument → conversation scan below, no observation note.
+
+Examples: `/core-audit dev-ship de verify-fase stelde te veel vragen` → skill `dev-ship`, note "de verify-fase stelde te veel vragen". `/core-audit de modal bleef terugkomen` → no skill token, note = whole string, skill resolved from conversation.
+
+No skill token → scan the conversation above for unique skill invocations (slash commands like `/dev-ship`, or skill names in `<command-name>` tags). Exclude `core-audit` itself from detection (it is always present via its own invocation).
 
 **Resolution rules:**
 
@@ -48,7 +54,14 @@ SKILL.md: [n] lines | references/: [n] files, [n] lines | techniques/: [n] files
 
 Announce: `MODE: trace — real run found in conversation` or `MODE: static — no execution trace, conventions-only analysis`.
 
-### 2.2 User pain points (trace mode only)
+### 2.2 User pain points
+
+**Observation note captured in Step 1** → skip the modal below entirely:
+
+- Show `OBSERVATION (from argument): "[note]"` and set the note as the priority lens — map it onto one of the canned categories below where it clearly fits, but the raw note stays authoritative. Proceed straight to Step 3/4 (trace or static, whichever mode applies).
+- Note is too vague or incomplete to act on (no direction can be derived from it) → ask exactly ONE targeted follow-up: an `AskUserQuestion` that quotes the note and asks specifically for the missing detail — not the generic 4-option modal below.
+
+**No observation note, trace mode** → ask:
 
 AskUserQuestion:
 
@@ -61,7 +74,9 @@ AskUserQuestion:
   - label: "Output wrong or too verbose", description: "Results missed the mark or buried the signal"
   - label: "I had to correct or re-steer", description: "Claude deviated from what the skill should do"
 
-Each selected pain point becomes a priority lens: findings in Steps 3–4 that explain it rank above generic findings.
+**No observation note, static mode** → skip: there is no run to ask about.
+
+Each selected or derived pain point becomes a priority lens: findings in Steps 3–4 that explain it rank above generic findings.
 
 ### Enter Plan Mode
 
