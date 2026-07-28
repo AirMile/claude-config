@@ -28,7 +28,7 @@ PHASE 1 of the dev workflow: define → build → test.
 
 - **No implementation code anywhere.** Plan file and feature.json contain only type signatures, structure, decisions. Function bodies, `(set, get) => ({...})` blocks, JSX, hook internals → the build phase. Detail: see PHASE 2 "Strict boundary."
 - **No requirements skipping** — every feature gets PHASE 1 extraction with acceptance criteria.
-- **No phase-jump without checkpoint** — user confirms scope (PHASE 1) before architecture; the plan-approval gate (dev-ship Step 4b) is the review surface before feature.json is written.
+- **No phase-jump without checkpoint** — the PHASE 1b REQ-checkpoint (numbered REQ list, shown before PHASE 2) precedes architecture; the plan-approval gate (dev-ship Step 4b) is the review surface before feature.json is written.
 - **Standing park escape (PHASE 0→2, up to the gate).** At any point — an open interview
   question, any `AskUserQuestion` (including a free-text "Other" answer), or plain chat — the
   user may signal this feature should not be built now: "park", "park this", "not now", "wrong
@@ -79,7 +79,8 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
    - **Onboarding check** (after the extract): `project === null` → warn `⚠️ No project.json found. Consider /core-setup.`; present but `stack === null && features.length === 0` → warn `ℹ️ project.json lacks codebase context. /core-setup can fill this in.`; present with content → continue silently. Non-blocking.
    - Read `.claude/research/stack-baseline.md` — **decision input, not just fallback**: extract the section(s) matching this feature's stack area (e.g. navigation, storage, maps) into memory so PHASE 1b's baseline gate and PHASE 2's baseline check can reuse them without re-reading. If absent, use `project.json.stack` as basis.
    - **Backlog read-only** (required — feeds the PHASE 1 risk-check + PHASE 3 externalRef passthrough): `node ~/.claude/scripts/backlog-load.js "$REPO" read-feature "{feature-name}"` → `{ present, risk, dependencies, externalRef, description, note, ... }` (see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). Keep `risk`, `dependencies`, `externalRef`, `description`, and `note` in memory for PHASE 1 and PHASE 3 — `description` feeds the PHASE 1a context echo and coverage check; a non-null `note` is a prior park — surface it verbatim as a `PARKED PREVIOUSLY: {note}` line before the first interview question (PHASE 1a). Mutations (status, date, `auto` flag) happen in PHASE 4. `present: false` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
-   - **Open-items load** (same batch — feeds the PHASE 2 Backlog Impact Check): `node ~/.claude/scripts/backlog-load.js "$REPO" open-items "{feature-name}"` → `{ backlogPresent, items }` and keep the compact list in memory. `backlogPresent: false` or empty `items` → the Impact Check will skip silently.
+   - **Open-items load** (same batch — feeds the PHASE 2 Backlog Impact Check **and PHASE 1a's Assumption Block non-goal bullets**): `node ~/.claude/scripts/backlog-load.js "$REPO" open-items "{feature-name}"` → `{ backlogPresent, items }` and keep the compact list in memory. `backlogPresent: false` or empty `items` → the Impact Check will skip silently.
+   - **Seed load** (required — feeds PHASE 1a's Assumption Block; PHASE 2's Seed Alignment Check reuses this same read, no re-read): follow [shared/SEED.md](.claude/skills/shared/SEED.md) § Reader → `SEED_CONTEXT`. Keep `markdown` in memory; pull out the sections relevant to the interview dimensions if present — Out of Scope, Open Decisions, Key Features/Goal, Constraints. `SEED_CONTEXT.present: false` → no seed-sourced bullets, continue (backlog/learnings sources still apply).
 
 5. **Optional context** (skip each item if results would be empty):
    - **Thinking files**: Grep `.project/thinking/*.md` for feature name. Read matches as PHASE 1 input.
@@ -128,7 +129,7 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
 
 **Park-note surfacing** (only when the PHASE 0 §4 `note` is non-null): show `PARKED PREVIOUSLY: {note}` before the first question — context only.
 
-Conduct the open interview per the reference — one anchored open question at a time. **AskUserQuestion is not an opener in this phase** — it is allowed only as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after two "I don't know"s on the same dimension). Close with the reference's explicit summary + confirmation; proceed to PHASE 1b only after the user confirms.
+Conduct the open interview per the reference — one anchored open question at a time. **AskUserQuestion is not an opener in this phase** — it is allowed only as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after two "I don't know"s on the same dimension). Close per the reference's Stop Condition (a stated recap, no blocking confirm — the whole plan is reviewed at the gate); proceed to PHASE 1b once the recap has been shown.
 
 ---
 
@@ -171,7 +172,7 @@ Fill any gaps before proceeding: add missing acceptance criteria, split overlapp
 - Skip entirely if REQ has no plausible error path (pure derivation, idempotent read, state display) — omit field from that REQ
 - Written to `feature.json#requirements[].errorScenarios[]` in PHASE 3
 
-> **Todo — output this checkpoint now, as its own chat message, before continuing:** show a numbered
+> **STOP — output this checkpoint now, as its own chat message, before continuing:** show a numbered
 > list with REQ-ID, 1-line description, and up to 2 key `when → then` acceptance scenarios per REQ
 > (enough to catch misinterpretations before PHASE 2). Do not skip straight from the interview to
 > PHASE 2 or the plan file without this turn — it is the user's only mid-flow checkpoint before
@@ -202,15 +203,16 @@ The full requirements table with acceptance criteria and the feature overview ta
 > (REQ-ID + acceptance scenarios, output as its own chat message) must already be visible earlier in
 > this conversation — if it is not, stop and emit it now before continuing.
 
-> **Gate — before PHASE 1c:** confirm both ran (or were genuinely skipped by type): the risk-check
-> line (if `feature.risk >= 4`, PHASE 1a) and frontend discovery above. Neither has a downstream
-> artifact check if skipped — this line is the only place that catches a missed one.
+> **Gate — before PHASE 1c:** confirm the risk-check line ran or was genuinely skipped by type
+> (`feature.risk >= 4`, PHASE 1a) — this is the only place that catches a missed one. Frontend
+> discovery has its own gate at PHASE 2 entry below (where its output is actually consumed) —
+> not re-checked here.
 
 ---
 
 ### PHASE 1c: Scope Analysis & Feature Splitting
 
-**Run immediately after the scope confirmation from PHASE 1b.** Count `requirements.length`:
+**Run immediately after the PHASE 1b REQ-checkpoint.** Count `requirements.length`:
 
 **≤6 requirements**: scope-line already shown in PHASE 1b checkpoint. Proceed directly to PHASE 2. Skip cluster analysis.
 
@@ -236,13 +238,14 @@ The full requirements table with acceptance criteria and the feature overview ta
 
 ### PHASE 2: Architecture
 
-> **Precondition — do not enter PHASE 2 without this:** (a) the PHASE 1b REQ-checkpoint chat
-> message (numbered REQ-ID list with acceptance scenarios) must already be visible earlier in
-> this conversation — if it is not, stop and emit it now before continuing; (b) for feature types
-> outside `COMPONENT`/`INTEGRATION`/`THEME`/`A11Y`/`PERF`/`INFRA`/`DOCS`, `frontend-discovery.md`
-> must have actually been Read this turn (Reuse-Discovery + Page-placement sparring executed, even
-> if both find nothing) — if it was not, go back and run it now before continuing. Neither
-> precondition may be satisfied retroactively by writing a plan-file line that assumes the step ran.
+> **Precondition — do not enter PHASE 2 without this:** (a) the PHASE 1b REQ-checkpoint (already
+> gated once at the PHASE 1c entry above — re-confirm here since PHASE 2's own artifacts depend on
+> it directly); (b) for feature types outside
+> `COMPONENT`/`INTEGRATION`/`THEME`/`A11Y`/`PERF`/`INFRA`/`DOCS`, `frontend-discovery.md` must have
+> actually been Read this turn (Reuse-Discovery + Page-placement sparring executed, even if both
+> find nothing) — this is the binding check for that artifact (the PHASE 1c gate above only checks
+> the risk-check line). Neither precondition may be satisfied retroactively by writing a plan-file
+> line that assumes the step ran.
 
 > **Todo**: mark PHASE 0+1a+1b → `completed`, PHASE 2 → `in_progress`.
 
@@ -262,15 +265,11 @@ Design in three steps:
    - **Pattern found** → use as basis, no research topic. In PHASE 3: omit the `research` field in feature.json entirely (baseline hit is not research).
    - **Pattern not found / no baseline file** → do **not** research inline. Collect the open question as a `researchTopics[]` entry (topic + why) for the scout in step 2. Do NOT create a baseline file (that is /core-setup).
 
-   > **Todo — before continuing to step 2:** print one line to chat now, not only into the
-   > plan-file draft — `Baseline: ✓ pattern hit — {pattern-name}` or `Baseline: ⚙ research queued —
-{topic}`.
+   > **Note**: record the baseline verdict (`Baseline: ✓ pattern hit — {pattern-name}` or
+   > `Baseline: ⚙ research queued — {topic}`) — it prints as part of the PHASE 2 close-out
+   > gate below, not here.
 
 2. **Scout: existing code + research** (delegated — keeps the file reads and library lookups out of the main context):
-
-   > **Gate — before Design:** if you have already Read >3 project files directly in this turn (outside
-   > `define-scout`) and the greenfield gate below does not apply, that already violated the hard cap —
-   > do not repeat the pattern for any further research this feature needs; spawn `define-scout` for it.
 
    > **Todo**: unless this is a greenfield area (no prior `feature.json` under `.project/features/` **and** the PHASE 0 §4 import scan found no matches), spawn the `define-scout` agent via the `Task` tool with:
    >
@@ -278,9 +277,22 @@ Design in three steps:
    > - `researchTopics` = the entries collected in step 1 (empty when the baseline covered everything),
    > - `hintPaths` = the import-scan matches from PHASE 0 §4, `repoRoot` = repo root.
    >
-   > Parse the `DEFINE_SCOUT_START/END` digest: `PATTERNS`/`INTEGRATION` feed step 3's design; `RESEARCH` → `feature.json#research` in PHASE 3 (only when non-empty); `PENDING_BASELINE` → `pendingBaselineAppends` for the PHASE 4 sync (`stack-baseline.md` append).
+   > Parse the `DEFINE_SCOUT_START/END` digest: `PATTERNS`/`INTEGRATION` feed step 3's design; `VERIFY` →
+   > read these files yourself before finishing step 3 (their signatures anchor the machine contract —
+   > the scout flagged them as worth confirming directly, not just quoting); `RESEARCH` →
+   > `feature.json#research` in PHASE 3 (only when non-empty); `PENDING_BASELINE` →
+   > `pendingBaselineAppends` for the PHASE 4 sync (`stack-baseline.md` append).
    >
-   > **Fallback** (greenfield gate hit, empty digest, or scout unavailable): inline `Glob + Read` **at most 3** closest-match files total, and, for any `researchTopics`, one Context7/WebSearch lookup each — same outputs, just in-context. **Hard cap**: reading a 4th file, or reading any file directly when the greenfield gate does NOT apply (prior `feature.json`s exist or the import scan found matches), is a protocol violation — spawn `define-scout` instead of continuing to read. Never design without either the digest or this bounded fallback.
+   > **Direct-read budget** (one rule, both branches): after the digest — or in the fallback below —
+   > you may read **at most 3 files directly** this feature. Spend that budget on the digest's `VERIFY`
+   > entries first (if any), then on further closest-match files if still needed. This is a **cap**, not
+   > a violation to police — going over it just means the remaining research belongs to `define-scout`
+   > (spawn it, or a second scoped call, instead of continuing to read).
+   >
+   > **Fallback** (greenfield gate hit, empty digest, or scout unavailable): inline `Glob + Read` up to
+   > the same 3-file budget, closest structural matches first, and, for any `researchTopics`, one
+   > Context7/WebSearch lookup each — same outputs, just in-context. Never design without either the
+   > digest or this bounded fallback.
 
 3. **Design** → into the in-memory draft:
    - **Feature flow**: compact `→` chain. Conditional paths in `[brackets]`, parallel with `+`.
@@ -300,19 +312,35 @@ Design in three steps:
 
 **Seed Alignment Check** (penultimate step in PHASE 2 — only when `requirements.length ≥ 4` OR ≥1 durableDecision OR ≥1 clarification was recorded; below that skip silently, trivial features yield only drift-noise):
 
-> **Todo**: Follow [shared/SEED.md](.claude/skills/shared/SEED.md) § Alignment Check — but **run only the detection**, not its `AskUserQuestion`. When drift is found, record the drift table + proposed rewrite in the draft as a `## Proposed seed update` gate section (default action: apply on accept). Carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4 (seed + backlog-overview co-update — same description in two places) so accept applies it; the user can reject just that section at the gate, in which case carry `seedDrift[]` to PHASE 3 instead (written to `feature.json#seedDrift`). No drift detected → no section, no carry. `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
+> **Todo**: Follow [shared/SEED.md](.claude/skills/shared/SEED.md) § Alignment Check — but **run only the detection**, not its `AskUserQuestion`, with one change to the comparison basis: compare against the **user's interview answers and the crystallized REQs**, not against the seed the Assumption Block already drew from — comparing a decision back to the document it was anchored on rarely finds drift. **Reversal**: any Assumption Block bullet the user struck through in PHASE 1a whose source was the seed is a first-class drift candidate regardless of what the drift scan itself finds — add it to the drift table with `ref` pointing at the dimension or REQ that replaced it. When drift is found, record the drift table + proposed rewrite in the draft as a `## Proposed seed update` gate section (default action: apply on accept). Carry `seedUpdateApproved: true` AND `overviewUpdateApproved: true` to PHASE 4 (seed + backlog-overview co-update — same description in two places) so accept applies it; the user can reject just that section at the gate, in which case carry `seedDrift[]` to PHASE 3 instead (written to `feature.json#seedDrift`). No drift detected → no section, no carry. `source: "/dev-define"`, `ref: "REQ-NNN"` where applicable.
 >
-> **Todo — before continuing:** print the resulting `Seed: ✓ aligned` / `Seed: ⚠ drift — N item(s)`
-> line to chat now, not only into the plan-file draft.
+> **Note**: the resulting `Seed: ✓ aligned` / `Seed: ⚠ drift — N item(s)` verdict prints
+> as part of the PHASE 2 close-out gate below, not here.
 
 **Backlog Impact Check** (last step in PHASE 2, directly after the Seed Alignment Check — no size threshold; a two-REQ feature can still obsolete a card):
 
 > **Todo**: Follow [shared/BACKLOG.md](.claude/skills/shared/BACKLOG.md) § Impact Check — but **run only the detection**, not its `AskUserQuestion`. When ≥1 card is impacted, record the impact table in the draft as a `## Backlog impact` gate section (default action: apply the proposed verdicts on accept). Carry those verdicts to PHASE 4 as `backlogImpact[]`; the mutations happen in the accept sync batch, and the user can reject just that section at the gate. No impact → no section, no carry.
 >
-> **Todo — before continuing:** print the resulting `Backlog: ✓ open items unaffected` / `Backlog: ⚠
-impact — N item(s)` line to chat now, not only into the plan-file draft.
+> **Dependents note** (same section, informational only — no architecture change): if any `open-items` entry from PHASE 0 §4 has this feature in its own `dependencies[]`, add one line to the `## Backlog impact` section — `Upcoming: {name} depends on this feature ({its description})` — so the reviewer sees it at the gate. This is visibility only; it does not add a seam-design step, and skip it entirely rather than speculate about requirements the dependent card hasn't defined yet.
+>
+> **Note**: the resulting `Backlog: ✓ open items unaffected` / `Backlog: ⚠ impact —
+N item(s)` verdict prints as part of the PHASE 2 close-out gate below, not here.
 
 **Second-opinion signal** (bookkeeping only): if the draft's `files[]` spans ≥3 top-level modules/dirs, note `secondOpinionSignal: "cross-cutting architecture"` in memory for dev-ship's Step 4b hook.
+
+> **STOP — PHASE 2 close-out checkpoint (mandatory, own chat message, before Step 3):**
+> print all three verdict lines together, right now, in one chat message — this is the
+> only incremental visibility the user gets before the full plan-file dump at the gate:
+>
+> ```
+> Baseline: {✓ pattern hit — {pattern-name} | ⚙ research queued — {topic}}
+> Seed: {✓ aligned | ⚠ drift — N item(s)}
+> Backlog: {✓ open items unaffected | ⚠ impact — N item(s)}
+> ```
+>
+> Do not proceed to "End of PHASE 2" / dev-ship Step 3 without this exact block
+> appearing as its own turn's text output — folding it only into the plan-file draft
+> does not satisfy this gate.
 
 **End of PHASE 2**: the complete in-memory draft (incl. the machine-contract appendix) is ready — **return to dev-ship Step 3** (`phase-0-define-classify.md`). dev-ship's Step 4b gate presents the draft for approval and, on accept, runs PHASE 3+4 below.
 

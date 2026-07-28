@@ -29,7 +29,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.9.0
+  version: 0.9.5
   category: game
 ---
 

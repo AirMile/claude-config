@@ -46,6 +46,52 @@ Generic fallback ("What problem does this solve for you?") only when there is ge
 
 ---
 
+## Assumption Block
+
+For skills whose phase definition calls this out explicitly (currently: `dev-ship`/`game-ship`
+define PHASE 1a). Where the plain "don't ask what you already know" rule above still leaves an
+open question per dimension, this upgrades the strongest-covered dimensions into a stated block
+of inferences the user corrects by exception, instead of one more round of open questions.
+
+Render **once, immediately before the opening question**, as its own short block — a statement,
+never `AskUserQuestion`:
+
+```
+Wat ik hieruit al opmaak (corrigeer wat niet klopt):
+
+1. {claim} ← {source}
+2. {claim} ← {source}
+...
+```
+
+Rules:
+
+- **Max 5 bullets.** Fewer is fine — this is not a quota to fill.
+- **Problem-space claims only** — goal, scope boundary, non-goal, success criterion. Mechanical
+  test: a bullet may name no file, component, or library. That check is what keeps the boundary
+  real instead of a label — the leaks in practice are success-criterion bullets that slide into
+  mechanism ("shows a toast on save"). Solution-space stays with the skill's own tone rules
+  (no architecture, no tech choice, no file structure) — this block does not relax them.
+- **Cite-or-ask.** Every bullet carries `← {source}` — a seed section, a backlog card name, a
+  learning, or a prior decision. No source → no bullet; ask the open question instead. A gok
+  presented with the authority of a stated fact is worse than a question.
+- **Non-goal bullets are cited-only, never inferred from silence.** A wrongly-assumed goal
+  surfaces later when the built thing doesn't match; a silently-cut scope never does — that
+  asymmetry is why this bullet type gets the stricter rule.
+- **Source precedence on conflict**: the current backlog card's own fields (`description`,
+  `note`) outrank the seed, which outranks learnings/prior decisions. The seed only updates on
+  approved drift, so it can present stale scope as current fact.
+- **Frame for deletion, not confirmation.** "Corrigeer wat niet klopt" invites striking a wrong
+  bullet; "klopt dit?" invites a reflexive yes. Say the first, not the second.
+- **A dimension covered by a non-struck bullet does not get an open question** — the skill's
+  dimension checklist marks it satisfied. Only struck-through or uncovered dimensions still need
+  one.
+- Struck bullets are not discarded — the consuming skill records which ones the user rejected;
+  a struck bullet whose source was the seed is itself a drift signal (see that skill's own
+  alignment-check phase for how it's used).
+
+---
+
 ## Escalation Ladder
 
 Apply per dimension/topic when an open question stalls:

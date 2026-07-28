@@ -168,7 +168,8 @@ Check: `.project/features/{feature-name}/feature.json` exists?
    - Glob + Grep for existing code that imports the feature name
    - Project context load: `node ~/.claude/scripts/context-load.js "$REPO" game-define "{feature-name}"` → `{ project, projectContext }` (see [shared/GAME-CONTEXT-LOAD.md](../shared/GAME-CONTEXT-LOAD.md)). Extracts: `stack`, `pitch`, `features[]`, `entities[]`, `thinking[]` (filtered to current feature) from `project.json`; `patterns` (max 15) and full `architecture` from `project-context.json`. Use the extracted output for: stack fallback, feature context/pitch, existing feature list (prevent duplicates), existing entities, thinking as PHASE 1 input, code patterns, current scene graph.
 
-   - **Open-items load** (feeds the PHASE 3 Backlog Impact Check): `node ~/.claude/scripts/backlog-load.js "$REPO" open-items "{feature-name}"` → `{ backlogPresent, items }` (see [shared/BACKLOG-LOAD.md](../shared/BACKLOG-LOAD.md) — store-generic, works on game backlogs too) and keep the compact list in memory. `backlogPresent: false` or empty `items` → the Impact Check will skip silently.
+   - **Open-items load** (feeds the PHASE 3 Backlog Impact Check **and PHASE 1a's Assumption Block non-goal bullets**): `node ~/.claude/scripts/backlog-load.js "$REPO" open-items "{feature-name}"` → `{ backlogPresent, items }` (see [shared/BACKLOG-LOAD.md](../shared/BACKLOG-LOAD.md) — store-generic, works on game backlogs too) and keep the compact list in memory. `backlogPresent: false` or empty `items` → the Impact Check will skip silently.
+   - **Seed load** (required — feeds PHASE 1a's Assumption Block; PHASE 3's Seed Alignment Check reuses this same read, no re-read): follow [shared/SEED.md](../shared/SEED.md) § Reader → `SEED_CONTEXT`. Keep `markdown` in memory; pull out the sections relevant to the interview dimensions if present — Out of Scope, Open Decisions, Key Features/Goal, Constraints. `SEED_CONTEXT.present: false` → no seed-sourced bullets, continue (backlog/learnings sources still apply).
    - **Name-match on thinking markdown**: Grep `.project/thinking/*.md` on feature name (filename + content). With 1+ match: read the match(es) and use as input for PHASE 1 questions. The `.md` files are the source of truth for thinking output — no 7-day window anymore.
    - **Learnings load** via [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md):
      ```
@@ -536,7 +537,14 @@ IMPLEMENTATION ORDER:
 **Seed Alignment Check** (penultimate step in PHASE 3):
 
 Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check — but **run only the
-detection**, not its `AskUserQuestion`. Inputs: REQ descriptions +
+detection**, not its `AskUserQuestion`, with one change to the comparison basis:
+compare against the **user's interview answers and the crystallized REQs**, not
+against the seed the Assumption Block already drew from — comparing a decision
+back to the document it was anchored on rarely finds drift. **Reversal**: any
+Assumption Block bullet the user struck through in PHASE 1a whose source was the
+seed is a first-class drift candidate regardless of what the drift scan itself
+finds — add it to the drift table with `ref` pointing at the dimension or REQ
+that replaced it. Inputs: REQ descriptions +
 `acceptance[].then` + `clarifications[]` + `durableDecisions[]` from PHASE 1 and
 PHASE 3 — clarifications are the PHASE 1 fork resolutions (scene ownership,
 resource schema, signal boundary) and the most common source of seed divergence;
@@ -558,6 +566,14 @@ as a `## Backlog impact` gate section (default action: apply the proposed verdic
 accept). Carry those verdicts to PHASE 5 as `backlogImpact[]`; the mutations happen in
 the accept sync batch, and the user can reject just that section at the gate. No
 impact → no section, no carry.
+
+**Dependents note** (same section, informational only — no architecture change): if
+any `open-items` entry from PHASE 0 step 5 has this feature in its own
+`dependencies[]`, add one line to the `## Backlog impact` section —
+`Upcoming: {name} depends on this feature ({its description})` — so the reviewer
+sees it at the gate. This is visibility only; it does not add a seam-design step,
+and skip it entirely rather than speculate about requirements the dependent card
+hasn't defined yet.
 
 **Machine contract appendix**: author the **complete feature.json draft** NOW (held in memory; game-ship's gate materializes it as the plan-file appendix at Step 4b) as a single ```json fenced block under a `## Appendix — machine contract (skip review)` heading, **compact single-line JSON (no indentation)** — halves the token cost of the plan-file echo. Include every define-owned field per the PHASE 4 field table below (name/status/created/depends/summary, requirements with full `acceptance[]` + game fields `tuningLevers`/`errorScenarios`, files, architecture, buildSequence, testStrategy, and the conditional fields). `interfaces[].definition` holds signal/resource/script declarations only — no method bodies. The heading marks it non-review; the design narrative above it (scene tree, flow, verification) is the review surface. Gate-accept extracts this block mechanically — no re-authoring.
 

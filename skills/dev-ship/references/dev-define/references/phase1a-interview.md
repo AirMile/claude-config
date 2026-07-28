@@ -13,7 +13,7 @@ Track coverage internally — not as a visible numbered list. Move to the next o
 | 3   | **Edge cases & non-goals**       | Yes         | After success is clear                                                                                             |
 | 4   | **User & context**               | Conditional | Only if task type ∈ PAGE, COMPONENT, or FEATURE with direct end-user interaction. Skip for INFRA, REFACTOR, THEME. |
 
-Before opening a dimension, run the coverage check (`shared/QUESTIONING.md § Before Asking`) — a dimension already answered by seed/backlog/context gets a paraphrase-confirm, not an open question.
+Before opening a dimension, run the coverage check (`shared/QUESTIONING.md § Before Asking`) — a dimension already answered by seed/backlog/context gets a paraphrase-confirm, not an open question. A dimension covered by a non-struck bullet in the Assumption Block below (see Interview Start) is already satisfied — do not reopen it. Only dimensions left uncovered, or whose bullet the user struck, get an open question.
 
 All required dimensions covered → trigger the [Stop Condition](#stop-condition).
 
@@ -21,7 +21,7 @@ All required dimensions covered → trigger the [Stop Condition](#stop-condition
 
 - **`AskUserQuestion` is not an opener** — open each dimension with a plain anchored question in chat, not a modal. `AskUserQuestion` appears only as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after two "I don't know"s on the same dimension). Reaching for it as your first move on an architecture-flavored dimension skips the open interview entirely — restated here because this file is read standalone as "the full interview protocol."
 - **One question at a time** — never list multiple questions in a single turn.
-- **No solution proposals** — do not propose solutions, technical approaches, or design choices in this phase. Example directions inside the question text ARE allowed and encouraged — they describe the problem space, not the implementation (see `shared/QUESTIONING.md § Anchored open question rules`).
+- **No solution proposals** — do not propose solutions, technical approaches, or design choices in this phase. Example directions inside the question text ARE allowed and encouraged — they describe the problem space, not the implementation (see `shared/QUESTIONING.md § Anchored open question rules`). **The Assumption Block below (Interview Start) is the one stated exception to "no proposals" — but only for problem-space claims** (goal, scope boundary, non-goal, success criterion), each carrying a source citation. It does not license stating architecture, file structure, or tech choices as fact — those stay open through the rest of the interview and into PHASE 1b's design forks.
 - **Paraphrase** after each substantive answer: "So you mean that…" or "If I understand correctly, you want…". Ask "is that right?" only when genuinely uncertain — not as a ritual after every answer.
 - **Probe and follow up**: "Can you give a concrete example?", "What happens if X?", "What would make this a failure?", "What breaks today without it?"
 - **Show interest**: briefly acknowledge what the user said before asking the next question. Don't jump straight to the next question.
@@ -35,9 +35,9 @@ All required dimensions covered → trigger the [Stop Condition](#stop-condition
 > before your opening question, on ≥1 match. This feeds Step 3's classification bias and Step 4's
 > technique derivation — loading it later, only for Step 6, misses the interview entirely.
 
-**Context echo** — open the interview with a short "what I already know" block (2-3 lines max) built from PHASE 0 context: backlog title + `description` + risk, seed pitch fragment, codebase scan hits. This shows the user what the interview builds on so they never have to repeat known ground. The `PREVIOUSLY DECIDED` list and risk-check line (from workflow.md) render directly above this block — don't duplicate their content in the echo.
+**Assumption Block** — open the interview with the block per `shared/QUESTIONING.md § Assumption Block`: up to 5 problem-space bullets (goal, scope boundary, non-goals, success criteria) drawn from PHASE 0 context — backlog `description` + risk, the seed markdown (Out of Scope / Open Decisions / Key Features), upcoming `open-items` entries used to name non-goals ("bulk import is covered by `{card-name}`"), codebase scan hits — each bullet citing its source, non-goal bullets cited-only. This replaces the old 2-3 line "context echo": instead of just naming what's known, state what you conclude from it, so the user corrects by exception rather than repeating known ground. The `PREVIOUSLY DECIDED` list and risk-check line (from workflow.md) render directly above this block — don't duplicate their content in the bullets.
 
-**Opening question** — compose it fresh per feature (`shared/QUESTIONING.md § Before Asking` — no canned scaffold, no recycled phrasing across sessions). Its job: target the biggest genuine unknown left after the context echo, anchored in one concrete fact from it, with 2-3 example directions where natural. Example of the _shape_ (never reuse the wording):
+**Opening question** — compose it fresh per feature (`shared/QUESTIONING.md § Before Asking` — no canned scaffold, no recycled phrasing across sessions). Its job: target the biggest genuine unknown left after the Assumption Block — a struck bullet, or a dimension the block didn't cover at all — anchored in one concrete fact, with 2-3 example directions where natural. Example of the _shape_ (never reuse the wording):
 
 > "The backlog flags `{feature-name}` at risk 4 and your seed pitches {fragment}. What I can't tell from that: {specific aspect}. What makes that the problem right now — {direction A}, {direction B}, or something else?"
 
@@ -100,7 +100,7 @@ Follow the escalation ladder in `shared/QUESTIONING.md § Escalation Ladder`, ap
 
 **In the closing summary**: if ≥1 dimension is unresolved, name it explicitly:
 
-> "The {X} dimension is still open — I'll cover that in the synthesis phase with a best-guess approach. Does that work?"
+> "The {X} dimension is still open — I'll cover that in the synthesis phase with a best-guess approach, and flag it for review at the gate."
 
 **In PHASE 1b**: treat each `unresolved` dimension as a gap to fill via a structured design choice (AskUserQuestion with options), not via another open question. The user couldn't answer in interview mode; structured options help more at that point.
 
@@ -114,7 +114,7 @@ The backlog record (title + `description`) and concept pitch already tell you _w
 
 **Vague description**: if the card text is too thin to anchor on (a title restatement, missing behavior or boundary), name that explicitly — "The card only says '{description}', which doesn't tell me {specific gap}" — and ask the user to fill exactly that gap. Never silently pretend the card gave context it didn't; naming the gap also surfaces weak descriptions for repair.
 
-If `SEED_CONTEXT` or `project.json#concept` is available, use it to sharpen questions — e.g. "You mentioned the project targets {audience} — is this feature primarily for them?"
+`SEED_CONTEXT` is loaded unconditionally in PHASE 0 §4 now — use it to sharpen the Assumption Block and any remaining open questions, e.g. "You mentioned the project targets {audience} — is this feature primarily for them?" `SEED_CONTEXT.present: false` just means no seed-sourced bullets; the rest of the coverage check still applies from backlog/codebase/prior-decision sources.
 
 ## Handling User Requests Mid-Interview
 
