@@ -148,6 +148,8 @@ Ask: "What is your idea? Describe it in 1-2 sentences."
 
 **If "Have a design/spec":** Proceed as Implementation project (see Step 1a handler for "Implementation project").
 
+**If Scope = "Implementation project" but Source ≠ "Have a design/spec"** (i.e. "Use chat context" or "Type new idea"): the Scope answer is leading — proceed as Implementation project (Step 1a handler) regardless of Source; use the Source answer only to decide the opening question (share an external source vs. use what's already in chat/typed).
+
 **If description provided (inline argument):**
 
 Run Step 1d (once scope is set), then proceed to Step 2 with the argument as starting concept.
