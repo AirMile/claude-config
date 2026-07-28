@@ -213,6 +213,17 @@ consolidated gate — one review surface for the whole plan. It always runs (no 
 > already exists (a prior run accepted the gate), no plan mode was entered, nothing to re-approve.
 > Go straight to Step 5.
 
+**De-escalation check** (before writing the plan file) — evaluate the completed in-memory draft
+against `shared/TWEAK-DISCIPLINE.md § Size gate` criteria 1-4: file span from `files[]` (> 3 →
+fires), net-new surface from `type`/`architecture` (new scene, autoload, signal contract, or input
+action vs adjusting existing → fires), new test surface from `tests` (a new GUT test file/harness →
+fires), architecture from `architecture` (a shared layer/interface/config consumed by > 2 modules, or
+a cross-cutting rename → fires). Criteria 5 and 6 don't apply here (5 needs a live backlog scan; 6 is
+fail-class and never reaches define). None of the four fires → the feature is **tweak-sized**; the
+plan file's closing line below gains a fourth outcome, and `ExitPlanMode`'s Accept becomes a
+conscious override rather than the default path. This is a fresh read of the draft each time Step 4b
+runs (including on a Reject revise-loop pass) — cheap and deterministic, never cached across passes.
+
 **Steps:**
 
 1. **Write the plan file** (path from Step 2b) — two parts, per `game-define/SKILL.md` PHASE 3:
@@ -224,9 +235,12 @@ consolidated gate — one review surface for the whole plan. It always runs (no 
      (`refactorLenses`). Then any **proposal sections** the draft carries, each with its default
      action stated (accept applies it; reject-feedback can drop just that one): `## Proposed seed
 update` (from the Seed Alignment Check), `## Backlog impact` (obsoleted/adjusted cards from the
-     Backlog Impact Check), and on a split `## Feature split` (clusters + build order). Close with:
+     Backlog Impact Check), and on a split `## Feature split` (clusters + build order). **When the
+     de-escalation check above found the draft tweak-sized**, add one line naming it: `Tweak-sized: {N}
+files, no net-new surface — a /game-tweak handoff is available below.` Close with:
      "Accept → build starts (PHASE 1); the proposals above are applied. Reject → back into the define
-     interview to revise (tell me what to change)."
+     interview to revise (tell me what to change)." — and, **only on a tweak-sized draft**, a third
+     line: "De-escalate → hand off to `/game-tweak` instead (recommended)."
    - **`## Appendix — machine contract (skip review)`** — the complete `featureDraft` (incl.
      `playtestProfile`) as a single ```json block, **compact single-line JSON (no indentation)** —
      halves the token cost of the plan-file echo. This is what the extract reads on Accept.
@@ -242,7 +256,10 @@ update` (from the Seed Alignment Check), `## Backlog impact` (obsoleted/adjusted
 
 2. **`ExitPlanMode`** to present it for approval (this exits plan mode; the session returns to its
    prior permission mode).
-   - **Accept** → writes are allowed again; run define's hoisted PHASE 4+5 now:
+   - **Accept** — **on a tweak-sized draft, this is the conscious override** (§ De-escalation gate
+     (b) in `shared/TWEAK-DISCIPLINE.md`): carry `De-escalation overridden: tweak-sized ({N} files, no
+net-new surface)` into the PHASE 5 report. On a non-tweak-sized draft this note doesn't apply —
+     proceed as below unchanged. → writes are allowed again; run define's hoisted PHASE 4+5 now:
      (a) `node ~/.claude/scripts/feature-from-plan.js <plan-file> .project/features/{feature}/feature.json`
      writes `feature.json` from the appendix;
      (b) run define's PHASE 5 sync (backlog `status: "DEFINED"` with `auto: true`, project.json,
@@ -280,6 +297,17 @@ update` (from the Seed Alignment Check), `## Backlog impact` (obsoleted/adjusted
 § Park notes`.
 
      Then **stop** — do not continue to Step 5.
+
+   - **De-escalate (hand off to `/game-tweak` — only offered when the de-escalation check above found
+     the draft tweak-sized)** → § De-escalation gate (a) in `shared/TWEAK-DISCIPLINE.md`. `ExitPlanMode`
+     to leave plan mode, then revert Step 2a's bookkeeping using **the same four steps as Abort above**
+     (signal-clear, remove the init checkpoint, `rmdir` the empty feature dir, strip `transition:
+"shipping"` from the backlog card) — no `note` this time (this isn't a park; the tweak run picks
+     the card up next, not a later `/game-ship` re-invoke). No `feature.json` was written — the draft
+     dies here, exactly as on Abort. Then invoke `/game-tweak {feature-name}`, passing the card's
+     **exact name** so it resumes the same card instead of minting a new one (per
+     `shared/TWEAK-DISCIPLINE.md § De-escalation gate` (a)). Then **stop** — do not continue to Step 5;
+     the tweak run reports its own outcome.
 
 **Resume note.** Same-session interruption between Step 2b and Accept: just continue (plan mode + the
 plan file persist in the session). Cross-session death re-runs the interview — see Step 0's

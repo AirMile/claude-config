@@ -81,16 +81,17 @@ command). See `BACKLOG.md § Board rendering`.
                 the walkthrough, the fix-plan gate, and dispatch — see phase-3-manual-finalize.md,
                 manual-interview-walkthrough.md, fix-round.md.
                 round: 1-based counter, bumped before each fix-plan gate entry.
-                items: [{ id, title, verdict: "pass"|"fail"|"tweak"|"skip"|"defer"|"accepted", category,
-                          observed, expected, screenshot, source: "checklist"|"interview",
+                items: [{ id, title, verdict: "pass"|"fail"|"tweak"|"skip"|"defer"|"accepted"|"offloaded",
+                          category, observed, expected, screenshot, source: "checklist"|"interview",
                           debugTier: "light"|"heavy" (absent = not in the debug ladder),
                           heavyRoundFailed: bool (absent otherwise),
                           lightRoundNotes: string (absent unless debugTier reached "heavy"),
-                          offload: string (backlog card name — set when this "tweak"-verdict item
-                          was offloaded via phase-3-manual-finalize.md § Offload flush; absent for
-                          fail/pass/skip/defer items and for the narrow inline-fixed tweak exception,
-                          which flips straight to "pass" instead — see that section's verdict-flip
-                          rule),
+                          offload: string (backlog card name — set on a "tweak"-verdict item offloaded
+                          via phase-3-manual-finalize.md § Offload flush (a TWEAK card), or on an
+                          "offloaded"-verdict item split off by shared/FEEDBACK-CATEGORIZATION.md
+                          § Scope check (a BUG/feature card); absent for fail/pass/skip/defer items
+                          and for the narrow inline-fixed tweak exception, which flips straight to
+                          "pass" instead — see that section's verdict-flip rule),
                           difficulty: "S"|"M"|"L" (absent until the item enters the debug ladder;
                           scored per shared/DEBUG-LADDER.md § Difficulty triage, re-scored on every
                           failed round — see debug-round.md § 3b / § 8, debug-round-heavy.md § 8),
@@ -122,7 +123,12 @@ command). See `BACKLOG.md § Board rendering`.
                 blocker. Both, plus deferred items from `/dev-verify`'s own walkthrough, are folded
                 into `payload.knownIssues` at completion-sync time and surface as a dashboard badge
                 (`shared/BACKLOG.md § Known-issue badges`) — this ledger itself does not survive past
-                checkpoint deletion.
+                checkpoint deletion. `"offloaded"` is distinct from both: a finding that turned out to
+                be about something other than this feature (`shared/FEEDBACK-CATEGORIZATION.md
+                § Scope check`), split off into its own ledger item and handed to its own backlog
+                card. It counts as resolved for `ship-checkpoint.js route` same as "tweak"/"accepted",
+                but does **not** feed `payload.knownIssues` — the card it was handed to is the trace,
+                not this ledger.
                 fixPlan: the accepted round-gate appendix object (findings/groups/waves), or absent.
                 dispatch: { groups: { [groupId]: { status, itemsFixed, testsGreen, notes,
                            autoDecisions } }, allFixed: bool } — merged in from ship-fix.js's return. */
