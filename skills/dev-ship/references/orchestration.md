@@ -97,15 +97,23 @@ code/test failure follows the branches below.
   note, first check `backlog.json#features[]` for an existing TODO card whose `description` already
   covers it (a concurrent sibling `/dev-ship` run shares this project's `.project/`, not a
   per-worktree copy, and may have already logged the same observation) — skip the `/project-todo`
-  call for that note if a match exists. Otherwise invoke `/project-todo` **once per uncovered note**
-  with `"{note}, type TWEAK, depends on {feature}, parked from /dev-ship auto-verify"` — these are
-  independent single-sentence TWEAK cards, not a cross-domain cluster, so do not concatenate
-  multiple notes into one call (`/project-todo`'s own multi-item split is content-signal-based, not
-  a manual-batch interface). **Completion check**: after the loop, confirm `cards created + notes
-already covered` equals `verify.improvementNotes.length` before
-  proceeding — these are AGENT 2's own observations, never a ledger item, so there's no `offload`
-  field to upsert. Do this before either branch below, since it
-  applies regardless of which one fires. Branch on `verify.remainingManualItems`:
+  call for that note if a match exists. Otherwise judge the note's projected scope against
+  `shared/TWEAK-DISCIPLINE.md § Size gate` criteria 1-4 (same judgment and same default-to-TWEAK-on-
+  a-close-call rule as `phase-3-manual-finalize.md § Offload flush` — an auto-verify improvement note
+  is typically small, but not always) and invoke `/project-todo` **once per uncovered note**: within
+  the gate, `"{note}, type TWEAK, depends on {feature}, parked from /dev-ship auto-verify"`;
+  exceeding it, drop the `type` hint and name the reason instead — `"{note}, depends on {feature},
+parked from /dev-ship auto-verify (exceeds tweak size gate: {criterion})"` (plain inference then
+  lands on `CHANGE`/`FEATURE`). These are independent single-sentence cards, not a cross-domain
+  cluster, so do not concatenate multiple notes into one call (`/project-todo`'s own multi-item split
+  is content-signal-based, not a manual-batch interface). **Completion check**: after the loop,
+  print one line — `Offload: {cardsCreated}/{M} notes → cards, {alreadyCovered} already covered`
+  (`M` = `verify.improvementNotes.length`) — confirming `cardsCreated + alreadyCovered` equals `M`
+  before proceeding; a printed mismatch is the signal that an invocation was skipped instead of run.
+  These are AGENT 2's own observations, never a ledger item, so there's no `offload` field to
+  upsert or verdict to set regardless of which card type they landed on. Do this before
+  either branch below, since it applies regardless of which one fires. Branch on
+  `verify.remainingManualItems`:
   - **Empty** → go to **§4 PHASE 3 completion (no-manual path)**.
   - **Non-empty** → `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}` (board renders
     **parked** with the resume button); print this handoff message (English source, translate per

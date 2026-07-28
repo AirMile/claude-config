@@ -32,6 +32,16 @@ Criterion 6 routes to the _debug_ machinery, not to ship define — the skill's 
 words that option accordingly (dev: a `/dev-ship {feature}` debug round or inline ladder discipline;
 game: `/game-debug`).
 
+**Second consumer: pre-offload sizing.** Criteria 1-4 aren't only a `/dev-tweak`/`/game-tweak` intake
+check — `dev-ship`'s manual-round and auto-verify offload flushes
+(`dev-ship/references/phase-3-manual-finalize.md § Offload flush`,
+`dev-ship/references/orchestration.md § 5`) and their `game-ship` mirrors judge a finding against
+these same four criteria **before** deciding whether it
+becomes a `type TWEAK`/`POLISH` card or a plain backlog card, so an oversized finding never enters
+the tweak fast path only to bounce straight back out at this file's own § Escalation gate. Criteria 5
+and 6 stay intake-only there (5 needs a live backlog scan this pre-check doesn't have; 6 is
+fail-class and never reaches offload).
+
 ## Branch guard
 
 A tweak commits on **whatever branch is checked out** — standing in a ship's feature worktree would
