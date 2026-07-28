@@ -311,6 +311,29 @@ else
 fi
 (cd "$SCT/wt" && echo '{"manual":{"items":[{"id":"MT-1","verdict":"pass"}]}}' | node "$SC" patch r) >/dev/null 2>&1
 
+# (r4) a "tweak" verdict WITHOUT an "offload" field does NOT resolve the ledger —
+# the inline-fix band (dev-ship/references/phase-3-manual-finalize.md § Inline fix
+# now) must flip it to "pass", and the offload flush always writes "offload"
+# alongside "tweak"; a bare "tweak" here means neither happened yet.
+(cd "$SCT/wt" && echo '{"manual":{"items":[{"id":"MT-1","verdict":"tweak"}]}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_R4=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(r.route)')
+if [ "$ROUTE_R4" = "phase3-manual" ]; then
+  echo "PASS  ship-checkpoint: route PHASE 3, bare \"tweak\" verdict (no offload) stays open → phase3-manual"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route PHASE 3 bare \"tweak\" verdict (got: $ROUTE_R4)"; FAIL=$((FAIL + 1))
+fi
+
+# (r5) a "tweak" verdict WITH an "offload" field resolves the ledger, same as
+# "offloaded" — the card was created, so the finding was handed off.
+(cd "$SCT/wt" && echo '{"manual":{"items":[{"id":"MT-1","verdict":"tweak","offload":"tweak-x"}]}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_R5=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(r.route)')
+if [ "$ROUTE_R5" = "phase3-completion" ]; then
+  echo "PASS  ship-checkpoint: route PHASE 3, \"tweak\" verdict with offload resolves ledger → phase3-completion"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route PHASE 3 \"tweak\"+offload verdict (got: $ROUTE_R5)"; FAIL=$((FAIL + 1))
+fi
+(cd "$SCT/wt" && echo '{"manual":{"items":[{"id":"MT-1","verdict":"pass"}]}}' | node "$SC" patch r) >/dev/null 2>&1
+
 # (s) an in-flight fix dispatch keeps the ledger open → phase3-manual even with all-pass items.
 (cd "$SCT/wt" && echo '{"activeWorkflow":"phase3fix"}' | node "$SC" patch r) >/dev/null 2>&1
 ROUTE_S=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(r.route)')

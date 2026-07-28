@@ -145,9 +145,10 @@ One `AskUserQuestion` per item (not batched — the user asked for item-by-item 
 
 - `Pass (Recommended)`
 - `Fail — doesn't work as specified`
-- `Tweak — works, but I want it different` (offloaded to a TWEAK backlog card by default — the ship
-  stays raw-functionality only; `/dev-tweak` picks it up later. See
-  `phase-3-manual-finalize.md § Findings ledger + routing` for the narrow inline-fix exception.)
+- `Tweak — works, but I want it different` (a small, in-scope, tier-1 tweak is fixed in the ship
+  itself; anything larger is offloaded to a TWEAK backlog card — the ship stays raw-functionality
+  only for that finding and `/dev-tweak` picks it up later. See
+  `phase-3-manual-finalize.md § Findings ledger + routing` for the exact band.)
 - `Skip / Defer` — one immediate follow-up: which of the two, and why (reason for Skip; blocking
   external prereq for Defer — account, CORS-origin, API-token, third-party config). **Defer is for
   external blockers only** — "it is broken" is by definition a **Fail**, never a Defer.
@@ -197,7 +198,10 @@ start fixing:
   item now (next sequential `MT-N` id) via the same `ship-checkpoint.js item {feature} manual`
   upsert Step E already uses — in-scope stays a blocking fail, out-of-scope routes to
   `/project-todo` per the Fail-never-to-todo policy's net-new-capability carve-out
-  (`phase-3-manual-finalize.md § Findings ledger + routing`).
+  (`phase-3-manual-finalize.md § Findings ledger + routing`), then the same upsert patches that
+  item's own verdict to `"offloaded"` + `offload: "{card-name}"` so it doesn't dead-lock the ledger
+  as a lingering fail — mechanics owned by `phase-3-manual-finalize.md § Offload flush`, not
+  repeated here.
 
 Record the category (TESTABLE / MEASURABLE) alongside the finding. Then move to the next item — the
 fix routing lives in `phase-3-manual-finalize.md § Findings ledger + routing`, not here.
@@ -240,11 +244,15 @@ moment the user has nothing more to add; do not fish for issues that aren't ther
   finding, `verdict: "tweak"` (or `"fail"` if it turns out a criterion was genuinely not met),
   `source: "interview"`. Add it to the in-memory collection (Step E) — it persists in the same batch
   write. A `"tweak"` verdict here routes to offload, same as Step C — it is not queued for the fix
-  round.
+  round. The offload flush's own size-gate judgment (`phase-3-manual-finalize.md § Offload flush`)
+  still applies at that point — a "tweak" that turns out to exceed the gate flips to `"offloaded"`
+  there, not here; nothing to pre-judge in this step.
 - **Net-new capability** (not in `remainingManualItems`, not a change to existing scope) → keep it
   out of the ledger entirely. Either fold it into the fix round only if it is small and clearly
   in-theme (the round-gate decides), or route it to `/project-todo` and finish the ship on the
-  verified scope — do not let unbounded new scope block completion.
+  verified scope — do not let unbounded new scope block completion. Net-new capability **is**
+  `shared/TWEAK-DISCIPLINE.md § Size gate` criterion 1 by definition, so it never carries a `type
+TWEAK` hint — plain inference applies, same as any size-gate-exceeding offload.
 
 ## Step G — Return
 

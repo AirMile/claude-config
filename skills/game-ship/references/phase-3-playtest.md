@@ -94,14 +94,29 @@ interview-close findings):
 | Ledger state                                                                      | Route                                                                                                                                                                         |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | No Fail/Tweak findings (all Pass, or only Skip/Defer)                             | `ExitPlanMode` now (short summary, e.g. "all N items pass") → batch-persist (walkthrough § Step E) → Regression re-check → Step 3                                             |
-| ≤2 findings, all MEASURABLE, cosmetic, obvious fix (a value/timing/feel tweak)    | `ExitPlanMode` now → batch-persist → **Inline fix now** (below) → Regression → Step 3                                                                                         |
+| ≤3 findings, all DEBUG-LADDER tier 1 (symptom + cause both visible) and in-scope  | `ExitPlanMode` now → batch-persist → **Inline fix now** (below) → Regression → Step 3                                                                                         |
 | Anything else (any TESTABLE finding, >2 findings, or an unclear/multi-script fix) | Stay in plan mode — Read `fix-round.md` and run the round gate; **its** `ExitPlanMode` (presenting interview outcome + fix plan together) closes this walkthrough's plan mode |
 
-**Inline-fix path (skip-gate case)** — mirrors dev-ship's equivalent skip-silently condition: fix
-each finding directly in the main chat, Read `shared/DEBUG-LADDER.md` and apply tier 1 (symptom +
-cause both visible, ≤1-2 scripts/scenes), re-launch the game window, let the user confirm live. No
-round bookkeeping — this is the common trivial case and should stay friction-free (plan mode itself
-already closed by the table above).
+**Inline fix now** — for each qualifying finding: fix it directly in the main chat, Read
+`shared/DEBUG-LADDER.md` and apply tier 1 (symptom + cause both visible, ≤1-2 scripts/scenes),
+re-launch the game window, let the user confirm live.
+
+This path carries the same **polish-loop cap** as `fix-round.md § Re-check`'s trivial-nitpick
+bullet — capped at 3 attempts per finding, no round-gate: after each attempt, patch the item's
+`tweakAttempts` (increment, starts at 1) via `ship-checkpoint.js item {feature} playtest`. On a
+resume landing back on this item, read the existing `tweakAttempts` first and continue counting —
+never reset to 1.
+
+- **Satisfied at attempt ≤3** → clear `tweakAttempts`, `verdict: "pass"` in the same batch-persist.
+- **Turns out to need real investigation mid-loop** → re-file it as a failing finding immediately
+  and drop out of this loop into `fix-round.md`'s Still-failing path, even if `tweakAttempts` hasn't
+  hit 3 yet.
+- **Still not right after 3 attempts** → stop looping — handle exactly as `fix-round.md § Re-check`'s
+  Still-failing bullet (append to the ledger, increment `failedRounds`, present the escalation
+  ladder).
+
+No round bookkeeping beyond `tweakAttempts` — this stays the friction-free path for genuinely small,
+in-scope work (plan mode itself already closed by the table above).
 
 **Otherwise** → Read `.claude/skills/game-ship/references/fix-round.md` and follow it: the
 hoisted-bookkeeping + round-level plan-mode fix-plan gate (Opus designs the fix, in the **same**
@@ -112,9 +127,15 @@ deferred" — it returns control here only when ready for the regression re-chec
 
 **Policy — a `fail` finding never leaves the ship via a backlog todo.** It is fixed, parked (the
 checkpoint stays open, the feature stays non-DONE — see `fix-round.md § Re-check`'s park option), or
-escalated via the debug ladder. Only `tweak` findings and net-new capability (walkthrough Step F) may
-route to `/project-todo` — the ship then finalizes normally and **refactor runs as usual** (no
-deferral). `Skip`/`Defer` outcomes never block completion either — they are recorded (deferred items
+escalated via the debug ladder. `tweak` findings, out-of-scope defects split off by the Scope check
+(`shared/FEEDBACK-CATEGORIZATION.md § Scope check`), and net-new capability (walkthrough Step F)
+default to `/project-todo` offload — `type POLISH` only for a tweak that also fits
+`shared/TWEAK-DISCIPLINE.md § Size gate` (ledger verdict `"tweak"`); plain inference
+(`SYSTEM`/`MECHANIC`/`CONTENT`) for a tweak that exceeds it or an out-of-scope defect, both ledger
+verdict `"offloaded"`. Net-new capability never enters the ledger at all (no verdict, no `POLISH`
+hint, size-gate criterion 1 by definition). The ship then finalizes normally and **refactor runs as
+usual** (no deferral). `Skip`/`Defer` outcomes never
+block completion either — they are recorded (deferred items
 stay open for a later re-test), and the flow continues regardless of how many are open; remember
 that Defer is for external blockers only (walkthrough Step C) — a `fail` is never disguised as a
 Defer to get it out of the way.
@@ -130,7 +151,9 @@ All COVERED passed (AGENT 2) and no open playtest FAIL → complete (but do **no
 
 1. **Known-issue payload**: scan `checkpoint.playtest.items[]` for every item with
    `verdict: "accepted"` or `verdict: "deferred"` and map each to
-   `{ id, title, verdict, reason, source: "ship-ledger" }` — `reason` is a short synthesis of the
+   `{ id, title, verdict, reason, source: "ship-ledger" }` (an `"offloaded"` item is deliberately
+   **not** included here — the backlog card it was handed to is its trace, not this payload) —
+   `reason` is a short synthesis of the
    item's context (same free-text judgment already used elsewhere in this ledger). When a
    `deferred` item's reason names an existing backlog card, also set `blocker: "{card-name}"` on
    that entry. Pass the result as `payload.knownIssues` on the completion-sync call below (omit the

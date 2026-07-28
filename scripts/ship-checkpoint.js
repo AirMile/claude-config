@@ -59,8 +59,11 @@
 //     or failed                                        → "phase12"
 //   - phase is "PHASE 3" and either results.verify.remainingManualItems is
 //     empty, or the manual ledger is fully resolved (every item's verdict is
-//     pass/skip/defer/accepted/tweak/offloaded, no in-flight
-//     "activeWorkflow":"phase3fix", and
+//     pass/skip/defer/accepted/offloaded, or "tweak" with a non-empty "offload"
+//     field (dev-ship/references/phase-3-manual-finalize.md § Findings ledger +
+//     routing's inline-fix path always flips "tweak" to "pass" before this point,
+//     so a bare unflipped "tweak" here means the item was never actually resolved),
+//     no in-flight "activeWorkflow":"phase3fix", and
 //     any fixPlan's dispatch is complete)               → "phase3-completion"
 //   - phase is "PHASE 3" with open manual work          → "phase3-manual"
 //   - phase is "PHASE 4"                                → "phase4"
@@ -325,11 +328,18 @@ if (cmd === "init") {
   const manualLedgerResolved = () => {
     if (manualItems.length === 0) return false;
     if (cur.activeWorkflow === "phase3fix") return false;
-    const allResolved = manualItems.every((i) =>
-      ["pass", "skip", "defer", "accepted", "tweak", "offloaded"].includes(
-        i && i.verdict,
-      ),
-    );
+    const allResolved = manualItems.every((i) => {
+      if (!i) return false;
+      // A "tweak" verdict only resolves once it's been offloaded (carries
+      // "offload") — the inline-fix path flips it to "pass" instead of
+      // leaving it as "tweak", so a bare "tweak" here means neither
+      // happened yet (dev-ship/references/phase-3-manual-finalize.md
+      // § Verdict-flip rule).
+      if (i.verdict === "tweak") return Boolean(i.offload);
+      return ["pass", "skip", "defer", "accepted", "offloaded"].includes(
+        i.verdict,
+      );
+    });
     if (!allResolved) return false;
     if (
       manual.fixPlan &&

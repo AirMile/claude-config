@@ -156,10 +156,11 @@ Rewrite the live signal **with** `waiting: "playtest"`. Re-launch the game windo
 new interview close; that only runs once per full walkthrough).
 
 - **Pass** → update `playtest.items[].verdict` to `"pass"`; done with this item.
-- **Trivial nitpick surfaces, and it's the only thing still open this round** (cosmetic MEASURABLE,
-  obvious — a nitpick riding along with a real failing item does **not** get the free-standing loop,
-  it falls through to the Still-failing bullet below like any other finding this round) → an inline
-  **polish loop**, capped at 3 attempts (mirrors `dev-verify/references/fix-loop.md`'s own max-3
+- **Trivial nitpick surfaces, and no other open finding this round is failing** (cosmetic
+  MEASURABLE, obvious — a nitpick riding along with another nitpick now shares this loop, one
+  instance per finding — a nitpick riding along with a real failing item does **not** get the
+  free-standing loop, it falls through to the Still-failing bullet below like any other finding this
+  round) → an inline **polish loop**, capped at 3 attempts (mirrors `dev-verify/references/fix-loop.md`'s own max-3
   precedent, and `shared/DEBUG-LADDER.md`'s hard rule that a failed round is proof the working
   hypothesis was wrong — don't keep retrying blind past the cap): no gate, no plan mode, apply live,
   reload, ask the user to confirm. After each attempt, patch the item's `tweakAttempts` (increment,
@@ -198,8 +199,20 @@ new interview close; that only runs once per full walkthrough).
      items in the ledger are unaffected and keep progressing normally.
   4. **"Defer to backlog todo"** — offered **only** when every open finding in this round is
      `tweak`-class (never when any is `fail` — see the Fail-never-to-todo policy in
-     `phase-3-playtest.md § Findings ledger + routing`): route each remaining finding to
-     `/project-todo`, then proceed to the regression re-check and completion on the verified scope.
+     `phase-3-playtest.md § Findings ledger + routing`): for each remaining finding, first judge its
+     projected scope against `shared/TWEAK-DISCIPLINE.md § Size gate` criteria 1-4 (same judgment,
+     same default-to-fastpath-on-a-close-call rule as
+     `dev-ship/references/phase-3-manual-finalize.md § Offload flush` — criteria 5-6 don't apply
+     pre-offload). **Within the gate** → route to `/project-todo` with no explicit type hint (plain
+     inference lands on `POLISH`, same as a hand-typed "polish/juice/feel" description), patch
+     `offload: "{card-name}"`, verdict stays `"tweak"`. **Exceeding the gate** → route to
+     `/project-todo` naming the reason
+     (`"{observed} → {expected}, parked from /game-ship playtest round (exceeds tweak size gate: {criterion})"`;
+     inference then lands on `SYSTEM`/`MECHANIC`/`CONTENT` instead of `POLISH`),
+     patch `offload: "{card-name}"`, verdict `"offloaded"` — a different card type and terminal
+     verdict from the in-gate case (an out-of-scope-defect split-off is the third case that also
+     lands on `"offloaded"`, per `shared/FEEDBACK-CATEGORIZATION.md § Scope check`). Either way,
+     proceed to the regression re-check and completion on the verified scope.
 
   **`failedRounds == 2`:** same four options, but option 3 ("Escalate — debug round") is now the
   **recommended** one — do not keep offering a plain repeat round as the default once a round has

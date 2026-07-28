@@ -42,8 +42,8 @@ handle each via its own highest-matching bullet):
    `fix-round.md § Dispatch` and relaunch `ship-fix.js` with `resume` built from `manual.dispatch`
    (cross-session) or `resumeFromRunId` (same session, per `shared/SHIP-RESUME.md`).
 6. **`manual.fixPlan` present, dispatch complete (`manual.dispatch.allFixed` or all groups
-   terminal), and ≥1 item from that round has no `verdict: "pass"` or `"accepted"` yet and no
-   `debugTier` set** →
+   terminal), and ≥1 item from that round has no `verdict: "pass"`, `"accepted"`, or `"offloaded"`
+   yet and no `debugTier` set** →
    go to `fix-round.md § Re-check` for those still-open items (checks 1–3 already claimed any item
    that re-check has already escalated on a prior pass — this bullet only fires for the ones it
    hasn't reached yet).
@@ -166,40 +166,103 @@ You are still inside the walkthrough's plan mode here — this routing decision 
 `ExitPlanMode` closes it. Route on the accumulated in-memory ledger (`manual.items` + any
 interview-close findings):
 
-| Ledger state                                                                             | Route                                                                                                                                                                                                                     |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No Fail/Tweak findings (all Pass, or only Skip/Defer)                                    | `ExitPlanMode` now (short summary, e.g. "all N items pass — {k} unproven" when any evidence-class Pass carries `evidence: "none"`; omit when k = 0) → batch-persist (walkthrough § Step E) → Regression re-check → Step 3 |
-| ≤2 findings, all MEASURABLE, cosmetic, obvious fix (styling/timing/copy)                 | `ExitPlanMode` now → batch-persist → **Inline fix now** (below) → Regression → Step 3                                                                                                                                     |
-| No Fail finding, and the remaining Tweak findings don't qualify for the inline row above | `ExitPlanMode` now → batch-persist → **Offload flush** (below) → Regression → Step 3                                                                                                                                      |
-| Anything else (any Fail finding present, mixed with or without Tweak findings)           | Stay in plan mode — Read `fix-round.md` and run the round gate; **its** `ExitPlanMode` (presenting interview outcome + fix plan together) closes this walkthrough's plan mode                                             |
+| Ledger state                                                                                                       | Route                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No Fail/Tweak findings (all Pass, or only Skip/Defer)                                                              | `ExitPlanMode` now (short summary, e.g. "all N items pass — {k} unproven" when any evidence-class Pass carries `evidence: "none"`; omit when k = 0) → batch-persist (walkthrough § Step E) → Regression re-check → Step 3 |
+| No Fail finding, and ≥1 remaining Tweak finding is DEBUG-LADDER tier 1 (symptom + cause both visible) and in-scope | `ExitPlanMode` now → batch-persist → **Offload flush** (below) for any non-qualifying findings, then **Inline fix now** (below) for the qualifying findings (cap 3) → Regression → Step 3                                 |
+| No Fail finding, and no remaining Tweak finding qualifies for the inline band above                                | `ExitPlanMode` now → batch-persist → **Offload flush** (below) → Regression → Step 3                                                                                                                                      |
+| Anything else (any Fail finding present, mixed with or without Tweak findings)                                     | Stay in plan mode — Read `fix-round.md` and run the round gate; **its** `ExitPlanMode` (presenting interview outcome + fix plan together) closes this walkthrough's plan mode                                             |
 
-**Inline-fix path (skip-gate case)** — mirrors `dev-verify/references/fix-loop.md § Plan-mode gate`'s
-skip-silently condition: fix each finding directly in the main chat (the app is already running),
-Read `shared/DEBUG-LADDER.md` and apply tier 1 (symptom + cause both visible, ≤1-2 files). If the fix
-touches typed code, run the project's typecheck command on the touched file(s) before reloading — a
-live "it looks right" confirm from the user cannot catch a type error the dev server silently
-tolerates. Then reload, let the user confirm live. **If the fixed finding carries `verdict: "tweak"`,
-flip it to `verdict: "pass"` in the same batch-persist** — see the verdict-flip rule in § Offload
-flush below; a lingering `"tweak"` verdict on an item that was fixed in-ship (not offloaded) would
-let `ship-checkpoint.js route` count it as resolved when nothing actually verified it as such. No
-round bookkeeping — this is the common trivial case and should stay friction-free (plan mode itself
-already closed by the table above).
+**Inline fix now** — for each qualifying finding (DEBUG-LADDER tier 1, in-scope, within the cap):
+fix it directly in the main chat (the app is already running), Read `shared/DEBUG-LADDER.md` and
+apply tier 1 (symptom + cause both visible, ≤1-2 files). If the fix touches typed code, run the
+project's typecheck command on the touched file(s) before reloading — a live "it looks right"
+confirm from the user cannot catch a type error the dev server silently tolerates. Then reload, let
+the user confirm live.
 
-**Offload flush** — this is the default outcome for tweak-class findings now: the ship stays
-raw-functionality only, improvements ride `/dev-tweak` later. For each tweak finding in this ledger
-state, invoke `/project-todo` with one sentence: `"{observed} → {expected}, type TWEAK, depends on
-{feature}, parked from /dev-ship manual round"` — batch at most 3 items per invocation
-(`project-todo/SKILL.md § PHASE 0` step 3's own multi-item split cap). After each card is created,
-upsert the matching ledger item — `node ~/.claude/scripts/ship-checkpoint.js item {feature} manual`
-— with `offload: "{card-name}"` (this write happens outside plan mode, right after the
-`ExitPlanMode` that closed this routing decision). `shared/TWEAK-DISCIPLINE.md § Card pickup`
-documents how `/dev-tweak {card-name}` later picks these up.
+This path carries the same **polish-loop cap** as `fix-round.md § Re-check`'s cosmetic-tweak
+bullet — capped at 3 attempts per finding, no round-gate, no plan-mode fix-plan design: after each
+attempt, patch the ledger item's `tweakAttempts` (increment, starts at 1) via `ship-checkpoint.js
+item {feature} manual` — durable record that a fix is in progress, not a park (`debugTier` stays
+unset). On a resume landing back on this item, read the existing `tweakAttempts` first and continue
+counting — never reset to 1, or a crash/`/clear` becomes a way to dodge the cap.
 
-**Verdict-flip rule (must-follow).** `ship-checkpoint.js route` counts a `"tweak"` verdict as
-resolved — offloading is what makes that true (the item was handed off, not dropped). The
-**inline-fix path above is the one exception**: it also carries a `"tweak"` verdict but fixes the
-item in-ship rather than offloading it, so that path must flip its verdict to `"pass"` once the live
-re-check confirms the fix (stated again there — do not skip it just because it's also stated here).
+- **Satisfied at attempt ≤3** → clear `tweakAttempts`, **flip `verdict` to `"pass"` in the same
+  batch-persist** — see the verdict-flip rule in § Offload flush below; a lingering `"tweak"`
+  verdict on an item fixed in-ship (not offloaded) would leave `route` unable to resolve it, since
+  it never gets an `offload` field either.
+- **Turns out to need real investigation mid-loop** (reading library internals, forming a
+  root-cause hypothesis, more than a live style tweak) — re-file it as a fail-class finding
+  immediately and drop out of this loop into `fix-round.md`'s one-attempt-then-ask path, even if
+  `tweakAttempts` hasn't hit 3 yet. This is evidence the tier-1 classification was wrong, not a
+  reason to keep guessing.
+- **Still not right after 3 attempts** → stop looping. `AskUserQuestion` — header: "Tweak not
+  converging", same choice as `fix-round.md § Re-check`'s ladder:
+  1. **"Escalate to root-cause analysis (Recommended)"** → clear `tweakAttempts`, handle exactly as
+     the fail-class park (`fix-round.md`'s Otherwise bullet).
+  2. **"Accept anyway"** → clear `tweakAttempts`, `verdict: "accepted"`, done.
+
+No round bookkeeping beyond `tweakAttempts` — this stays the friction-free path for genuinely small,
+in-scope work (plan mode itself already closed by the table above).
+
+**Offload flush** — the outcome for tweak-class findings that don't qualify for the inline band
+above: for those findings the ship stays raw-functionality only, improvements ride `/dev-tweak`
+later. Three variants share this section, all ending in the same upsert.
+
+**Ordering (normative when reached from the partition row above): this flush runs to completion —
+every card created, every ledger item's `offload` field written — before the first inline `Edit` of
+this routing pass.** This bounds a crash mid-pass to a distinguishable state: an offloaded item
+always carries `offload` before any inline item carries a verdict at all (see the verdict-flip rule
+below). **Resume idempotency**: an item that already carries an `offload` field on this pass was
+already flushed — skip it rather than re-invoking `/project-todo`, or a resumed run mints a
+duplicate card.
+
+- **Tweak-class finding, within the tweak size gate.** Before invoking `/project-todo`, judge the
+  finding's projected scope against `shared/TWEAK-DISCIPLINE.md § Size gate` criteria 1-4 (net-new
+  surface, >3 files, new test surface, architecture — criteria 5-6 don't apply here: 5 is a
+  `/dev-tweak` intake-time backlog-guard check, 6 is fail-class and never reaches offload). You have
+  the worktree open and just wrote the code, so this is a judgment call on what you already know, not
+  new analysis — no `AskUserQuestion`, same zero-modal principle
+  `project-todo/references/inference-rules.md` states for its own gate. **Default to TWEAK when
+  it's a close call**: the cost
+  is asymmetric — overestimating just runs one extra ship later (the user can always retype it
+  straight to `/dev-tweak` too), underestimating burns the round-trip described in this file's own
+  design notes (a `/dev-tweak` session that immediately re-escalates to `/dev-ship`). Only a clear
+  gate hit routes the other way. **Within the gate** → invoke `/project-todo` with one sentence:
+  `"{observed} → {expected}, type TWEAK, depends on {feature}, parked from /dev-ship manual round"`
+  — batch at most 3 items per invocation (`project-todo/SKILL.md § PHASE 0` step 3's own multi-item
+  split cap). Ledger verdict stays `"tweak"`.
+- **Tweak-class finding, exceeding the tweak size gate.** Same finding, but the judgment above hit a
+  clear criterion. Invoke `/project-todo` with **no** explicit `type` hint — normal inference then
+  lands on `CHANGE` ("now does X, should do Y") or `FEATURE` as the default — and name the reason in
+  the sentence:
+  `"{observed} → {expected}, parked from /dev-ship manual round (exceeds tweak size gate: {criterion})"`.
+  Ledger verdict is `"offloaded"`, not `"tweak"` — this finding is headed for
+  the ordinary pipeline, same as the out-of-scope case below, even though it originated as an
+  in-scope tweak-class judgment.
+- **Out-of-scope defect finding** (`shared/FEEDBACK-CATEGORIZATION.md § Scope check`,
+  `manual-interview-walkthrough.md § Step D`, `fix-round.md`'s scope-check bullet). Invoke
+  `/project-todo` with normal type inference (no explicit `type` hint — this is a real defect, not
+  an improvement, so it lands on `BUG`), same batching cap. Patch the ledger item's verdict to
+  `"offloaded"` instead of `"tweak"` — it is a different card type and a different terminal verdict
+  from the tweak case above, even though the write mechanics are identical.
+
+After each card is created (any variant), upsert the matching ledger item — `node
+~/.claude/scripts/ship-checkpoint.js item {feature} manual` — with `offload: "{card-name}"` (this
+write happens outside plan mode, right after the `ExitPlanMode` that closed this routing decision).
+`shared/TWEAK-DISCIPLINE.md § Card pickup` documents how `/dev-tweak {card-name}` later picks up a
+TWEAK card; a plain `BUG`/`CHANGE`/feature card instead re-enters the ordinary backlog track and gets
+picked up by a future `/dev-ship {card-name}` run.
+
+**Verdict-flip rule (must-follow).** `ship-checkpoint.js route` counts `"offloaded"` verdicts as
+resolved, and a `"tweak"` verdict as resolved **only when the item also carries an `offload` field**
+(`scripts/ship-checkpoint.js`'s `manualLedgerResolved`) — offloading is what makes either true (the
+item was handed off, not dropped). The **Inline fix now path above is the one exception**: it also
+starts as a `"tweak"` verdict but fixes the item in-ship rather than offloading it, so that path
+must flip its verdict to `"pass"` once the live re-check confirms the fix (stated again there — do
+not skip it just because it's also stated here). A `"tweak"` verdict that ends up with neither a
+`"pass"` flip nor an `offload` field is a bug, not an edge case: `route` keeps the ledger open until
+one of the two happens.
 
 **Otherwise** → Read `.claude/skills/dev-ship/references/fix-round.md` and follow it: the
 hoisted-bookkeeping + round-level plan-mode fix-plan gate (Opus designs the fix, in the **same**
@@ -213,9 +276,17 @@ instead of here.
 
 **Policy — a `fail` finding never leaves the ship via a backlog todo.** It is fixed, parked (the
 checkpoint stays open, the feature stays non-DONE — see `fix-round.md § Re-check`'s park option), or
-escalated via the debug ladder. Tweak findings and net-new capability (walkthrough Step F) default to
-`/project-todo` offload (as `type TWEAK` for tweaks) — the ship then finalizes normally and
-**refactor runs as usual** (no deferral). `Skip`/`Defer` outcomes never block finalize either — they
+escalated via the debug ladder. Tweak findings that qualify for the inline band above (DEBUG-LADDER
+tier 1, in-scope, within the cap) are fixed in-ship instead of offloaded. Everything else — tweak
+findings outside that band, out-of-scope defects split off by the Scope check
+(`shared/FEEDBACK-CATEGORIZATION.md § Scope check`), and net-new capability (walkthrough Step F) —
+defaults to `/project-todo` offload — `type TWEAK` only for a tweak that also fits
+`shared/TWEAK-DISCIPLINE.md § Size gate` (ledger verdict `"tweak"`); plain inference
+(`CHANGE`/`FEATURE`) for a tweak that exceeds it or an out-of-scope defect (→ `BUG`), both ledger
+verdict `"offloaded"`. Net-new capability (Step F) never enters the ledger at all — no verdict field
+applies — and also carries no `TWEAK` hint, since it is size-gate criterion 1 by definition. The
+ship then finalizes normally and **refactor runs as usual** (no deferral). `Skip`/`Defer`
+outcomes never block finalize either — they
 are recorded (deferred items stay open for a later re-test), and the flow continues regardless of how
 many are open; remember that Defer is for external blockers only (walkthrough Step C) — a `fail` is
 never disguised as a Defer to get it out of the way. Unproven passes (an evidence-class Pass with
@@ -228,24 +299,30 @@ If **any** PHASE 3 fix or tweak touched code, run the FULL test suite **plus a t
 (the project's own commands, e.g. `tsc --noEmit` + the linter) once before Step 3. Skip only when
 nothing was changed in this phase (all items passed first time). Plan mode is not active here.
 
-> **Todo**: dispatch the fork below first. Fall back to inline `run_in_background` only when the
-> fork dispatch itself errors — running the suite inline by default defeats the reason this section
+> **Todo**: dispatch the fresh agent below first. Fall back to inline `run_in_background` only when
+> the dispatch itself errors — running the suite inline by default defeats the reason this section
 > exists (keeping the raw test/typecheck/lint output out of the main-chat context).
 
-**Primary — fork dispatch** (`shared/SKILL-PATTERNS.md § Fork Delegation`): dispatch one fork — it
-knows from context which fixes were just made. **Scope this prompt explicitly**: the fork's ONLY job
-is to run the suite + typecheck/lint and return a digest — it must NOT act on the result, continue
-the ship (PHASE 3 completion, PHASE 4 refactor/finalize, merges), or call the Workflow tool, even
-though it inherits full conversation context and technically could. State this negative boundary in
-the fork's prompt itself, not just here. **State this too**: run each command as a blocking,
-foreground Bash call inside the fork — never `run_in_background` — and the fork's final answer must
-be the actual digest, not a "still running" status; a fork that reports it kicked off a background
-process instead of returning results has failed the task, not completed it. It returns ONLY a
-compact digest: overall pass/fail, typecheck/lint pass/fail, and on any fail, each NEW failure
-relative to the known state (test name + first error line). End the turn, wake on its notification —
-do not resume the fork with follow-up instructions that could restart it mid-pipeline; if the digest
-is incomplete or wrong, re-dispatch a fresh fork instead. **Fallback:** run the suite +
-typecheck/lint inline via `run_in_background` Bash and read only the failure tail, not the full log.
+**Primary — fresh-agent dispatch, never a fork** (`shared/SKILL-PATTERNS.md § Fork Delegation`'s own
+decision rule: this task's context is "cheaply re-statable as paths/fields," not conversation-
+load-bearing, so it routes to a fresh agent, not a fork). Dispatch one fresh (non-fork)
+`general-purpose` agent with a short, self-contained prompt: the worktree path, and one sentence on
+what just changed (from the checkpoint/commit, not the live interview — state it as a fact, don't ask
+the agent to infer it). **A fresh agent starts with zero conversation history**, so unlike a fork it
+structurally cannot read this skill's own "Step 3 hands off to `orchestration.md § 5` — continue
+there" language or any other pipeline-continuation instruction — isolation is the defense, not just
+the prompt. **Still scope the prompt explicitly** (defense in depth): the agent's ONLY job is to run
+the suite + typecheck/lint and return a digest — it must NOT act on the result, continue the ship, or
+call the Workflow tool. **State this too**: run each command as a blocking, foreground Bash call —
+never `run_in_background` — and the agent's final answer must be the actual digest, not a "still
+running" status; an agent that reports it kicked off a background process instead of returning
+results has failed the task, not completed it. It returns ONLY a compact digest: overall pass/fail,
+typecheck/lint pass/fail, and on any fail, each NEW failure relative to the known state (test name +
+first error line). End the turn, wake on its notification — do not resume the agent with follow-up
+instructions that could restart it mid-pipeline; if the digest is incomplete or wrong, re-dispatch a
+fresh (non-fork) agent instead — never escalate to a fork on retry, and never assume a second attempt
+is inherently safer than the first. **Fallback:** run the suite + typecheck/lint inline via
+`run_in_background` Bash and read only the failure tail, not the full log.
 
 New failures → back into the fix routing above (ladder escalation applies); clean → proceed to
 Step 3.
@@ -279,7 +356,9 @@ All AUTO passed (AGENT 2) and no open manual FAIL → complete (but do **not** i
 
 1. **Known-issue payload**: scan `checkpoint.manual.items[]` for every item with
    `verdict: "accepted"` or `verdict: "deferred"` and map each to
-   `{ id, title, verdict, reason, source: "ship-ledger" }` — `reason` is a short synthesis of the
+   `{ id, title, verdict, reason, source: "ship-ledger" }` (an `"offloaded"` item is deliberately
+   **not** included here — the backlog card it was handed to is its trace, not this payload) —
+   `reason` is a short synthesis of the
    item's `expected`/`lightRoundNotes`/context (same free-text judgment already used for
    `fixSync`/`observations`). When a `deferred` item's reason names an existing backlog card (e.g.
    the blocking limitation already has its own TWEAK card), also set `blocker: "{card-name}"` on

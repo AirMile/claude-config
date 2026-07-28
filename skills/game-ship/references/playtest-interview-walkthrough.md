@@ -114,7 +114,10 @@ fixing:
   item now (next sequential `PT-N` id) via the same `ship-checkpoint.js item {feature} playtest`
   upsert Step E already uses — in-scope stays a blocking fail, out-of-scope routes to
   `/project-todo` per the Fail-never-to-todo policy's net-new-capability carve-out
-  (`phase-3-playtest.md § Findings ledger + routing`).
+  (`phase-3-playtest.md § Findings ledger + routing`), then the same upsert patches that item's own
+  verdict to `"offloaded"` + `offload: "{card-name}"` (same vocabulary as `dev-ship`'s ledger,
+  `shared/SHIP-CHECKPOINT.md`) so Step 3's "no open playtest FAIL" check doesn't read it as still
+  blocking.
 
 Record the category (TESTABLE / MEASURABLE) alongside the finding. Then move to the next item — the
 fix routing lives in `phase-3-playtest.md § Findings ledger + routing`, not here.
@@ -151,10 +154,14 @@ add; tell them to close the game once this closes.
 - **In-theme tuning** (a value, timing, feel, or feedback of something already built) → a new ledger
   finding, `verdict: "tweak"` (or `"fail"` if it turns out a criterion was genuinely not met),
   `source: "interview"`. Add it to the in-memory collection (Step E) — it persists in the same batch
-  write.
+  write. The offload's own size-gate judgment (`fix-round.md`'s "Defer to backlog todo" option) still
+  applies once this reaches offload — a "tweak" that turns out to exceed the gate flips to
+  `"offloaded"` there, not here.
 - **Net-new mechanic/scope** (not in `remainingManualItems`) → keep it out of the ledger entirely.
   Either fold it into the fix round only if it is small and clearly in-theme (the round-gate
-  decides), or route it to `/project-todo` and finish the ship on the verified scope.
+  decides), or route it to `/project-todo` and finish the ship on the verified scope. Net-new scope
+  **is** `shared/TWEAK-DISCIPLINE.md § Size gate` criterion 1 by definition, so it never carries a
+  `type POLISH` hint — plain inference applies.
 
 ## Step G — Return
 
