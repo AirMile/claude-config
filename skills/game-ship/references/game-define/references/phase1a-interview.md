@@ -102,7 +102,7 @@ Follow the escalation ladder in `shared/QUESTIONING.md § Escalation Ladder`, ap
 
 **In the closing summary**: if ≥1 dimension is unresolved, name it explicitly:
 
-> "The {X} dimension is still open — I'll cover that in the synthesis phase with a best-guess approach. Does that work?"
+> "The {X} dimension is still open — I'll cover that in the synthesis phase with a best-guess approach, and flag it for review at the gate."
 
 **In PHASE 1b**: treat each `unresolved` dimension as a gap to fill via a structured design choice (AskUserQuestion with options), not via another open question.
 

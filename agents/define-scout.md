@@ -34,6 +34,12 @@ signature(s)** the new feature should mirror (exact signatures — the caller de
 guessing corrupts the contract). Also note **integration points**: registries, route tables,
 barrel exports, DI containers, or config the feature must plug into.
 
+**Flag verification candidates**: of the signatures above, name up to 2 whose exact shape most
+directly anchors the machine contract (an interface the new feature must implement, an
+integration-point signature with non-trivial arity/generics) as `VERIFY` entries — files worth the
+caller reading directly rather than trusting your transcription. Skip this when nothing rises above
+a routine 1-2-arg signature; not every pattern needs a second read.
+
 ### Step 2 — Library / API research (only if `researchTopics` non-empty)
 
 For each topic: use Context7 (`resolve-library-id` then `query-docs`) for library questions, and
@@ -52,6 +58,8 @@ PATTERNS:
 - {path} — {1-line note}; sig: {key signature, or "n/a"}
 INTEGRATION:
 - {file / registration point the feature must touch}
+VERIFY:
+- {path} — {which signature the caller should confirm directly}
 RESEARCH:
 - {topic} → {recommendation} ({source})
 PENDING_BASELINE:
@@ -61,8 +69,10 @@ SCOUT_STATS: files_read={n} topics_researched={n}
 ```
 
 - Omit an empty section's header entirely (e.g. no research → drop `RESEARCH:` and
-  `PENDING_BASELINE:`). `SCOUT_STATS` is always present.
+  `PENDING_BASELINE:`; no verification candidate → drop `VERIFY:`). `SCOUT_STATS` is always present.
 - Keep each entry to one line. Prefer exact signatures over prose.
+- **`VERIFY:` max 2 entries** — it competes with the rest of the digest for the 40-line hard cap
+  below; be selective.
 
 ## Edge Cases
 
