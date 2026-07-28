@@ -33,6 +33,16 @@ Announce strategic direction (which path, which file, which trade-off) before ac
 - Be concise — explaining is not the same as being verbose
 - Calibrate jargon, analogies, and detail depth to `User Preferences → Explanation Level:` — see `skills/shared/EXPLANATION.md`
 
+## Output Readability
+
+Terminal output must stay scannable at any window width:
+
+- Lead with the outcome; details after.
+- Short markdown bullets (max 1-2 sentences each); prose paragraphs max 3 sentences — never full-width prose walls.
+- Reports and status summaries: fenced code blocks, max 72 chars wide (fenced blocks don't reflow in the terminal; prose does).
+- No mid-turn recaps, no echoing file/tool output back, no verbose completion confirmations.
+- Skill report grammar: `skills/shared/OUTPUT.md`.
+
 ## Language Policy
 
 - Skill files and agent definitions: written in English (hard rule, no exceptions)

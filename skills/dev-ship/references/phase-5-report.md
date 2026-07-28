@@ -42,29 +42,54 @@ and log one line instead. Otherwise push to `backlog.json#data.features[]`:
 
 Then patch `backlogTodo: "security-{feature}"` into the ship-triage file.
 
-Print the ship summary (ASCII table): feature, build test counts, verify results, manual outcomes,
-refactor result, security findings (if any), second-opinion consults, and the collected
-`autoDecisions[]` (choices the agents auto-made in non-interactive mode) for your review. All
-fields come from the checkpoint's `results` (and, on the manual path, the in-context PHASE 3
-walkthrough). The `unproven` count below comes from `manual.items[].evidence === "none"` — the
-same soft-gate signal the walkthrough's own routing summary already surfaces
-(`phase-3-manual-finalize.md § Findings ledger + routing`); repeat it here so it isn't dropped
-between the two points the policy requires it at.
+Print the ship summary (format: `shared/OUTPUT.md § Report Block`, max 72 chars per line —
+the template below conforms; wrap filled-in values rather than running long): feature, build
+test counts, verify results, manual outcomes, refactor result, security findings (if any),
+second-opinion consults, and the collected `autoDecisions[]` (choices the agents auto-made in
+non-interactive mode) for your review. All fields come from the checkpoint's `results` (and,
+on the manual path, the in-context PHASE 3 walkthrough).
+
+**Deviations** — distinct from `autoDecisions[]` (in-spec judgment calls the agents made where
+the skill left a choice open): a deviation is anywhere the main chat itself did something the
+skill prescribes differently — an AskUserQuestion gate bypassed, a step executed weaker than
+written, a recovery procedure improvised because none was documented. Track these as they
+happen through PHASE 1-4 and list them here; omit the `Deviations:` block entirely when none
+occurred.
 
 ```
 SHIP COMPLETE: {feature}
 ========================
-Plan:     auto-derived → lenses {refactorLenses} · security {securityDeep or "none"}
+Plan:     auto-derived → lenses {refactorLenses}
+          · security {securityDeep or "none"}
 Build:    {passed}/{total} PASS
-Verify:   AUTO {n} PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}/{accepted}){" · {k} unproven" when any evidence-class Pass carries evidence:"none"; omit when k=0} · {rounds} fix round(s){, plus {N} debug-ladder escalation(s) if this run used debug-round.md/debug-round-heavy.md — the two counters don't compose into one number}
-Refactor: {lenses applied} · {techniques} applied ({reverted} reverted)
-Security: {triage: {confirmed} confirmed · {dismissed} dismissed → persisted + todo security-{feature}, or just persisted if below the auto-todo threshold, or "not run"}
-Consult:  {none | "{context}: consulted ({trigger})" | "{context}: declined" | "{context}: unavailable"}
+Verify:   AUTO {n} PASS · MANUAL {n}
+          ({pass}/{fail}/{tweak}/{skip}/{defer}/{accepted})
+          {" · {k} unproven" when any evidence-class Pass carries
+          evidence:"none"; omit when k=0}
+          · {rounds} fix round(s) · {debug escalation count}
+Refactor: {lenses applied} · {techniques} applied
+          ({reverted} reverted)
+Security: {confirmed} confirmed · {dismissed} dismissed {suffix}
+Consult:  {context}: consulted ({trigger}) {suffix}
 Merged:   {yes → main | no → {reason}}
 
 Auto-decisions ({N}):
 - {agent}: {decision} → chose {choice}
+
+Deviations ({N} — omit block when N=0):
+- {what the skill prescribed} → {what actually happened} ({location})
 ```
+
+Value notes (keep out of the fence per `shared/OUTPUT.md § Report Block`): the `unproven`
+count comes from `manual.items[].evidence === "none"` — the same soft-gate signal the
+walkthrough's own routing summary already surfaces (`phase-3-manual-finalize.md § Findings
+ledger + routing`); repeat it here so it isn't dropped between the two points the policy
+requires it at. The debug escalation count appears only when this run used
+`debug-round.md`/`debug-round-heavy.md` — fix rounds and debug escalations are separate
+counters that don't compose into one number.
+`Security:` takes suffix `→ persisted + todo security-{feature}` when the auto-todo fired,
+`→ persisted` when below the threshold, or reads `not run`. `Consult:` takes suffix
+`→ revised` when the consult changed an outcome, or reads `none` / `{context}: unavailable`.
 
 Then print a `Next steps:` numbered block — markdown, **after** the fence so `/commands`
 stay clickable (`shared/SKILL-PATTERNS.md § Next Steps`). Success path: `1. /project-plan —
