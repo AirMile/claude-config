@@ -133,11 +133,12 @@ everywhere above:
    description" as the last option.
 
    **Card mode**: the card's `description` becomes the tweak's working description (the invocation arg
-   was only the lookup key). **Dependency check**: any `dependencies[]` entry not yet
-   `shipped`/`DONE` → warn: _"parent feature `{dep}` not shipped yet — this tweak may target code
-   that isn't on `main`."_ One `AskUserQuestion`: proceed anyway (recommended when the dependency is
-   nearly done or the overlap is small) / abort. No warn when `dependencies` is empty or every entry
-   already resolved.
+   was only the lookup key). **Dependency check**: any `dependencies[]` entry not yet complete per
+   `shared/BACKLOG.md § Completion & dependency resolution` (`shipped`, not plain `status ===
+"DONE"` — `DONE` lands right after verify, before the dependency is merged) → warn: _"parent
+   feature `{dep}` not shipped yet — this tweak may target code that isn't on `main`."_ One
+   `AskUserQuestion`: proceed anyway (recommended when the dependency is nearly done or the overlap
+   is small) / abort. No warn when `dependencies` is empty or every entry already resolved.
 
    **Stale card**: if the calling skill's PHASE 1 (locate) shows the described defect is already
    resolved — a later commit fixed it, or it never applied — there is nothing to edit. Do **not**

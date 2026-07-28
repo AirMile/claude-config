@@ -946,6 +946,62 @@ fi
 
 rm -rf "$LWT"
 
+# --- backlog-load.js ---
+# Verifies the ready/blocking dependency predicate from shared/BACKLOG.md
+# § Completion & dependency resolution: a dependency clears at `shipped`,
+# never at plain `status === "DONE"` alone (DONE lands right after verify,
+# before the dependency is merged) — with a THEME/DONE backward-compat
+# clause, and archived (shipped + moved out of features[]) dependencies
+# resolving the same as live ones.
+BL="$ROOT/scripts/backlog-load.js"
+BLT=$(mktemp -d)
+mkdir -p "$BLT/.project/archive"
+cat > "$BLT/.project/backlog.json" <<'EOF'
+{
+  "schemaVersion": 2,
+  "project": "backlog-load-test",
+  "features": [
+    { "name": "blocker-done-not-shipped", "type": "FEATURE", "status": "DONE" },
+    { "name": "blocker-shipped", "type": "FEATURE", "status": "DONE", "shipped": true },
+    { "name": "blocker-theme-done", "type": "THEME", "status": "DONE" },
+    { "name": "dep-a", "type": "FEATURE", "status": "DEFINED", "dependencies": ["blocker-done-not-shipped"] },
+    { "name": "dep-b", "type": "FEATURE", "status": "DEFINED", "dependencies": ["blocker-shipped"] },
+    { "name": "dep-c", "type": "FEATURE", "status": "DEFINED", "dependencies": ["blocker-archived"] },
+    { "name": "dep-d", "type": "FEATURE", "status": "DEFINED", "dependencies": ["blocker-theme-done"] },
+    { "name": "dep-e", "type": "FEATURE", "status": "DEFINED", "dependencies": ["unknown-name"] }
+  ]
+}
+EOF
+cat > "$BLT/.project/archive/backlog-archive.json" <<'EOF'
+{ "schemaVersion": 2, "archived": [
+  { "name": "blocker-archived", "type": "FEATURE", "status": "DONE", "shipped": true }
+] }
+EOF
+
+BL_READY=$(node "$BL" "$BLT" ready-queue)
+BL_CHECK=$(echo "$BL_READY" | node -e '
+const r = JSON.parse(require("fs").readFileSync(0));
+const ready = (name) => { const it = r.items.find((i) => i.name === name); return it ? String(it.ready) : "missing"; };
+process.stdout.write([
+  ready("dep-a"), ready("dep-b"), ready("dep-c"), ready("dep-d"), ready("dep-e"),
+].join("|"));
+')
+if [ "$BL_CHECK" = "false|true|true|true|false" ]; then
+  echo "PASS  backlog-load: ready-queue completion predicate (DONE-not-shipped blocks, shipped/archived/THEME-DONE resolve, unknown stays blocked)"; PASS=$((PASS + 1))
+else
+  echo "FAIL  backlog-load: ready-queue completion predicate (got: $BL_CHECK, want: false|true|true|true|false)"; FAIL=$((FAIL + 1))
+fi
+
+BL_SHIPPED=$(node "$BL" "$BLT" read-feature blocker-shipped | node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(0)).shipped))')
+BL_NOT_SHIPPED=$(node "$BL" "$BLT" read-feature blocker-done-not-shipped | node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(0)).shipped))')
+if [ "$BL_SHIPPED" = "true" ] && [ "$BL_NOT_SHIPPED" = "false" ]; then
+  echo "PASS  backlog-load: read-feature always emits boolean shipped"; PASS=$((PASS + 1))
+else
+  echo "FAIL  backlog-load: read-feature shipped field (shipped=$BL_SHIPPED not-shipped=$BL_NOT_SHIPPED)"; FAIL=$((FAIL + 1))
+fi
+
+rm -rf "$BLT"
+
 # --- check-task-markers.py ---
 # Fixture units live in their own subdirs: the validator scans sibling .md files
 # per skill dir, so isolation per fixture prevents cross-contamination.

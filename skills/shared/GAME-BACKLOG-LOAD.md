@@ -30,10 +30,13 @@ node scripts/backlog-load.js <repo-root> game-queue <status> [transition]
 | game-ship refactor phase queue                | `DONE`    | `refactoring` |
 | game-debug active feature                     | `DOING`   | _(omit)_      |
 
-`ready`/`blocking` are only computed when `status === "DEFINED"` — `null` otherwise.
+`ready`/`blocking` are only computed when `status === "DEFINED"` — `null` otherwise. Each
+dependency resolves against **live + archived** features via the same completion predicate as the
+board (`shipped`, not plain `status === "DONE"` — see [BACKLOG.md § Completion & dependency
+resolution](BACKLOG.md)), so an already-shipped-and-archived dependency reads as resolved.
 
 Output: `game-read-feature` → `{ present: false }` if the store or feature is absent, else
-`{ present: true, name, type, status, stage, description, risk, dependencies, externalRef, transition, pageHint }`.
+`{ present: true, name, type, status, shipped, stage, description, risk, dependencies, externalRef, transition, pageHint }`.
 `game-queue` → `{ backlogPresent, items }` — `items` may be `[]`.
 
 Dev-pipeline equivalent: [BACKLOG-LOAD.md](BACKLOG-LOAD.md) — the dev `ready-queue` profile

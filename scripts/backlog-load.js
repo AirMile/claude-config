@@ -6,6 +6,11 @@
 // shared/GAME-BACKLOG-LOAD.md — those docs are now thin pointers to this
 // script; see them for the field-by-field rationale.
 //
+// Also reads .project/archive/backlog-archive.json (dev-track features move
+// there on ship — shared/BACKLOG.md § Archiving) so a `ready`/`blocking`
+// dependency check on an already-shipped-and-archived feature doesn't read as
+// permanently blocked (see § Completion & dependency resolution).
+//
 // NOT for mutations — status/date/transition/audit writes use the full
 // Read → mutate-in-memory → Write cycle documented in shared/BACKLOG.md.
 //
@@ -67,12 +72,47 @@ function loadBacklogData(repoRoot) {
   return null;
 }
 
+// Dev-track features are removed from backlog.json#features[] the moment
+// they ship (shared/BACKLOG.md § Archiving) — no legacy-HTML fallback here,
+// the archive file postdates that format.
+function loadArchivedFeatures(repoRoot) {
+  try {
+    const archive = JSON.parse(
+      readFileSync(
+        join(repoRoot, ".project", "archive", "backlog-archive.json"),
+        "utf8",
+      ),
+    );
+    return Array.isArray(archive?.archived) ? archive.archived : [];
+  } catch {
+    return [];
+  }
+}
+
+// shared/BACKLOG.md § Completion & dependency resolution: a card is complete
+// once `shipped === true`; THEME is a backward-compat exception (terminates
+// at `status === "DONE"`, /design-tokens never wrote `shipped` before that
+// fix landed). Mirrors backlog-template.html's isCompleted().
+function isCompleted(f) {
+  return f.shipped === true || (f.type === "THEME" && f.status === "DONE");
+}
+
+// Set of names considered complete across live + archived features — the
+// basis for every `ready`/`blocking` computation below.
+function completedNames(features, archived) {
+  const names = new Set();
+  for (const f of features) if (isCompleted(f)) names.add(f.name);
+  for (const f of archived) if (isCompleted(f)) names.add(f.name);
+  return names;
+}
+
 function emit(obj) {
   console.log(JSON.stringify(obj));
 }
 
 const data = loadBacklogData(repoRoot);
 const features = data?.features || [];
+const archivedFeatures = loadArchivedFeatures(repoRoot);
 
 switch (profile) {
   case "read-feature": {
@@ -91,6 +131,7 @@ switch (profile) {
       name: feat.name,
       type: feat.type,
       status: feat.status,
+      shipped: feat.shipped === true,
       description: feat.description || null,
       risk: feat.risk ?? null,
       dependencies: feat.dependencies || [],
@@ -110,9 +151,7 @@ switch (profile) {
       emit({ backlogPresent: false, items: [] });
       break;
     }
-    const doneNames = new Set(
-      features.filter((f) => f.status === "DONE").map((f) => f.name),
-    );
+    const doneNames = completedNames(features, archivedFeatures);
     const items = features
       .filter(
         (f) =>
@@ -142,9 +181,7 @@ switch (profile) {
       emit({ backlogPresent: false, items: [] });
       break;
     }
-    const doneNames = new Set(
-      features.filter((f) => f.status === "DONE").map((f) => f.name),
-    );
+    const doneNames = completedNames(features, archivedFeatures);
     const items = features
       .filter((f) => f.status === "DEFINED")
       .map((f) => ({
@@ -244,6 +281,7 @@ switch (profile) {
       name: feat.name,
       type: feat.type,
       status: feat.status,
+      shipped: feat.shipped === true,
       stage: feat.stage || null,
       description: feat.description || null,
       risk: feat.risk ?? null,
@@ -264,9 +302,7 @@ switch (profile) {
       emit({ backlogPresent: false, items: [] });
       break;
     }
-    const doneNames = new Set(
-      features.filter((f) => f.status === "DONE").map((f) => f.name),
-    );
+    const doneNames = completedNames(features, archivedFeatures);
     const items = features
       .filter(
         (f) =>

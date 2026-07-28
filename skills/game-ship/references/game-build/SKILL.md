@@ -197,7 +197,7 @@ TESTS: 4/15 PASS, 11 PENDING (2.1s)
    First, load the current feature's backlog entry to get its `dependencies[]`: `node ~/.claude/scripts/backlog-load.js "$REPO" game-read-feature "{feature-name}"` (see [shared/GAME-BACKLOG-LOAD.md](../shared/GAME-BACKLOG-LOAD.md)).
 
    Skip the rest of the dependency check if `blockers[]` (from feature.json) is empty AND backlog `dependencies[]` is absent or empty.
-   1. For each dependency: `node ~/.claude/scripts/backlog-load.js "$REPO" game-read-feature "{dep-name}"` — status must be `"DONE"`.
+   1. For each dependency: `node ~/.claude/scripts/backlog-load.js "$REPO" game-read-feature "{dep-name}"` — must be complete: `shipped === true`, or `type === "THEME" && status === "DONE"` (backward-compat for pre-fix THEME cards). Plain `status === "DONE"` is not enough on its own — see `shared/BACKLOG.md § Completion & dependency resolution`.
 
    2. Blockers found → **AskUserQuestion**:
       - "Stop — finish {dep} first (Recommended)" / "Continue anyway"

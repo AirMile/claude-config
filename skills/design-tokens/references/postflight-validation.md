@@ -188,10 +188,10 @@ Runs only if a backlog task was picked up in PHASE 0 step 4 (`taskName` is set �
 1. Re-read `.project/backlog.json`.
 2. Parse the JSON.
 3. Find `features[].name === taskName`.
-4. Set `status = "DONE"` and delete the `transition` field.
+4. Set `status = "DONE"`, `shipped = true`, `shippedAt = "{today, YYYY-MM-DD}"`, and delete the `transition` field. THEME has no merge step of its own, so there is no `shippedSha` and no archive move (archiving is dev-track-only — `shared/BACKLOG.md § Archiving`); the card stays in `features[]`. Writing `shipped` here (not just `status`) is what lets a THEME dependency actually clear on the board and keeps the card from sitting in the PARKED catch-all forever (`shared/BACKLOG.md § Completion & dependency resolution`).
 5. Write the updated JSON back to `.project/backlog.json` (see `shared/BACKLOG.md § Writing`).
-6. Output: `Backlog: ✓ Task "{taskName}" → DONE`.
+6. Output: `Backlog: ✓ Task "{taskName}" → DONE (shipped)`.
 
 If post-flight failed before reaching X.7: skip the write (per `shared/BACKLOG.md § Abort` — `transition` stays, user can re-copy prompt to retry).
 
-Mirror update: also set `features[].status = "DONE"` and `completedAt: "{today}"` in `.project/project.json` if a matching entry exists (convenience; `backlog.json` is the source of truth).
+Mirror update: also set `features[].status = "DONE"`, `shipped = true`, and `completedAt: "{today}"` in `.project/project.json` if a matching entry exists (convenience; `backlog.json` is the source of truth).

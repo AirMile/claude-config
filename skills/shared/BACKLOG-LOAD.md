@@ -24,10 +24,15 @@ node scripts/backlog-load.js <repo-root> <profile> [feature-name]
 Output: one JSON object per profile.
 
 - `read-feature` → `{ present: false }` if the store or the feature is absent, else
-  `{ present: true, name, type, status, description, risk, dependencies, externalRef, transition, pageHint }`.
+  `{ present: true, name, type, status, shipped, description, risk, dependencies, externalRef, transition, pageHint }`.
 - `ready-queue` / `open-items` / `guard-items` / `pages` → `{ backlogPresent, items }` — `items` may be `[]`.
   `guard-items` returns every non-CANCELLED card (all statuses and types, with `transition`/`stage`) —
   unlike `open-items`, in-pipeline cards are exactly what the tweak guard must see.
+- `ready-queue`'s `ready`/`blocking` resolve each dependency against **live +
+  archived** features, using the same completion predicate as the board (a
+  dependency clears at `shipped`, not at plain `status === "DONE"` — see
+  [BACKLOG.md § Completion & dependency resolution](BACKLOG.md)). A dependency
+  that already shipped and archived reads as resolved, not as blocking.
 
 ## Game-pipeline equivalent
 

@@ -398,14 +398,25 @@
         return null;
       }
 
-      // A dependency stops blocking once its blocker is fully done — status
-      // DONE *or* shipped. Components ship with shipped:true but never reach
-      // DONE (they ship with their consuming page), so shipped must clear the
-      // block too. Unknown deps (renamed/deleted) stay flagged.
+      // A card is complete once it is actually merged — that is `shipped: true`,
+      // written only by the refactor phase on the merge route. `status ===
+      // "DONE"` is NOT enough: it lands right after verify, while the code is
+      // still on the feature branch (see shared/BACKLOG.md § Completion &
+      // dependency resolution). THEME clause = backward compat only:
+      // /design-tokens now writes `shipped`, but cards completed before that
+      // fix have DONE and nothing else, and would otherwise block dependents
+      // and sit in the PARKED section forever.
+      function isCompleted(f) {
+        return (
+          f.shipped === true || (f.type === "THEME" && f.status === "DONE")
+        );
+      }
+
+      // A dependency stops blocking once its blocker is complete. Unknown deps
+      // (renamed/deleted) stay flagged.
       function isDepResolved(dep) {
         const found = findItem(dep);
-        if (!found) return false;
-        return found.item.shipped === true || found.item.status === "DONE";
+        return found ? isCompleted(found.item) : false;
       }
 
       function removeItem(name) {
@@ -1136,18 +1147,22 @@
         sections.forEach(renderSection);
 
         // ─── Parked section (catch-all safety net) ────────────────────
-        // Any active card that no other section claims: not shipped, not TODO
-        // (that's "To do"), not CANCELLED (that's Archived), and not currently
-        // In progress (no transition + no live signal). Reachable when a run
-        // exits without shipping — e.g. a shipped COMPONENT left at DOING, a
-        // failed /dev-ship (transition cleared, status still DEFINED/DOING/
-        // DONE), or a cancelled-then-uncancelled card. Without this net those
-        // rows would render nowhere. Copy button offers the resume command via
-        // getNextSkill (ship flow), same affordance as a To do card.
+        // Any active card that no other section claims: not complete (see
+        // isCompleted — not TODO (that's "To do"), not CANCELLED (that's
+        // Archived), and not currently In progress (no transition + no live
+        // signal). Reachable when a run exits without shipping — e.g. a
+        // shipped COMPONENT left at DOING, a failed /dev-ship (transition
+        // cleared, status still DEFINED/DOING/DONE), or a cancelled-then-
+        // uncancelled card. Without this net those rows would render nowhere.
+        // A completed card (isCompleted) must never land here — a THEME card
+        // finished before /design-tokens started writing `shipped` would
+        // otherwise sit here forever (no further transition ever moves it).
+        // Copy button offers the resume command via getNextSkill (ship flow),
+        // same affordance as a To do card.
         (function renderParkedSection() {
           let items = data.features.filter(
             (f) =>
-              !f.shipped &&
+              !isCompleted(f) &&
               f.status !== "TODO" &&
               f.status !== "CANCELLED" &&
               !isInProgress(f) &&

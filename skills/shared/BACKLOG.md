@@ -256,6 +256,32 @@ At scale, shipped features become dead weight for every backlog load (measured: 
 | `false` / missing | Waiting for next step — visible in the active section |
 | `true`            | Promoted to Dashboard — no longer visible in backlog  |
 
+## Completion & dependency resolution
+
+**A card is complete once `f.shipped === true`** — in `backlog.json#features[]` or
+in `backlog-archive.json#archived[]` (dev-track features move there on ship, see
+§ Archiving). `status === "DONE"` is **not** the same thing: for dev-track, `DONE`
+is set right after the verify phase, while the code is still on the feature
+branch in the worktree — the refactor phase and the merge both still have to
+happen. `shipped` is written only by the refactor phase, and only once the merge
+is actually going to happen (`finalizeRoute: merge`); on the halt route (open PR
+/ team mode) it lands later, once `/core-finalize` or the PR merge runs. So
+`shipped` means "merged, or merging right now" — that is the bar anything gated
+on completion should use: the **dependency chip** (`isDepResolved` /
+`isCompleted` in `backlog-template.html`), `scripts/backlog-load.js`'s
+`ready`/`blocking` computation, the dev-build/game-build dependency gates, and
+`/dev-tweak`'s dependency warning all key off `shipped`, not `status`.
+
+**Backward-compat exception:** `type === "THEME"` also counts as complete at
+`status === "DONE"` — `/design-tokens` never writes `shipped` (a THEME card has
+no merge step of its own). Cards written before `/design-tokens` started setting
+`shipped` (see `design-tokens/references/postflight-validation.md § X.7`) rely on
+this clause; without it they'd block every dependent forever and never leave the
+board's PARKED catch-all section.
+
+An unresolvable dependency name (renamed/deleted card) stays flagged as blocking
+— never treated as satisfied by absence.
+
 ### UI: dual-track swimlanes
 
 The backlog board is **ship-only**: `/dev-ship`, `/design-ship`, and `/game-ship` run the whole pipeline in one flow, so there are no intermediate resting columns. All ship-skills set `transition: "shipping"` on the feature and keep the card in the **In progress** section for the entire run; on completion they set `shipped: true`, which removes it from the board. Track pills (`All | Design | Dev`) at the top filter by track. Within each section, features are grouped by phase (P1/P2/P3/P4).
@@ -283,7 +309,7 @@ The former resting columns — dev's **To build** (DEFINED) / **To verify** (DOI
 `type: "VERIFY"` is a dev-track type for re-running a **deferred** manual/playtest test after its external blocker has cleared — a verification action, not a code change (unlike TWEAK, it never touches product code). Named `verify-{feature}` — one card aggregates all of that feature's open deferred items.
 
 - **Writer**: `scripts/completion-sync.js`, automatic — created/updated whenever a completion-sync payload carries a `knownIssues[]` entry with `verdict: "deferred"` (see § Known-issue badges). Never created by hand-authored prose; both the ship-walkthrough path (`dev-ship/references/phase-3-manual-finalize.md § Known-issue payload`, `game-ship/references/phase-3-playtest.md`) and the standalone `/dev-verify` path converge on this one script, so capture never drifts between them.
-- **Dependency**: `dependencies[]` holds the `blocker` name(s) named on the triggering knownIssues entries (only names that exist in `backlog.json#features[]` — an unresolvable blocker name stays in the description text only). The board's existing "BLOCKED BY" chip renders it; the chip clears once the blocker feature ships (chips resolve against archived shipped features too).
+- **Dependency**: `dependencies[]` holds the `blocker` name(s) named on the triggering knownIssues entries (only names that exist in `backlog.json#features[]` — an unresolvable blocker name stays in the description text only). The board's existing "BLOCKED BY" chip renders it; the chip clears once the blocker feature is complete per § Completion & dependency resolution (chips resolve against archived shipped features too).
 - **Lifecycle**: `TODO → shipped` directly — a VERIFY card never enters `DEFINED`/`DOING`/`DONE` and never runs through a ship pipeline.
 - **Pickup**: `/dev-manual {feature}` — when no open ship run exists for `{feature}` but a live `verify-{feature}` card does, `/dev-manual` runs a short deferred-reverify round instead of refusing (`dev-manual/references/deferred-reverify.md`). Game side: no `dev-manual` equivalent exists yet — pick up via `/game-ship {feature}` re-entry.
 - **Completion write**: mirrors TWEAK's card-mode completion (`shared/TWEAK-DISCIPLINE.md § Card pickup`) — only once every deferred item on the card re-verifies (PASS or converts to a BUG card on FAIL): `shipped: true` + `shippedAt` + `shippedSha` + `summary`, archived to `backlog-archive.json#archived[]`, dual-write to `project.json#features[]`. A card with items still `"Still blocked"` gets no completion write and stays `TODO` for a later pickup.
@@ -437,10 +463,17 @@ DONE not-refactored:        data.features.filter(f => f.status === "DONE" && !f.
 Waiting for refactor:       data.features.filter(f => f.status === "DONE" && !f.shipped)
 Shipped (to dashboard):     data.features.filter(f => f.shipped === true)
 P1 features:                data.features.filter(f => f.phase === "P1")
-Blocked:                    data.features.filter(f => (f.dependencies||[]).some(d => { const x=data.features.find(g=>g.name===d); return !x||x.status!=="DONE"; }))
+Blocked:                    data.features.filter(f => (f.dependencies||[]).some(d => { const x=data.features.find(g=>g.name===d); return !x||!(x.shipped===true||(x.type==="THEME"&&x.status==="DONE")); }))
 High risk (TODO/DEFINED):   data.features.filter(f => f.risk >= 4 && (f.status === "TODO" || f.status === "DEFINED"))
 Archived:                   data.features.filter(f => f.status === "CANCELLED")
 ```
+
+`Blocked` uses the § Completion & dependency resolution predicate — a dependency
+only clears at `shipped` (THEME: `DONE`), never at plain `status === "DONE"`.
+This assumes `data.features` already has `backlog-archive.json#archived[]`
+merged in (true for the board route — `serve-backlog.js` does this in-memory;
+if hand-querying `backlog.json` directly, merge the archive first or a shipped
+dependency reads as an unknown/missing name and wrongly counts as blocking).
 
 ---
 
@@ -522,7 +555,7 @@ The GAME pipeline's standalone skills use `transition` values `"defining"` / `"b
 
 | Skill            | Filter                                                                                     | New status on success                           |
 | ---------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| `design-tokens`  | `type === "THEME" && transition === "defining"`                                            | `"DONE"`                                        |
+| `design-tokens`  | `type === "THEME" && transition === "defining"`                                            | `"DONE"` + `shipped: true`                      |
 | `dev-ship`       | `transition === "shipping" && type !== PAGE/COMPONENT` (no-arg pickup)                     | full pipeline → `shipped: true` via refactor    |
 | `design-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`                | `"DOING"` (Path A — DEFINED is skipped)         |
 | `design-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"`               | `"DOING"`                                       |

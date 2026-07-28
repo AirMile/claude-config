@@ -80,7 +80,25 @@ window.generateTaskBrief = async function (f) {
     if (detail.durableDecisions && detail.durableDecisions.length) {
       lines.push("### Beslissingen");
       detail.durableDecisions.forEach(function (d) {
-        lines.push("- " + d);
+        if (typeof d === "string") {
+          lines.push("- " + d);
+          return;
+        }
+        var line = "- **" + (d.decision || "-") + "**: " + (d.chosen || "-");
+        if (d.rationale) line += " — " + d.rationale;
+        lines.push(line);
+        if (d.constraint) lines.push("  - Constraint: " + d.constraint);
+        if (d.rejected && d.rejected.length) {
+          d.rejected.forEach(function (r) {
+            lines.push(
+              "  - Verworpen: " +
+                (r.option || "-") +
+                " (" +
+                (r.reason || "-") +
+                ")",
+            );
+          });
+        }
       });
       lines.push("");
     }
