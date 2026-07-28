@@ -57,7 +57,18 @@ Pragmatic automatically, with every fix it proposes. Log: `Fix strategy: pragmat
 fixes (auto, feature-scope)`. The Step 1 comparison table still displays first so the user sees
 what was chosen before implementation starts.
 
-**Full-codebase or otherwise-scoped audit** → AskUserQuestion — header: "Fix Strategy", question:
+**Full-codebase or otherwise-scoped audit**, and a CRITICAL/HIGH finding is driving a genuine
+scope divergence between strategies (not a cosmetic pick) — **second-opinion hook** (auto-fires
+before the modal, at most once this phase):
+
+> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires
+> the consult (no confirm step) with INPUT = the finding(s) driving the choice + each candidate
+> strategy's scope/blast-radius inline (security fix-strategy row of § Brief contents). Show the
+> digest before the modal below (attended) or fold it into the pre-selected recommendation
+> (unattended — Opus weighs it and adjusts the pre-highlighted option or keeps Pragmatic), set
+> `secondOpinionUsed`, carry the outcome to `SKILL.md`'s `Second opinion:` report line.
+
+Then AskUserQuestion — header: "Fix Strategy", question:
 "Which fix strategy do you want to apply?":
 
 - "Pragmatic (Recommended)" — CRITICAL + HIGH, good balance

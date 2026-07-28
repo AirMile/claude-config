@@ -222,7 +222,7 @@ Direction: {$DESIGN_DIRECTION.name}
 Build:     {filesCreated} file(s) · {tokensUsed} token refs · smoke {smoke}
 Copy:      {itemsApplied} applied ({regenRounds} regen round(s)) | DEGRADED
 Check:     {findingsResolved}/{findingsTotal} resolved · critical remaining: {n}
-Consult:   {none | "direction: consulted ({trigger})" | "direction: declined" | "direction: unavailable"}
+Consult:   {none | "direction: consulted ({trigger})" | "direction: consulted ({trigger}) → revised" | "direction: unavailable"}
 Merged:    {yes → main | no → {reason}}
 
 Auto-decisions ({N}):

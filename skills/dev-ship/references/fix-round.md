@@ -61,6 +61,17 @@ protect:
    same machinery the § Re-check ladder escalates to on a first batch-fix failure — here it runs
    proactively, before a first guess is even attempted.
 
+   **Second-opinion hook** (auto-fires here, at most once per round, before the fix design below is
+   written into the plan file) — only for a finding that needed the unclear-root-cause path just
+   above: read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires the
+   consult (no confirm step) with INPUT = the ledger entry for the unclear finding + the file paths
+   implicated by the evidence read so far (fix-round row of § Brief contents). **Attended**: show
+   the digest, fold it into the root-cause hypothesis before writing the fix design. **Unattended**:
+   Opus weighs the digest and revises the hypothesis or confirms it, then proceeds. Set
+   `secondOpinionUsed` (round-scoped — resets each new round per § Budget), note the outcome in the
+   plan file's review surface, and carry it to the ship report's `Consult:` row
+   (`phase-5-report.md`).
+
 2. **Group findings into file-disjoint groups** — two findings share a group only if grouping them
    doesn't help; two findings that touch overlapping files **must** be grouped together (a single
    agent/inline session should never race another over the same file).
@@ -149,7 +160,8 @@ Launch:
 
 ```js
 Workflow({
-  scriptPath: "{main_root}/.claude/skills/dev-ship/references/workflows/ship-fix.js",
+  scriptPath:
+    "{main_root}/.claude/skills/dev-ship/references/workflows/ship-fix.js",
   args: { feature, worktreePath, waves /* [[{id, promptPath}], …] */, resume },
 });
 ```
@@ -202,14 +214,18 @@ check` — split off anything not about this item's own `expected` text into its
 (dev-ship mechanics: `manual-interview-walkthrough.md § Step D`). A split-off item that lands
 **out-of-scope AND improvement-class** (tweak, not a defect) skips the round-gate entirely — send it
 straight through the § Offload flush below instead of giving it its own ledger lifecycle; only an
-out-of-scope **defect** goes to `/project-todo` as a plain `BUG` per the Scope check's own routing.
+out-of-scope **defect** goes to `/project-todo` as a plain `BUG` per the Scope check's own routing —
+that same routing also patches the split-off item's verdict to `"offloaded"` + `offload:
+"{card-name}"` once the card exists, so it resolves the ledger instead of sitting there as a
+lingering fail.
 
 - **Pass** → update `manual.items[].verdict` to `"pass"`; done with this item.
-- **Cosmetic tweak, and it's the only finding still open this round** (MEASURABLE, obvious, ≤1-2
-  files — the same skip-condition `dev-verify/references/fix-loop.md § Plan-mode gate` uses, plus
-  "no other open finding this round is `fail`-class": a tweak riding along with a real bug does
-  **not** get the free-standing loop below — it falls through to the Otherwise bullet like any other
-  fail-adjacent item) → an inline **polish loop**, capped at 3 attempts (mirrors
+- **Cosmetic tweak, and no other open finding this round is `fail`-class** (MEASURABLE, obvious,
+  ≤1-2 files — the same skip-condition `dev-verify/references/fix-loop.md § Plan-mode gate` uses; a
+  tweak riding along with another tweak now shares this loop, one instance per finding — a tweak
+  riding along with a real bug does **not** get the free-standing loop below — it falls through to
+  the Otherwise bullet like any other fail-adjacent item) → an inline **polish loop**, capped at 3
+  attempts (mirrors
   `dev-verify/references/fix-loop.md § PHASE 5b`'s own "max 3, then ask" precedent, and
   `shared/DEBUG-LADDER.md`'s hard rule that a failed round is proof the working hypothesis was
   wrong — don't keep retrying blind past the cap): no gate, no plan mode. Per attempt: apply the
@@ -235,11 +251,23 @@ entry` bullet 5 — no verdict, no `debugTier` set, dispatch already complete), 
 - **Anything else that's tweak-class AND every other open finding this round is also tweak-class**
   (never when any open finding is `fail`-class — see the Fail-never-to-todo policy in
   `phase-3-manual-finalize.md § Findings ledger + routing`) → one `AskUserQuestion`, the only choice
-  point on this path:
+  point on this path. When **every** remaining tweak-class finding is DEBUG-LADDER tier 1 and
+  in-scope (the same band `phase-3-manual-finalize.md § Findings ledger + routing`'s partition row
+  uses), offer:
+  1. **"Fix inline now (Recommended)"** → run `phase-3-manual-finalize.md § Inline fix now` for each
+     remaining finding, then proceed to the regression re-check and completion on the verified
+     scope.
+  2. **"Offload to TWEAK card(s)"** → run `phase-3-manual-finalize.md § Offload flush` for each
+     remaining finding instead, then proceed the same way.
+  3. **"Park — debug in a fresh chat"** → same park mechanics as below.
+
+  When at least one remaining tweak-class finding falls outside that band, drop the inline option —
+  offer only:
   1. **"Offload to TWEAK card(s) (Recommended)"** → run
      `phase-3-manual-finalize.md § Offload flush` for each remaining finding, then proceed to the
      regression re-check and completion on the verified scope.
   2. **"Park — debug in a fresh chat"** → same park mechanics as below.
+
 - **Otherwise (any `fail`-class finding, or any tweak — substantial or cosmetic — with a `fail`
   sibling this round)** → park (one optional diagnostic question — e.g. what specifically changed
   after the fix attempt — is allowed first, to sharpen `lightRoundNotes`; do not loop past that

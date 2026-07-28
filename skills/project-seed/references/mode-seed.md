@@ -14,7 +14,7 @@ The output is a structured markdown document that feeds `/project-plan` or the b
 
 ### Enter Plan Mode
 
-Follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Entry protocol before PHASE 2 (explore route only — the PHASE 1 "Sync with project" route ends in its own writes and stays outside plan mode). PHASES 2-4 run in plan mode: the question rounds must run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model; the concept document (PHASE 4) is written to the plan file for review. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check).
+**STOP — before PHASE 2's first AskUserQuestion**: call `EnterPlanMode` now (explore route only — the PHASE 1 "Sync with project" route ends in its own writes and stays outside plan mode; skip if plan mode is already active, see PLAN-MODE.md skip-check). Do not ask any PHASE 2 question — including the Setup gate below — before this call completes. PHASES 2-4 run in plan mode: the question rounds must run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model; the concept document (PHASE 4) is written to the plan file for review.
 
 ### PHASE 2: Explore and Expand
 
@@ -22,7 +22,7 @@ Develop the idea through rounds of concrete, clickable questions. Question conte
 
 **Setup:**
 
-1. **Gate**: confirm Step 1d (Project Memory Load, initial-intake.md) has run for this route — if not, run it now before any questions (its skip rules — Sync route, standalone scope, no `.project/` — still apply)
+1. **STOP — gate, run before any PHASE 2 question**: has Project Memory Load run yet for this route? It reads `.project/project.json` + `.project/project-context.json` (built-state/backlog summary) and relevant `learnings[]`, then prints one `PROJECT MEMORY` block — see `initial-intake.md § Step 1d` for the exact procedure. Skip only for: Sync route, standalone scope, no `.project/`. If it has not run yet, run it now — before Round 1's questions, not after.
 2. Determine scope from PHASE 1a: `concept` | `implementation` | `feature` | `page` | `standalone`
 3. **Focused-edit route** (initial-intake Step 1 "Edit" with a specific change request): skip the Round 1 templates — ask targeted questions on the change area directly ([shared/QUESTIONING.md](../../shared/QUESTIONING.md) form choice). The templates below are for fresh scoping.
 4. Otherwise pick the matching Round 1 template below
@@ -108,13 +108,16 @@ Create a structured markdown document (pure markdown, no preamble or "Here's you
 - Implementation projects (design → code): Source of Truth, Page/Screen Structure, Tech Stack, Implementation Approach, Open Decisions
 - Features/assignments (scoped work in an existing project): Goal, Existing Context, Out of Scope, Constraints/Dependencies, Definition of Done
 
-**Second-opinion hook** (after writing the plan file, before `ExitPlanMode`) — only if the
-synthesis carries ≥2 unresolved mutually exclusive directions in Open Decisions:
+**Second-opinion hook** (after writing the plan file, before `ExitPlanMode`) — always, for
+every seed/concept save. This is project-seed's own override of the SECOND-OPINION.md trigger
+table: the shared default stays conditional for every other skill, but project-seed always
+wants the Fable check:
 
-> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — confirm modal, then
-> the consult with INPUT = the plan file (project-seed row of § Brief contents). Fold the digest
-> into the concept doc before exiting, print the one-line log (§ Logging — no report table
-> here), set `secondOpinionUsed`.
+> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` § Spawn and § Integrating the digest
+> (skip § Gate's trigger table — project-seed's trigger is "always") and follow it — spawn the
+> consult (no confirm step, no trigger check) with INPUT = the plan file (project-seed row of
+> § Brief contents). Fold the digest into the concept doc before exiting, print the one-line log
+> (§ Logging — no report table here), set `secondOpinionUsed`.
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol — write the concept document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 5 (output destination and `.project/` writes).
 

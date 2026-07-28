@@ -264,11 +264,11 @@ Inside plan mode:
    (b) ≥1 CRITICAL finding has confidence < 80%, or (c) `antiFantasySuspect` fired AND the
    verdict flips on judgment —
 
-   > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — confirm modal,
-   > then the consult with INPUT = the audit state file + the disputed findings' cited source
-   > files, disputed findings inline as compact JSON (security row of § Brief contents). Apply
-   > the digest's per-finding verdicts to the report below (advisory — flips are shown, not
-   > silent), set `secondOpinionUsed`.
+   > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger
+   > auto-fires the consult (no confirm step) with INPUT = the audit state file + the disputed
+   > findings' cited source files, disputed findings inline as compact JSON (security row of
+   > § Brief contents). Apply the digest's per-finding verdicts to the report below (advisory —
+   > flips are shown, not silent), set `secondOpinionUsed`.
 
 Present consolidated report:
 
@@ -296,7 +296,7 @@ TOP CRITICAL/HIGH FINDINGS:
 each finding still cites its own severity/category/file:line within the group)
 
 Verdict: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OR CRITICAL findings)
-Second opinion: {consulted ({trigger}) — {n} finding verdict(s) revised | declined | not triggered | unavailable}
+Second opinion: {consulted ({trigger}) — {n} finding verdict(s) revised | not triggered | unavailable}
 ```
 
 **Explicit feature-arg auto-proceed** — when PHASE 1 was invoked with an explicit `{feature}`

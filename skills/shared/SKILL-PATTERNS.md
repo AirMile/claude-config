@@ -507,12 +507,12 @@ Use {when|with} <trigger>. <short addition>. Use with /<command-name>[, optional
 
 **Guidelines:**
 
-| Agent task                                                    | Model             | Reason                                                                                      |
-| ------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------- |
-| Reading code, searching, gathering context                    | `model: "sonnet"` | Cheaper, fast, sufficient for read-only tasks                                               |
-| Writing code, complex fixes, architecture                     | `model: "opus"`   | Higher quality for creative/analytical work                                                 |
-| Simple classification, parsing                                | `model: "haiku"`  | Fastest and cheapest for simple tasks                                                       |
-| One-shot independent second opinion at a hard-thinking moment | `model: "fable"`  | Strongest model for adversarial judgment — gated + confirmed per `shared/SECOND-OPINION.md` |
+| Agent task                                                    | Model             | Reason                                                                                          |
+| ------------------------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------- |
+| Reading code, searching, gathering context                    | `model: "sonnet"` | Cheaper, fast, sufficient for read-only tasks                                                   |
+| Writing code, complex fixes, architecture                     | `model: "opus"`   | Higher quality for creative/analytical work                                                     |
+| Simple classification, parsing                                | `model: "haiku"`  | Fastest and cheapest for simple tasks                                                           |
+| One-shot independent second opinion at a hard-thinking moment | `model: "fable"`  | Strongest model for adversarial judgment — auto-fires on trigger per `shared/SECOND-OPINION.md` |
 
 **Rules:**
 
@@ -520,7 +520,7 @@ Use {when|with} <trigger>. <short addition>. Use with /<command-name>[, optional
 - Specify only when cost savings are significant (agent reads many files or runs frequently)
 - Explore agents are almost always Sonnet-appropriate
 - Build/fix agents that write code: use Opus unless it's a trivial fix
-- `model: "fable"` is availability-gated — every fable spawn names the fallback chain fable → opus → skip-with-log (see `shared/SECOND-OPINION.md § Spawn`); never spawn fable outside that doc's gate (trigger + user confirm + max 1/phase)
+- `model: "fable"` is availability-gated — every fable spawn names the fallback chain fable → opus → skip-with-log (see `shared/SECOND-OPINION.md § Spawn`); never spawn fable outside that doc's gate (trigger auto-fires the spawn, no confirm step — capped at max 1/phase-or-round + 4/run)
 
 ---
 

@@ -126,10 +126,10 @@ Integrate all findings from all applied techniques into one refined idea documen
 **Second-opinion hook** (after writing the plan file, before `ExitPlanMode`) — only if ≥3
 high-impact problems whose fixes conflict or force a pivot remain after all applied techniques:
 
-> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — confirm modal, then
-> the consult with INPUT = the plan file / refined-idea document (project-seed row of § Brief
-> contents). Fold the digest into the refined document before exiting, print the one-line log
-> (§ Logging — no report table here), set `secondOpinionUsed`.
+> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires
+> the consult (no confirm step) with INPUT = the plan file / refined-idea document (project-seed
+> row of § Brief contents). Fold the digest into the refined document before exiting, print the
+> one-line log (§ Logging — no report table here), set `secondOpinionUsed`.
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 7.
 

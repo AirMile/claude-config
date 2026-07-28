@@ -190,6 +190,18 @@ Dependency tree:
 
    User can always say "all" or "none" in the adjust free-text.
 
+   **Second-opinion hook** (auto-fires before the modal below, at most once) — if any of: (a)
+   PHASE 1's Scenario A semantic diff proposed MODIFIED/REMOVED for ≥3 existing features; (b)
+   PHASE 2 needed user intervention to break a circular dependency; (c) the degenerate-graph check
+   above just fired:
+
+   > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger
+   > auto-fires the consult (no confirm step) with INPUT = seed doc path, `backlog.json`, the
+   > diff table / dependency tree inline (project-plan row of § Brief contents). Fold the digest
+   > into the P1 proposal above before asking (attended: show the digest, then ask; unattended:
+   > Opus weighs it and revises the proposed P1 itself, or confirms it), set `secondOpinionUsed`,
+   > carry the outcome to the final report's `Second opinion:` line.
+
 2. **Auto-assign remaining features using heuristics:**
    - P2: Features that directly extend P1 functionality OR are prerequisites for important P3 features
    - P3: Nice-to-have, polish, extra content, integrations without core impact
@@ -257,7 +269,19 @@ Follow [shared/SEED.md](../shared/SEED.md) § Alignment Check. Inputs: new featu
 added, features marked INDEPENDENT/CANCELLED (incl. cancel-proposal outcomes from
 `references/update-reconcile.md`), and significant priority
 reshuffles from this run. This skill is in plan mode — drift table and proposed
-rewrite go into the plan file alongside the feature plan. On "Yes" → carry
+rewrite go into the plan file alongside the feature plan.
+
+**Second-opinion hook (seed drift)** (auto-fires before the resolution prompt below,
+at most once, independent budget slot from the PHASE 3 P1-modal hook) — if the drift
+scan above found ≥2 contradiction/new-direction items:
+
+> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger
+> auto-fires the consult (no confirm step) with INPUT = seed doc path, the drift table
+> inline, `backlog.json` (project-plan seed-drift row of § Brief contents). Fold the
+> digest into the drift table/resolution prompt before asking, set `secondOpinionUsed`,
+> carry the outcome to the final report's `Second opinion:` line.
+
+On "Yes" → carry
 `seedUpdateApproved: true` to PHASE 4. On "Skip" → carry `seedDrift[]` to PHASE 4
 (written to `backlog.json#seedDrift[]`). `source: "/project-plan"`,
 `ref: "feature:{name}"` where applicable.

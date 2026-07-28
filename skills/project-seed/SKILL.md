@@ -1,6 +1,6 @@
 ---
 name: project-seed
-description: Scope, brainstorm, or critique an idea into a seed doc. Use with /project-seed [brainstorm|critique].
+description: Scope, brainstorm, or critique an idea into a seed doc. Use with /project-seed.
 reads:
   [
     concept.seed,
@@ -17,7 +17,7 @@ reads:
 writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 2.1.0
+  version: 2.2.0
   category: project
 ---
 

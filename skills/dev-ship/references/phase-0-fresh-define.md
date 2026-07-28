@@ -115,11 +115,12 @@ drift"} | n/a: {reason} · Backlog impact: run ({file}) → {1-line impact resul
      **Second-opinion hook (between the plan-file write and `ExitPlanMode`)** — only when a
      `secondOpinionSignal` was noted (PHASE 1b/PHASE 2) and `secondOpinionUsed` is not set:
 
-   > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — confirm modal,
-   > then the consult agent with INPUT = the plan file just written + dependency `feature.json`
-   > paths (define-gate row of § Brief contents). Show the digest, fold DISAGREE items into the
-   > review surface before exiting, set `secondOpinionUsed`, and carry the outcome to the PHASE 5
-   > report's `Consult:` row.
+   > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger
+   > auto-fires the consult agent (no confirm step) with INPUT = the plan file just written +
+   > dependency `feature.json` paths (define-gate row of § Brief contents). Show the digest, fold
+   > DISAGREE items into the review surface before exiting (attended: re-present the choice;
+   > unattended: Opus weighs it and revises or confirms), set `secondOpinionUsed`, and carry the
+   > outcome to the PHASE 5 report's `Consult:` row.
 
 2. **`ExitPlanMode`** to present it for approval (this exits plan mode; the session returns to its
    prior permission mode).

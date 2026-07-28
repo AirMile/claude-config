@@ -51,7 +51,11 @@ Launch one agent per research question, all in parallel, `model: sonnet`, each w
 
 ## PHASE 2: Synthesis
 
-Merge agent outputs against the scope block at opus level (inline when the session model is opus-class, else one `model: opus` agent). Apply the evidence rule: a claim survives only with a cited source or an agent finding behind it — unevidenced claims are dropped and listed as dropped, not blended in. Output: a decision list (what will be built/changed and why), each entry traceable to evidence. Real decision forks go to the user via AskUserQuestion, recommended option first; everything else is decided here.
+Merge agent outputs against the scope block at opus level (inline when the session model is opus-class, else one `model: opus` agent). Apply the evidence rule: a claim survives only with a cited source or an agent finding behind it — unevidenced claims are dropped and listed as dropped, not blended in. Output: a decision list (what will be built/changed and why), each entry traceable to evidence.
+
+**Second-opinion hook** (auto-fires before the user-facing fork below, at most once this phase) — if ≥2 agents reached conflicting conclusions on the same question, or the synthesis itself is ambiguous about which path to recommend: read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires the consult (no confirm step) with INPUT = the per-agent findings (paths or inline digest) + the ambiguous decision point (orchestrate-synthesis row of § Brief contents). Show the digest before the user fork below (attended) or fold it into the decision list itself (unattended — Opus weighs it and revises the list or confirms it), set `secondOpinionUsed`, carry the outcome to the report's `Second opinion:` row.
+
+Real decision forks go to the user via AskUserQuestion, recommended option first (the digest's recommendation, if any, shown as part of that option's description); everything else is decided here.
 
 ## PHASE 3: Execute
 
@@ -83,6 +87,7 @@ ORCHESTRATED: [task]
 | Synthesis | [n decisions, n user forks] |
 | Execute | [artifacts] |
 | Verify | [checks run + outcomes, rehearsal verdict] |
+| Second opinion | {none \| consulted ({trigger}) \| consulted ({trigger}) → revised \| unavailable} |
 
 Next steps: [follow-ups, or none]
 ```

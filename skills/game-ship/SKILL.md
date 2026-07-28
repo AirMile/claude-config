@@ -258,7 +258,7 @@ Plan:      auto-derived → lenses {refactorLenses}
 Build:     {passed}/{total} GUT PASS
 Verify:    COVERED {n} GUT PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}) · {rounds} fix round(s)
 Refactor:  {lenses applied} · {improvements} applied ({reverted} reverted)
-Consult:   {none | "{context}: consulted ({trigger})" | "{context}: declined" | "{context}: unavailable"}
+Consult:   {none | "{context}: consulted ({trigger})" | "{context}: consulted ({trigger}) → revised" | "{context}: unavailable"}
 Merged:    {yes → main | no → {reason}}
 
 Auto-decisions ({N}):

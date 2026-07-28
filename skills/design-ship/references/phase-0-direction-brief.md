@@ -121,11 +121,12 @@ cite both.
 "Other" and the recompose loop ran, or the chosen direction conflicts with a `$DESIGN_LEVERS`
 warning or the seed's tone:
 
-> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — confirm modal, then
-> the consult with INPUT per the design-direction row of § Brief contents (spec, the 2–3
-> direction summaries inline, lever warnings, seed name+pitch). On DISAGREE re-present the
-> direction modal once with the digest visible; set `secondOpinionUsed`; carry the outcome to
-> PHASE 5's `Consult:` row.
+> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires
+> the consult (no confirm step) with INPUT per the design-direction row of § Brief contents (spec,
+> the 2–3 direction summaries inline, lever warnings, seed name+pitch). On DISAGREE: attended —
+> re-present the direction modal once with the digest visible; unattended — Opus weighs the
+> digest and revises or confirms the direction itself. Set `secondOpinionUsed`; carry the outcome
+> to PHASE 5's `Consult:` row.
 
 ## Step 6 — Content brief
 

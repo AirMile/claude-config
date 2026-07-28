@@ -243,6 +243,16 @@ Include recommendation based on context.
 
 **Skip this step when the PHASE 5 triage gate fired** (inline plan is minimal-style by definition) — continue at Step 2 with the inline plan.
 
+**Second-opinion hook** (auto-fires before the modal below, at most once this phase) — if the root
+cause spans multiple systems or no strategy is clearly dominant:
+
+> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires
+> the consult (no confirm step) with INPUT = the root-cause writeup + the 3 candidate strategies
+> inline (game-debug fix-strategy row of § Brief contents). Show the digest before the modal below
+> (attended) or fold it into the pre-highlighted recommendation (unattended — Opus weighs it and
+> adjusts or keeps the default), set `secondOpinionUsed`, carry the outcome to PHASE 10's
+> `Second opinion:` report line.
+
 AskUserQuestion:
 
 - header: "Fix Strategy"
@@ -350,7 +360,7 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gtest=tests/regression/tes
 ```
 
 - PASS → fix provably works for the reproduced bug
-- FAIL → fix incomplete, back to PHASE 8 (max 3 iterations, then AskUserQuestion: Other strategy | More research | Second opinion (Fable — only offered when no consult ran this run; read `shared/SECOND-OPINION.md § Spawn` and consult with INPUT = the reproduction test, this round's plan, the failed-fix file paths, ≤10 lines of failing output — debug-ceiling row of § Brief contents; show the digest, set `secondOpinionUsed`, then re-ask this same modal without this option) | Accept as incomplete)
+- FAIL → fix incomplete, back to PHASE 8 (max 3 iterations, then the dead-end auto-fires the second-opinion consult first if `secondOpinionUsed` is unset this run — read `shared/SECOND-OPINION.md § Spawn` and consult with INPUT = the reproduction test, this round's plan, the failed-fix file paths, ≤10 lines of failing output — debug-ceiling row of § Brief contents; show the digest, set `secondOpinionUsed` — then AskUserQuestion with the digest visible: Other strategy | More research | Accept as incomplete)
 
 ### Step 2: Full GUT suite
 
@@ -449,7 +459,7 @@ Fix: {what was changed, file:line refs}
 Reproduction test: {path, or "skipped: {reason}"}
 Regression: {N tests, X PASS, Y FAIL}
 Learning: {pitfall summary added, or "no extraction"}
-Second opinion: {consulted (fix dead-end) | declined | not offered}
+Second opinion: {consulted (fix dead-end) | consulted (fix dead-end) → revised | not offered | unavailable}
 
 Next steps:
   1. /game-ship {feature} → re-verify or rebuild as needed
