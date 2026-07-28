@@ -34,7 +34,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.48.0
+  version: 0.49.0
   category: dev
 ---
 
@@ -50,11 +50,25 @@ and drives them internally — there are no separate `/dev-define`…`/dev-refac
 
 **Trigger**: `/dev-ship` or `/dev-ship {feature-name}`
 
+## When not to use this
+
+- **1-3 files, no net-new surface** — `/dev-tweak`. The plan-approval gate (PHASE 0 Step 4b) checks
+  this itself against the completed define draft and offers the handoff when nothing escalates — see
+  § Design's de-escalation-gate note below — but catching it before define opens the interview is
+  cheaper still.
+- **`PAGE` / `COMPONENT` type** — `/design-ship` (`phase-0-define-classify.md § Step 1` already skips
+  these on no-arg resolution).
+- **A parked run with manual items still open** — resume via `/dev-manual`, not a fresh `/dev-ship`.
+
 ## Design
 
 - **One human touchpoint** (PHASE 0 define + plan-approval gate); then hands-off except the
   conditional PHASE 3 manual round **and its fix-plan gate**. Merge happens at the end of PHASE 4.
   `verificationProfile` is advisory; AGENT 2's `remainingManualItems` is authoritative for PHASE 3.
+- **De-escalation gate** — the plan-approval gate (Step 4b) runs the size-gate criteria from
+  `shared/TWEAK-DISCIPLINE.md § Size gate` against the completed draft; none firing offers a fourth
+  gate outcome, handoff to `/dev-tweak`, alongside Accept/Reject/Abort. See
+  `references/phase-0-fresh-define.md § Step 4b` and `shared/TWEAK-DISCIPLINE.md § De-escalation gate`.
 - **Difficulty escalation** — any main-chat decision point that turns out genuinely hard (triggers
   in `shared/PLAN-MODE.md § Difficulty escalation`: multi-approach architecture calls, twice-failed
   fixes, plan-invalidating surprises — e.g. choosing recovery after a `"failed"` workflow return)
