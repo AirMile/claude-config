@@ -5,7 +5,7 @@ argument-hint: "[pasted [ref] block(s) + change description]"
 reads: [project.theme]
 metadata:
   author: claude-config
-  version: 1.2.0
+  version: 1.2.1
   category: dev
 ---
 
@@ -94,50 +94,11 @@ paste is wasted tokens in a rapid-fire session.
 
 ## PHASE 2 — Implement
 
-Minimal, surgical edits only — then hold the diff against this checklist (distilled from
-[shared/FRONTEND-RULES.md](../shared/FRONTEND-RULES.md), `shared/ANTI-SLOP.md`, Tailwind v4 and
-Motion docs; cite rule IDs, don't restate them):
-
-**Tokens**
-
-- No raw color/px/ms literals where a theme token exists — use the digest's `cssVars` names or
-  token values (R003, R103; ANTI-SLOP `tokens` pack).
-- No arbitrary Tailwind values (`text-[13px]`, `bg-[#...]`) when a scale token covers it; check
-  the theme digest (or the project's `@theme` block) first.
-
-**Scope**
-
-- Edit only the ref'd element and its own state variants — no sibling/parent restyling, no
-  "while I'm here" cleanup.
-- Shared component? Confirm the component-vs-callsite decision from PHASE 1 before editing.
-- No `!important`, no ID selectors, no `z-[999]` — stay on the file's z-index scale (H201, H203,
-  H111). Don't change typographic personality (letter-spacing, family, weight) unrequested (H207).
-
-**States & responsive**
-
-- Changed a color utility and `theme.modes.dark` exists → update the `dark:` counterpart in the
-  same edit (ANTI-SLOP `dark` pack).
-- The touched property has `hover:` / `focus-visible:` / `active:` / `disabled:` variants →
-  update each or explicitly confirm they stand. Never drop the focus ring (A005).
-- Unprefixed utilities apply at **all** widths: fix one viewport with its breakpoint prefix (or
-  `max-*:`), keep a base value, and remember prefixed fixes cascade upward (mobile-first, R104).
-- Width/size changes inside flex/grid affect siblings — check `flex-shrink`/`min-w-0` fallout.
-
-**Motion**
-
-- Animation stays inside `theme.motion`: the active pack, its durations/easings/springs — reuse
-  the file's shared `transition`/`variants` objects, no ad-hoc curves (H122; ANTI-SLOP `motion`
-  pack).
-- Animate `transform`/`opacity` only, never `transition: all`; keep `prefers-reduced-motion`
-  handling intact (H105, H107).
-- Motion library: an overriding `transition` prop **replaces** the inherited default — merge,
-  don't clobber; keep stable keys under `AnimatePresence`; don't add a local `animate` to a child
-  that inherits variant propagation.
-
-**A11y**
-
-- Semantic elements and ARIA bindings survive restyling; icon-only controls keep their
-  `aria-label` (R001, A001, A006). Contrast ≥ 4.5:1 text / 3:1 UI; touch targets ≥ 44px (H004-6).
+Minimal, surgical edits only — then hold the diff against
+[shared/EDIT-DISCIPLINE.md](../shared/EDIT-DISCIPLINE.md) (tokens, scope, states/responsive,
+motion, a11y — the theme digest from PHASE 0 step 4 is the "prerequisite" it expects). The
+scope-check "component vs callsite" call is the PHASE 1 decision above, applied here before
+editing.
 
 **Mid-flight re-check**: a 4th file or a discovered net-new surface → stop and Read
 `references/escalate.md`.
