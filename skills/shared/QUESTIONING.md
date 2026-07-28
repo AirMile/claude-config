@@ -10,12 +10,34 @@ Shared protocol for skills that gather input through user questions — intervie
 
 Pick the form per question based on the answer space:
 
-| Answer space                                                                                                                                     | Form                   |
-| ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
-| **Enumerable** — Claude can list the plausible answers: design forks (A vs B vs C), trade-offs, scope confirmation, priorities, yes/no decisions | AskUserQuestion        |
-| **Generative** — only the user knows: intent, domain knowledge, vision, taste, lived experience                                                  | Anchored open question |
+| Answer space                                                                                                                                                   | Form                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| **Enumerable** — Claude can list the plausible answers: design forks (A vs B vs C), trade-offs, scope confirmation, priorities, yes/no decisions               | AskUserQuestion                               |
+| **Contested** — a dimension has ≥2 mutually exclusive readings, each backed by a loaded source (seed/backlog/codebase/prior decision), with no dominant winner | AskUserQuestion (§ Contested Dimension below) |
+| **Generative** — only the user knows: intent, domain knowledge, vision, taste, lived experience                                                                | Anchored open question                        |
 
 Never ask an enumerable question as open text (it forces the user to generate what you could have listed). Never squeeze a generative question into options (it anchors the user to your guesses).
+
+### Contested Dimension → Modal
+
+A dimension is **contested**, not merely generative, when the evidence itself splits into ≥2
+readings — the modal's options are the readings, not Claude's invention. This is a narrow slice
+of "generative": most dimensions still have no citable second reading and stay an anchored open
+question.
+
+- **Assumption Block precedence.** A dimension already covered by a non-struck Assumption Block
+  bullet (§ Assumption Block below) never becomes a contested modal — one citable claim is a
+  statement, not a contest. Only an uncovered dimension, or one whose bullet the user struck,
+  can become one.
+- **Mechanical option test** (mirrors the Assumption Block's bullet test): a contested-dimension
+  option may name no file, component, or library — problem-space readings only, never
+  implementation. A skill's own solution-space tone rules (no architecture, no tech choice) still
+  govern; this test just makes that rule checkable per option instead of a label.
+- **Free input stays visible.** Word the question so the built-in "Other" reads as a real third
+  path, not an afterthought — e.g. "...or something else entirely?" — since a contested modal
+  still needs room for a reading neither source captured.
+- `multiSelect: true` when the readings don't exclude each other (e.g. contested edge cases),
+  `false` when picking one settles the dimension.
 
 ### AskUserQuestion rules
 
@@ -57,12 +79,16 @@ Render **once, immediately before the opening question**, as its own short block
 never `AskUserQuestion`:
 
 ```
-Wat ik hieruit al opmaak (corrigeer wat niet klopt):
+What I already conclude from this (correct anything that's wrong):
 
 1. {claim} ← {source}
 2. {claim} ← {source}
 ...
 ```
+
+Written in English here per `shared/LANGUAGE.md` (skill files are English; Claude translates the
+rendered block at runtime to the project's configured language, same as any other AskUserQuestion
+label).
 
 Rules:
 
@@ -73,7 +99,7 @@ Rules:
   mechanism ("shows a toast on save"). Solution-space stays with the skill's own tone rules
   (no architecture, no tech choice, no file structure) — this block does not relax them.
 - **Cite-or-ask.** Every bullet carries `← {source}` — a seed section, a backlog card name, a
-  learning, or a prior decision. No source → no bullet; ask the open question instead. A gok
+  learning, or a prior decision. No source → no bullet; ask the open question instead. A guess
   presented with the authority of a stated fact is worse than a question.
 - **Non-goal bullets are cited-only, never inferred from silence.** A wrongly-assumed goal
   surfaces later when the built thing doesn't match; a silently-cut scope never does — that
@@ -81,8 +107,8 @@ Rules:
 - **Source precedence on conflict**: the current backlog card's own fields (`description`,
   `note`) outrank the seed, which outranks learnings/prior decisions. The seed only updates on
   approved drift, so it can present stale scope as current fact.
-- **Frame for deletion, not confirmation.** "Corrigeer wat niet klopt" invites striking a wrong
-  bullet; "klopt dit?" invites a reflexive yes. Say the first, not the second.
+- **Frame for deletion, not confirmation.** "Correct anything that's wrong" invites striking a
+  wrong bullet; "is this right?" invites a reflexive yes. Say the first, not the second.
 - **A dimension covered by a non-struck bullet does not get an open question** — the skill's
   dimension checklist marks it satisfied. Only struck-through or uncovered dimensions still need
   one.
@@ -92,15 +118,41 @@ Rules:
 
 ---
 
+## Second-Opinion Option
+
+A contested modal (§ Contested Dimension above) may carry one extra option: **"Second opinion
+(Fable)"** — a user-invoked route into the existing consult mechanism in
+`shared/SECOND-OPINION.md`. Full gate, budget, and spawn mechanics live there; this section only
+governs where the option appears and how it composes with a modal.
+
+- **When it appears**: on a contested modal, or on any modal re-asked after the user answered
+  "I don't know" once on that dimension (§ Escalation Ladder below). Not on a plain enumerable
+  modal that already has a clear, cited winner — the option would have nothing to weigh in on.
+- **Position**: never option 1. Auto-mode picks the first/`(Recommended)` option
+  (`non-interactive-contract.md`'s rule), so a Fable option in that slot would fire unattended
+  with no one watching the digest.
+- **On selection**: fires the consult scoped to this one dimension (paths + a ≤15-line context
+  block, per `SECOND-OPINION.md § Spawn`), then re-presents the same modal once with the digest's
+  recommendation visible. Never auto-applies it — the user still picks.
+- **Authorization class**: `SECOND-OPINION.md` states its trigger-fired consults are automatic
+  with no permission prompt. A clickable option is a distinct, explicitly-named **user-invoked**
+  class in that same document (§ Gate) — it does not relax the trigger-fired path, it adds a
+  second one.
+- **Budget**: counts against the same per-phase and per-run caps as any other consult — see the
+  calling skill's own allocation (e.g. `dev-ship`/`game-ship` define: one slot shared across the
+  whole interview and the Step 4b gate).
+
+---
+
 ## Escalation Ladder
 
 Apply per dimension/topic when an open question stalls:
 
-| Turn                                              | Response                                                                                                                                                          |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1st "I don't know"                                | Re-ask as a concrete scenario: "Can you describe a situation where this works versus where it fails?" / "What would a bad version of this look like?"             |
-| 2nd "I don't know" on the same topic              | **Switch form**: present an AskUserQuestion with 2-4 concrete hypotheses. The user couldn't generate an answer — let them recognize one instead.                  |
-| 3rd "I don't know" or clear signal of uncertainty | Mark the topic `unresolved` internally and move on. Do not ask again. Cover unresolved topics later with a best-guess + structured choice in the synthesis phase. |
+| Turn                                              | Response                                                                                                                                                                                                    |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1st "I don't know"                                | Re-ask as a concrete scenario: "Can you describe a situation where this works versus where it fails?" / "What would a bad version of this look like?"                                                       |
+| 2nd "I don't know" on the same topic              | **Switch form**: present an AskUserQuestion with 2-4 concrete hypotheses, carrying the § Second-Opinion Option above. The user couldn't generate an answer — let them recognize one, or ask Fable, instead. |
+| 3rd "I don't know" or clear signal of uncertainty | Mark the topic `unresolved` internally and move on. Do not ask again. Cover unresolved topics later with a best-guess + structured choice in the synthesis phase.                                           |
 
 In a closing summary: name unresolved topics explicitly.
 

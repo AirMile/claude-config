@@ -1,6 +1,6 @@
 # Phase 1a Interview Protocol
 
-Full protocol for the open interview phase of dev-ship's define phase (PHASE 0). Load this file when PHASE 1a starts. Form choice, anchoring rules, and the escalation ladder come from [shared/QUESTIONING.md](.claude/skills/shared/QUESTIONING.md) — read it together with this file.
+Full protocol for the interview phase of dev-ship's define phase (PHASE 0) — each dimension opens as either an anchored open question or, when the evidence is contested, an `AskUserQuestion` modal (see `§ Modal Form`). Load this file when PHASE 1a starts. Form choice, anchoring rules, and the escalation ladder come from [shared/QUESTIONING.md](.claude/skills/shared/QUESTIONING.md) — read it together with this file.
 
 ## Dimension Checklist
 
@@ -19,7 +19,7 @@ All required dimensions covered → trigger the [Stop Condition](#stop-condition
 
 ## Tone Rules
 
-- **`AskUserQuestion` is not an opener** — open each dimension with a plain anchored question in chat, not a modal. `AskUserQuestion` appears only as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after two "I don't know"s on the same dimension). Reaching for it as your first move on an architecture-flavored dimension skips the open interview entirely — restated here because this file is read standalone as "the full interview protocol."
+- **`AskUserQuestion` is not a default opener — it opens a dimension only when the evidence itself is contested.** Per `shared/QUESTIONING.md § Contested Dimension`: a dimension with ≥2 mutually exclusive, source-backed readings and no dominant winner opens as a modal (see `§ Modal Form` below); everything else — a single strong claim, or nothing to anchor on — opens as a plain anchored question in chat, exactly as before. `AskUserQuestion` also still appears as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after an "I don't know" on the same dimension). Reaching for a modal on a dimension with no citable second reading fabricates options Claude invented rather than the evidence — restated here because this file is read standalone as "the full interview protocol."
 - **One question at a time** — never list multiple questions in a single turn.
 - **No solution proposals** — do not propose solutions, technical approaches, or design choices in this phase. Example directions inside the question text ARE allowed and encouraged — they describe the problem space, not the implementation (see `shared/QUESTIONING.md § Anchored open question rules`). **The Assumption Block below (Interview Start) is the one stated exception to "no proposals" — but only for problem-space claims** (goal, scope boundary, non-goal, success criterion), each carrying a source citation. It does not license stating architecture, file structure, or tech choices as fact — those stay open through the rest of the interview and into PHASE 1b's design forks.
 - **Paraphrase** after each substantive answer: "So you mean that…" or "If I understand correctly, you want…". Ask "is that right?" only when genuinely uncertain — not as a ritual after every answer.
@@ -27,7 +27,40 @@ All required dimensions covered → trigger the [Stop Condition](#stop-condition
 - **Show interest**: briefly acknowledge what the user said before asking the next question. Don't jump straight to the next question.
 - **Stay open**: do not name file structure, components, tech stack choices, or implementation options. If the user goes there, note it briefly ("Good to know — I'll factor that in") and steer back: "What about {next uncovered dimension}?"
 
+## Modal Form
+
+When § Tone Rules routes a dimension to a modal instead of an open question:
+
+- **Options are the readings, not inventions.** Each option restates one of the ≥2 source-backed
+  readings that made the dimension contested — cite the source in the option `description`, the
+  same discipline as an Assumption Block bullet. The **mechanical option test** applies: an
+  option may name no file, component, or library (`shared/QUESTIONING.md § Contested Dimension`).
+- **First option = your best-supported reading**, labeled `(Recommended)`. This is what
+  auto-mode picks unattended — it must be the strongest reading, not just the first one drafted.
+- **Free input is named, not implied.** Phrase the `question` so "Other" reads as a genuine
+  third path — e.g. "...or is it something else entirely?" — not a fallback nobody expects to
+  click.
+- **"Second opinion (Fable)" is conditional, never first.** Add it only when this dimension
+  qualifies per `shared/QUESTIONING.md § Second-Opinion Option` (the modal is itself contested,
+  or the dimension already drew an "I don't know"). Selecting it fires the consult scoped to
+  this one dimension (`SECOND-OPINION.md § Brief contents → define interview dimension` row),
+  then re-presents this same modal once with the digest visible — it draws on define's one
+  shared consult slot (`SECOND-OPINION.md § Gate`), so once used here the Step 4b gate hook
+  will not fire again this run.
+- **`multiSelect`**: `true` when the readings don't exclude each other (e.g. two edge cases both
+  apply), `false` when picking one settles the dimension.
+- Record the resolved reading the same way an Assumption Block bullet would have been recorded,
+  so PHASE 1b treats it as already covered — do not re-ask it as a design fork.
+
 ## Interview Start
+
+> **Barrier — no output before agents return.** Do not render the Assumption Block, an opening
+> question, or any modal until every agent spawned for this phase has returned:
+> `context-aggregator` (PHASE 0 §5, feeds the `PREVIOUSLY DECIDED` list this block sits above)
+> and, if one was clicked mid-interview, a Fable consult (§ Modal Form above). Don't half-render
+> the block and fill in the rest once the agent lands — wait, then compose it whole. The user
+> can still interrupt (Esc/stop) to skip the wait; this rule only blocks Claude from starting to
+> type early, it does not remove that escape.
 
 > **Todo:** run the Learnings Load now if PHASE 0 §5 (`dev-define/workflow.md`) has not already run
 > it this session (`shared/LEARNINGS-LOAD.md`, scopes `[component]`, `pitfall-prefix: true`,
@@ -96,7 +129,7 @@ the user knows it will be filled with a best-guess and can catch it at the gate.
 
 ## Handling "I Don't Know" Responses
 
-Follow the escalation ladder in `shared/QUESTIONING.md § Escalation Ladder`, applied per dimension. At step 2 the form switch means: a single AskUserQuestion with 2-4 concrete hypotheses for this dimension — that is the only AskUserQuestion allowed during the interview.
+Follow the escalation ladder in `shared/QUESTIONING.md § Escalation Ladder`, applied per dimension. At step 2 the form switch means: a single AskUserQuestion with 2-4 concrete hypotheses for this dimension, carrying the "Second opinion (Fable)" option per `§ Modal Form` above — this and any `§ Modal Form` contested-dimension modal are the only `AskUserQuestion` calls allowed during the interview.
 
 **In the closing summary**: if ≥1 dimension is unresolved, name it explicitly:
 

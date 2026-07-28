@@ -106,10 +106,14 @@ code/test failure follows the branches below.
 parked from /dev-ship auto-verify (exceeds tweak size gate: {criterion})"` (plain inference then
   lands on `CHANGE`/`FEATURE`). These are independent single-sentence cards, not a cross-domain
   cluster, so do not concatenate multiple notes into one call (`/project-todo`'s own multi-item split
-  is content-signal-based, not a manual-batch interface). **Completion check**: after the loop,
-  print one line — `Offload: {cardsCreated}/{M} notes → cards, {alreadyCovered} already covered`
-  (`M` = `verify.improvementNotes.length`) — confirming `cardsCreated + alreadyCovered` equals `M`
-  before proceeding; a printed mismatch is the signal that an invocation was skipped instead of run.
+  is content-signal-based, not a manual-batch interface). A note that is self-documenting in the
+  code and names no follow-up action (AGENT 2 says so explicitly) needs neither a card nor a
+  covered-by match — count it as `nonActionable` instead of forcing it into either bucket.
+  **Completion check**: after the loop,
+  print one line — `Offload: {cardsCreated}/{M} notes → cards, {alreadyCovered} already covered,
+  {nonActionable} non-actionable` (`M` = `verify.improvementNotes.length`) — confirming
+  `cardsCreated + alreadyCovered + nonActionable` equals `M` before proceeding; a printed
+  mismatch is the signal that an invocation was skipped instead of run.
   These are AGENT 2's own observations, never a ledger item, so there's no `offload` field to
   upsert or verdict to set regardless of which card type they landed on. Do this before
   either branch below, since it applies regardless of which one fires. Branch on

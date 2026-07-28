@@ -97,6 +97,13 @@ outcome, and `ExitPlanMode`'s Accept becomes a conscious override rather than th
 is a fresh read of the draft each time Step 4b runs (including on a Reject revise-loop pass) — cheap
 and deterministic, never cached across passes.
 
+> **Hard check** (same pattern as the Discovery/Seed/Backlog citations below): before writing the
+> plan file, confirm the REQ-checklist (`dev-define/workflow.md` PHASE 1b), the "Architecture
+> designed: N files, K build steps." line, and the Baseline/Seed/Backlog close-out block (both
+> PHASE 2) each already appear as their own chat message earlier this turn. Folding any of them
+> only into the plan-file draft does not satisfy that gate — missing one → stop, emit it now as
+> its own message, then continue.
+
 **Steps:**
 
 1. **Write the plan file** (path from Step 2b) — two parts, per `dev-define/workflow.md` PHASE 2:
@@ -127,7 +134,12 @@ drift"} | n/a: {reason} · Backlog impact: run ({file}) → {1-line impact resul
      `verificationProfile`) as a single ```json block, **compact single-line JSON (no indentation)** —
      halves the token cost of the plan-file echo. This is what the extract reads on Accept.
      **Second-opinion hook (between the plan-file write and `ExitPlanMode`)** — only when a
-     `secondOpinionSignal` was noted (PHASE 1b/PHASE 2) and `secondOpinionUsed` is not set:
+     `secondOpinionSignal` was noted (PHASE 1b/PHASE 2) and `secondOpinionUsed` is not set.
+     Define has **one shared consult slot for the whole phase** (`shared/SECOND-OPINION.md §
+Gate` budget) — a Fable click on a PHASE 1a contested-dimension modal
+     (`dev-define/references/phase1a-interview.md § Modal Form`) sets `secondOpinionUsed: true`
+     already (`dev-define/workflow.md` PHASE 1b bookkeeping line), so this hook correctly skips
+     when the interview already spent it:
 
    > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger
    > auto-fires the consult agent (no confirm step) with INPUT = the plan file just written +

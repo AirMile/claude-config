@@ -195,6 +195,11 @@ Display: `AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}`
 
 ### PHASE 1b: Parse Inline Feedback
 
+> **Not reachable from dev-ship's own invocation**: AGENT 2 (`agent-verify.md`) never passes
+> `{feedback}` — its pointer file names only the feature — and `prompts/verify.md` scopes
+> AGENT 2 to this workflow's AUTOMATED portion only. This phase fires only for a standalone
+> `/dev-verify` re-invocation with inline feedback, if one ever exists outside dev-ship again.
+
 > **Todo**: mark PHASE 1 → `completed`, PHASE 1b → `in_progress`.
 
 **When:** user provided feedback with `/dev-verify {name} {feedback}` (skips PHASE 1 + 2).

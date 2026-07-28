@@ -115,13 +115,18 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
 
 ### PHASE 1a: Interview
 
-> **Precondition — do not open with `AskUserQuestion`:** the open-ended interview
-> (`phase1a-interview.md`) must run first, one anchored question at a time; `AskUserQuestion` is
-> only escalation step 2 of `shared/QUESTIONING.md`'s ladder, never the opener. If you are about to
-> call `AskUserQuestion` before any open question has been asked this turn, stop and run the
-> interview first.
+> **Precondition — do not open with a fabricated modal:** the interview (`phase1a-interview.md`)
+> drives every dimension through its own form check first — `AskUserQuestion` opens a dimension
+> only when `shared/QUESTIONING.md § Contested Dimension` is met (≥2 source-backed, mutually
+> exclusive readings), everything else opens as a plain anchored question. If you are about to
+> call `AskUserQuestion` on a dimension with no citable second reading, stop — that is inventing
+> options, not reading them off the evidence.
+>
+> **Barrier**: neither form may render until every agent spawned for this phase has returned —
+> `context-aggregator` (PHASE 0 §5) at minimum, plus a Fable consult if one was clicked
+> mid-interview. See `phase1a-interview.md § Interview Start` for the full rule.
 
-> **Todo**: Read `.claude/skills/dev-ship/references/dev-define/references/phase1a-interview.md` for the full interview protocol — dimension checklist, tone rules, one-question-at-a-time flow, and adaptive stop condition.
+> **Todo**: Read `.claude/skills/dev-ship/references/dev-define/references/phase1a-interview.md` for the full interview protocol — dimension checklist, tone rules, modal form, one-question-at-a-time flow, and adaptive stop condition.
 
 **Risk-check (only if `feature.risk >= 4`):** show one line before opening the interview — `⚠ HIGH RISK ({risk}/5): consider splitting this feature, verify dependencies, clarify scope before defining.`
 
@@ -129,7 +134,7 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
 
 **Park-note surfacing** (only when the PHASE 0 §4 `note` is non-null): show `PARKED PREVIOUSLY: {note}` before the first question — context only.
 
-Conduct the open interview per the reference — one anchored open question at a time. **AskUserQuestion is not an opener in this phase** — it is allowed only as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after two "I don't know"s on the same dimension). Close per the reference's Stop Condition (a stated recap, no blocking confirm — the whole plan is reviewed at the gate); proceed to PHASE 1b once the recap has been shown.
+Conduct the interview per the reference — one dimension at a time, each routed to an open question or a modal per its own form check (`phase1a-interview.md § Modal Form`). **`AskUserQuestion` is not a blanket opener** — it opens a dimension only when that dimension is contested, and otherwise appears only as escalation step 2 of the ladder in `shared/QUESTIONING.md` (after an "I don't know" on the same dimension). Close per the reference's Stop Condition (a stated recap, no blocking confirm — the whole plan is reviewed at the gate); proceed to PHASE 1b once the recap has been shown.
 
 ---
 
@@ -138,14 +143,15 @@ Conduct the open interview per the reference — one anchored open question at a
 > **Precondition — do not enter PHASE 1b without this:** the PHASE 1a closing recap (§ Stop
 > Condition: a 1–3 sentence statement of goal/success/key constraints) must already be visible
 > earlier in this conversation. A single `AskUserQuestion` covering design forks is PHASE 1b's own
-> step below, not a substitute for the PHASE 1a open interview — if no recap was shown, go back and
-> run the PHASE 1a interview now (`references/phase1a-interview.md`) before continuing.
+> step below, not a substitute for PHASE 1a's own per-dimension interview (open questions and
+> contested-dimension modals alike) — if no recap was shown, go back and run PHASE 1a now
+> (`references/phase1a-interview.md`) before continuing.
 
-**Design choices** (only for architecture-changing branches — storage strategy, route shape, auth model, data model boundary, external service contract; **not** a pure implementation/library choice with no user-visible behavioral difference, e.g. which rendering library, which parser — auto-decide those, record the rationale as a `durableDecision`, and don't ask): if the interview revealed a fork with concrete A vs B vs C options on a genuine architecture-changing branch, resolve these now via AskUserQuestion before extracting requirements. **Baseline gate (run first):** for each candidate fork, check the `stack-baseline.md` content loaded in PHASE 0 §4 — if the baseline already standardizes the answer (e.g. "use @react-navigation/stack"), do NOT raise the modal; record it directly as a `clarification` (and a `durableDecision` if architecture-wide) citing the baseline, and show `Baseline: ✓ resolved fork — {pattern-name}`. Only forks the baseline leaves open reach the user. Each remaining sub-question must be a **design choice**. Include "Not relevant to scope" if applicable. Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` (written to `feature.json#clarifications` if ≥1 entry). Edge cases (validation rules, input notation, format defaults) → add directly as acceptance criteria, no AskUserQuestion.
+**Design choices** (only for architecture-changing branches — storage strategy, route shape, auth model, data model boundary, external service contract; **not** a pure implementation/library choice with no user-visible behavioral difference, e.g. which rendering library, which parser — auto-decide those, record the rationale as a `durableDecision`, and don't ask): if the interview revealed a fork with concrete A vs B vs C options on a genuine architecture-changing branch, resolve these now via AskUserQuestion before extracting requirements. A fork already resolved via the PHASE 1a Opinion-Request exception (`phase1a-interview.md` § Opinion Requests — the user asked for your recommendation and you gave one) gets recorded as a `clarification` here without re-asking; AskUserQuestion is for forks still open at this point. **Baseline gate (run first):** for each candidate fork, check the `stack-baseline.md` content loaded in PHASE 0 §4 — if the baseline already standardizes the answer (e.g. "use @react-navigation/stack"), do NOT raise the modal; record it directly as a `clarification` (and a `durableDecision` if architecture-wide) citing the baseline, and show `Baseline: ✓ resolved fork — {pattern-name}`. Only forks the baseline leaves open reach the user. Each remaining sub-question must be a **design choice**. Include "Not relevant to scope" if applicable. Record each as `{ "question": "{branch}", "answer": "{chosen option}", "impact": "{which REQ area}" }` (written to `feature.json#clarifications` if ≥1 entry). Edge cases (validation rules, input notation, format defaults) → add directly as acceptance criteria, no AskUserQuestion.
 
 **>4 open forks** → handle the remainder inline during requirement extraction as edge cases.
 
-**Second-opinion signal** (bookkeeping only, no action here): if any fork above kept ≥2 viable options past the baseline gate — the user hesitated, chose "Other", or asked for the recommendation — note `secondOpinionSignal: "tied fork — {branch}"` in memory for dev-ship's Step 4b hook (`shared/SECOND-OPINION.md`).
+**Second-opinion signal** (bookkeeping only, no action here): if any fork above kept ≥2 viable options past the baseline gate — the user hesitated, chose "Other", or asked for the recommendation — note `secondOpinionSignal: "tied fork — {branch}"` in memory for dev-ship's Step 4b hook (`shared/SECOND-OPINION.md`). **If PHASE 1a already spent define's one consult slot** (a Fable click on a contested-dimension modal, `phase1a-interview.md § Modal Form`) — note `secondOpinionUsed: true` here too, so the Step 4b hook below sees the slot as spent and does not fire a second time this run.
 
 #### Requirement Extraction + Checkpoint
 
