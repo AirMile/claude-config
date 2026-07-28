@@ -59,7 +59,8 @@
 //     or failed                                        → "phase12"
 //   - phase is "PHASE 3" and either results.verify.remainingManualItems is
 //     empty, or the manual ledger is fully resolved (every item's verdict is
-//     pass/skip/defer/accepted/tweak, no in-flight "activeWorkflow":"phase3fix", and
+//     pass/skip/defer/accepted/tweak/offloaded, no in-flight
+//     "activeWorkflow":"phase3fix", and
 //     any fixPlan's dispatch is complete)               → "phase3-completion"
 //   - phase is "PHASE 3" with open manual work          → "phase3-manual"
 //   - phase is "PHASE 4"                                → "phase4"
@@ -70,11 +71,27 @@
 //   `null` when nothing qualifies.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 
 const [cmd, name, extra] = process.argv.slice(2);
-const COMMANDS = ["init", "patch", "complete", "path", "signal", "signal-clear", "item", "route"];
+const COMMANDS = [
+  "init",
+  "patch",
+  "complete",
+  "path",
+  "signal",
+  "signal-clear",
+  "item",
+  "route",
+];
 const LEDGERS = ["manual", "playtest"];
 
 if (!cmd || !name || !COMMANDS.includes(cmd)) {
@@ -88,7 +105,9 @@ if (!cmd || !name || !COMMANDS.includes(cmd)) {
 }
 
 if (cmd === "item" && (!extra || !LEDGERS.includes(extra))) {
-  console.error(`Usage: ship-checkpoint.js item <name> <manual|playtest> (got: ${extra ?? ""})`);
+  console.error(
+    `Usage: ship-checkpoint.js item <name> <manual|playtest> (got: ${extra ?? ""})`,
+  );
   process.exit(2);
 }
 
@@ -141,7 +160,9 @@ function parseItemPayload(text) {
   try {
     value = JSON.parse(text);
   } catch (err) {
-    console.error(`ship-checkpoint: invalid JSON in stdin (ledger item): ${err.message}`);
+    console.error(
+      `ship-checkpoint: invalid JSON in stdin (ledger item): ${err.message}`,
+    );
     process.exit(5);
   }
   const items = Array.isArray(value) ? value : [value];
@@ -155,7 +176,9 @@ function parseItemPayload(text) {
       process.exit(5);
     }
     if (typeof item.id !== "string" || !item.id) {
-      console.error('ship-checkpoint: item requires a non-empty "id" string field');
+      console.error(
+        'ship-checkpoint: item requires a non-empty "id" string field',
+      );
       process.exit(5);
     }
   }
@@ -179,7 +202,9 @@ function atomicWrite(obj, target = file) {
 
 function readExisting() {
   if (!existsSync(file)) {
-    console.error(`ship-checkpoint: checkpoint not found: ${file} (run 'init' first)`);
+    console.error(
+      `ship-checkpoint: checkpoint not found: ${file} (run 'init' first)`,
+    );
     process.exit(4);
   }
   return parseObject(readFileSync(file, "utf8"), "existing checkpoint");
@@ -259,7 +284,11 @@ if (cmd === "init") {
 } else if (cmd === "item") {
   const incoming = parseItemPayload(readStdin());
   const cur = readExisting();
-  if (!cur[extra] || typeof cur[extra] !== "object" || Array.isArray(cur[extra])) {
+  if (
+    !cur[extra] ||
+    typeof cur[extra] !== "object" ||
+    Array.isArray(cur[extra])
+  ) {
     cur[extra] = {};
   }
   if (!Array.isArray(cur[extra].items)) cur[extra].items = [];
@@ -297,10 +326,15 @@ if (cmd === "init") {
     if (manualItems.length === 0) return false;
     if (cur.activeWorkflow === "phase3fix") return false;
     const allResolved = manualItems.every((i) =>
-      ["pass", "skip", "defer", "accepted", "tweak"].includes(i && i.verdict),
+      ["pass", "skip", "defer", "accepted", "tweak", "offloaded"].includes(
+        i && i.verdict,
+      ),
     );
     if (!allResolved) return false;
-    if (manual.fixPlan && !(manual.dispatch && manual.dispatch.allFixed === true)) {
+    if (
+      manual.fixPlan &&
+      !(manual.dispatch && manual.dispatch.allFixed === true)
+    ) {
       return false;
     }
     return true;
@@ -316,7 +350,9 @@ if (cmd === "init") {
     route = "phase12";
   } else if (phase === "PHASE 3") {
     route =
-      remaining.length === 0 || manualLedgerResolved() ? "phase3-completion" : "phase3-manual";
+      remaining.length === 0 || manualLedgerResolved()
+        ? "phase3-completion"
+        : "phase3-manual";
   } else if (phase === "PHASE 4") {
     route = results.refactor ? "phase4-finalize-only" : "phase4";
   } else {
@@ -327,7 +363,10 @@ if (cmd === "init") {
   const resume = {};
   if (isGreen(results.build)) resume.build = results.build;
   if (isGreen(results.verify)) resume.verify = results.verify;
-  if (results.refactor && ["applied", "clean"].includes(results.refactor.status)) {
+  if (
+    results.refactor &&
+    ["applied", "clean"].includes(results.refactor.status)
+  ) {
     resume.refactor = results.refactor;
   }
   if (results.triage) resume.triage = results.triage;

@@ -51,7 +51,14 @@ observation into the current item's evidence, check whether it is actually about
      write conventions: `shared/BACKLOG.md § Writing the backlog`); it does not block completion. An
      improvement-class observation (works, but could be better) passes `type TWEAK` explicitly to
      `/project-todo`, same as any other tweak offload — a defect-class observation (it's actually
-     broken) keeps normal type inference, which lands on `BUG`.
+     broken) keeps normal type inference, which lands on `BUG`. **Either way, after the card is
+     created, patch the split-off ledger item's own verdict** (`ship-checkpoint.js item {feature}
+manual|playtest`, same upsert used to create it) **to `verdict: "offloaded"`, `offload:
+"{card-name}"`** — this is what makes "it does not block completion" true (`shared/
+SHIP-CHECKPOINT.md`'s `route`/`pendingRound` reader counts `"offloaded"` as resolved same as
+     `"tweak"`/`"accepted"`); leaving it at a bare `"fail"` verdict would otherwise dead-lock the
+     ledger on an item nothing is going to fix here. `dev-ship`'s exact write sequence:
+     `phase-3-manual-finalize.md § Offload flush`.
 
 Default to your own judgement (same as the round gate already does for closing-interview findings);
 ask one `AskUserQuestion` only if genuinely ambiguous whether something is in- or out-of-scope.

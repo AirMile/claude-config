@@ -298,6 +298,17 @@ if [ "$ROUTE_R2" = "phase3-completion" ]; then
 else
   echo "FAIL  ship-checkpoint: route PHASE 3 \"accepted\" verdict (got: $ROUTE_R2)"; FAIL=$((FAIL + 1))
 fi
+
+# (r3) an "offloaded" verdict (an out-of-scope split-off item handed to its own
+# backlog card, shared/FEEDBACK-CATEGORIZATION.md § Scope check) resolves the
+# ledger the same as tweak/accepted → phase3-completion, not a dead end.
+(cd "$SCT/wt" && echo '{"manual":{"items":[{"id":"MT-1","verdict":"offloaded","offload":"bug-x"}]}}' | node "$SC" patch r) >/dev/null 2>&1
+ROUTE_R3=$(cd "$SCT/wt" && node "$SC" route r 2>/dev/null | node -e 'const r=JSON.parse(require("fs").readFileSync(0));process.stdout.write(r.route)')
+if [ "$ROUTE_R3" = "phase3-completion" ]; then
+  echo "PASS  ship-checkpoint: route PHASE 3, \"offloaded\" verdict resolves ledger → phase3-completion"; PASS=$((PASS + 1))
+else
+  echo "FAIL  ship-checkpoint: route PHASE 3 \"offloaded\" verdict (got: $ROUTE_R3)"; FAIL=$((FAIL + 1))
+fi
 (cd "$SCT/wt" && echo '{"manual":{"items":[{"id":"MT-1","verdict":"pass"}]}}' | node "$SC" patch r) >/dev/null 2>&1
 
 # (s) an in-flight fix dispatch keeps the ledger open → phase3-manual even with all-pass items.
