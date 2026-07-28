@@ -28,6 +28,14 @@ recommended-first:
 
 Carry the chosen gating mode through Step 3 below.
 
+**If execution reveals materially more scope than the granularity ask covered** (the
+file/directory count from § 1's own scope-disclosure was itself an estimate) — do not
+re-ask by default. A small undocumented fragment discovered while building a shared file
+folds into whichever approved commit it's most closely related to, noted in that commit's
+body; this is expected, not a deviation. Only re-run § 1's granularity ask when the total
+commit count would grow past roughly double the originally approved number, or a newly
+discovered concern has no reasonable home in any approved commit.
+
 ## 2. Map files to commits
 
 For each planned commit, list the files it fully owns. For a file touched by more than one
@@ -63,7 +71,12 @@ Compare the split's cumulative diff against the original pre-split diff:
 `git diff <pre-split-HEAD>..HEAD --stat`. File count and **deletion count** must match the
 original diff exactly (deletions are a reliable invariant; insertion counts can drift a little
 from estimation but should be in the same ballpark). Mismatch → stop before the final commit
-and find the dropped/duplicated hunk — do not push a split you haven't verified.
+and find the dropped/duplicated hunk — do not push a split you haven't verified. **Exception**:
+a deletion-count drift of 1-2 lines may be accepted without tracing the exact line only after
+confirming via `git diff` on the specific file(s) involved that the difference is a formatter
+reflow (e.g. re-wrapped prose, reindented table) and not lost content — cite the file and line
+checked. Any larger drift, or one that can't be confirmed as a reflow, must be traced to a
+specific dropped/duplicated hunk before proceeding.
 
 ## 4. Verify before committing when a test suite exists
 

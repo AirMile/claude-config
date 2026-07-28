@@ -5,7 +5,7 @@ reads: [feature.externalRef]
 writes: [team.commitConvention, team.ticketPrefix]
 metadata:
   author: claude-config
-  version: 1.3.0
+  version: 1.4.0
   category: core
 ---
 
@@ -78,7 +78,7 @@ If there are unstaged changes but nothing staged, and no split was triggered:
 > **Todo**: Read `.claude/skills/core-commit/references/staging-safety.md` and apply its
 > blocklist, warnings, and `.gitignore` coverage check before staging.
 
-- Ask: "Stage all changes?" (with AskUserQuestion)
+- Ask: "Stage all changes?" (with AskUserQuestion) — "Yes (Recommended)" / "No"
 - If yes: `git add -A`
 
 ### 3. Analyze Changes
@@ -156,7 +156,7 @@ docs: update API documentation for v2 endpoints
 
 Show the generated message and ask for confirmation (AskUserQuestion):
 
-- "Commit" → execute commit
+- "Commit (Recommended)" → execute commit
 - "Edit" → allow user to modify
 - "Cancel" → cancel
 
