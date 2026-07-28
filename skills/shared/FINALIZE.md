@@ -141,7 +141,9 @@ Run when `mode = solo`.
 
     On "Stash": `git -C "{main_root}" stash push -u`.
 
-4. Sync: `git pull --rebase` (skip if no remote).
+4. Sync: `git pull --rebase` (skip **only** if no remote — never skip for "0 commits
+   behind"/dirty-tree reasons; 0-behind makes this command a safe no-op, not a reason to
+   omit it).
 
 5. Merge:
 
@@ -160,6 +162,10 @@ Run when `mode = solo`.
    ```
 
 6. Optional push: if remote is configured → AskUserQuestion: "Push {target} to remote?" — "Yes (Recommended)" / "No". Push rejected → see `shared/FINALIZE-REFERENCE.md § Failure Modes`.
+
+   **dev-ship/game-ship PHASE 4 callers**: skip the question — push non-interactively
+   and report the outcome in the caller's own output instead (these pipelines are
+   unattended by design, same reasoning as the § Backlog sync carve-out below).
 
 7. → Run **Cleanup** (below).
 
@@ -189,7 +195,15 @@ FOREIGN=$(lsof +D "{worktree_path}" 2>/dev/null \
     done)
 ```
 
-`FOREIGN` empty → proceed silently (only Claude's own session held cwd; the steps below release it). Non-empty → AskUserQuestion:
+`FOREIGN` empty → proceed silently (only Claude's own session held cwd; the steps below release it).
+
+Non-empty but every flagged PID's start time predates this session's own start (`ps -o
+lstart= -p {pid}` earlier than the session start) → likely orphaned children of a
+pre-restart session (e.g. MCP subprocess trees left behind when the harness process
+restarted mid-run), not a live human terminal. Kill them and proceed; log one line:
+`Cleanup: killed {n} pre-restart orphan process(es) holding worktree cwd`.
+
+Non-empty and at least one PID starts after this session began → AskUserQuestion:
 
 - header: "Other shells in worktree"
 - question: "Foreign process(es) `{names}` (PID `{pids}`) have their working directory in `{worktree_path}`. Removing now will leave the empty directory on disk. Close those shells first?"
@@ -285,7 +299,14 @@ Dispatch on `FEATURE_TYPE`:
     `ℹ {feature-name} merged but left at TO CHECK — run /design-ship {feature-name} to ship.`
 - **dev-track (`FEATURE`: type other than COMPONENT/PAGE)** → skip. `/dev-ship (refactor phase)` owns `shipped`/`shippedSha` for those.
 
-**State auto-push**: follow `shared/STATE-SYNC-PUSH.md § Auto-push` (non-fatal). This covers both solo-merge and cleanup-only callers, so `/core-finalize` and `/design-ship` get it for free. **Skip when the caller is `dev-ship` / `game-ship` PHASE 4** — those pipelines push after their own post-merge archive reconcile (`STATE-SYNC-PUSH.md § Auto-push` runs once per ship, not twice). Record the outcome for the report line below.
+> **STOP — dev-ship/game-ship PHASE 4 callers**: skip this entire step. Those pipelines
+> already push after their own post-merge archive reconcile
+> (`dev-verify/references/finalize.md § Post-merge reconcile` step 3) — running it here too
+> double-pushes the same state branch. This is the only caller-specific gate in this file;
+> every other route (solo-merge, cleanup-only, `/core-finalize`, `/design-ship`) continues
+> below.
+
+**State auto-push**: follow `shared/STATE-SYNC-PUSH.md § Auto-push` (non-fatal). This covers both solo-merge and cleanup-only callers, so `/core-finalize` and `/design-ship` get it for free. Record the outcome for the report line below.
 
 ## Output Report
 

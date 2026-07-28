@@ -46,14 +46,17 @@ Print the ship summary (ASCII table): feature, build test counts, verify results
 refactor result, security findings (if any), second-opinion consults, and the collected
 `autoDecisions[]` (choices the agents auto-made in non-interactive mode) for your review. All
 fields come from the checkpoint's `results` (and, on the manual path, the in-context PHASE 3
-walkthrough).
+walkthrough). The `unproven` count below comes from `manual.items[].evidence === "none"` — the
+same soft-gate signal the walkthrough's own routing summary already surfaces
+(`phase-3-manual-finalize.md § Findings ledger + routing`); repeat it here so it isn't dropped
+between the two points the policy requires it at.
 
 ```
 SHIP COMPLETE: {feature}
 ========================
 Plan:     auto-derived → lenses {refactorLenses} · security {securityDeep or "none"}
 Build:    {passed}/{total} PASS
-Verify:   AUTO {n} PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}/{accepted}) · {rounds} fix round(s){, plus {N} debug-ladder escalation(s) if this run used debug-round.md/debug-round-heavy.md — the two counters don't compose into one number}
+Verify:   AUTO {n} PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{defer}/{accepted}){" · {k} unproven" when any evidence-class Pass carries evidence:"none"; omit when k=0} · {rounds} fix round(s){, plus {N} debug-ladder escalation(s) if this run used debug-round.md/debug-round-heavy.md — the two counters don't compose into one number}
 Refactor: {lenses applied} · {techniques} applied ({reverted} reverted)
 Security: {triage: {confirmed} confirmed · {dismissed} dismissed → persisted + todo security-{feature}, or just persisted if below the auto-todo threshold, or "not run"}
 Consult:  {none | "{context}: consulted ({trigger})" | "{context}: declined" | "{context}: unavailable"}
@@ -62,6 +65,14 @@ Merged:   {yes → main | no → {reason}}
 Auto-decisions ({N}):
 - {agent}: {decision} → chose {choice}
 ```
+
+Then print a `Next steps:` numbered block — markdown, **after** the fence so `/commands`
+stay clickable (`shared/SKILL-PATTERNS.md § Next Steps`). Success path: `1. /project-plan —
+pick the next feature`, plus `/dev-tweak {card}` when this run offloaded TWEAK cards. When
+the security auto-todo fired (≥1 confirmed HIGH/CRITICAL finding), list `/dev-security
+{feature}` as step 1 instead, ahead of `/project-plan` — a confirmed HIGH/CRITICAL finding
+outranks picking up the next feature.
+Failure path: the recovery options from the failure paragraph below, resume command first.
 
 **Ship-level learning extraction** (the layer the agents cannot see — dev-ship owns it). The copied
 build/verify/refactor already wrote their **domain** learnings during their phases (do not re-write

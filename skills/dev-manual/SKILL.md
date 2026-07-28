@@ -76,8 +76,9 @@ as done, setting it `completed` directly — never leave all 4 sitting `pending`
 >   `verify-{feature}` VERIFY card exists on the backlog once its blocker ships, re-invoke to run its
 >   deferred re-verify round."_ Stop here — do not seed `TaskCreate`, nothing to track.
 >
-> Checkpoint exists → read it, mark MANUAL 0 → `in_progress` (this routing step is the phase's own
-> work), confirm `pipeline: "dev"` (a design/game checkpoint under the same feature name is a
+> Checkpoint exists → read it (this routing step is the phase's own work — MANUAL 0 skips
+> `in_progress` and marks straight to `completed` once a branch resolves below), confirm
+> `pipeline: "dev"` (a design/game checkpoint under the same feature name is a
 > different pipeline entirely — refuse with the same message as above if it doesn't match). Run
 > `node ~/.claude/scripts/ship-checkpoint.js route {feature}` and branch — every branch below marks
 > MANUAL 0 → `completed` (routing resolved) and seeds the rest of the `TaskCreate` list per the
@@ -105,10 +106,14 @@ as done, setting it `completed` directly — never leave all 4 sitting `pending`
 >   resume; only refactor/finalize (or just finalize) remains. Mark MANUAL 0 → `completed`, MANUAL 1
 >   → `completed`, MANUAL 2 → `in_progress`, leave MANUAL 3 `pending`, then go straight to
 >   **MANUAL 2**.
+>
+> **Note**: the branch table above already sets every MANUAL N mark it names on entry — the
+> `Todo` in each section below only marks what that branch table didn't already cover; skip
+> a mark silently wherever MANUAL 0 already made it.
 
 ## MANUAL 1 — Manual round (walkthrough + fix/debug)
 
-> **Todo**: mark MANUAL 1 → `in_progress` (skip if MANUAL 0 already marked it `completed` on entry).
+> **Todo**: mark MANUAL 1 → `in_progress`.
 > Read `.claude/skills/dev-ship/references/phase-3-manual-finalize.md` and follow it from
 > **§ Resume entry** — it re-enters the worktree (Step 1), relaunches the app (Step 2), then routes
 > per open ledger item (debug tiers, fix-plan gate, or the item-by-item walkthrough) exactly as a
@@ -131,12 +136,11 @@ as done, setting it `completed` directly — never leave all 4 sitting `pending`
 
 ## MANUAL 2 — Refactor + finalize/merge
 
-> **Todo**: mark MANUAL 1 → `completed`, MANUAL 2 → `in_progress` (skip either mark if MANUAL 0
-> already set it on entry — see the branch table above). Read
+> **Todo**: mark MANUAL 1 → `completed`, MANUAL 2 → `in_progress`. Read
 > `.claude/skills/dev-ship/references/orchestration.md § 5` and follow it: refactor (AGENT 3) +
 > optional security triage (AGENT S), then finalize (solo-merge or halt-for-team, per
-> `dev-verify/references/finalize.md`). This is the same reference `/dev-ship`'s own PHASE 4 reads —
-> no dev-manual-specific variant.
+> `dev-ship/references/dev-verify/references/finalize.md`). This is the same reference `/dev-ship`'s
+> own PHASE 4 reads — no dev-manual-specific variant.
 >
 > **`"phase3-completion"` entry** (from MANUAL 0): first run `orchestration.md § 4` (the no-manual
 > completion — Step 1 + Step 3 of `phase-3-manual-finalize.md` only) before § 5, exactly as

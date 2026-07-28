@@ -64,6 +64,21 @@ side's unique addition; the safe resolution is: shared-prefix + ours-unique + th
 (or vice versa, order rarely matters) + shared-suffix, each unique block copied verbatim from its
 source file, not reconstructed from memory.
 
+## Step 3b — Asymmetric conflict: one side migrated the whole file
+
+Sometimes the conflict isn't "both sides added new content" — one side (usually the
+more-recently-merged one) fully reworked the file (a translation pass, a refactor), while the
+other side still has an **older** version of that same file plus its own small, unrelated
+addition. Concatenating both sides here is wrong: it resurrects the stale content the
+migration just removed.
+
+Tell them apart: if one side's version of a whole function/section is a superset of the
+other's structure (same logic, translated/renamed) while the other side only adds a small,
+clearly separable block (a new prop, a new button, a new import) — the migrated side is the
+base. Take it verbatim, then graft only the other side's own small addition into the same
+insertion point, adjusting only the few lines the addition itself touches (e.g. matching
+import style, adding one new hook call). Verify per Step 5 as usual.
+
 ## Step 4 — Watch for the shared-closing-brace-tail trap
 
 **This is the sharp edge that silently produces a broken file.** When both sides' unique additions

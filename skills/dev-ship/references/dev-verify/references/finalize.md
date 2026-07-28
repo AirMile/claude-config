@@ -25,6 +25,10 @@ PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
 | team      | `OPEN`                   | **Halt** — print `"PR #${PR_NUMBER} is open: ${PR_URL}. Run /core-finalize {feature-name} after review."` Exit.                                                                        |
 | team      | empty / `CLOSED` / no-gh | **Leave worktree open** — refactor already ran on the branch. Print `"Team project: push + open a PR via /team-review, or run /core-finalize {feature-name} to merge directly."` Exit. |
 
+`shared/FINALIZE.md`'s Cleanup Procedure includes its own auto-push step — it already no-ops
+for this caller (see its own STOP gate) since § Post-merge reconcile step 3 below owns the
+push here instead.
+
 **Session-reorientation guard (cleanup-path only)** — When the cleanup procedure is about to remove the worktree directory:
 
 1. **Pre-cleanup cd** — if `pwd` is inside `{worktree-path}`, run `cd {main-repo-path}` via Bash before `git worktree remove`. Prevents "working directory was deleted; shell cwd recovered" warnings and ensures subsequent Bash commands operate on main.

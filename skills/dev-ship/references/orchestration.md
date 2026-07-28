@@ -27,6 +27,27 @@ list --porcelain | head -1`, same as the triage-persist step in §5) and pass an
   the background — I'll report when it returns.") — no further tool calls until the task-notification
   arrives.
 
+## 1a. Recovering an interrupted Workflow
+
+A task-notification can arrive as `status: "stopped"` or with a "could not be resumed"
+message instead of a normal result — this means the harness process itself restarted
+mid-run, not that the launched work failed. Do not restart the ship from PHASE 0 and do
+not blindly relaunch with `resumeFromRunId` on faith; verify first.
+
+1. Read the checkpoint (`ship-{feature}.json`) — `workflowRunId` names the interrupted
+   run, `prompts` names the pointer files it was given.
+2. Verify on-disk state before trusting a resume: does `worktree-{feature}` exist
+   (`git worktree list`)? Does its branch have commits past `baselineSha`
+   (`git log worktree-{feature} --oneline`)? Do the changed files match what the
+   pointer-file prompt asked for?
+3. Evidence of completed work → relaunch the SAME Workflow with
+   `resumeFromRunId: {workflowRunId}` from the checkpoint (never a fresh launch — a
+   dead-agent result would just replay `null` from cache, per the empty-input safety net
+   below). Completed `agent()` calls return from cache instantly; only the interrupted
+   step re-runs.
+4. No evidence of any progress (no worktree, no commits) → treat as a fresh launch of
+   the same phase — `phase`/`completedPhases` on the checkpoint are unaffected either way.
+
 ## 2. Route on the checkpoint
 
 Run `node ~/.claude/scripts/ship-checkpoint.js route {feature}` — it reads
@@ -81,7 +102,7 @@ code/test failure follows the branches below.
   independent single-sentence TWEAK cards, not a cross-domain cluster, so do not concatenate
   multiple notes into one call (`/project-todo`'s own multi-item split is content-signal-based, not
   a manual-batch interface). **Completion check**: after the loop, confirm `cards created + notes
-  already covered` equals `verify.improvementNotes.length` before
+already covered` equals `verify.improvementNotes.length` before
   proceeding — these are AGENT 2's own observations, never a ledger item, so there's no `offload`
   field to upsert. Do this before either branch below, since it
   applies regardless of which one fires. Branch on `verify.remainingManualItems`:
@@ -91,14 +112,14 @@ code/test failure follows the branches below.
     LANGUAGE.md), then **end the turn**:
     ```
     PHASE 1+2 green — {testsTotal} tests pass, {N} manual items remain.
-    To keep this chat cheap the run stops here; the checkpoint is ready to resume.
+    To keep this chat cheap, the run stops here — checkpoint ready.
 
     → Run /clear (or open a new chat), then: /dev-manual {feature}
-      You land directly in the item-by-item manual round (worktree + app are relaunched
-      automatically). (/dev-ship {feature} still works too — it resumes to the same place.)
+      Lands directly in the item-by-item manual round (worktree + app
+      relaunch automatically). /dev-ship {feature} also still resumes here.
 
     The board shows this run as parked (⏸) with the same resume button.
-    Prefer to continue here instead? Say so and I'll run PHASE 3 in this session.
+    Prefer to continue here? Say so and I'll run PHASE 3 in this session.
     ```
     **Same-session escape hatch**: if the user replies "continue here" (or equivalent), continue inline
     in this chat instead of parking: re-arm the live signal and run the full manual walkthrough per
@@ -138,7 +159,13 @@ the shipped completion writes; (c) safety net — check for a still-running app/
 whose cwd is `{worktreePath}` (a PHASE 3 manual-round app that `phase-3-manual-finalize.md`'s
 teardown step missed, e.g. on a crash-resume) and kill it before spawning — the refactor agent
 runs its own tests in this same worktree and a lingering process is unrelated interference to rule
-out up front, not discover mid-merge.
+out up front, not discover mid-merge; (d) when `finalizeRoute: merge` — run `git -C {main_root}
+status --porcelain` now (the same check `finalize.md § Solo-Merge Procedure` step 3b runs later)
+and, if non-empty, ask the same Stop/Stash/Ignore `AskUserQuestion` immediately, before spawning
+the refactor agent — a dirty target blocks the eventual merge regardless of how refactor goes, so
+surface it before spending a refactor pass on a ship that may not be mergeable yet. On "Stash" or
+"Ignore", proceed to spawn as normal; the later step 3b re-check in `finalize.md` still applies as
+a safety net (main's state may have changed in the meantime).
 
 Otherwise: rewrite the live signal (same as §3): `echo '{"skill":"refactor"}' | node ~/.claude/scripts/ship-checkpoint.js signal {feature}`. Read
 `.claude/skills/dev-ship/references/agent-refactor.md` (when refactor runs) and
@@ -178,8 +205,13 @@ without this the triage vanishes the moment the feature finishes shipping and PH
 -1`, strip the `worktree ` prefix) — cwd may still be inside `{worktreePath}` here and
   `.project/security/` is **not** symlinked (`shared/WORKTREE.md § What to share`), so a relative
   path would silently write into the worktree and be lost at cleanup.
-- `mkdir -p "$main_root/.project/security"`, then atomic-write (tmp+rename, same pattern as
-  `ship-checkpoint.js`'s `atomicWrite`) to `$main_root/.project/security/ship-triage-{feature}.json`:
+- `mkdir -p "$main_root/.project/security"`, then atomic-write (never a direct `cat >`/
+  `echo >` overwrite, which risks a truncated file on a killed session):
+  ```bash
+  TMP="$main_root/.project/security/.ship-triage-{feature}.json.tmp"
+  printf '%s' "$JSON_PAYLOAD" > "$TMP" && mv "$TMP" "$main_root/.project/security/ship-triage-{feature}.json"
+  ```
+  (same tmp+rename pattern as `ship-checkpoint.js`'s `atomicWrite`) with this shape:
   ```json
   {
     "schemaVersion": 1,
