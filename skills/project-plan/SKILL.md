@@ -5,7 +5,7 @@ reads: [backlog.status, concept.seed, backlog.seedDrift, project.thinking]
 writes: [backlog.status, backlog.features, concept.seed, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 2.3.0
+  version: 2.4.0
   category: project
 ---
 
@@ -76,11 +76,18 @@ visible — no risk of forgetting phases.
    WEB-MOBILE runs the full WEB pipeline EXCEPT Page-Discovery: the `/design-convert`
    browser pipeline (Playwright/DOM) does not run against React Native, so screens stay
    FEATURE-typed and flow through `/dev-ship`.
-4. Show detected mode:
+4. **[WEB MODE] CLI/library sub-detection:** `stack.framework` matches no known
+   web-UI framework (React/Vue/Svelte/Angular/Next/Remix/plain HTML+CSS
+   templating) AND the seed/concept mentions no pages/routes/screens → set
+   **WEB-CLI**. WEB-CLI runs the full WEB pipeline EXCEPT Page-Discovery (always
+   skip, mark completed immediately — same as WEB-MOBILE); PAGE/COMPONENT are
+   not offered as feature types in PHASE 1 categorization.
+5. Show detected mode:
 
    ```
    STACK DETECTED: web         (→ /dev-ship pipeline)
    STACK DETECTED: web-mobile  (→ /dev-ship pipeline, screens as FEATURE)
+   STACK DETECTED: web-cli     (→ /dev-ship pipeline, no pages/components)
    STACK DETECTED: game        (→ /game-ship pipeline)
    ```
 
@@ -102,7 +109,7 @@ Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE
 
 ### Page-Discovery (WEB MODE only)
 
-> **Todo**: mark PHASE 1 → `completed`, Page-Discovery → `in_progress` (GAME MODE or WEB-MOBILE → mark `completed` immediately, no pages proposed). Read `.claude/skills/project-plan/references/page-discovery.md`. On completion mark Page-Discovery → `completed`, PHASE 2 → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, Page-Discovery → `in_progress` (GAME MODE, WEB-MOBILE, or WEB-CLI → mark `completed` immediately, no pages proposed). Read `.claude/skills/project-plan/references/page-discovery.md`. On completion mark Page-Discovery → `completed`, PHASE 2 → `in_progress`.
 
 ### PHASE 2: Dependency Analysis
 
