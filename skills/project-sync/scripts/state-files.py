@@ -95,6 +95,13 @@ def is_included(rel: Path) -> bool:
         return True
     if len(parts) == 3 and parts[0] == "features" and parts[2] in FEATURE_FILES:
         return True
+    if (
+        len(parts) == 4
+        and parts[0] == "features"
+        and parts[1] == "archive"
+        and parts[3] in FEATURE_FILES
+    ):
+        return True
     if parts[:1] == ("archive",):
         if rel.as_posix() == "archive/backlog-archive.json":
             return True
@@ -140,6 +147,19 @@ def collect(project: Path, dest: Path) -> list[str]:
                 continue
             for fname in FEATURE_FILES:
                 take(f"features/{feat.name}/{fname}")
+
+        # Shipped features (mv'd to features/archive/{shippedAt-date}-{name}/ by
+        # dev-refactor's completion-batch) carry durableDecisions[] — the same
+        # decision/rationale/rejected[] intent record a live feature has. Without
+        # this, every shipped feature's "why" is lost the moment a fresh clone
+        # only restores this branch (see STATE-SYNC.md § invariants).
+        features_archive = features / "archive"
+        if features_archive.is_dir():
+            for feat in sorted(features_archive.iterdir()):
+                if not feat.is_dir():
+                    continue
+                for fname in FEATURE_FILES:
+                    take(f"features/archive/{feat.name}/{fname}")
 
     archive = src / "archive"
     if archive.is_dir():

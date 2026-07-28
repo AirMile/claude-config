@@ -19,9 +19,11 @@ The caller provides:
 
 ### Step 1 — Prior feature decisions
 
-List `{featuresDir}/*/feature.json`. Sort by mtime descending. Take the 5 most recent. Skip the file whose parent directory matches `featureName`.
+List `{featuresDir}/*/feature.json` (live features) **and** `{featuresDir}/archive/*/feature.json` (shipped features — dirname is `{shippedAt-date}-{name}`; strip the date prefix for the tag). Combine both lists, sort by mtime descending, take the 15 most recent. Skip the file whose parent directory matches `featureName` (live) or whose stripped name matches `featureName` (archive).
 
-For each file: read it, extract `durableDecisions[]`. Each entry gets tagged `[feature-{dirname}]`.
+Raising the pool from 5 → 15 here (Step 3 already re-ranks everything by keyword overlap) avoids aging out relevant decisions by sheer count once archived features are included — recency alone is not a proxy for relevance across a growing shipped-feature history.
+
+For each file: read it, extract `durableDecisions[]`. Each entry gets tagged `[feature-{dirname}]` (archive: use the stripped name, not the dated directory name).
 
 ### Step 2 — Thinking-output files
 
@@ -56,6 +58,7 @@ AGGREGATOR_STATS: decisions={n} sources_scanned={n}
 ## Edge Cases
 
 - **`featuresDir` does not exist or is empty**: `sources_scanned=0`, omit decisions block
+- **`featuresDir/archive` does not exist**: skip the archive glob silently, proceed with live features only
 - **`thinkingDir` does not exist**: skip thinking step, proceed with feature.json only
 - **`featureKeywords` is empty**: treat every entry as 0-overlap → omit decisions block
 - **`durableDecisions[]` missing or empty in a feature.json**: skip that file

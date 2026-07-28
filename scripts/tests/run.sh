@@ -399,12 +399,19 @@ rm -rf "$SCT"
 # (drops a branch-planted report), and skips symlinks.
 SF="$ROOT/skills/project-sync/scripts/state-files.py"
 SFT="$(mktemp -d)"
-mkdir -p "$SFT/proj/.project"/{session,features/f1,archive,thinking,screenshots}
+mkdir -p "$SFT/proj/.project"/{session,features/f1,features/archive/2026-01-10-shipped-f,archive,thinking,screenshots}
 printf '{"a":1}\n' >"$SFT/proj/.project/project.json"
 printf '{"b":2}\n' >"$SFT/proj/.project/backlog.json"
 printf '# seed\n' >"$SFT/proj/.project/project-seed.md"
 printf '{"id":"f1"}\n' >"$SFT/proj/.project/features/f1/feature.json"
 printf '{"s":1}\n' >"$SFT/proj/.project/features/f1/stryker-report.json"
+# Shipped feature moved to features/archive/{date}-{name}/ by dev-refactor's
+# completion-batch — durableDecisions[] here must still travel (the leak this
+# test guards against: a fresh clone otherwise loses every shipped feature's why).
+printf '{"id":"shipped-f","durableDecisions":[{"decision":"x"}]}\n' \
+  >"$SFT/proj/.project/features/archive/2026-01-10-shipped-f/feature.json"
+printf '{"s":1}\n' \
+  >"$SFT/proj/.project/features/archive/2026-01-10-shipped-f/stryker-report.json"
 printf '{"arch":[]}\n' >"$SFT/proj/.project/archive/backlog-archive.json"
 printf '# t\n' >"$SFT/proj/.project/thinking/t1.md"
 printf '{"sess":1}\n' >"$SFT/proj/.project/session/state-sync.json"
@@ -427,14 +434,18 @@ python3 "$SF" restore --src "$SFT/branch" --project "$SFT/proj2" >/dev/null 2>&1
 sf_ok=1
 # Included in the branch.
 for want in project.json backlog.json project-seed.md features/f1/feature.json \
+            features/archive/2026-01-10-shipped-f/feature.json \
             archive/backlog-archive.json thinking/t1.md state-manifest.json; do
   [ -f "$SFT/branch/$want" ] || { echo "  missing in branch: $want"; sf_ok=0; }
 done
 # Excluded from the branch (denylist + regenerable).
 for deny in session/state-sync.json auth-state.json screenshots/a.png \
-            features/f1/stryker-report.json; do
+            features/f1/stryker-report.json \
+            features/archive/2026-01-10-shipped-f/stryker-report.json; do
   [ -e "$SFT/branch/$deny" ] && { echo "  leaked to branch: $deny"; sf_ok=0; }
 done
+grep -q '"durableDecisions"' "$SFT/branch/features/archive/2026-01-10-shipped-f/feature.json" 2>/dev/null \
+  || { echo "  archived durableDecisions content lost in transit"; sf_ok=0; }
 # Restore round-trips content and never writes a denylisted path.
 [ "$(cat "$SFT/proj2/.project/project.json")" = '{"a":1}' ] || { echo "  restore content mismatch"; sf_ok=0; }
 [ -e "$SFT/proj2/.project/auth-state.json" ] && { echo "  restore wrote denylisted auth-state.json"; sf_ok=0; }
@@ -442,6 +453,9 @@ done
 [ -e "$SFT/proj2/.project/.git" ] && { echo "  restore leaked the worktree .git marker"; sf_ok=0; }
 # Include-list gate: a report planted directly on the branch must not be restored.
 [ -e "$SFT/proj2/.project/features/f2/stryker-report.json" ] && { echo "  restore wrote a branch-planted report"; sf_ok=0; }
+# Archived feature dossier round-trips through restore too.
+[ -f "$SFT/proj2/.project/features/archive/2026-01-10-shipped-f/feature.json" ] \
+  || { echo "  restore dropped the archived feature dossier"; sf_ok=0; }
 # Symlink skip: restore must not follow a symlink out of .project/.
 if [ "$HAVE_SYMLINK" -eq 1 ]; then
   [ -e "$SFT/proj2/.project/evil.json" ] && { echo "  restore followed a symlink"; sf_ok=0; }
