@@ -35,6 +35,13 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
    **not** call `EnterWorktree` — it reliably rejects a pinned-cwd background subagent
    ("not inside an isolated worktree"), a documented recurring failure; go straight to
    `git worktree add` + absolute-path/`git -C` Bash calls for the whole build.
+   **Pre-existing untracked feature files on main** (e.g. large source content the main
+   chat wrote directly during define, before your worktree existed): do **not** skip
+   worktree creation to avoid losing them — `git stash -u` on main first, `git worktree
+   add` as normal, then `git stash pop` inside the new worktree before your first build
+   step. The worktree invariant has no exception; only the *order* changes. A stash-pop
+   conflict is a build blocker (`status: failed`), never a reason to improvise a
+   direct-main build.
    Verify/refactor-agent: use the existing worktree (same absolute-path pattern, no
    `EnterWorktree`); **never** finalize/merge/`ExitWorktree`/`git worktree remove`. The main
    chat owns finalize (PHASE 4, after refactor). Ignore the workflow's Finalize /
