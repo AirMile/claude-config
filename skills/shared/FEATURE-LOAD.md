@@ -19,19 +19,26 @@ node scripts/context-load.js <repo-root> feature-build <feature-name>
 node scripts/context-load.js <repo-root> feature-verify <feature-name>
 ```
 
-| Profile          | Used by                                                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `feature-build`  | dev-ship build PHASE 0 "Load feature" (requirements, buildSequence, files, architecture, clarifications, blockers, research) |
-| `feature-verify` | dev-ship verify PHASE 0 (checklist, requirements, files, runCommand, design, apiContract)                                    |
+| Profile          | Used by                                                                                                                                            |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `feature-build`  | dev-ship build PHASE 0 "Load feature" (requirements, buildSequence, files, architecture, clarifications, blockers, research, `durableDecisions[]`) |
+| `feature-verify` | dev-ship verify PHASE 0 (checklist, requirements, files, runCommand, design, apiContract)                                                          |
 
 Output: `{ present: false }` if `feature.json` is absent (skill should exit: "Run `/dev-ship`
 first."), else `{ present: true, ...fields }`.
 
-Fields deliberately excluded (not needed in PHASE 0): `durableDecisions[]`, `audit{}`,
-`tests.checklist`/`tests.finalStatus`, `suggestionsLog[]`, `status`, plus whichever of
-`design`/`apiContract`/`clarifications`/`buildSequence`/`architecture` the other profile doesn't
-list above. `research` (define-scout's Context7/library digest) is now carried by `feature-build`
-only — see `shared/CONTEXT7.md`.
+**`durableDecisions[]` is on `feature-build` only** (not `feature-verify`): build is the phase that
+writes new code against already-settled design questions — it needs to see the "does-not-change"
+constraint/rationale record so a later REQ doesn't silently re-decide one. verify checks behavior
+against `acceptance[]`, not design choices, so it stays without it. This was previously on the
+excluded list below (no load profile carried it at all — a design-time gap noted in
+`shared/SECOND-OPINION.md`-triggered analysis: every other reader of `durableDecisions[]` runs at
+plan/define time, never on the modify path).
+
+Fields deliberately excluded (not needed in PHASE 0): `audit{}`, `tests.checklist`/`tests.finalStatus`,
+`suggestionsLog[]`, `status`, plus whichever of `design`/`apiContract`/`clarifications`/`buildSequence`/
+`architecture` the other profile doesn't list above. `research` (define-scout's Context7/library
+digest) is now carried by `feature-build` only — see `shared/CONTEXT7.md`.
 
 ## Game-pipeline equivalent
 

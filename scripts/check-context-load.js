@@ -141,6 +141,7 @@ check(
     "clarifications",
     "blockers",
     "research",
+    "durableDecisions",
   ],
 );
 check(

@@ -9,6 +9,8 @@ result format only.
 
 ## Item-handling rules
 
+**REQ-pointer (mandatory, all steps below)**: every generated test file gets one comment line directly above the test — `// {REQ-id} · {feature-name}` — same convention as build's `dev-build/techniques/tdd.md` § Step 1. This is what lets a failing test resolve back to `feature.json#requirements[]` and `#durableDecisions[]` later; `scripts/check-req-tags.js` validates it.
+
 Execute these steps for each non-COVERED AUTO item:
 
 1. Execute steps via bash commands, Playwright runner specs, or write an integration test file.

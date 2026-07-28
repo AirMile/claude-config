@@ -61,7 +61,25 @@
      | Genuine regression (broke unrelated functionality)        | Rollback THIS feature only |
      | Flaky or environment-dependent                            | Re-run once, then decide   |
 
-     **If test update needed:**
+     **Guard on row 1 — check traceability before updating a test.** Refactor has no
+     `acceptance[]`/`durableDecisions[]` in context (unlike build/verify), so "intentionally
+     improved" is the one call in this phase most likely to be a guess. Before updating a test:
+
+     - Read the failing test's REQ-pointer comment (`// {REQ-id} · {feature-name}` — see
+       `dev-build/techniques/tdd.md` § Step 1). No tag → this is a builder-only unit test with no
+       acceptance link; row 1 stays allowed as-is.
+     - Tag present → the assertion traces to `feature.json#requirements[]` for `{feature-name}`.
+       Check that feature's `durableDecisions[]` — already in context from the full `feature.json`
+       Read at PHASE 1 step 3/4 (`workflow.md:30,98`; live path, or `features/archive/*-{feature-name}/`
+       if shipped) — it just wasn't being consulted for this decision until now. If any entry's
+       `constraint` or `chosen` explains the behavior the failing assertion checks → this is NOT "intentionally
+       improved by refactor", it's refactor contradicting an already-settled decision. **Forbid the
+       test update — go straight to rollback THIS feature only.** Rewriting the assertion here would
+       make refactor the one phase that can erase a durable decision unilaterally, with the erasure
+       becoming the new gate the next run trusts.
+     - Tag present but no matching `durableDecisions[]` entry → row 1 remains allowed.
+
+     **If test update needed** (guard above did not forbid it):
      - Update ONLY the specific assertion(s)
      - Re-run FULL test suite
      - If still failing → rollback THIS feature only

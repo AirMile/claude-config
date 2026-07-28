@@ -4,7 +4,7 @@
 
 **Core principle**: tests verify behavior via public interfaces, not implementation details. Code may change completely — tests do not.
 
-**Good tests** are integration-style: they test real code paths via public APIs. They describe _what_ the system does, not _how_. A good test reads like a specification.
+**Good tests** are integration-style: they test real code paths via public APIs. They describe _what_ the system does, not _how_. A good test reads like a specification — of the observable contract, at the moment it was written. It is not a substitute for a design record: a test can prove `checkout` confirms a valid cart, but it cannot say why local state was chosen over a shared store, or which alternative was rejected and why. That's `feature.json#durableDecisions[]`'s job (`rejected[]` in particular — a test has no way to express an option that was deliberately not taken). The REQ-pointer below is what connects the two.
 
 ```typescript
 // Good — tests observable behavior
@@ -53,6 +53,9 @@ Tests in bulk test _imaginary_ behavior, not _actual_ behavior. You commit to a 
 Read 1 existing test file (preferably a model/service test) for setup/teardown patterns (before/after hooks, DB lifecycle, import conventions). Use this as the basis for your test structure.
 
 Generate a test for THIS requirement. If the requirement has `acceptance[]`: use `when` as the test description (`it("when {when}, {then}", ...)`) and `then` as the expected result in the assert. No `acceptance[]` → follow project test conventions.
+
+**REQ-pointer (mandatory)**: immediately above every generated test, add one comment line: `// {REQ-id} · {feature-name}` (e.g. `// REQ-005 · pin-mode`). REQ-ids are only unique within a feature, so the feature-name half is not optional. This is the only intent carried into the test file itself — no rationale, no constraint prose (that stays in `feature.json#durableDecisions[]`, which the build phase already has loaded — see `dev-build/references/context-loading.md`). The pointer is what turns a failing test, six months from now, into a lookup: `feature.json#requirements[]` for the acceptance criterion, `#durableDecisions[]` for why it's built this way. `scripts/check-req-tags.js` validates the pair still resolves.
+
 Run test — expect FAIL. If the test passes immediately — you are testing existing behavior. Adjust the test.
 
 ### Step 2: Implement (GREEN)
@@ -88,6 +91,7 @@ Run test — confirm still PASS.
 [ ] Test describes behavior, not implementation
 [ ] Test uses only public interface
 [ ] Test survives internal refactor
+[ ] Test carries its REQ-pointer comment (`// {REQ-id} · {feature-name}`)
 [ ] Code is minimal for this test
 [ ] No speculative features added
 [ ] Reuses existing project utilities where possible
@@ -157,7 +161,7 @@ edge/boundary REQs):
 import fc from "fast-check";
 import { test, expect } from "vitest"; // or your runner's test/expect
 
-// REQ-005 (category: boundary): cart-total is commutative over item order
+// REQ-005 · cart-checkout (category: boundary): cart-total is commutative over item order
 test("when items added in any order, then cart-total is identical", () => {
   fc.assert(
     fc.property(

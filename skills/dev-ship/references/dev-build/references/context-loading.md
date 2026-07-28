@@ -83,7 +83,7 @@ If no feature name provided:
 
 2. Fallback: list `.project/features/` with `feature.json`, let user select
 
-Feature load: `node ~/.claude/scripts/context-load.js "$REPO" feature-build "{feature-name}"` (see [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)). Use extracted fields: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`), `research`. If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files. If `research` is present: it is define-scout's library digest for exactly this feature's unfamiliar-API areas — first stop during PHASE 2 GREEN steps, before any new Context7 query (cache order: [shared/CONTEXT7.md](.claude/skills/shared/CONTEXT7.md)).
+Feature load: `node ~/.claude/scripts/context-load.js "$REPO" feature-build "{feature-name}"` (see [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)). Use extracted fields: `requirements[]`, `buildSequence[]`, `files[]`, `testStrategy[]`, `architecture` (specifically `registries[]` and `interfaces`), `research`, `durableDecisions[]`. If `clarifications[]` is present: treat as hard constraints during implementation (gray-area decisions from the user). If `architecture.registries[]` is present: use as a guide — add new instances (endpoints, commands, entities) to the indicated registry file, don't scatter them across loose files. If `research` is present: it is define-scout's library digest for exactly this feature's unfamiliar-API areas — first stop during PHASE 2 GREEN steps, before any new Context7 query (cache order: [shared/CONTEXT7.md](.claude/skills/shared/CONTEXT7.md)). If `durableDecisions[]` is present: treat each `constraint` as a hard boundary during implementation, same standing as `clarifications[]` — a REQ whose natural implementation would violate one (e.g. re-introducing a rejected option, or a data model that contradicts an already-decided one) must instead follow the recorded `chosen` approach; note the check in the SYNC line only when a REQ's implementation actually touched one.
 
 `present: false` → exit: "Run `/dev-ship {feature-name}` first."
 
@@ -119,8 +119,12 @@ multiSelect: false
 
 Skip if no `depends[]` or empty.
 
-1. Parse `.project/backlog.json`. Not found → skip.
-2. Per dependency: status must be `"DONE"`.
+1. Parse `.project/backlog.json` (+ `.project/archive/backlog-archive.json` — a shipped dependency
+   moves there, see `shared/BACKLOG.md § Archiving`). Not found → skip.
+2. Per dependency: must be complete — `shipped === true` in either file, or `type === "THEME" &&
+status === "DONE"` (backward-compat for pre-fix THEME cards). Plain `status === "DONE"` is not
+   enough on its own: it lands right after verify, while the dependency's code is still on its
+   feature branch, not yet merged (`shared/BACKLOG.md § Completion & dependency resolution`).
 3. Blockers found → **AskUserQuestion**:
    - "Stop — finish {dep} first (Recommended)" / "Continue anyway"
    - Stop → exit with message: `Run /dev-ship {dep}` (for FEATURE or COMPONENT deps) or `Run /design-convert {dep}` (for PAGE deps). Continue → proceed.

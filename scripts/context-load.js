@@ -196,6 +196,12 @@ switch (profile) {
       clarifications: f.clarifications || [],
       blockers: f.build?.blockers || [],
       research: f.research || null,
+      // Was excluded from every load profile (FEATURE-LOAD.md's old
+      // "deliberately excluded" list) — the build phase is the one place a
+      // durable decision needs to be *seen*, not just written: it's the
+      // "does-not-change" constraint/rationale record that should stop a
+      // later REQ from silently re-deciding an already-settled question.
+      durableDecisions: f.durableDecisions || [],
     });
     break;
   }
