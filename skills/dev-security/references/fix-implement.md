@@ -155,51 +155,85 @@ Patch the audit state `status: "complete"`, `phase: "PHASE 5"` — **the file is
 (unlike the ship checkpoint): it is the durable audit record, and a later `/dev-security {feature}`
 run's ship-triage preload (`SKILL.md § PHASE 1`) may still want to reference it.
 
-**Close the originating backlog card.** `shared/BACKLOG.md` declares `SECURITY` as a valid card
-type but documents no lifecycle for it. Find `.project/backlog.json#features[]` entry matching
-`type === "SECURITY" && parentFeature === {scope.feature}` (present whenever the audit ran via the
-ship-triage-follow-up scope). Already `status: "DONE"` (an earlier run already closed it) → leave
-untouched, skip silently. Otherwise, if found: set `status: "DONE"`, `shipped: true`, `shippedAt`
-(today), `shippedSha` (the fix commit — worktree SHA if unmerged, main SHA if the inline merge below
-ran), `summary` (one line, the fix strategy + finding count). Mirrors the TWEAK card lifecycle
-(`shared/BACKLOG.md § TWEAK cards`: "TODO → shipped directly"), since SECURITY cards are also
-created ad hoc outside the main FEATURE ship pipeline. No matching card (e.g. full-codebase scope,
-no `scope.feature`) → skip silently.
+**Close every scoped SECURITY card — and clear its transition.** `shared/BACKLOG.md` declares
+`SECURITY` as a valid card type; its lifecycle (`shared/BACKLOG.md § SECURITY cards`) is: the
+dashboard optimistically stamps `transition: "securing"` on copy-prompt, and this skill owns
+clearing it. Do **not** stop at the first match — iterate **all**
+`.project/backlog.json#features[]` entries with `type === "SECURITY" && parentFeature ===
+{scope.feature}` (the originating card plus any `security-followup-*` siblings this run's scope
+covers); a single `.find()` here is the bug that leaves sibling cards stuck showing
+`⧉ securing · queued` forever, since the board's own auto-clear (`if (f.shipped && f.transition)
+delete f.transition`) only fires once `shipped` lands, and the board has no per-sibling closing
+step of its own. For each matching card:
 
-**Surface deferred findings.** Findings the chosen strategy did not fix (`plans.{chosenStrategy}`'s
-deferred list — or, on the "No, report only" branch, every CRITICAL/HIGH finding in
-`aggregate.findings`) do not just disappear into the audit-state file: for each, first check
-`.project/backlog.json#features[]` for an existing `type: "SECURITY"` card with the same
-`parentFeature` and a matching `file`+`category` in its `description` that is still
-`status: "TODO"` — found → skip (already surfaced, avoid a duplicate), otherwise append a
-lightweight card:
-`{name: "security-followup-{auditId}-{n}", type: "SECURITY", status: "TODO", phase: "P2",
+- Already `status: "DONE"`/`shipped: true` (an earlier run already closed it) → leave untouched,
+  skip silently, but still `delete card.transition` if somehow still present (defensive).
+- This run's chosen strategy fixed the finding the card represents (the originating card, or a
+  followup whose `file`+`category` appears in `plans.{chosenStrategy}.fixes`) → set
+  `status: "DONE"`, `shipped: true`, `shippedAt` (today), `shippedSha` (the fix commit — worktree
+  SHA if unmerged, main SHA if the inline merge below ran), `summary` (one line, the fix strategy +
+  finding count), **and `delete card.transition`**. Mirrors the TWEAK card lifecycle
+  (`shared/BACKLOG.md § TWEAK cards`: "TODO → shipped directly"), since SECURITY cards are also
+  created ad hoc outside the main FEATURE ship pipeline.
+- This run did not fix it (stays open, e.g. below the strategy's coverage) → leave `status: "TODO"`
+  as-is, but **`delete card.transition` if present** — a deferred-but-open finding belongs back in
+  the Security lane (TODO, no transition), not stuck in IN PROGRESS just because its prompt was
+  copied to launch this run.
+
+No matching card at all (e.g. full-codebase scope, no `scope.feature`) → skip silently.
+
+**Surface deferred findings — severity floor + recurrence skip.** Findings the chosen strategy did
+not fix (`plans.{chosenStrategy}`'s deferred list — or, on the "No, report only" branch, every
+CRITICAL/HIGH finding in `aggregate.findings`) do not just disappear into the audit-state file, but
+not every deferred finding earns a backlog card either:
+
+- **Severity floor: skip `severity: "low"`.** Low-severity deferred findings stay durably readable
+  inside `audit-{id}-findings.json` / the audit-state file (a later `/dev-security` run's report
+  still surfaces them) but do not get their own card — this is what was flooding the board with P2
+  hardening/robustness notes disproportionate to a finding's actual risk. Only `critical`, `high`,
+  and `medium` deferred findings proceed to the dedup check below.
+- **Dedup + recurrence/accepted-risk skip.** For each surviving (medium+) finding, check
+  `.project/backlog.json#features[]` for an existing `type: "SECURITY"` card with the same
+  `parentFeature` and a matching `file`+`category` in its `description`. Skip creating a new card
+  (avoid a duplicate / respect the user's prior call) if a match exists with **any** of:
+  `status: "TODO"` (already surfaced, still open), `status: "CANCELLED"` (the user explicitly
+  dismissed it as an accepted risk via the board's cancel action — do not resurrect it every audit
+  run), or `shipped: true` / `status: "DONE"` (already remediated). Otherwise append a lightweight
+  card:
+  `{name: "security-followup-{auditId}-{n}", type: "SECURITY", status: "TODO", phase: "P2",
 description: "{finding.issue} (deferred from audit {auditId}, {finding.severity} {finding.category})",
-parentFeature: scope.feature ?? null}`. This gives deferred findings the same backlog-visibility
-path ship-triage already gives confirmed findings, so a later `/dev-security` run or `/project-todo`
-review can pick them back up instead of them only ever existing inside one timestamped audit-state
-JSON nobody re-reads.
+parentFeature: scope.feature ?? null}`. This gives medium+ deferred findings the same
+  backlog-visibility path ship-triage already gives confirmed findings, so a later `/dev-security`
+  run or `/project-todo` review can pick them back up instead of them only ever existing inside one
+  timestamped audit-state JSON nobody re-reads — without re-flooding the board with low-severity
+  noise or findings the user already accepted.
 
 > **Todo**: offer to merge now instead of only handing off to a separate command.
 
 `worktree === null` (run continued directly on `{default branch}` — the § Worktree dirty-work
-guard skipped auto-create) → skip the Merge question entirely, nothing to merge. Go straight to
-the Next-Step Clipboard Offer below.
+guard skipped auto-create) → skip the Merge question entirely, nothing to merge. End the skill here.
 
 Otherwise, AskUserQuestion — header: "Merge", question: "Worktree `security-hardening-{date}` is
 ready (commit shown above). Merge it into main now?":
 
-- "Ja, review diff en merge nu (Aanbevolen)" — show the **full, unfiltered** `git diff
-  {default}...worktree-security-hardening-{date}` (no path args — every changed file, including
-  tests) for user review, then run `shared/FINALIZE.md` inline (same integrated pattern `dev-ship`/
-  `game-ship`/`design-ship` already use for their own PHASE 4 Finalize) with
-  `feature-name: security-hardening-{date}`. On success, re-run the backlog-close step above using
-  the **merge commit's** SHA (not the pre-merge fix-commit SHA). Then apply the Next-Step Clipboard
-  Offer (binary Ja/Nee) — read `.claude/skills/shared/NEXT-STEP-OFFER.md`. Recommended command:
-  the resolved `{next-feature}` per that doc's standard lookup (first `TODO`/`FEATURE` in
-  `.project/backlog.json`) — no offer if none exists.
-- "Nee, later" — fall through to the Next-Step Clipboard Offer below.
+- "Yes, review diff and merge now (Recommended)" — show the **full, unfiltered** `git diff
+{default}...worktree-security-hardening-{date}` (no path args — every changed file, including
+  tests) for user review, then run the `shared/FINALIZE.md` steps directly in this turn with
+  `feature-name: security-hardening-{date}` — **do not invoke `/core-finalize` or the
+  `core-finalize` skill for this step**; that delegates to a separate command, which is exactly
+  what this branch exists to avoid (same integrated pattern `dev-ship`/`game-ship`/`design-ship`
+  already use for their own PHASE 4 Finalize).
 
-`Nee` chosen (or the merge fails/is declined mid-review) → Apply the Next-Step Clipboard Offer
-(binary Ja/Nee) — read `.claude/skills/shared/NEXT-STEP-OFFER.md`. Recommended command:
-`/core-finalize security-hardening-{date}` — merges the worktree via `shared/FINALIZE.md`.
+  > **Todo**: on merge success, complete both in order before ending the turn:
+  >
+  > 1. Re-run the backlog-close step above using the **merge commit's** SHA (not the pre-merge
+  >    fix-commit SHA).
+  > 2. Read `shared/FINALIZE-REFERENCE.md` and print the `§ Output Report`
+  >    (Mode/Feature/Branch/Target/Merge/PR/Worktree/State) — not a free-form summary.
+  > 3. Follow `shared/STATE-SYNC-PUSH.md § Auto-push` (non-fatal).
+
+- "No, later" — end the skill here. Worktree stays open; print
+  `💡 Run /core-finalize security-hardening-{date} when ready`.
+
+`No` chosen (or the merge fails/is declined mid-review) → print
+`💡 Run /core-finalize security-hardening-{date} when ready` and end the skill here.

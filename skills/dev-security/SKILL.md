@@ -12,7 +12,7 @@ writes: [security.audit, backlog.status]
 writes-terminal: [security.reports]
 metadata:
   author: claude-config
-  version: 3.7.0
+  version: 3.9.0
   category: dev
 ---
 
@@ -250,16 +250,20 @@ Inside plan mode:
    report files): OSV/npm-audit findings → A03; Semgrep findings → per rule `metadata.category`;
    gitleaks findings → A04 (CRITICAL when the credential looks active, otherwise HIGH). OSV severity
    mapping: CRITICAL/HIGH/MODERATE/LOW → severity 1-to-1.
-2. **Fold in the ship-triage findings** (only when PHASE 1 preloaded `shipTriageRef`) — already-known
+2. **Check `aggregate.scannersFailed`** — non-empty → note which OWASP categories didn't return a
+   result (mirrors PHASE 4's `plannersFailed` handling) and surface it in the report below as
+   `Coverage: N/10 categories scanned — {codes} failed`. The verdict is computed only from the
+   categories that did return; never present it as full-coverage when it wasn't.
+3. **Fold in the ship-triage findings** (only when PHASE 1 preloaded `shipTriageRef`) — already-known
    `confirmed[]` items from the dev-ship handoff, deduped against anything the scanners rediscovered.
    If the relevant category's scanner re-verified the item as fixed (its own findings/verdict no
    longer show it) → report it as resolved, not as an open finding. Only count a `shipTriageRef`
    item toward the open-findings tally when its scanner did not independently confirm a fix.
-3. **Anti-fantasy judgment**: `aggregate.antiFantasySuspect` flags 3+ scores of 9-10 — apply
+4. **Anti-fantasy judgment**: `aggregate.antiFantasySuspect` flags 3+ scores of 9-10 — apply
    judgment on top of the mechanical flag: expect justification per high score, reconsider "would a
    pentester give these scores?"
-4. **Verdict**: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OR CRITICAL findings).
-5. **Second-opinion escalation** (still in plan mode — the consult agent is read-only): if
+5. **Verdict**: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OR CRITICAL findings).
+6. **Second-opinion escalation** (still in plan mode — the consult agent is read-only): if
    (a) two sources conflict on the same finding (scanner vs PHASE 2 tool vs `shipTriageRef`), or
    (b) ≥1 CRITICAL finding has confidence < 80%, or (c) `antiFantasySuspect` fired AND the
    verdict flips on judgment —
@@ -277,6 +281,7 @@ SECURITY AUDIT
 Project: [name]
 Tech Stack: [detected]
 Files Scanned: [count]
+{Coverage: N/10 categories scanned — {codes} failed — only shown when aggregate.scannersFailed is non-empty}
 
 Overall Security Score: [X.X]/10
 
