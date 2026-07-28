@@ -24,7 +24,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 2.8.0
+  version: 2.9.0
   category: core
 ---
 

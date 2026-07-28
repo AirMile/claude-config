@@ -262,7 +262,7 @@ Ask via AskUserQuestion: "Is this overview correct? Would you like to change any
 
 > **Todo**: mark Phase 2 → `completed`, Phase 3 → `in_progress`.
 
-1. **Fetch latest versions** via `npm view` / `pip show` / `cargo search` or equivalent for the stack's package manager.
+1. **Fetch latest versions** via `npm view <pkg> version` / `pip index versions <pkg>` / `cargo search <pkg>` or equivalent. `pip show` reports an _installed_ package, not the latest — never use it here. Verify against the resolver that will actually install: a registry's advertised latest may not be installable for the target runtime. Never pin a version you have not seen the resolver offer.
 
 2. **Generate project files** appropriate for the chosen stack. Include package manifest, framework config, linting/formatting config, `.env.example` (only relevant vars), and `.gitignore`.
 
@@ -347,6 +347,8 @@ grep -qxF '.project/' .gitignore 2>/dev/null || echo '.project/' >> .gitignore
 Follow `references/stack-baseline-shared.md`.
 
 **Trigger:** `stack.framework` is filled in and `.claude/research/stack-baseline.md` does not yet exist.
+
+> **Todo**: the research agent runs in the background — mark Phase 7 → `completed` once it reports back, not merely once it is dispatched. Continue with Phase 7b while it runs; do not leave Phase 7 sitting `in_progress` after the run otherwise finishes.
 
 ---
 

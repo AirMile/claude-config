@@ -49,7 +49,18 @@ Before writing in either variant: `mkdir -p .project` (defensive — greenfield 
 
 ## Variant: greenfield
 
-No codebase to scan. Single AskUserQuestion:
+No codebase to scan — but this run's own Phase 2 interview is a source. Before asking, scan the Phase 2 answers (description, stack, tooling, architecture free-text) for convention-bearing statements: naming rules, file/folder structure, build/test conventions, explicit always/never constraints.
+
+**Present the options below exactly as written — never substitute, merge, or invent an option.** The only permitted variation is the conditional first option and the `(Recommended)` placement described here.
+
+≥2 candidate rules found in Phase 2 → prepend this option, and drop `(Recommended)` from "No conventions yet":
+
+```yaml
+- label: "Distill from this session's answers (Recommended)"
+  description: "Turn the conventions you already stated into .project/conventions.md — shown for review first"
+```
+
+Then ask the standard set (options unchanged either way):
 
 ```yaml
 header: "Conventions"
@@ -64,6 +75,7 @@ options:
 multiSelect: false
 ```
 
+- **"Distill from this session's answers"** → draft the rules from the Phase 2 candidates, then **show the draft in chat and ask one confirm/adjust AskUserQuestion before writing** — never a silent write. Write `set` with `<!-- source: session-interview -->`.
 - **"No conventions yet"** → write the sentinel file.
 - **"Paste a style guide"** → user pastes text or a path/URL; distill to ≤120 lines (only rules that differ from or specialize the global rule files), write `set` with `<!-- source: pasted -->`.
 - **"Answer 3 short questions"** → mini-interview per [shared/QUESTIONING.md](../../shared/QUESTIONING.md): one anchored open question each for **naming** (files, components, variables), **structure** (file/folder organization, co-location), **style** (exports, error handling, comments). Escalation ladder applies — 2nd "I don't know" on a topic → switch to AskUserQuestion with hypotheses; unresolved topics are simply omitted from the file. Write `set` with `<!-- source: interview -->`.

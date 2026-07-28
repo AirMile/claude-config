@@ -4,7 +4,7 @@
 
 **Goal:** Create `.project/project.json` as the first dashboard file for this project. core-setup is the first skill to run — all later skills build on this.
 
-See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies (found via `find ~/.claude -name DASHBOARD.md` or in the claude-config repo).
+See `{skills_root}/shared/DASHBOARD.md` for the full schema and merge strategies (found via `find -L ~/.claude -name DASHBOARD.md` — the `-L` is required because `~/.claude/skills` is a symlink — or in the claude-config repo).
 
 **Steps:**
 
