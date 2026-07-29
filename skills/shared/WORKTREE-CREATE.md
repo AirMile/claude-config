@@ -284,6 +284,13 @@ ln -sfn "$MP/thinking"             "$WT/.project/thinking"
 ln -sfn "$MP/project.json"         "$WT/.project/project.json"
 ln -sfn "$MP/project-context.json" "$WT/.project/project-context.json"
 
+# CLAUDE.md is gitignored (not committed — shared/TEAM.md), so `git worktree add` never
+# carries it. Symlink it too — safe to dangle if main has none yet.
+if [ -f "{main_root}/CLAUDE.md" ]; then
+  rm -f "$WT/CLAUDE.md"
+  ln -sfn "{main_root}/CLAUDE.md" "$WT/CLAUDE.md"
+fi
+
 # convex-test's import.meta.glob resolves relative to node_modules' physical location, not
 # the worktree — a symlinked/parent-resolved node_modules silently bundles main's stale
 # convex/*.ts instead of the worktree's edited copy (documented pitfall, scoring-engine +

@@ -26,6 +26,7 @@ Run once after a worktree is first created (Step 3 of auto-create). Makes backlo
 | `.project/screenshots/`         | **Yes** | Audit artifacts — not session-bound                                                               |
 | `.project/thinking/`            | **Yes** | Research output — not session-bound                                                               |
 | `.project/session/`             | **No**  | Skill-state per worktree (`active-{feature}.json`, `pre-debug-status.txt`, `design-history.json`) |
+| `CLAUDE.md`                     | **Yes** | Gitignored (local project config, not committed — shared/TEAM.md), so `git worktree add` never carries it; project instructions and worktree-bound tooling notes must be visible in the worktree too |
 
 ### Procedure
 
@@ -52,6 +53,13 @@ ln -sfn "$MP/screenshots"           "$WT/.project/screenshots"
 ln -sfn "$MP/thinking"              "$WT/.project/thinking"
 ln -sfn "$MP/project.json"          "$WT/.project/project.json"
 ln -sfn "$MP/project-context.json"  "$WT/.project/project-context.json"
+
+# CLAUDE.md is gitignored (not committed — shared/TEAM.md), so a fresh worktree never gets
+# it from `git worktree add`. Symlink it too — safe to dangle if main has none yet.
+if [ -f "{main_root}/CLAUDE.md" ]; then
+  rm -f "$WT/CLAUDE.md"
+  ln -sfn "{main_root}/CLAUDE.md" "$WT/CLAUDE.md"
+fi
 
 # Assert: all required symlinks must resolve — fail loudly instead of silently passing with broken links
 # (archive/ is deliberately excluded — like wireframes/screenshots/thinking below, its source may not
