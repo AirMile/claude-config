@@ -12,7 +12,7 @@ reads:
 writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.19.0
+  version: 1.21.0
   category: dev
 ---
 
@@ -113,26 +113,28 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    > schema/sequencer/multi-file change). The moment it does, Read `references/escalate.md` and escalate
    > **before** any design work — do not run an Explore/plan/`EnterPlanMode` cycle on the out-of-scope
    > shape first (that is the intake-side twin of PHASE 2's "do not finish the edit first"). Holds even
-   > when the session is already in harness plan mode. This gates the two Todos below: only once it
-   > clears do the gate-close and learnings/lane steps proceed.
-
-   With the file set now known, close the size gate — apply
-   [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Size gate criteria **2, 3 and 4**
-   (file span, new test _file_, architecture) to the actual files. Criterion 3 fires on a new test
-   file or harness only — new cases in an existing test file are tweak-compatible. Then print
-   `Gate: ✓ tweak-sized ({n} file(s))` — not printed → go back, do not proceed to step 2. A
-   criterion fires → Read `references/escalate.md` before any design work.
+   > when the session is already in harness plan mode. This gates every step below: only once it
+   > clears do steps 2-5 run.
 
    > **Todo** (card mode): locate shows the described defect **already resolved** on `main` (a later
    > commit fixed it, or it never applied — **stale**), or the card's whole reason to exist is
    > **superseded** by a wider card (nothing fixed it, another card absorbed it — confirm with one
    > `AskUserQuestion` naming that card first) → skip PHASE 2, PHASE 3, and PHASE 4 step 1 entirely
-   > (including step 2's learnings load); go straight to the matching PHASE 4 write per
+   > (including step 3's learnings load); go straight to the matching PHASE 4 write per
    > [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup → Stale card /
    > Obsolete-superseded card. Both cases: commit nothing, report carries no `Verdict:`/commit-sha
    > line. Superseded decline → continue the tweak as originally scoped.
 
-2. **Learnings** — **mandatory, not gated on tweak size**. Run exactly this, after locate so
+2. **Close the size gate** — with the file set now known, apply
+   [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Size gate criteria **2, 3 and 4**
+   (file span, new test _file_, architecture) to the actual files. Criterion 3 fires on a new test
+   file or harness only — new cases in an existing test file are tweak-compatible. A criterion fires
+   → Read `references/escalate.md` before any design work.
+
+   > **Todo**: print `Gate: ✓ tweak-sized ({n} file(s))` now. Not printed → this step did not run;
+   > do not proceed to step 3.
+
+3. **Learnings** — **mandatory, not gated on tweak size**. Run exactly this, after locate so
    `--paths` carries the real file anchors (see [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)
    for the full parameter/relevance model):
 
@@ -144,9 +146,9 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
 
    > **Todo**: any non-zero exit (including exit 2, usage error) is a failed step, not a zero-match
    > result — fix the invocation and re-run before proceeding. Only exit 0 with empty stdout is a
-   > genuine zero. The count feeds step 3's `Lane:` line below; no separate print here.
+   > genuine zero. The count feeds step 5's `Lane:` line below; no separate print here.
 
-2b. **Durable-decisions check** — this is dev-tweak's only route back to a feature's already-settled
+4. **Durable-decisions check** — this is dev-tweak's only route back to a feature's already-settled
 design questions (`durableDecisions[]` has no other reader on the modify path — see
 `shared/FEATURE-LOAD.md`). `.project/` absent (already degraded at PHASE 0 step 1) → skip
 silently, same as the rest of this skill's graceful degradation.
@@ -164,19 +166,28 @@ silently, same as the rest of this skill's graceful degradation.
     tweak cannot honor it within 1-3 files. No hits, or the field is empty → nothing to hold, proceed
     as normal.
 
-3. **Lane routing**.
+5. **Lane routing**.
 
-> **Todo**: judge [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Lane routing's
-> table fresh against this run's actual locate/learnings results, never from memory — re-read the
-> file only if its content isn't already in context from PHASE 0. Evaluate rows in order; the
-> first match picks the lane. Print one line, always — Lane A included:
-> `Lane: {A|B|C} · Learnings: {n} ({matched pitfall, or "no pitfall on located paths"})`.
-> `{n}` = unique entries across all blocks the load printed — an entry appearing in both the
-> pitfall and the component block counts once.
+   > **Todo**: judge [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Lane routing's
+   > table fresh against this run's actual locate/learnings results, never from memory — re-read the
+   > file only if its content isn't already in context from PHASE 0. Evaluate rows in order; the
+   > first match picks the lane. Print one line, always — Lane A included:
+   > `Lane: {A|B|C} · Learnings: {n} ({matched pitfall, or "no pitfall on located paths"})`.
+   > `{n}` = total lines the load printed across all blocks — a raw count, not a deduped one;
+   > nothing downstream depends on the exact number.
+
+> **Todo — PHASE 1 exit**: this phase produces exactly two printed lines, `Gate:` (step 2) and
+> `Lane:` (step 5). Both present in the output above → proceed to PHASE 2. Either missing → the
+> corresponding step did not run: go back and run it now. Do not enter PHASE 2 to "reconcile after".
 
 ## PHASE 2 — Implement
 
-1. **Lane execution** — run the lane PHASE 1 step 3 picked, exactly as
+1. **STOP — gate before the first `Edit`**: scroll up and confirm three artifacts exist above this
+   point — a `learnings-search.js` tool result (step 3), a `feature.json` grep result or its "no
+   match" (step 4), and a printed `Lane:` line (step 5). Judge what the transcript shows, not what
+   you remember doing. Any one absent → go back to that step now; do not edit first and reconcile
+   after.
+2. **Lane execution** — run the lane PHASE 1 step 4 picked, exactly as
    [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Lane routing defines it (A direct /
    B plan-mode design / C + `Plan` agent on `model: "opus"` + Fable consult per
    [shared/SECOND-OPINION.md](../shared/SECOND-OPINION.md)). Four dev-side deltas:
@@ -188,9 +199,6 @@ silently, same as the rest of this skill's graceful degradation.
      found during design still routes to `references/escalate.md`.
    - The harness may open its own plan-mode workflow prescribing Explore/`Plan` agent fan-out on
      `EnterPlanMode`. Ignore it: the file set is already located, a tweak designs inline.
-2. **STOP — gate before the first `Edit`**: PHASE 1 steps 2 (learnings) and 3 (lane) must both have
-   run, and the `Lane:` line must be printed. Not printed → go back to PHASE 1 step 2 now; do not
-   edit first and reconcile after.
 3. **Edit discipline** per [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Edit
    discipline — read-before-write, bounded read size, deliberate (not random) test-file pick. A
    located file has a frontend extension (`.tsx`/`.jsx`/`.vue`/`.svelte`/`.css` or equivalent) → load
@@ -279,11 +287,11 @@ bullet below describes:
   the same file scope, then re-run PHASE 3.
 - `One more small tweak` → back to PHASE 2 for one more iteration on the same file scope, then
   re-run PHASE 3. This doesn't reset the size gate — a new file surfacing on this pass still fires
-  `references/escalate.md` exactly like any other mid-flight re-check (PHASE 2 step 4). Not itself a
+  `references/escalate.md` exactly like any other mid-flight re-check (PHASE 2 step 5). Not itself a
   failed round (the prior pass may have verified clean) — only an actual PHASE 3 failure counts
   toward § Lane routing row 2.
 - `Re-score — design this properly` (Other) → counts as a failed round (§ Lane routing row 2) →
-  re-enter PHASE 2 step 1; the lane lifts per that row (first re-score → Lane C, second →
+  re-enter PHASE 2 step 2; the lane lifts per that row (first re-score → Lane C, second →
   `references/escalate.md`).
 - `Revert — restore to baseline, don't commit` (per
   [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Edit discipline) → restore the
@@ -295,13 +303,16 @@ bullet below describes:
 ## PHASE 4 — Wrap-up
 
 1. **Scoped commit** per [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md) — land via
-   `~/.claude/scripts/scoped-commit.sh` (§ 5), never a bare `git add && git commit`. Deltas: baseline
-   `pre-tweak-status.txt`; OVERLAP policy **auto-include** (the fix is the point); fallback: ask
-   which files belong to the tweak. **`--files` lists the files THIS run edited** — never the whole
-   baseline diff: a concurrent `/dev-tweak` on the same tree makes its own files look NEW against
-   your baseline too (§ 2's NEW category cannot tell them apart). **Message type is never `feat`** —
-   a tweak by definition adds no net-new capability (size-gate criterion 1); use
-   `{fix|refactor|perf|style|chore}({slug}): {summary}`. Cleanup: remove the baseline file.
+   `~/.claude/scripts/scoped-commit.sh` (§ 5), never a bare `git add && git commit`. Write the
+   commit message to a scratch file under `.project/session/` first — `--message` takes a file
+   path, not inline text. Deltas: baseline `pre-tweak-status.txt`; OVERLAP policy **auto-include**
+   (the fix is the point); fallback: ask which files belong to the tweak. **`--files` lists the
+   files THIS run edited** — never the whole baseline diff: a concurrent `/dev-tweak` on the same
+   tree makes its own files look NEW against your baseline too (§ 2's NEW category cannot tell them
+   apart). **Message type is never `feat`** — a tweak by definition adds no net-new capability
+   (size-gate criterion 1); use `{fix|refactor|perf|style|test|chore}({slug}): {summary}` (`test`
+   for a tweak whose only change is added/expanded test coverage). Cleanup: remove the baseline
+   file and the commit-message scratch file.
 2. **Card-mode completion** (skip entirely in free-text mode): run
    [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup **completion write** as
    specified there — field list, archive move, and the board-app revert guard all live in that
@@ -328,7 +339,7 @@ bullet below describes:
      or `user-confirmed` / `self-tested` for whichever Tier 2 path was taken. Auto-pass is never
      silent — the report always states why the modal didn't fire.
    - a `Lane:` line **always**, Lane A included — `Lane: {A|B|C} · Learnings: {n}` (carry PHASE 1
-     step 3's line forward verbatim; B/C append the matching row in one line). This field is the
+     step 4's line forward verbatim; B/C append the matching row in one line). This field is the
      proof PHASE 1 step 2's learnings load actually ran — its absence means that step was skipped.
    - a `Consult:` line **only when Lane C actually spawned a consult** — values per
      [shared/SECOND-OPINION.md](../shared/SECOND-OPINION.md) § Logging (`consulted ({trigger})` /
