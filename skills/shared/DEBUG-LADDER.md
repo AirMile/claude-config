@@ -13,11 +13,11 @@ Do **not** self-rate confidence — LLM confidence is poorly calibrated and tend
 the entry tier from **observable signals** about the issue, and let a **failed fix round** — the one
 reliable signal — force escalation.
 
-| Tier                         | When (observable signals)                                                                                                                                                    | What you do                                                                                                                                                                                        |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1 — Direct fix**           | Symptom **and** cause are both visible; the change is a known value: styling/CSS, timing, config, copy, a MEASURABLE threshold; **≤ 1–2 files**.                             | Make the change, re-check live (reload the running app / re-run the one check). No test, no agent, no investigation.                                                                               |
-| **2 — Hypothesis first**     | The symptom is clear but the cause is **not** yet proven: a TESTABLE logic bug, a wrong value with an unclear source, behaviour that depends on state.                       | Write the hypothesis down **before editing**, gather evidence to confirm it, fix, verify, clean up (see below).                                                                                    |
-| **3 — Full root-cause flow** | Cause spans **multiple modules**, the failure is **intermittent**, it involves concurrency/integration/data you can't see, **or a prior tier already failed** on this issue. | **dev**: the ship's own `debug-round.md` → `debug-round-heavy.md` (in-ship, no standalone command). **game**: hand to `/game-debug`: reproduction test, investigation agent, fix-strategy fan-out. |
+| Tier                         | When (observable signals)                                                                                                                                                    | What you do                                                                                                                                                                                                |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1 — Direct fix**           | Symptom **and** cause are both visible; the change is a known value: styling/CSS, timing, config, copy, a MEASURABLE threshold; **≤ 1–2 files**.                             | Make the change, re-check live (reload the running app / re-run the one check). No test, no agent, no investigation.                                                                                       |
+| **2 — Hypothesis first**     | The symptom is clear but the cause is **not** yet proven: a TESTABLE logic bug, a wrong value with an unclear source, behaviour that depends on state.                       | Write the hypothesis down **before editing**, gather evidence to confirm it, fix, verify, clean up (see below).                                                                                            |
+| **3 — Full root-cause flow** | Cause spans **multiple modules**, the failure is **intermittent**, it involves concurrency/integration/data you can't see, **or a prior tier already failed** on this issue. | **dev**: the ship's own `debug-round.md` → `debug-round-heavy.md` (in-ship, no standalone command). **game**: hand to `/game-debug`: reproduction test, investigation agent, one evidence-backed fix plan. |
 
 **Entry rule:** MEASURABLE + localized → tier 1. TESTABLE or cause-unclear → tier 2. Cross-module /
 intermittent / a previous session already tried and failed → tier 3.
@@ -27,15 +27,17 @@ park-first: a failed batch fix parks to `debug-round.md` (Explore investigation 
 evidence-backed fix, via a fresh `/dev-manual {feature}` resume — or `/dev-ship {feature}`, same
 result — never inline in the same session that produced the failed attempt); if that also fails it
 parks again to `debug-round-heavy.md`
-(3-strategy fan-out + reproduction-test discipline) — the hard ceiling, see `fix-round.md § Re-check`
-for the full ladder (progress tracked via the ledger item's `debugTier`, not a `failedRounds` menu).
+(heavier investigation techniques + one evidence-backed fix plan + reproduction-test discipline) —
+the hard ceiling, see `fix-round.md § Re-check` for the full ladder (progress tracked via the ledger
+item's `debugTier`, not a `failedRounds` menu).
 Inside `game-ship` PHASE 3, tier 2→3 still runs the ship's own `references/debug-round.md` first
 (same Explore + research + single fix, inline in the same session's plan mode) and only a failed
 debug round hands off to the standalone `/game-debug` skill — see `game-ship/references/fix-round.md
 § Re-check` for its `failedRounds` ladder. **Outside any ship pipeline** (a one-off fix request with
 no active feature/worktree), there is no standalone tier-3 command anymore — apply the same
-discipline inline: an Explore investigation, a single evidence-backed fix plan, then escalate to a
-fan-out only if that fails, following `debug-round.md`/`debug-round-heavy.md`'s structure by hand.
+discipline inline: an Explore investigation, a single evidence-backed fix plan, then escalate to
+heavier investigation techniques only if that fails, following
+`debug-round.md`/`debug-round-heavy.md`'s structure by hand.
 Outside a ship pipeline, a **tier-1/2-sized** fix request is `/dev-tweak` · `/game-tweak` territory
 (`TWEAK-DISCIPLINE.md`) — tier-3 signals are an escalation criterion there, routing to `/game-debug`
 (game) or a `/dev-ship` debug round / the inline discipline above (dev).
@@ -53,8 +55,8 @@ Outside a ship pipeline, a **tier-1/2-sized** fix request is `/dev-tweak` · `/g
 4. **Verify** the fix reproduces green (the check that failed now passes; re-check live for visual).
 5. **Remove the instrumentation** you added (logs, temp assertions) before completing.
 
-If the hypothesis (tier 2) or the fix-strategy fan-out (tier 3) implicates an external library API,
-research it per `shared/CONTEXT7.md` before fixing — both tools work inside plan mode.
+If the hypothesis (tier 2) or the tier-3 fix plan implicates an external library API, research it
+per `shared/CONTEXT7.md` before fixing — both tools work inside plan mode.
 
 ## Escalation rule (hard)
 

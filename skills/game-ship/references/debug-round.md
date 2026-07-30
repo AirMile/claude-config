@@ -3,10 +3,11 @@
 Loaded from `fix-round.md`, either proactively (§ Round gate, a finding whose root cause is still
 unclear after reviewing the ledger evidence) or as the ladder's tier-2 escalation (§ Re-check,
 `failedRounds >= 2`). This is `game-debug` PHASES 2–6 inlined lightweight for **exactly one ledger
-item**: an Explore investigation, Context7 research, and a single evidence-backed fix plan — no
-3-strategy fan-out (this item's scope and evidence are already narrow by construction; `game-debug`'s
-own PHASE 5 triage gate skips the fan-out under the same condition). It runs inside the same
-plan-mode session as its caller — no separate `EnterPlanMode` unless one hasn't started yet.
+item**: an Explore investigation, Context7 research, and a single evidence-backed fix plan — the same
+shape `game-debug`'s own PHASE 5 now writes, just without its heavier investigation techniques and
+reproduction-test discipline (this item's scope and evidence are already narrow by construction). It
+runs inside the same plan-mode session as its caller — no separate `EnterPlanMode` unless one hasn't
+started yet.
 
 ## 1. Entry
 
@@ -79,8 +80,8 @@ Re-check via `playtest-interview-walkthrough.md` Steps B–E for this one item (
 ## 8. Still failing → tier 3 handoff
 
 The debug round's own investigation-and-fix attempt failed too — this is the signal that the issue
-needs `/game-debug`'s full machinery (reproduction test discipline, 3-strategy fan-out) rather than
-another in-ship attempt. Patch the ledger item: `escalatedTo: "game-debug"`,
+needs `/game-debug`'s full machinery (heavier investigation techniques, reproduction-test discipline)
+rather than another in-ship attempt. Patch the ledger item: `escalatedTo: "game-debug"`,
 `playtest.pendingRound: true` (same `ship-checkpoint.js item {feature} playtest` upsert used
 throughout this ledger), then `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`.
 Print the park/handoff template from `SKILL.md § PHASE 1–4` with two resume commands, in order:

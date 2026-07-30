@@ -31,7 +31,7 @@ Cross-platform: **macOS** and **Windows**.
 skills/           42 skills in 8 categories
   shared/         RULES.md, PATTERNS.md, PLAYWRIGHT.md, VALIDATION.md, DEVINFO.md
   {cat}-{verb}/   Skill directories (each with SKILL.md)
-agents/           23 sub-agent definitions (.md with YAML frontmatter)
+agents/           20 sub-agent definitions (.md with YAML frontmatter)
 hooks/            format-on-save.cjs, prompt-timer.cjs, security-reminder.py
 local/            Portable configs for ~/.claude/ (templates, not linked)
 CLAUDE.base.md    Template for per-project CLAUDE.md generation

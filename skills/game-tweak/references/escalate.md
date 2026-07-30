@@ -30,7 +30,7 @@ options:
 ```
 
 Tier-3 variant of option (b): label `"Hand off to /game-debug now"`, description `"Evidence-first
-root-cause flow: reproduction test, investigation agent, fix-strategy fan-out"`.
+root-cause flow: investigation agent, one evidence-backed fix plan, reproduction test"`.
 
 ## 3. Execute the choice
 

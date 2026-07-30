@@ -12,9 +12,11 @@ Two entry points:
   attempt yet to escalate from; it's evidence-gathering for the _first_ fix design.
 
 This file is the ship's lightweight version of full root-cause investigation for **exactly one
-ledger item**: an Explore investigation, Context7 research, and a single evidence-backed fix plan —
-no 3-strategy fan-out (this item's scope and evidence are already narrow by construction; the fan-out
-is reserved for the heavy tier, `debug-round-heavy.md`, if this round's fix doesn't hold).
+ledger item**: an Explore investigation, Context7 research, and a single evidence-backed fix plan.
+The heavy tier (`debug-round-heavy.md`, reached if this round's fix doesn't hold) also writes a
+single evidence-backed plan — the difference is heavier investigation techniques
+(`shared/DEBUG-TOOLBOX.md § Heavy techniques`), reproduction-test discipline, and a conditional
+second-opinion consult on a still-contested diagnosis, not a wider process here.
 
 ## 1. Entry
 

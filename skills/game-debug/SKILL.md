@@ -5,13 +5,13 @@ reads: [project-context.learnings, feature.requirements]
 writes: [project-context.learnings]
 metadata:
   author: claude-config
-  version: 3.2.0
+  version: 3.3.0
   category: game
 ---
 
 # Debug
 
-Structured 11-phase debugging: context → intake → investigate → analyze → research → fix plans → select → reproduction test → implement → verify → completion.
+Structured 11-phase debugging: context → intake → investigate → analyze → research → fix plan → approve → reproduction test → implement → verify → completion.
 
 ## Process
 
@@ -23,7 +23,7 @@ Structured 11-phase debugging: context → intake → investigate → analyze �
 4. PHASE 3: Root Cause Analysis
 5. PHASE 4: Context7 Research
 6. PHASE 5: Fix Plan Generation
-7. PHASE 6: Plan Selection
+7. PHASE 6: Plan Approval
 8. PHASE 7: Reproduction Test
 9. PHASE 8: Implementation
 10. PHASE 9: Verification
@@ -181,7 +181,7 @@ Analyze:
 4. Evaluate each hypothesis against evidence
 5. Test one hypothesis at a time — never combine multiple fixes in a single verification step
 6. Determine most likely root cause
-7. Check FEATURE_REQUIREMENTS (from PHASE 0): does the root cause match a requirement that was incorrectly implemented? If so, mark as **spec-issue** — in PHASE 6 fix-thorough is recommended (minimal only resolves the symptom, not the spec deviation).
+7. Check FEATURE_REQUIREMENTS (from PHASE 0): does the root cause match a requirement that was incorrectly implemented? If so, mark as **spec-issue** — PHASE 5's fix plan must then fix the spec deviation itself, not just the visible symptom.
 8. Identify knowledge gaps for PHASE 4
 
 Present findings + hypothesis + confidence (high/medium/low) + spec-issue flag (yes/no) + research topics needed.
@@ -210,75 +210,48 @@ Focus: signal patterns → correct usage, scene tree lifecycle → proper node m
 
 > **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-**Triage gate — skip the fan-out for trivial fixes.** Skip the 3-agent dispatch when ALL of:
+Write ONE fix plan from PHASE 3/4's evidence — no agent fan-out; three agents speculating on
+identical evidence adds no new information. **Spec-issue** items (a requirement was implemented
+wrong, not just its symptom) get the same single plan — write it to fix the deviation itself, not
+only the visible symptom.
 
-- PHASE 3 confidence is **high**
-- Fix scope is small: ≤2 files, no signal/scene-contract or autoload API change
-- Not marked **spec-issue** (spec deviations need the fix-thorough perspective)
+```
+Root cause: {claim} — evidence: {file:line / log / failing assertion}
+Fix: {change}
+Scope note — deliberately NOT done:
+  - narrower hotfix: {…} → rejected because {…}
+  - broader hardening: {…} → deferred because {…}
+Risk / blast radius: {files, scenes, signal/autoload contracts}
+Reproduction test assertion: {what the GUT test must assert to prove the bug}
+```
 
-→ Write ONE inline fix plan (minimal-style: smallest change that addresses the root cause) with the same fields the agents return — changes with file:line refs, risk, scope, trade-offs, and the reproduction test assertion. Show: `TRIAGE: trivial fix — inline plan, fan-out skipped`. In PHASE 6: skip Step 1 (strategy question — inline plan is by definition minimal), go directly to Step 2 with the inline plan.
+The scope note is the point of writing this out explicitly: it's the same judgment call a
+minimal-vs-thorough-vs-defensive choice used to force, now made once, in the open, as part of the
+plan itself.
 
-Otherwise, launch 3 agents in parallel:
+**Second-opinion hook** (auto-fires here, at most once this phase, before `ExitPlanMode`) — only
+when the diagnosis is still contested: PHASE 3 confidence is medium/low, or the root cause spans
+multiple systems (scene tree + autoload + physics).
 
-| Agent         | Philosophy        | Focus                                      |
-| ------------- | ----------------- | ------------------------------------------ |
-| fix-minimal   | "Smallest change" | Hotfix, minimal risk, fewest changes       |
-| fix-thorough  | "Complete fix"    | Root cause, add GUT tests, clean up        |
-| fix-defensive | "Preventive"      | Safeguards, null checks, signal validation |
-
-Each receives: root cause analysis + research findings + affected files.
-Each returns: specific changes with file:line refs, risk (low/medium/high), scope, trade-offs,
-AND: `Reproduction test assertion: {what the GUT test must assert to prove the bug}`
+> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires
+> the consult (no confirm step) with INPUT = the root-cause writeup + the fix plan as drafted so far
+> (game-debug fix-plan row of § Brief contents). **Attended**: show the digest, fold it into the plan
+> before `ExitPlanMode`. **Unattended**: Opus weighs the digest and revises the plan or confirms it,
+> then proceeds. Set `secondOpinionUsed`, carry the outcome to PHASE 10's `Second opinion:` report
+> line. Firing this hook consumes the phase's one consult slot — the PHASE 9 dead-end consult will
+> then log `unavailable (budget)` if this fix also fails; an accepted trade, not a bug.
 
 ---
 
-## PHASE 6: Plan Selection
+## PHASE 6: Plan Approval
 
 > **Todo**: mark PHASE 5 → `completed`, PHASE 6 → `in_progress`.
 
-Present all 3 options with approach, changes count, risk level, and trade-offs.
-Include recommendation based on context.
-
-### Step 1: Strategy
-
-**Skip this step when the PHASE 5 triage gate fired** (inline plan is minimal-style by definition) — continue at Step 2 with the inline plan.
-
-**Second-opinion hook** (auto-fires before the modal below, at most once this phase) — if the root
-cause spans multiple systems or no strategy is clearly dominant:
-
-> **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires
-> the consult (no confirm step) with INPUT = the root-cause writeup + the 3 candidate strategies
-> inline (game-debug fix-strategy row of § Brief contents). Show the digest before the modal below
-> (attended) or fold it into the pre-highlighted recommendation (unattended — Opus weighs it and
-> adjusts or keeps the default), set `secondOpinionUsed`, carry the outcome to PHASE 10's
-> `Second opinion:` report line.
-
-AskUserQuestion:
-
-- header: "Fix Strategy"
-- question: "Which fix approach do you want to use?"
-- options:
-  - "Minimal (Recommended for production)" — Smallest change, low risk
-  - "Thorough" — Complete fix with root cause + GUT tests
-  - "Defensive" — Safeguards and validation against recurrence
-
-### Step 2: Select fixes
-
-**Select Fixes:**
-
-```
-Proposed fixes ({M} total):
-
-1. {file:line} — {description}
-2. {file:line} — {description}
-...
-```
-
-Ask: "Which fixes do you want to apply? Give numbers (e.g. `1, 3` or `all`)."
-
-Parse → fix-set.
-
-> **Todo**: Use the `ExitPlanMode` tool once the fix-set is selected — present the chosen strategy and selected fixes (file:line refs) as the plan output. Plan rejection lets the user revise the fix selection. After approval, PHASEs 7–10 (reproduction test, implementation, verification, completion) run in Sonnet. Skip this exit if plan mode is no longer active or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
+> **Todo**: Use the `ExitPlanMode` tool once the fix plan is written — present it as the plan output.
+> Plan rejection lets the user give feedback; revise the plan and re-present, loop until accepted.
+> After approval, PHASEs 7–10 (reproduction test, implementation, verification, completion) run in
+> Sonnet. Skip this exit if plan mode is no longer active or the skill was started in plan mode by
+> the user (see `shared/PLAN-MODE.md § Exit`).
 
 ---
 
@@ -343,7 +316,7 @@ Status: ✓ Bug reproduced
 
 > **Todo**: mark PHASE 7 → `completed`, PHASE 8 → `in_progress`.
 
-Apply selected fixes from chosen strategy. Document each change with file:line references.
+Apply the fix from PHASE 5's plan. Document each change with file:line references.
 
 **When reproduction test was written (PHASE 7)**: the concrete success criterion for implementation is that the reproduction test must pass. Do not change more code than needed to make that test green + the original fix-plan scope.
 
@@ -360,7 +333,7 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gtest=tests/regression/tes
 ```
 
 - PASS → fix provably works for the reproduced bug
-- FAIL → fix incomplete, back to PHASE 8 (max 3 iterations, then the dead-end auto-fires the second-opinion consult first if `secondOpinionUsed` is unset this run — read `shared/SECOND-OPINION.md § Spawn` and consult with INPUT = the reproduction test, this round's plan, the failed-fix file paths, ≤10 lines of failing output — debug-ceiling row of § Brief contents; show the digest, set `secondOpinionUsed` — then AskUserQuestion with the digest visible: Other strategy | More research | Accept as incomplete)
+- FAIL → fix incomplete, back to PHASE 8 (max 3 iterations, then the dead-end auto-fires the second-opinion consult first if `secondOpinionUsed` is unset this run — read `shared/SECOND-OPINION.md § Spawn` and consult with INPUT = the reproduction test, this round's plan, the failed-fix file paths, ≤10 lines of failing output — debug-ceiling row of § Brief contents; show the digest, set `secondOpinionUsed` — then AskUserQuestion with the digest visible: Revise the fix plan | More research | Accept as incomplete)
 
 ### Step 2: Full GUT suite
 

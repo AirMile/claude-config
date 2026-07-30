@@ -1,11 +1,12 @@
 # Debug Round — Heavy (dev-ship PHASE 3, tier 2)
 
 Loaded from `debug-round.md § 8` when the light round's single evidence-backed fix still failed
-re-check. This is the ship's own full root-cause machinery for **exactly one ledger item**: a
-3-strategy fix fan-out (mirrors `fix-minimal`/`fix-thorough`/`fix-defensive`) plus reproduction-test
-discipline. It is the hard ceiling of the in-ship debug ladder — see `shared/DEBUG-LADDER.md` tier 3
-— there is no tier beyond this one; if it also fails, control returns to the user for an explicit
-accept-or-park decision (§ 8 below), not a further automated escalation.
+re-check. This is the ship's own full root-cause machinery for **exactly one ledger item**: heavier
+investigation techniques (`shared/DEBUG-TOOLBOX.md § Heavy techniques`), one evidence-backed fix plan
+with an explicit scope note, and reproduction-test discipline. It is the hard ceiling of the in-ship
+debug ladder — see `shared/DEBUG-LADDER.md` tier 3 — there is no tier beyond this one; if it also
+fails, control returns to the user for an explicit accept-or-park decision (§ 8 below), not a further
+automated escalation.
 
 Entered one of two ways: a **parked resume** (the light round's own re-check failed in a prior
 session, `debug-round.md § 8`'s park path) or a **same-session escalation** (the user chose
@@ -69,68 +70,46 @@ L-tier difficulty score (a light round already failed once — `shared/DEBUG-LAD
 triage`'s escalation rule). Read `shared/DEBUG-TOOLBOX.md § Heavy techniques` before re-investigating:
 a confirmed regression feeds `git bisect run` instead of another Explore pass; a value mystery feeds
 a scripted CDP breakpoint dump; state corruption feeds a state-checkpoint diff. Whichever technique
-runs, its output becomes the evidence the 3-strategy fan-out (or the § 5 triage gate's inline plan)
-works from — record which one via the `technique` field on the ledger item.
+runs, its output becomes the evidence § 5's fix plan works from — record which one via the
+`technique` field on the ledger item.
 
-## 5. Triage gate — skip the fan-out for trivial fixes
+## 5. Fix plan — one, evidence-backed
 
-Skip the 3-agent dispatch when ALL of:
-
-- Root-cause confidence is **high** from Step 4's evidence
-- Fix scope is small: ≤2 files, no API/schema/contract change
-- Not a **spec-issue** (an acceptance criterion was implemented wrong — that needs the
-  fix-thorough perspective)
-
-> **Todo**: show `TRIAGE: trivial fix — inline plan, fan-out skipped` before continuing — this line
-> is easy to drop silently once the fan-out is already skipped in practice.
-
-→ Write ONE inline fix plan (minimal-style: smallest change that addresses the root cause) with the
-same fields the agents below return — changes with file:line refs, risk, scope, trade-offs, and the
-reproduction test assertion. Show: `TRIAGE: trivial fix — inline plan, fan-out skipped`. Skip to
-§ 7 Step 2 with this inline plan (§ 6's strategy question doesn't apply — inline is minimal by
-definition).
-
-**Otherwise**, launch 3 agents in parallel (see `shared/SKILL-PATTERNS.md#parallel-dispatch` for
-dispatch criteria and prompt template):
-
-| Agent         | Philosophy        | Focus                                      |
-| ------------- | ----------------- | ------------------------------------------ |
-| fix-minimal   | "Smallest change" | Hotfix, minimal risk, fewest changes       |
-| fix-thorough  | "Full fix"        | Root cause, add tests, clean up            |
-| fix-defensive | "Preventive"      | Safeguards, validation, prevent recurrence |
-
-Each receives: root-cause analysis + Step 4 evidence + affected files.
-Each returns: specific changes with file:line refs, risk (low/medium/high), scope, trade-offs, AND:
-`Reproduction test assertion: {what the test must assert to prove the bug}`
-
-The three agents carry no `model:` pin deliberately — they inherit the session model (the planning
-model under opusplan), which is the intent at the ladder's hard ceiling: two cheaper tiers already
-failed, so the strongest available model designs this round's candidates.
-
-## 6. Plan selection
-
-**Skip this step when the § 5 triage gate fired** — continue at § 7 Step 2 with the inline plan.
-
-AskUserQuestion — header: "Fix Strategy", question: "Which fix approach do you want to use?":
-
-- "Minimal (Recommended for production)" — Smallest change, low risk
-- "Thorough" — Full fix with root cause + tests
-- "Defensive" — Safeguards and validation to prevent recurrence
-
-Then select fixes:
+Write ONE fix plan from Step 4's evidence — no agent fan-out; this tier already spent its
+evidence-gathering budget getting here, and three agents speculating on identical input adds no new
+information. **Spec-issue** items (an acceptance criterion was implemented wrong, not just its
+symptom) get the same single plan — write it to fix the deviation itself, not only the visible
+symptom.
 
 ```
-Proposed fixes ({M} total):
-
-1. {file:line} — {description}
-2. {file:line} — {description}
-...
+Root cause: {claim} — evidence: {file:line / log / failing assertion}
+Fix: {change}
+Scope note — deliberately NOT done:
+  - narrower hotfix: {…} → rejected because {…}
+  - broader hardening: {…} → deferred because {…}
+Risk / blast radius: {files, contracts, migrations}
+Reproduction test assertion: {what the test must assert to prove the bug}
 ```
 
-Ask: "Which fixes do you want to apply? Provide numbers (e.g. `1, 3` or `all`)." Parse → fix-set.
+The scope note is the point of writing this out explicitly: it's the same judgment call a
+minimal-vs-thorough-vs-defensive choice used to force, now made once, in the open, as part of the
+plan itself rather than as three competing drafts.
 
-`ExitPlanMode` once the fix-set is chosen — present the chosen strategy and selected fixes as the
-plan output. Rejected → stay in plan mode, revise, re-present, loop until accepted.
+**Second-opinion hook** (auto-fires here, at most once per round, before `ExitPlanMode`) — only when
+the diagnosis is still contested: `lightRoundNotes` shows the light-tier hypothesis was **refuted**
+(the same condition § 4 uses to re-investigate), or this is a **non-ledger entry** (§ 1) with no
+prior-tier history to lean on. Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — INPUT =
+this plan (as drafted so far) + the evidence paths from Step 4 (debug fix-plan row of § Brief
+contents). **Attended**: show the digest, fold it into the plan before `ExitPlanMode`. **Unattended**:
+Opus weighs the digest and revises the plan or confirms it, then proceeds. Set `secondOpinionUsed`
+(round-scoped). Firing this hook consumes the round's one consult slot — § 8's dead-end consult will
+then log `unavailable (budget)` if this round also fails; that's an accepted trade, not a bug (a
+confirmed diagnosis rarely needs a second consult at the ceiling too).
+
+## 6. Plan approval
+
+`ExitPlanMode` once the fix plan is written — present it as the plan output. **Reject** → stay in
+plan mode, revise from the feedback, re-present, loop until accepted.
 
 ## 7. Reproduction test
 
@@ -195,8 +174,9 @@ Status: ✓ Bug reproduced
 
 ## 8. Implementation, verification, re-check
 
-**Implementation**: apply the selected fixes. With a reproduction test written, the concrete success
-criterion is that test going green — do not change more than that test + the fix-plan scope needs.
+**Implementation**: apply the fix from § 5's plan. With a reproduction test written, the concrete
+success criterion is that test going green — do not change more than that test + the fix-plan scope
+needs.
 
 **Verification**: re-run the reproduction test (skip if § 7 was skipped — go straight to live
 re-check). Full-suite regression is **not** re-run here — `phase-3-manual-finalize.md § Regression

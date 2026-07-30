@@ -46,15 +46,14 @@ reasoning for when you need to understand _why_ the flow is built this way — i
   on Opus is worth that one read. The design lesson for new plan-mode gates: enter as early as
   possible in the context (right after the last write that must precede it), so the cheap side of the
   switch is the entry, not the exit.
-- **Two places quietly depend on the session model, not just plan mode.** Switching off `opusplan` to
-  a single fixed model is a silent quality regression at these two points, not a neutral swap:
-  - `references/debug-round-heavy.md:106-108` deliberately leaves its three fix-strategy agents
-    **unpinned** so they inherit the session model — "two cheaper tiers already failed, so the
-    strongest available model designs this round's candidates". Under a fixed `sonnet`, the debug
-    ladder's ceiling drops with it.
-  - `references/manual-interview-walkthrough.md:53-54` runs the evidence-sweep as a **fork**, and
-    forks always run the parent model (`shared/SKILL-PATTERNS.md:454`) — so it too rides `opusplan`
-    implicitly.
+- **One place quietly depends on the session model, not just plan mode.** Switching off `opusplan` to
+  a single fixed model is a silent quality regression here, not a neutral swap:
+  `references/manual-interview-walkthrough.md:53-54` runs the evidence-sweep as a **fork**, and
+  forks always run the parent model (`shared/SKILL-PATTERNS.md:454`) — so it rides `opusplan`
+  implicitly. (The heavy debug ceiling, `references/debug-round-heavy.md § 5`, used to make the same
+  point about its three unpinned fix-strategy agents — that fan-out is gone; the tier now writes one
+  plan directly in whatever model plan mode is already running under, so there's no separate pin
+  decision to make.)
 - **Build and verify are separate agents (separate context windows)** — a fresh verify agent is
   unbiased/adversarial, which is the whole value of verify. See `references/agent-verify.md`.
 - **`.project/` is shared on disk between agents; context is isolated.** The flow is sequential →

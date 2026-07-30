@@ -464,7 +464,7 @@ A **fork** (`Agent` tool with `subagent_type: "fork"`) inherits the full convers
 
 **Rules:**
 
-- **Never** for adversarial or independent judgment (verify, critique, fix-strategy diversity) — inherited context is contamination there, not a feature.
+- **Never** for adversarial or independent judgment (verify, critique, second-opinion consults) — inherited context is contamination there, not a feature.
 - **Never** for fan-outs or mechanical work: forks always run the parent model, so fresh sonnet/haiku agents stay correct there (§ Agent Model Selection).
 - The fork sees context only up to the spawn moment; nothing after propagates. The result returns only as its final message → the delimited-block contract is mandatory.
 - The main chat does no conflicting work while the fork runs (same browser session, same worktree files) — wait for the notification.

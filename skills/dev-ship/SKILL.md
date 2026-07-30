@@ -34,7 +34,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.51.0
+  version: 0.52.0
   category: dev
 ---
 
