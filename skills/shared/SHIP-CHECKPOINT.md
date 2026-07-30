@@ -53,7 +53,9 @@ command). See `BACKLOG.md § Board rendering`.
                 never display-abbreviated names. */
   },
   "results": {
-    /* structured agent returns, filled per phase.
+    /* structured agent returns, filled per phase — write the FULL object verbatim, never a
+                  hand-summarized substitute (a truncated results.verify.remainingManualItems is a
+                  known, confirmed failure mode: route/resume checks silently read it as "0 remain").
                   dev: { build, verify, refactor, triage }.
                   design: { build, content, check }.
                   The worktree path + branch live in results.build — no separate top-level copy. */

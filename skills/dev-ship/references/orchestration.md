@@ -84,7 +84,14 @@ returns one structured object; it skips verify when build fails. The task-notifi
 result wakes you back up.
 
 On return, write point 3: patch to clear `activeWorkflow`/`workflowRunId`/`prompts` and merge the
-returned `build`/`verify` objects into `results`. Then branch:
+returned `build`/`verify` objects into `results` **verbatim — never a hand-summarized substitute**.
+In particular, `verify.remainingManualItems` MUST be written as the literal returned array (even
+when empty: `[]`), never replaced by a count or omitted: `ship-checkpoint.js route`'s
+`"phase3-manual"` vs `"phase3-completion"` branch (`Array.isArray(results.verify.remainingManualItems)`)
+and `phase-3-manual-finalize.md`'s own resume check ("`manual.items` shorter than
+`results.verify.remainingManualItems`") both read this field directly from disk in a later session —
+a summarized or missing array silently reads as "0 items remain" and mis-routes a fully-open manual
+round to completion. Then branch:
 
 **Empty-input safety net** (rare, check first): the script normalizes `args`, so string-delivery
 failure is handled at the source. If an agent still reports no/`undefined` input (`testsTotal: 0`,
