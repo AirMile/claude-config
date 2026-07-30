@@ -34,6 +34,47 @@ Run once after a worktree is first created (Step 3 of auto-create). Makes backlo
 WT="{main_root}/.claude/worktrees/{feature-name}"
 MP="{main_root}/.project"
 
+# SAFETY GATE — run before any rm/ln below, every time this procedure is invoked
+# (fresh auto-create, Step 4.5 repair, or the Symlink Integrity Gate auto-repair).
+# If WT ever resolves to main_root itself (a bad substitution, a stale/empty
+# {feature-name}, or a caller that passed main_root as WT by mistake), every
+# rm -rf + ln -sfn pair below collapses into deleting-then-relinking the SAME
+# path — replacing main_root's real .project/ files with symlinks that point at
+# themselves. .project/ is gitignored (no git history), so this is unrecoverable
+# from this repo alone. Abort loudly instead of silently corrupting:
+case "$WT" in
+  */.claude/worktrees/*) ;;
+  *)
+    echo "ERROR: refusing to wire .project/ symlinks — WT does not look like a worktree path: $WT"
+    echo "Expected shape: {main_root}/.claude/worktrees/{feature-name}. Aborting, nothing touched."
+    exit 1
+    ;;
+esac
+if [ "$(cd "$WT" 2>/dev/null && pwd -P)" = "$(cd "{main_root}" 2>/dev/null && pwd -P)" ]; then
+  echo "ERROR: refusing to wire .project/ symlinks — WT resolves to main_root itself ($WT)."
+  echo "This procedure must target a worktree, never the main checkout. Aborting, nothing touched."
+  exit 1
+fi
+
+# SAFETY GATE 2 — $WT/.project itself must be a real directory, never a symlink. This
+# procedure only ever creates PER-FILE symlinks *inside* $WT/.project; a whole-directory
+# symlink at $WT/.project (e.g. an earlier agent improvising `ln -s "$MP" "$WT/.project"`
+# as a shortcut instead of following this procedure) makes every path below resolve THROUGH
+# it onto main_root's real files — so `rm -f "$WT/.project/backlog.json"` deletes the real
+# file and the following `ln -sfn` recreates it as a self-referential symlink, exactly like
+# Safety Gate 1's hazard, even though $WT itself passed the check above. Detect and repair
+# in place before anything else runs:
+if [ -L "$WT/.project" ]; then
+  echo "WARN: $WT/.project is itself a symlink (not the expected per-file scheme) — removing the ad-hoc link and creating a real directory before wiring per-file symlinks."
+  rm -f "$WT/.project"
+  mkdir -p "$WT/.project"
+fi
+# ^ the mkdir above is deliberately duplicated with the one below — this block must stay
+# self-contained and order-independent. If an executing agent reconstructs this script from
+# memory/paraphrase instead of copying it verbatim (observed in practice), a reordering that
+# puts the unconditional mkdir before this check would otherwise leave $WT/.project missing
+# entirely once the stale symlink is removed, since nothing later recreates it.
+
 # macOS/Linux — ensure .project dir exists in worktree, then symlink shared paths
 mkdir -p "$WT/.project/session"
 
