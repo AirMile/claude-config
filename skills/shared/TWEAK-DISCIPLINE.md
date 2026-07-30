@@ -184,6 +184,10 @@ project.json persists no features list to sync. This is the **only** sanctioned 
 tweak run ever performs in the shipped outcome, and only in card mode — a free-text run still makes
 zero backlog writes.
 
+Immediately after this write, run [BACKLOG.md § Archive-move invariant](BACKLOG.md) on the card
+just moved — confirm absent from `backlog.json#features[]` and present in the archive with all four
+shipped fields, self-heal if not. Do not report the tweak as shipped until this holds.
+
 **Card-mode cancellation write** (§ Card pickup → Obsolete/superseded card, in addition to the
 calling skill's normal steps): a different outcome from the completion write above — the card is
 **not** shipped, so it never moves to the archive and never gets `shipped`/`shippedSha`. Instead,

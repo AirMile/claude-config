@@ -76,7 +76,7 @@ Collect every item's verdict, then write once:
   card's final summary.
 - **Still blocked** — leave the checklist entry and `knownIssues[]` entry untouched; update `reason`
   only if the user gave a new one. **Different blocker than recorded** (the original cleared or was
-  never the real cause, but a newly-found *external* limitation still blocks the test — a
+  never the real cause, but a newly-found _external_ limitation still blocks the test — a
   feature-code fault is the **Fail** branch above instead): invoke `/project-todo` for the new
   blocker (one sentence, `type TWEAK`, `depends on {feature}`), then repoint **both**
   `knownIssues[].blocker` (feature.json) and the `verify-{feature}` card's `dependencies[]` to the
@@ -96,6 +96,10 @@ blocked) — mirror `shared/TWEAK-DISCIPLINE.md § Card-mode completion write`: 
 - `summary` (one line: what re-tested clean, what became a BUG card), move it from
   `backlog.json#features[]` to `archive/backlog-archive.json#archived[]`, and dual-write
   `project.json#features[]` to match (`shared/BACKLOG.md § Parallel sync`).
+
+Immediately after, run `shared/BACKLOG.md § Archive-move invariant` on the `verify-{feature}` card
+— confirm absent from `backlog.json#features[]` and present in the archive with all four shipped
+fields, self-heal if not. Do not report the VERIFY card as shipped until this holds.
 
 If any item is Still blocked, make **no** card write — the card stays `TODO` on the backlog exactly
 as-is, ready for a later `/dev-manual {feature}` re-pickup once the blocker clears.

@@ -67,6 +67,31 @@ function writeBacklogData(projectRootAbs, data) {
   const jsonFile = path.join(projectRootAbs, BACKLOG_PATH);
   const wsDir = path.dirname(jsonFile);
   if (!fs.existsSync(wsDir)) fs.mkdirSync(wsDir, { recursive: true });
+  // Defensive: GET /backlog merges archived (already-shipped) features into the
+  // in-memory model via mergeArchivedFeatures above, so the board can resolve
+  // dependencies on them. If a client round-trips that merged model back through
+  // a save (drag-reorder, edit, etc.), archived features would otherwise be
+  // written straight back into the live store, permanently re-duplicating them
+  // (the exact failure this guard closes — see shared/BACKLOG.md § Archive-move
+  // invariant). Strip any feature already in the archive before persisting; the
+  // archive is the source of truth once a dev-track feature has shipped.
+  if (data && Array.isArray(data.features)) {
+    try {
+      const archiveFile = path.join(
+        projectRootAbs,
+        ".project/archive/backlog-archive.json",
+      );
+      if (fs.existsSync(archiveFile)) {
+        const archive = JSON.parse(fs.readFileSync(archiveFile, "utf8"));
+        if (Array.isArray(archive.archived)) {
+          const archivedNames = new Set(archive.archived.map((f) => f.name));
+          data.features = data.features.filter(
+            (f) => !archivedNames.has(f.name),
+          );
+        }
+      }
+    } catch {}
+  }
   fs.writeFileSync(jsonFile, JSON.stringify(data, null, 2), "utf8");
   return jsonFile;
 }

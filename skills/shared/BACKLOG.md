@@ -105,8 +105,12 @@ The `description` field is the only planning context that survives until `/dev-s
 
    **When adding items — dedup check (always, before every `data.features.push()`):**
    1. `data.features.find(f => f.name === kebab-name)` → already in backlog? → skip.
-   2. Type COMPONENT: also `project.json#design.components.find(c => c.name === kebab-name)` → already specified? → link instead of push.
-   3. Discovery flows: `feature.json#suggestionsLog.find(s => s.name === name && s.status === "rejected" && s.skill === current-skill)` → previously rejected by current skill? → skip.
+   2. `archive/backlog-archive.json#archived[].find(f => f.name === kebab-name)` → already shipped and
+      archived? → skip (never re-add — a name absent from `backlog.json#features[]` is not the same
+      as a name that was never built; § Archiving moves shipped dev-track features out of the live
+      file on purpose, so this file must be checked too, not just `data.features`).
+   3. Type COMPONENT: also `project.json#design.components.find(c => c.name === kebab-name)` → already specified? → link instead of push.
+   4. Discovery flows: `feature.json#suggestionsLog.find(s => s.name === name && s.status === "rejected" && s.skill === current-skill)` → previously rejected by current skill? → skip.
 
 4. Set `updated` to current date (`YYYY-MM-DD`)
 5. Serialize and write back: `JSON.stringify(data, null, 2)` → `.project/backlog.json`
@@ -244,10 +248,35 @@ Written once, at the same atomic write as `f.shipped` — never edited afterward
 At scale, shipped features become dead weight for every backlog load (measured: 54% of the data on a 150-feature project). Dev-track features therefore move out of `backlog.json` when they ship:
 
 - **File:** `.project/archive/backlog-archive.json` — `{ "schemaVersion": 2, "archived": [ <full feature objects> ] }`
-- **Writer:** `/dev-ship` (refactor phase) and `/game-ship` (refactor phase) — in the same sync that sets `shipped: true`, remove the feature object from `backlog.json#features[]` and append it to `archived[]` (create the file with the scaffold above if absent). Mirrors the existing `.project/features/archive/` dir convention.
+- **Writer:** `/dev-ship` (refactor phase), `/game-ship` (refactor phase), `/dev-tweak` (card-mode completion — `TWEAK-DISCIPLINE.md`), and `/dev-manual` (VERIFY card completion — `dev-manual/references/deferred-reverify.md`) — in the same sync that sets `shipped: true`, remove the feature object from `backlog.json#features[]` and append it to `archived[]` (create the file with the scaffold above if absent). Mirrors the existing `.project/features/archive/` dir convention.
 - **Readers:** the dashboard shipped-showcase (server merges `archived[]` into the served features view, in-memory) and humans. Pipeline skills never need archived features — that is the point.
 - **Design-track exception:** PAGE/COMPONENT features shipped by `/design-ship` **stay in `backlog.json`** — the `lastCheckedSha`/`shippedSha` fields let a later re-ship detect that the page changed after shipping. Only dev-track (non-PAGE/COMPONENT) features archive.
 - **Restore:** move the object back to `features[]` manually (or via board UI in a future iteration); idempotent in both directions.
+
+### Archive-move invariant (self-heal, every writer)
+
+Every writer above performs the same two-file mutation (remove from `backlog.json#features[]`,
+append to `backlog-archive.json#archived[]`) — a partial failure (interruption, dropped write,
+context compaction mid-sync) silently leaves a **duplicate** (present in both files) or an
+**orphan** (present in neither) that no later run ever re-checks on its own. Immediately after the
+mutation, re-read both files for the feature(s) just moved and confirm:
+
+1. Absent from `backlog.json#features[]`.
+2. Present in `backlog-archive.json#archived[]` with `shipped: true`, `shippedAt`, `shippedSha`, and
+   a non-empty `summary`.
+
+**On violation, self-heal before reporting completion:**
+
+- Present in **both** → remove from `backlog.json#features[]` (the archive copy is the source of
+  truth once `shipped` fields are set).
+- Present in **neither** → the archive append failed after the backlog removal; reconstruct the
+  archive entry from local state (feature.json / git history for the shipped fields) and append it.
+  A completed run always ends archive-only — never missing from both.
+
+`/dev-ship`'s refactor phase runs a fuller version of this same check across its whole batch queue
+(`dev-ship/references/dev-refactor/references/completion-batch.md` § Step 3b) — the two-point check
+above is the minimum every single-card writer (`/dev-tweak`, `/dev-manual`) must still run, not a
+lighter alternative to skip.
 
 **`f.shipped` field:**
 
