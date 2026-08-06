@@ -24,7 +24,7 @@ If ambiguities are identified, use AskUserQuestion to clarify before starting re
 
 **Step 3: Research (Explore agent)**
 
-Spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to do all research in an isolated context. This keeps Context7 results, web search output, and source file reads out of the main session.
+Spawn one Explore agent (`subagent_type: Explore`, `model: "sonnet"`, thoroughness: "very thorough") to do all research in an isolated context. This keeps Context7 results, web search output, and source file reads out of the main session.
 
 Agent prompt — substitute per mode: `{project-type}` = "web project" | "Godot 4.x game"; `{stack}` = the concept's frameworks/libraries | "Godot 4.x, GUT"; `{conventions}` = "architecture conventions, file structure" | "scene tree, file structure and autoload conventions"; `{focus}` = "architecture patterns, best practices, common pitfalls, testing setup" | "scene composition, node types, GDScript patterns, signal usage, testing setup":
 

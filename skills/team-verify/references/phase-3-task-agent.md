@@ -4,7 +4,7 @@ Load this file when entering PHASE 3. Contains the Task agent prompt template an
 
 ---
 
-**Launch a Task agent** to execute all AUTO items in a separate context window. This prevents snapshot/screenshot data from consuming the main conversation context.
+**Launch a Task agent** (`subagent_type: "general-purpose"`, `model: "sonnet"` — mechanical test execution) to execute all AUTO items in a separate context window. This prevents snapshot/screenshot data from consuming the main conversation context.
 
 **Task agent prompt template:**
 

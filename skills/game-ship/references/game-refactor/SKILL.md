@@ -220,7 +220,7 @@ echo '{"skill":"refactor"}' | node ~/.claude/scripts/ship-checkpoint.js signal {
 
 > **Todo**: Read `.claude/skills/game-ship/references/game-refactor/references/analysis-prompt.md` for the full Godot scan template, agent prompt, parsing instructions, triage logic, and output format.
 
-**Enter Plan Mode (conditional, after triage)** — only when ≥1 feature is HAS_FINDINGS: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol now. PHASE 2 + PHASE 3 run in plan mode so model routers (e.g. `opusplan`) route the research decision and plan synthesis through the planning model. All-CLEAN runs never enter plan mode — proceed to PHASE 5 directly, zero approval friction. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check). All file writes (refactor-patterns.md appends, source changes, `.project/` mutations) wait until after `ExitPlanMode` at the end of PHASE 3.
+**Enter Plan Mode (conditional, after triage)** — only when ≥1 feature is HAS_FINDINGS: follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol now. PHASE 2 + PHASE 3 run in plan mode because the fix plan is a reviewable artefact whose rejection changes what happens next — a genuine approval gate, not a model-routing device. All-CLEAN runs never enter plan mode — proceed to PHASE 5 directly, zero approval friction. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check). All file writes (refactor-patterns.md appends, source changes, `.project/` mutations) wait until after `ExitPlanMode` at the end of PHASE 3.
 
 ---
 
@@ -253,7 +253,7 @@ echo '{"skill":"refactor"}' | node ~/.claude/scripts/ship-checkpoint.js signal {
 
    **If research NOT needed** — proceed directly to PHASE 3.
 
-   **If research needed** — spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to research Godot patterns in an isolated context. This keeps Context7 results out of the main session.
+   **If research needed** — spawn one Explore agent (`subagent_type: Explore`, `model: "sonnet"`, thoroughness: "very thorough") to research Godot patterns in an isolated context. This keeps Context7 results out of the main session.
 
    Determine which research domains to include based on findings:
 
@@ -444,7 +444,7 @@ This skill must NEVER:
 This skill must ALWAYS:
 
 - Enforce the pipeline_files scope boundary at every phase
-- Launch Explore agents in parallel for batch analysis (max 10 concurrent)
+- Launch Explore agents in parallel for batch analysis (`model: "sonnet"` each, max 10 concurrent)
 - Triage features into CLEAN vs HAS_FINDINGS after analysis
 - Early-exit CLEAN features (skip PHASE 2-4)
 - Use refactor-patterns.md for GDScript-aware analysis (generate on first run, cache thereafter)

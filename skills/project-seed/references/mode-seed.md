@@ -14,7 +14,7 @@ The output is a structured markdown document that feeds `/project-plan` or the b
 
 ### Enter Plan Mode
 
-**STOP — before PHASE 2's first AskUserQuestion**: call `EnterPlanMode` now (explore route only — the PHASE 1 "Sync with project" route ends in its own writes and stays outside plan mode; skip if plan mode is already active, see PLAN-MODE.md skip-check). Do not ask any PHASE 2 question — including the Setup gate below — before this call completes. PHASES 2-4 run in plan mode: the question rounds must run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model; the concept document (PHASE 4) is written to the plan file for review.
+**STOP — before PHASE 2's first AskUserQuestion**: call `EnterPlanMode` now (explore route only — the PHASE 1 "Sync with project" route ends in its own writes and stays outside plan mode; skip if plan mode is already active, see PLAN-MODE.md skip-check). Do not ask any PHASE 2 question — including the Setup gate below — before this call completes. PHASES 2-4 run in plan mode: the concept document (PHASE 4) is a reviewable artefact whose rejection sends the exploration back for revision — a genuine approval gate — and it is written to the plan file for review.
 
 ### PHASE 2: Explore and Expand
 
@@ -48,6 +48,19 @@ header: "Tech Stack" # confirm framework/CMS/integrations (or "use repo defaults
 header: "Open Decisions" # known open questions from the design? (annotations, TBDs)
 ```
 
+**Scope = implementation, revisiting an existing concept** (no new design source — extending
+an already-implemented system for its next phase):
+
+```yaml
+header: "Goal" # what must this next phase achieve?
+header: "Existing Context" # what does the current implementation already provide?
+header: "Out of Scope" # explicit exclusions for this phase?
+header: "Open Decisions" # known unresolved calls to surface as Round 1 questions?
+```
+
+Use this variant instead of the Figma/design template above when Step 1a's "Edit" route applies
+to an implementation-scope seed and no new external design/spec is being imported.
+
 **Scope = feature** (feature from backlog or assignment):
 
 ```yaml
@@ -61,7 +74,11 @@ header: "Definition of Done" # acceptance criteria?
 
 **Note:** The templates above are guides — headers only. Every question and option MUST be specific to THIS scope instance. Derive concrete, relevant options from the available context (design file, backlog item, conversation).
 
-**After each round**, use AskUserQuestion:
+**After each round**, use AskUserQuestion — **skip this gate only when the previous round's
+answer was itself free-text/"Other" that raises a new question or asks something not yet
+covered** (an observable signal, not a judgment call) — proceed straight into the next targeted
+round in that case. Every round that ended in a clean option-pick still gets the gate; this is
+not a general license to keep going whenever it "feels" like the user wants more. Otherwise ask:
 
 ```yaml
 header: "Deeper Dive"
@@ -95,11 +112,12 @@ multiSelect: false
 
 ### PHASE 3: Synthesize and Confirm
 
-1. Present ONE structured overview of all gathered input: a scope-matching aspect table (concept/standalone/page: Topic, Scope, Target Audience, Core Experience, Deeper Dives · implementation: Topic, Source of Truth, Pages in Scope, Tech Stack, Open Decisions · feature: Topic, Goal, Existing Context, Out of Scope, Definition of Done) followed by a concise summary. These columns are a minimum, not a ceiling — when the rounds surfaced more distinct aspects (trade-offs, open decisions, extra dimensions), add rows/columns to represent them rather than compressing into the template. For a focused-edit route, present a change-summary (before → after per changed aspect) instead of the full aspect table.
-2. **Confirmation = the plan-mode ExitPlanMode gate (PHASE 4)** — do not issue a separate confirm modal. After presenting the overview, proceed to PHASE 4: accept at ExitPlanMode = generate output; reject = revise, or run another PHASE 2 round before re-exiting. (The Sync route runs outside plan mode and keeps its own confirm in project-sync.md.)
-3. **Depth guard:** if the confirmed summary covers fewer than 3 distinct content aspects (e.g. only title + vague description), recommend one extra PHASE 2 round before generating output.
+1. **Confirmation = the plan-mode ExitPlanMode gate (PHASE 4)** — do not issue a separate confirm modal. Proceed to PHASE 4: accept at ExitPlanMode = generate output; reject = revise, or run another PHASE 2 round before re-exiting. (The Sync route runs outside plan mode and keeps its own confirm in project-sync.md.)
+2. **Depth guard:** if the gathered input covers fewer than 3 distinct content aspects (e.g. only title + vague description), recommend one extra PHASE 2 round before generating output.
 
 ### PHASE 4: Generate Output
+
+**Open the plan file with a structured overview of all gathered input** — a scope-matching aspect table (concept/standalone/page: Topic, Scope, Target Audience, Core Experience, Deeper Dives · implementation: Topic, Source of Truth, Pages in Scope, Tech Stack, Open Decisions · feature: Topic, Goal, Existing Context, Out of Scope, Definition of Done) followed by a concise summary, THEN the concept document itself. These columns are a minimum, not a ceiling — when the rounds surfaced more distinct aspects (trade-offs, open decisions, extra dimensions), add rows/columns to represent them rather than compressing into the template. For a focused-edit route, present a change-summary (before → after per changed aspect) instead of the full aspect table. This way the overview is anchored to the artifact ExitPlanMode always shows, instead of a standalone step that can be silently skipped.
 
 Create a structured markdown document (pure markdown, no preamble or "Here's your document:" framing; `#` title, `##` sections). Required: **Title** (H1), **Short description** (1-2 sentences), **Core concept**. Additional sections by type — pick the set from scope: implementation → Implementation projects; feature/assignment → Features/assignments; concept/page/standalone → judge the content (creative vs product; hybrid → merge both sets):
 
@@ -111,7 +129,11 @@ Create a structured markdown document (pure markdown, no preamble or "Here's you
 **Second-opinion hook** (after writing the plan file, before `ExitPlanMode`) — always, for
 every seed/concept save. This is project-seed's own override of the SECOND-OPINION.md trigger
 table: the shared default stays conditional for every other skill, but project-seed always
-wants the Fable check:
+wants the Fable check. **This is a distinct mechanism** from any user-level Fable-tiering
+guidance (e.g. a CLAUDE.md instructing "spawn a Plan subagent with model: fable" for hard
+design calls during plan mode) — an earlier ad hoc Fable spawn for architecture/design does
+NOT satisfy this hook. Always run the dedicated consult below, even if Fable was already
+consulted once earlier in the session for a different purpose.
 
 > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` § Spawn and § Integrating the digest
 > (skip § Gate's trigger table — project-seed's trigger is "always") and follow it — spawn the

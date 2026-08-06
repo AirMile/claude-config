@@ -16,7 +16,7 @@ Critically analyze and strengthen ideas through interactive application of analy
 
 ### Enter Plan Mode
 
-**Enter Plan Mode** — call `EnterPlanMode` NOW, after PHASE 1 input parsing and before any PHASE 2 analysis. Read only [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) § Entry now (§ Exit later, before PHASE 7) — skip § Conditional entry, § Administrative exit, and § Used by, which document other skills' plan-mode usage, not this one. PHASES 2-6 run in plan mode — type analysis, technique selection, and the technique dialogues must run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model. The refined output (PHASE 6) is written to the plan file for review; all `.project/` writes wait until after `ExitPlanMode` (PHASE 7).
+**Enter Plan Mode** — call `EnterPlanMode` NOW, after PHASE 1 input parsing and before any PHASE 2 analysis. Read only [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) § Entry now (§ Exit later, before PHASE 7) — skip § Conditional entry, § Administrative exit, and § Used by, which document other skills' plan-mode usage, not this one. PHASES 2-6 run in plan mode because the refined output (PHASE 6) is a reviewable artefact whose rejection sends the critique back for revision — a genuine approval gate. It is written to the plan file for review; all `.project/` writes wait until after `ExitPlanMode` (PHASE 7).
 
 ---
 
@@ -112,6 +112,7 @@ Integrate all findings from all applied techniques into one refined idea documen
 
 - Same structure as the original input (or improved), standalone document
 - **DO NOT include:** original idea, technique names, comparison to old version, changelog, list of problems found
+- **Exception for concept-scope saves into an existing `project-seed.md`:** when the output is being spliced into a persistent, cumulative document (not generated standalone), a brief "why this changed" callout is allowed where the project's own established convention already keeps this kind of history (e.g. a "Correctie" pattern already present in the document) — match the existing document's own style rather than stripping it.
 - Pure markdown, no framing text; proper heading formatting (`#` title, `##` sections)
 - Optional YAML frontmatter recording the analysis:
 

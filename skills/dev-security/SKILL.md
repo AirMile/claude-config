@@ -238,13 +238,13 @@ at confidence ≥60%, severity counts, anti-fantasy suspicion) — continue to P
 > **Todo**: mark PHASE 2b → `completed`, PHASE 3 → `in_progress`.
 
 **Persist first** (`orchestration.md § 2`'s "On return" step already writes `scanners` + `aggregate`
-into the audit state) — this happens **before** entering plan mode below, since plan mode blocks
-`.project/` writes (`shared/PLAN-MODE.md § Entry`).
+into the audit state).
 
-`EnterPlanMode` per `shared/PLAN-MODE.md § Entry` — the judgment work below (tool-finding merge,
-anti-fantasy check, verdict) is exactly the "thought-heavy phase" the protocol targets.
-
-Inside plan mode:
+**No plan-mode entry here** — this triage produces a report, not a reviewable proposal the user can
+accept or reject (`shared/PLAN-MODE.md § Wanneer plan mode`): the "No, report only" branch below just
+displays the report and stops, and "Yes" is a forward routing choice, not an approval gate. The
+judgment work (tool-finding merge, anti-fantasy check, verdict) runs on the session's own Opus model
+regardless — plan mode is no longer a model-routing device in this repo.
 
 1. **Merge PHASE 2 tool findings** into the scanner aggregate (only the main chat can read the tool
    report files): OSV/npm-audit findings → A03; Semgrep findings → per rule `metadata.category`;
@@ -263,7 +263,7 @@ Inside plan mode:
    judgment on top of the mechanical flag: expect justification per high score, reconsider "would a
    pentester give these scores?"
 5. **Verdict**: PASS (score ≥7.0, 0 CRITICAL findings) | NEEDS WORK (score <7.0 OR CRITICAL findings).
-6. **Second-opinion escalation** (still in plan mode — the consult agent is read-only): if
+6. **Second-opinion escalation** (the consult agent is read-only, no plan mode needed either side): if
    (a) two sources conflict on the same finding (scanner vs PHASE 2 tool vs `shipTriageRef`), or
    (b) ≥1 CRITICAL finding has confidence < 80%, or (c) `antiFantasySuspect` fired AND the
    verdict flips on judgment —
@@ -306,8 +306,7 @@ Second opinion: {consulted ({trigger}) — {n} finding verdict(s) revised | not 
 
 **Explicit feature-arg auto-proceed** — when PHASE 1 was invoked with an explicit `{feature}`
 arg, skip the modal: proceed straight to "Yes, generate fix plans" (log: `Next step: fix-plannen
-genereren (auto, feature-arg gegeven)`). `ExitPlanMode` first (a Workflow cannot launch from
-inside plan mode — this closes the aggregation session with the report as its output), then Read
+genereren (auto, feature-arg gegeven)`), then Read
 `.claude/skills/dev-security/references/fix-implement.md` and continue there (PHASE 4).
 
 **No feature-arg (full-codebase run)** → AskUserQuestion:
@@ -319,17 +318,16 @@ inside plan mode — this closes the aggregation session with the report as its 
   - "No, report only" — Stop here with the audit report
 - multiSelect: false
 
-**"No"** → `ExitPlanMode` with the report as the plan output. Patch audit state `status:
-"complete"`, `phase: "PHASE 3"`. Show the report.
+**"No"** → Patch audit state `status: "complete"`, `phase: "PHASE 3"`. Show the report.
 
 > **Todo**: mark PHASE 3 → `completed`. Leave PHASE 4/5 `pending` — "No, report only" ends the run
 > here by design, not on a failure, so there is nothing to mark done or in-progress for them. Apply
 > the Next-Step Clipboard Offer (binary Ja/Nee) — read `.claude/skills/shared/NEXT-STEP-OFFER.md`.
 > Recommended command: `/dev-ship {feature}` → apply security hardening as a refactor step.
 
-**"Yes"** → `ExitPlanMode` first (a Workflow cannot launch from inside plan mode — this closes the
-aggregation session with the report as its output), then Read
-`.claude/skills/dev-security/references/fix-implement.md` and continue there (PHASE 4).
+**"Yes"** → Read `.claude/skills/dev-security/references/fix-implement.md` and continue there
+(PHASE 4) — its own PHASE 4b Workflow launch needs no plan-mode exit anymore, since PHASE 3 never
+entered plan mode.
 
 ---
 

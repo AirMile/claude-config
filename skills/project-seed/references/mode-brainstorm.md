@@ -16,7 +16,7 @@ Creatively expand and explore ideas through interactive application of brainstor
 
 ### Enter Plan Mode
 
-**Enter Plan Mode** — call `EnterPlanMode` NOW, after PHASE 1 input parsing and before any PHASE 2 analysis. Follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Entry protocol. PHASES 2-6 run in plan mode — technique selection and the technique dialogues must run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model. The refined idea (PHASE 6) is written to the plan file for review; all `.project/` writes wait until after `ExitPlanMode` (PHASE 7).
+**Enter Plan Mode** — call `EnterPlanMode` NOW, after PHASE 1 input parsing and before any PHASE 2 analysis. Follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Entry protocol. PHASES 2-6 run in plan mode because the refined idea (PHASE 6) is a reviewable artefact whose rejection sends the brainstorm back for revision — a genuine approval gate. It is written to the plan file for review; all `.project/` writes wait until after `ExitPlanMode` (PHASE 7).
 
 ---
 
@@ -111,6 +111,7 @@ Integrate the most valuable variations and insights from all applied techniques 
 
 - Same structure as the original input (or improved), standalone document
 - **DO NOT include:** original idea, technique names, comparison to old version, changelog
+- **Exception for concept-scope saves into an existing `project-seed.md`:** when the output is being spliced into a persistent, cumulative document (not generated standalone), a brief "why this changed" callout is allowed where the project's own established convention already keeps this kind of history (e.g. a "Correctie" pattern already present in the document) — match the existing document's own style rather than stripping it.
 - Pure markdown, no framing text ("Here's your refined idea:"); proper heading formatting (`#` title, `##` sections)
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 7.

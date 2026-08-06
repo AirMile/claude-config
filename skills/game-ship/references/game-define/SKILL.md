@@ -36,8 +36,8 @@ The skill gathers requirements through targeted questions, optionally researches
 > (Step 2c of `phase-0-define-classify.md`), not as a standalone skill. This copy is already adapted:
 > there is **no plan-mode machinery** and **no own phase tracking** (game-ship's task list drives).
 > **game-ship runs PHASE 0→3 of this file entirely inside plan mode** (it calls `EnterPlanMode` before
-> reading this file), so under an `opusplan`-style router the interview + architecture reason on the
-> planning model. Practically: reads, read-only Bash, `WebSearch`/Context7, `AskUserQuestion`, and
+> reading this file) — plan mode here is the approval gate around the architecture decision, not a
+> model-routing hint (the session model is `opus` throughout). Practically: reads, read-only Bash, `WebSearch`/Context7, `AskUserQuestion`, and
 > read-only research subagents all work here; only `.project/`/source writes are blocked — and every
 > write below is already deferred to accept. Run **PHASE 0→3** (interview + architecture + the complete
 > feature.json draft) and **hold the draft in memory** — no `feature.json` and no plan file is written

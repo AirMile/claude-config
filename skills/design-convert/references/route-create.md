@@ -4,7 +4,7 @@ Guided 4-step creation flow.
 
 ### Enter Plan Mode
 
-Follow `shared/PLAN-MODE.md` Entry protocol before Step 1. Steps 1–5 (context, pages, flows, principles, summary) run in plan mode — this is a question phase, so model routers (e.g. `opusplan`) route it through the planning model. Questioning follows `shared/QUESTIONING.md` (form choice, anchoring, escalation ladder).
+Follow `shared/PLAN-MODE.md` Entry protocol before Step 1. Steps 1–5 (context, pages, flows, principles, summary) run in plan mode — the resulting summary is a reviewable artefact whose rejection changes what happens next, a genuine approval gate. Questioning follows `shared/QUESTIONING.md` (form choice, anchoring, escalation ladder).
 
 #### Step 1: Project context
 

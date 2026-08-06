@@ -165,7 +165,7 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
 > **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`.
 
-**Goal:** Per feature focused Explore agents in parallel (reuse / quality / efficiency, plus a conditional security lens), then merge + triage into CLEAN vs HAS_FINDINGS. Basic security patterns stay in the Quality lens as a baseline; security-relevant features additionally get the Security lens. For a deep full-codebase audit use `/dev-security`.
+**Goal:** Per feature focused Explore agents in parallel (`model: "sonnet"` each; reuse / quality / efficiency, plus a conditional security lens), then merge + triage into CLEAN vs HAS_FINDINGS. Basic security patterns stay in the Quality lens as a baseline; security-relevant features additionally get the Security lens. For a deep full-codebase audit use `/dev-security`.
 
 **Lens definitions** (one-liners — the full scan lists live in `references/lens-prompts.md`, the text agents actually receive):
 
@@ -272,7 +272,7 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
 7. **If ALL features CLEAN** → jump directly to PHASE 5 (no approval, no plan mode).
 
-8. **Enter Plan Mode (conditional)** — only when ≥1 feature is HAS_FINDINGS: follow [shared/PLAN-MODE.md](.claude/skills/shared/PLAN-MODE.md) Entry protocol now. PHASE 2 + PHASE 3 run in plan mode so model routers (e.g. `opusplan`) route the research decision and plan synthesis through the planning model. All-CLEAN runs never enter plan mode — zero approval friction. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check). All file writes (refactor-patterns.md appends, source changes, `.project/` mutations) wait until after `ExitPlanMode` at the end of PHASE 3.
+8. **Enter Plan Mode (conditional)** — only when ≥1 feature is HAS_FINDINGS: follow [shared/PLAN-MODE.md](.claude/skills/shared/PLAN-MODE.md) Entry protocol now. PHASE 2 + PHASE 3 run in plan mode because the refactor plan is a reviewable artefact whose rejection changes what happens next — a genuine approval gate, not a model-routing device. All-CLEAN runs never enter plan mode — zero approval friction. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check). All file writes (refactor-patterns.md appends, source changes, `.project/` mutations) wait until after `ExitPlanMode` at the end of PHASE 3.
 
 **Output:** Table per feature (name, files, CLEAN/HAS_FINDINGS, finding count) + summary. If all clean → jump to PHASE 5.
 
@@ -305,7 +305,7 @@ Store as `pipeline_diff[feature_name]`. If still empty or `startedAt` is missing
 
    **If research NOT needed** → proceed directly to PHASE 3.
 
-   **If research needed** → spawn one Explore agent (`subagent_type: Explore`, thoroughness: "very thorough") to do all research in an isolated context. This keeps Context7 results out of the main session.
+   **If research needed** → spawn one Explore agent (`subagent_type: Explore`, `model: "sonnet"`, thoroughness: "very thorough") to do all research in an isolated context. This keeps Context7 results out of the main session.
 
    Determine which research domains to include based on findings:
 

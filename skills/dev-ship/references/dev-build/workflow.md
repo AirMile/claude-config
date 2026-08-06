@@ -180,7 +180,7 @@ REGRESSIONS FOUND:
 File overlap: {list of files referenced by both this feature and the failing tests}
 ```
 
-On regression: (1) analyze if this build caused it — **yes** → fix + re-run (autonomous, no gate); **no, or cause unclear** → plan-mode gate (mirrors `dev-verify/references/fix-loop.md § Plan-mode gate`): show `PLAN MODE: regression not caused by this build — entering plan mode (OpusPlan-aware).`, call `EnterPlanMode`, write a fix plan per regression to the plan file (problem → root cause → proposed fix → verification), then `ExitPlanMode` for approval. Approved → fix + re-run. Rejected → continue anyway (regression pre-existed this build; log it in the completion output). Max 2 fix attempts → blocker. The happy path (all tests pass) never enters plan mode.
+On regression: (1) analyze if this build caused it — **yes** → fix + re-run (autonomous, no gate); **no, or cause unclear** → plan-mode gate (mirrors `dev-verify/references/fix-loop.md § Plan-mode gate`): show `PLAN MODE: regression not caused by this build — entering plan mode.`, call `EnterPlanMode`, write a fix plan per regression to the plan file (problem → root cause → proposed fix → verification), then `ExitPlanMode` for approval. Approved → fix + re-run. Rejected → continue anyway (regression pre-existed this build; log it in the completion output). Max 2 fix attempts → blocker. The happy path (all tests pass) never enters plan mode.
 
 **Diagnostics FAIL** → display errors (max 30 lines) + AskUserQuestion "Fix first (Recommended)" / "Commit anyway".
 

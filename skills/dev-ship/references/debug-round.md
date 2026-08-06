@@ -56,8 +56,8 @@ Explore returns. **M/L** → read `shared/DEBUG-TOOLBOX.md` and run 1–2 matchi
 
 ## 4. Investigation
 
-Spawn one Explore agent (`subagent_type="Explore"`, `thoroughness="very thorough"`) to investigate in
-an isolated context — keeps source reads and git output out of the main session. **Read
+Spawn one Explore agent (`subagent_type="Explore"`, `model: "sonnet"`, `thoroughness="very thorough"`)
+to investigate in an isolated context — keeps source reads and git output out of the main session. **Read
 `.claude/skills/dev-ship/references/debug-explore-agent-prompt.md` first** and use it verbatim as
 the prompt template (do not write an ad hoc prompt), filling its placeholders from the ledger:
 

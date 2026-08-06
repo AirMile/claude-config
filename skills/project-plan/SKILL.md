@@ -93,7 +93,7 @@ visible — no risk of forgetting phases.
 
 ### Enter Plan Mode
 
-Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 0. PHASE 0 → PHASE 3 (input detection → research → feature extraction → dependencies → priority) run in plan mode — the Scenario A semantic diff against an existing backlog (NEW/MODIFIED/INDEPENDENT/REMOVED) is the most error-sensitive thinking step and must run on the planning model. The final feature plan is written to the plan file for review. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check). On a "Cancel" exit from PHASE 0: the skill simply stops — plan mode stays active for the user to dismiss; do not call `ExitPlanMode` for a cancel.
+Follow [shared/PLAN-MODE.md](../shared/PLAN-MODE.md) Entry protocol before PHASE 0. PHASE 0 → PHASE 3 (input detection → research → feature extraction → dependencies → priority) run in plan mode — the Scenario A semantic diff against an existing backlog (NEW/MODIFIED/INDEPENDENT/REMOVED) is the most error-sensitive thinking step and its output is the final feature plan, a reviewable artefact the user can reject before it's written. The final feature plan is written to the plan file for review. Skip the call if plan mode is already active (see PLAN-MODE.md skip-check). On a "Cancel" exit from PHASE 0: the skill simply stops — plan mode stays active for the user to dismiss; do not call `ExitPlanMode` for a cancel.
 
 ### PHASE 0: Input Detection
 

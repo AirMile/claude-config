@@ -155,11 +155,11 @@ DEFINED, then computes the advisory `verificationProfile` and **auto-derives** t
 policy prompt**. define is the only human touchpoint; the derived `refactorLenses`/`securityDeep`
 become parameters for AGENT 3 / the trigger for AGENT S and are stored in memory for the later phases.
 
-**OpusPlan-optimized.** The entire define thinking-block (interview → requirements → architecture →
+**A genuine approval gate.** The entire define thinking-block (interview → requirements → architecture →
 classify → technique-derivation) runs **inside plan mode** — bookkeeping is hoisted before it, all
-durable writes after it (gate-accept). Under `/model opusplan` the thinking runs on the planning model
-(Opus) and execution (build/verify/refactor) on the execution model (Sonnet); on a single fixed model
-it just adds structure. Confirmations are **not** asked twice — the interview keeps only genuine
+durable writes after it (gate-accept). This is not a model-routing device: the session model is `opus`
+throughout; the value is the write-stop and the reviewable plan artefact, not a model switch.
+Confirmations are **not** asked twice — the interview keeps only genuine
 decision prompts (feature pick, design forks, split), and everything else (scope, design sketch,
 seed/backlog impact, pages) is reviewed **once** at the gate, where reject loops back to revise.
 

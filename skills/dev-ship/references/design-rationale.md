@@ -29,31 +29,22 @@ reasoning for when you need to understand _why_ the flow is built this way — i
     after each launch, so any wake-up cost is (auth-mode-dependent) token spend, not wall-clock waiting.
     The human gates (`AskUserQuestion`, `EnterPlanMode`/`ExitPlanMode`) only work in the main chat
     anyway — which is why define and the PHASE 3 manual round were always going to stay there.
-- **The real cache-rebuild cost is `opusplan`, not idling — and it is asymmetric, not "both sides".**
-  Every plan-mode entry/exit under `/model opusplan` is a **model switch**, and a model switch
-  invalidates the cache regardless of how long the wait was — see `shared/PROMPT-CACHE.md`. But the
-  PHASE 0 gate's `EnterPlanMode` (`references/phase-0-fresh-define.md:9`) lands right after the last
-  mandatory pre-plan-mode write, while the main chat still holds only `SKILL.md` +
-  `phase-0-define-classify.md` — a cheap Opus write. Everything expensive (context loads, the
-  interview, architecture, the plan file) then accumulates **inside** plan mode, so the costly
-  rebuild is the single `ExitPlanMode` at `phase-0-fresh-define.md:125`, reading the full
-  ~40-60k-token chat on Sonnet — not a rebuild on both sides. PHASE 3's gates run in a fresh,
-  small-context session after the deliberate PHASE 2→3 park (`SKILL.md:96-97`), and round 1 of the
-  fix-plan gate reuses the manual walkthrough's already-open plan mode (`references/fix-round.md:33-38`)
-  rather than opening a second one — so this pattern costs roughly **one** significant uncached read
-  per run, not "1-3 full rebuilds". `opusplan` is kept anyway — the define architecture is built
-  around it (`SKILL.md § Design`, the OpusPlan-optimized paragraph) and the quality gain from planning
-  on Opus is worth that one read. The design lesson for new plan-mode gates: enter as early as
+- **The real cache-rebuild cost was `opusplan` model switches, not idling.** (Historical — the
+  session model is now plain `opus` throughout, so plan-mode entry/exit no longer triggers a model
+  switch or cache rebuild for that reason; see `shared/PROMPT-CACHE.md` for the current
+  cache-invalidation causes, which are explicit `/model`/`/effort` changes, not plan mode itself.)
+  Under the old `/model opusplan` routing, every plan-mode entry/exit was a **model switch**, and a
+  model switch invalidates the cache regardless of how long the wait was. The PHASE 0 gate's
+  `EnterPlanMode` (`references/phase-0-fresh-define.md:9`) landed right after the last mandatory
+  pre-plan-mode write, while the main chat still held only `SKILL.md` + `phase-0-define-classify.md`
+  — a cheap write. Everything expensive (context loads, the interview, architecture, the plan file)
+  then accumulated **inside** plan mode, so the costly rebuild was concentrated at the single
+  `ExitPlanMode` (`phase-0-fresh-define.md:125`), reading the full ~40-60k-token chat — not doubled on
+  both sides. The general lesson still holds for any future model-switch gate: enter as early as
   possible in the context (right after the last write that must precede it), so the cheap side of the
-  switch is the entry, not the exit.
-- **One place quietly depends on the session model, not just plan mode.** Switching off `opusplan` to
-  a single fixed model is a silent quality regression here, not a neutral swap:
-  `references/manual-interview-walkthrough.md:53-54` runs the evidence-sweep as a **fork**, and
-  forks always run the parent model (`shared/SKILL-PATTERNS.md:454`) — so it rides `opusplan`
-  implicitly. (The heavy debug ceiling, `references/debug-round-heavy.md § 5`, used to make the same
-  point about its three unpinned fix-strategy agents — that fan-out is gone; the tier now writes one
-  plan directly in whatever model plan mode is already running under, so there's no separate pin
-  decision to make.)
+  switch is the entry, not the exit. Plan mode is kept anyway — the define architecture is built
+  around it as a genuine approval gate (`SKILL.md § Design`) — reviewing the plan file was worth that
+  one uncached read; today it costs nothing cache-wise.
 - **Build and verify are separate agents (separate context windows)** — a fresh verify agent is
   unbiased/adversarial, which is the whole value of verify. See `references/agent-verify.md`.
 - **`.project/` is shared on disk between agents; context is isolated.** The flow is sequential →

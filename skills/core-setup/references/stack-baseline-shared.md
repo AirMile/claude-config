@@ -17,7 +17,7 @@ Only execute when:
 
 ## Execution
 
-**Run as general-purpose agent** (`subagent_type="general-purpose"`) for context isolation — Context7 queries for multiple stack technologies produce substantial output that does not belong in the main session. The agent needs Write access; Explore is read-only and won't work.
+**Run as general-purpose agent** (`subagent_type="general-purpose"`, `model: "sonnet"`) for context isolation — Context7 queries for multiple stack technologies produce substantial output that does not belong in the main session. The agent needs Write access; Explore is read-only and won't work.
 
 1. Create the directory first: `mkdir -p .claude/research`
 2. Determine the major technologies from `stack.framework`, `stack.language`, `stack.styling`, `stack.db`, `stack.auth` (skip empty fields)

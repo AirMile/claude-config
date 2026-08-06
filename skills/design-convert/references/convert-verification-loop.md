@@ -182,7 +182,7 @@ Code quality:  [PASS | [N] violations]
 
 Thumbnail vision (3.2) cannot catch a wrong-but-plausible value — a card `background-color: #141414` where the design specifies `#00111e` looks fine in a thumbnail. When per-section ground truth exists, compare computed styles directly instead of relying on vision alone.
 
-**Runs when** `$SECTION_GROUND_TRUTH` is set (audit path, see `convert-audit.md`) OR `$EXTRACTED_STYLES` is set (copy mode with `figma-mcp` / `figma-rest` / `figma-make` / `url` ground truth — see `convert-mode-copy.md § Verification Thresholds`). Skip otherwise (inspiration/sketch, or copy mode that fell back to vision estimation).
+**Runs when** `$SECTION_GROUND_TRUTH` is set (audit path, see `convert-audit.md`) OR `$EXTRACTED_STYLES` is set (copy mode with `figma-mcp` / `figma-rest` / `figma-make` / `url` ground truth — see `convert-mode-copy.md § Verification Thresholds`). Skip otherwise (inspiration/sketch, or copy mode that fell back to vision estimation). **Also skip entirely** when `$AUDIT_PROPERTY_SCOPE = "content"` (route-convert.md PHASE 0.4 follow-up) — the user explicitly asked to leave style values as-is, so re-verifying them here would flag "mismatches" the run was told not to touch.
 
 1. On the rendered localhost page, per section (audit: `$AUDIT_SECTIONS[].domSelector`; copy: the element-type selectors from the fidelity table) extract computed styles with the `getComputedStyle` snippet from `convert-mode-copy.md § 1.0`, scoped to the section node.
 2. Compare against ground truth: `background-color`, `color`, `border-radius`, key spacing (`padding`/`gap`), `font-size`/`font-weight`.
@@ -248,3 +248,5 @@ Remaining:
 ```
 
 Close browser: `playwright-cli close` (or `tabs_close_mcp` if Claude-in-Chrome was used, e.g. a `figma-make` session)
+
+**This is not the end of the run.** The report above looks like a natural stopping point but isn't one — return to `route-convert.md` PHASE 4 now, before reporting anything to the user. PHASE 4 is what syncs the backlog, updates devinfo, and creates the recoverable commit; skipping it here has previously caused a run to finish with real edits on disk but no completion report, no backlog sync, and no commit.

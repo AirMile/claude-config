@@ -1,6 +1,6 @@
 # Seed Alignment — Detection, Edit Contract, Approval
 
-Loaded from PHASE 1 only when `SEED_CONTEXT.present`. This skill runs **outside plan mode** — under model routers (opusplan) that means a lighter model than `/project-seed` or `/project-plan` get for their seed rewrites. Everything below is therefore checklist-shaped with safe defaults, and the only permitted seed mutations are literal, pre-approved edits. Freeform section rewrites are never allowed here.
+Loaded from PHASE 1 only when `SEED_CONTEXT.present`. This skill runs **outside plan mode** — its narrower scope calls for a checklist-shaped pass with safe defaults, not a freeform reasoning pass. Everything below is therefore checklist-shaped with safe defaults, and the only permitted seed mutations are literal, pre-approved edits. Freeform section rewrites are never allowed here.
 
 ## Alignment scan (per queue item)
 

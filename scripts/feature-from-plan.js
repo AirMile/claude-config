@@ -9,8 +9,8 @@
 //
 // The appendix is one ```json fence under a heading matching
 //   "## Appendix — machine contract" (any suffix, e.g. "(skip review)").
-// The fence holds the COMPLETE feature.json draft authored by the planning model
-// inside plan mode. On a fresh feature the draft is written 1:1. When feature.json
+// The fence holds the COMPLETE feature.json draft authored under the plan-mode
+// approval gate. On a fresh feature the draft is written 1:1. When feature.json
 // already exists (update-mode / re-run), a shallow top-level merge preserves keys
 // the draft does not own (build, tests, refactor, …) — see MERGE below.
 

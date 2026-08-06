@@ -516,11 +516,11 @@ Use {when|with} <trigger>. <short addition>. Use with /<command-name>[, optional
 
 **Rules:**
 
-- Default = no model specification (inherits parent model)
-- Specify only when cost savings are significant (agent reads many files or runs frequently)
-- Explore agents are almost always Sonnet-appropriate
-- Build/fix agents that write code: use Opus unless it's a trivial fix
-- `model: "fable"` is availability-gated — every fable spawn names the fallback chain fable → opus → skip-with-log (see `shared/SECOND-OPINION.md § Spawn`); never spawn fable outside that doc's gate (trigger auto-fires the spawn, no confirm step — capped at max 1/phase-or-round + 4/run)
+- **Always specify a model explicitly.** The session model is plain `opus` (`~/.claude/CLAUDE.md § Model Tiering`) — an unpinned dispatch now inherits Opus, not a cheap default. "No model specification" is no longer a safe default; it is a silent cost/latency regression on every dispatch that meant to be cheap.
+- Explore agents are almost always Sonnet-appropriate — pin `model: "sonnet"` on every Explore dispatch.
+- Build/fix agents that write code: use Opus unless it's a trivial fix.
+- `model: "fable"` is availability-gated — every fable spawn names the fallback chain fable → opus → skip-with-log (see `shared/SECOND-OPINION.md § Spawn`); never spawn fable outside that doc's gate (trigger auto-fires the spawn, no confirm step — capped per that file's budget).
+- `subagent_type: "fork"` always inherits the parent (Opus) model and ignores a `model` override — never use a fork where a specific cheap/expensive tier matters; use a fresh (non-fork) agent instead.
 
 ---
 

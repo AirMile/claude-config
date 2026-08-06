@@ -50,8 +50,8 @@ When `present: false`: omit concept reference in recommendation text.
 2. The user explicitly approved the inline rewrite via the AskUserQuestion
    prompt (and plan-mode approval where the skill uses plan mode).
 
-`/project-todo` runs outside plan mode (a lighter model under model routers), so it never
-rewrites sections: its write mode is restricted to the surgical contract in
+`/project-todo` runs outside plan mode (checklist-shaped with safe defaults, matching its narrower
+scope), so it never rewrites sections: its write mode is restricted to the surgical contract in
 `project-todo/references/seed-alignment.md` (one verbatim sentence replacement or one section
 append), and its approval prompt must show the literal edit as the option `preview`.
 

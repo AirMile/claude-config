@@ -27,6 +27,9 @@ Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/
 
 > **Todo**: Read `.claude/skills/shared/VERCEL-CONTEXT.md` — follow the Load Protocol, then apply the guidelines as a bias layer throughout this route.
 
+**Step 0b: Task tracking.** Skip for `$PATCH_MODE = true` (single fast-path, no phase-tracking value). Otherwise seed a `TaskCreate` list now, before PHASE 0.1, covering this run's phases: **Setup** (0.1-0.6), **Mode + Scope** (PHASE 1), **Codegen** (PHASE 2), **Verify** (PHASE 3), **Completion** (PHASE 4 — backlog sync, devinfo update, scoped commit). Mark each `in_progress`/`completed` at its phase boundary.
+<!-- Rationale: a real run skipped PHASE 4 entirely after finishing PHASE 3 — the verification report reads as a natural stopping point and nothing forced the run back to completion; the task list is what a compacted or resumed session checks to find the unfinished phase. -->
+
 ---
 
 ## PHASE 0: Convert Pre-flight
@@ -114,7 +117,7 @@ Read .project/tmp/source-capture.png
 
 Store the resolved source image reference as `$SOURCE_IMAGE` for the verification loop.
 
-> **Todo**: Use the `EnterPlanMode` tool now — Phases 0.2 (Visual Analysis), 0.3 (Mode), 0.4 (Scope), and the mode file's PHASE 1 all benefit from Opus-level vision and design reasoning. `AskUserQuestion` modals and Bash reads remain available inside plan mode; only Write/Edit are blocked, which is fine until Phase 2. Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
+> **Todo**: Use the `EnterPlanMode` tool now, before Visual Analysis (0.2). Skip only if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
 
 ### 0.2 Visual Analysis
 
@@ -232,11 +235,10 @@ Based on the visual analysis (0.2), confirm the output scope:
 
 ```yaml
 header: "Scope"
-question: "What should the output be?"
+question: "What should the output be? (Multiple separate components? Pick 'Full page' or 'Single component' and name the rest under Other.)"
 options:
   - label: "Full page (Recommended)", description: "Page file + section components"
   - label: "Single component", description: "Generate only this component"
-  - label: "Multiple separate components", description: "Each visual block as a separate component"
   - label: "Update existing component", description: "Patch based on new screenshot — only changed sections"
   - label: "Audit existing page vs design", description: "Reconcile an already-built page against the full Figma design — sweep every section, flag wrong values (colors/text/spacing/radii), then patch only the mismatches. Needs a ground-truth source (Figma MCP/REST or URL)."
 multiSelect: false
@@ -251,7 +253,20 @@ multiSelect: false
 
 On "Update existing component": skip PHASE 0.5 and go to PHASE 0.4b.
 
-On "Audit existing page vs design": set `$SCOPE = "audit"` and continue normally through PHASE 0.5, 0.5b, and 0.6 (the audit needs the backlog match, worktree, and the light component scan to map Figma sections to code) — then PHASE 1 dispatches to the audit procedure instead of a mode file (see PHASE 1 below). When `$TARGET_PAGE_CONFIRMED = "other:{route}"` (0.25): the audit target is `{route}`, not `app/page.tsx` — carry `{route}` into 0.5's page-file lookup and into `convert-audit.md` Step A.1 in place of the default homepage assumption.
+On "Audit existing page vs design": set `$SCOPE = "audit"`, then ask one follow-up before continuing:
+
+```yaml
+header: "Audit scope"
+question: "What should this audit reconcile?"
+options:
+  - label: "Style + content (Recommended)", description: "Colors, spacing, radii, typography, text, and images — everything convert-audit.md can compare"
+  - label: "Content & images only", description: "Text and images only — leave color, spacing, and typography exactly as they are today"
+multiSelect: false
+```
+
+Store as `$AUDIT_PROPERTY_SCOPE` (`everything` | `content`). No third "structure only" choice here — `convert-audit.md` Step C's escalation check already detects and handles structural mismatches (missing/extra/reordered sections) automatically regardless of this setting; a separate user-selectable mode for it would just create two competing mechanisms for the same case. `$AUDIT_PROPERTY_SCOPE` governs Steps B, C, and 3.2c in `convert-audit.md` and `convert-verification-loop.md` — see those files for the conditional behavior.
+
+Then continue normally through PHASE 0.5, 0.5b, and 0.6 (the audit needs the backlog match, worktree, and the light component scan to map Figma sections to code) — then PHASE 1 dispatches to the audit procedure instead of a mode file (see PHASE 1 below). When `$TARGET_PAGE_CONFIRMED = "other:{route}"` (0.25): the audit target is `{route}`, not `app/page.tsx` — carry `{route}` into 0.5's page-file lookup and into `convert-audit.md` Step A.1 in place of the default homepage assumption.
 
 On "Full page" when `$TARGET_PAGE_CONFIRMED = "new"` (0.25): the target page file is `/{kebab-frameName}` (or the user-specified route) — 0.5's backlog/name derivation uses that route's name, not the homepage.
 
@@ -436,20 +451,28 @@ If `$SCOPE ∉ {patch, audit}`: skip this section and go directly to 2.1.
 
 Per section in `$PATCH_SECTIONS`:
 
-1. Read the relevant lines in the existing component file (Read tool).
+1. Read the relevant lines in the existing component file (Read tool). Skip for `contentSource: "cms"` entries (see step 2a below) — there is no component file line to read, the content lives in the CMS.
 2. Generate only the changed JSX/classes/structure based on `$SOURCE_IMAGE`.
    For `$SCOPE = audit` on **value-level** mismatches: each `$PATCH_SECTIONS` entry carries `{file, property, oldValue, figmaValue}` from the discrepancy report — the Edit is a direct value swap (find the exact old value string, replace with the Figma value), no regeneration and no reliance on `$SOURCE_IMAGE`. If `$PATCH_SECTIONS` is empty (audit "Report only" was chosen): skip straight to PHASE 3.
    For `$SCOPE = audit` on a **structural mismatch** (convert-audit.md Step D escalation fired): `$PATCH_SECTIONS` carries section-level work items, not property diffs — this step's "direct value swap, Edit only" rule does not apply. Treat each item as normal codegen instead: new sections → Write a new component file + import it; reordered/rewritten sections → full-file Edit; retired sections → remove the import/usage from the page file only (leave the component file on disk unless the user asked to delete it).
-3. Apply via **Edit tool** — never Write — for value-level patches. Structural-mismatch items follow the codegen rule above instead. Find the exact string, replace only that block (value-level) or the full section (structural).
-4. Show a brief summary per edit:
+
+2a. **CMS-backed sections** (`contentSource: "cms"`, tagged in `convert-audit.md` Step A): a CMS write has none of PHASE 4's rollback safety net — that machinery (scoped commit, worktree, recoverable before-state) protects code, not external state. Before mutating:
+   - Capture the before-values in the report (what's being overwritten, not just what it becomes).
+   - Confirm the target dataset/environment explicitly with the user (production vs preview/staging) — never assume which one a query/client points at.
+   - Prefer emitting a runnable migration/patch script the user reviews and runs, over a direct mutation, unless the user has explicitly opted into direct writes for this run.
+   - Wrong **images** get a different disposition than wrong **text**: text is generally fixable straight from the Figma ground truth; a wrong stock photo needs a real asset this route doesn't have — flag it `needs asset from user` rather than substituting a different placeholder.
+   - Then mutate via the project's CMS client/API (not the Edit tool — there is no file to Edit).
+
+3. Apply via **Edit tool** — never Write — for value-level patches on `contentSource: "code"` sections. Structural-mismatch items follow the codegen rule above instead; CMS-backed sections follow 2a instead. Find the exact string, replace only that block (value-level) or the full section (structural).
+4. Show a brief summary per edit — this is the artifact that makes the change auditable after the fact, don't skip it even when the diff feels obvious:
    ```
    PATCH: [section-name]
    ─────────────────────────
-   File: [path:line]
+   File: [path:line]                    (or: CMS document/field, for 2a)
    Change: [description — e.g. "CTA text + variant updated"]
    ```
 
-After all edits: go to PHASE 3 (verification) with the new screenshot as target. Skip 2.1 and 2.2.
+After all edits: for any `contentSource: "cms"` section, re-fetch/hard-reload before the PHASE 3 render — Next.js ISR/data-cache (or equivalent) can serve the pre-mutation response and make a real fix read as failed. Then go to PHASE 3 (verification) with the new screenshot as target. Skip 2.1 and 2.2.
 
 ### 2.1 Plan Output Structure
 
@@ -518,7 +541,7 @@ States:     [✓ state components generated: [loading|error|empty] | — no stat
 
 ## PHASE 3: Visual Verification Loop
 
-> **Todo**: Read '.claude/skills/design-convert/references/convert-verification-loop.md'
+> **Todo**: Read '.claude/skills/design-convert/references/convert-verification-loop.md' — this is not a generic screenshot loop you can reconstruct from memory or project instructions. It carries the §3.2 seven-point discrepancy checklist (including "no blank areas" and "missing elements" — the two checks that catch a broken/fabricated asset path), the round-1 runner baseline spec, and §3.2c (a computed-style diff against `$EXTRACTED_STYLES` — the only mechanism that can confirm which colors actually shipped). A self-designed substitute will not contain these. Do not improvise this phase.
 
 The loop is scope-aware (see its § Scope selection): generation scopes (copy/sketch/inspiration) run the full round-based screenshot-diff loop; `$SCOPE = audit` runs a lighter pass (render + console + 3.2c exact-value re-check — no pixel-diff rounds), and structural-audit adds a section-presence check.
 
@@ -549,7 +572,9 @@ This route must **NEVER**:
 - Use "Lorem ipsum" — always use contextual content from the source or realistic placeholders
 - Run sketch or inspiration mode without theme (project.json#theme empty)
 - Reach PHASE 2 with plan mode still active — every path has exactly one `ExitPlanMode` point (mode file 1.2, patch detection Step 4, or audit Step D)
-- Skip the visual verification loop when Playwright is available
+- Skip the `EnterPlanMode` call at PHASE 0.2 (or the patch fast-path's own call) when plan mode isn't already active — the check above only catches "still active at PHASE 2," not "never entered"
+- Skip the visual verification loop when Playwright is available, or substitute an improvised check for the procedure in `convert-verification-loop.md`
+- Reference an asset path that does not exist on disk or as a captured live URL — see `convert-mode-copy.md § Codegen Rules`
 - Regenerate components that already exist in the codebase — import and reuse
 - Exceed 3 verification rounds
 

@@ -35,8 +35,8 @@ immediately** — never continue the round outside plan mode silently.
 
 ## 4. Investigation
 
-Spawn one Explore agent (`subagent_type="Explore"`, `thoroughness="very thorough"`) to investigate in
-an isolated context — keeps script/scene reads and git output out of the main session. Use
+Spawn one Explore agent (`subagent_type="Explore"`, `model: "sonnet"`, `thoroughness="very thorough"`)
+to investigate in an isolated context — keeps script/scene reads and git output out of the main session. Use
 `.claude/skills/game-debug/references/explore-agent-prompt.md` as the prompt template, but fill its
 placeholders from the ledger instead of a fresh PHASE 0/1 intake:
 

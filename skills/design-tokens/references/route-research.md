@@ -1,6 +1,6 @@
 # Route: Colour-landscape research (optional)
 
-Spawns background research to ground the palette in *what's already taken* before generating
+Spawns background research to ground the palette in _what's already taken_ before generating
 colours. Off by default — never blocks the direct Create path. Invoked from `route-create.md`
 Step 1 (Colours) when the user opts in, or standalone via the action menu.
 
@@ -34,17 +34,30 @@ prompts/inputs passed via `args`, not giant inline strings).
 > free lanes · accessibility caveats) and returns one **landscape** object (schema below).
 
 **Agent-tool fallback** (Workflow unavailable, or a spurious empty-input failure): spawn **one**
-`general-purpose` research agent with the same brief — "audit competitor brand colours, map crowded
-vs open hue lanes, flag accessibility caveats; return the landscape JSON" — and use its result.
+`subagent_type: "general-purpose"`, `model: "sonnet"` research agent with the same brief — "audit
+competitor brand colours, map crowded vs open hue lanes, flag accessibility caveats; return the
+landscape JSON" — and use its result.
 
 ## Landscape schema (what the workflow returns)
 
 ```json
 {
-  "pins":       [{ "name": "Netlify", "hsl": 174 }],
-  "lanes":      [[161, 172, "free"], [315, 335, "free"]],
-  "candidates": [{ "id": "teal", "name": "Teal", "hex": "#20BDA8", "hsl": 172, "lane": "free", "note": "…" }],
-  "caveats":    ["lime/chartreuse (~80-105°) fails small-text contrast on white"]
+  "pins": [{ "name": "Netlify", "hsl": 174 }],
+  "lanes": [
+    [161, 172, "free"],
+    [315, 335, "free"]
+  ],
+  "candidates": [
+    {
+      "id": "teal",
+      "name": "Teal",
+      "hex": "#20BDA8",
+      "hsl": 172,
+      "lane": "free",
+      "note": "…"
+    }
+  ],
+  "caveats": ["lime/chartreuse (~80-105°) fails small-text contrast on white"]
 }
 ```
 

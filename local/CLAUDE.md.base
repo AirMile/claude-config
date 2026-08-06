@@ -54,6 +54,28 @@ Terminal output must stay scannable at any window width:
 
 Follow skill instructions exactly — deviate only on explicit user request. Don't narrate individual tool calls or routine reads; execute directly. (Strategic direction is announced under § Communication.)
 
+## Model Tiering
+
+Session model is plain `opus` — always. Plan mode is not a model-routing switch in this repo: it is
+a genuine approval gate (a reviewable artefact whose rejection changes what happens next), nothing
+more. A running session cannot switch its own model mid-turn, so cheap work is never a side effect
+of "outside plan mode" — it is always a deliberate, explicitly-pinned subagent dispatch.
+
+- **Default = Opus, always.** Do not leave a subagent's `model:` unspecified expecting a cheaper
+  tier — an unpinned dispatch now inherits Opus, not Sonnet. Every dispatch that should be cheap
+  pins `model: "sonnet"` (reading, searching, mechanical work) or `model: "haiku"` (classification,
+  parsing) explicitly. See `skills/shared/SKILL-PATTERNS.md § Agent Model Selection`.
+- **Fable is a sparring tier, not a one-shot oracle.** For a hard-thinking or high-stakes judgment
+  call, spawn a fresh consult per `skills/shared/SECOND-OPINION.md` — its § Route decides explore
+  vs. ask-the-user vs. spar vs. explore-then-spar, and its § Mode allows one rebuttal round (cap 2)
+  when a cited factual error survives the first digest. Fable is never a source of facts — a factual
+  gap always routes to an explore agent, never to a spar.
+- **`fork` subagents always inherit the parent model** and ignore a `model` override — never use a
+  fork where a specific cheap/expensive tier matters; use a fresh (non-fork) agent instead.
+- This tiering is about session-model and ad-hoc consult choices, not skill-pipeline subagents —
+  those keep following each pipeline's own `Agent Conventions` and, within that, this document's
+  pin-explicitly rule.
+
 ## Project Setup
 
 For project setup: use `/core-setup`, not `/init`. `/init` generates a full codebase CLAUDE.md without a `.gitignore` strategy or bootstrap.

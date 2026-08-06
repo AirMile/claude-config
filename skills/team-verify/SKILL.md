@@ -347,7 +347,7 @@ TOTAL PASS: {n}  TOTAL FAIL: {n}
 
 **Goal:** Analyze whether the generated test scenarios cover the code _sufficiently_, or whether there are blind spots.
 
-**Spawn Explore agent** (`subagent_type="Explore"`, thoroughness: "very thorough"):
+**Spawn Explore agent** (`subagent_type="Explore"`, `model: "sonnet"`, thoroughness: "very thorough"):
 
 ```
 Analyze whether the test scenarios fully cover the code.

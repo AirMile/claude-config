@@ -37,7 +37,7 @@ Display technique map:
 
 > **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`.
 
-### Plan-mode gate (OpusPlan-friendly)
+### Plan-mode gate
 
 Before starting fixes, decide whether to enter plan mode first.
 
@@ -54,7 +54,7 @@ Skip plan mode silently when ALL:
 
 When entering plan mode: call `EnterPlanMode`, write the fix plan to the plan file (one section per bug: problem → root cause → research → proposed fix → verification), then `ExitPlanMode` for approval. After approval, continue with the Fix step below. Rejected plan → re-categorize or ask user.
 
-Show before entering: `PLAN MODE: {n} bug(s) need design — entering plan mode (OpusPlan-aware).`
+Show before entering: `PLAN MODE: {n} bug(s) need design — entering plan mode.`
 
 ### Fix
 

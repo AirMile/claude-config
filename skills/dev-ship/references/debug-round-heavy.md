@@ -60,7 +60,7 @@ incomplete). Reuse it directly — do not re-run Explore.
 
 Only if `lightRoundNotes` shows the light round's hypothesis was **refuted** by its own re-check
 (the fix based on it did nothing, or made it worse), **or** this is a non-ledger entry (§ 1) with no
-`lightRoundNotes` at all: run one Explore agent — **read
+`lightRoundNotes` at all: run one Explore agent (`model: "sonnet"`) — **read
 `.claude/skills/dev-ship/references/debug-explore-agent-prompt.md` first** and use it verbatim as
 the prompt template (do not write an ad hoc prompt) — explicitly noting any refuted hypothesis from
 `lightRoundNotes` in `PROBLEM` so this pass doesn't repeat it.

@@ -4,7 +4,7 @@ Load this file when entering PHASE 1. Contains the full Explore agent prompt for
 
 ---
 
-Spawn one Explore agent (`subagent_type="Explore"`, thoroughness: "very thorough") with the following prompt:
+Spawn one Explore agent (`subagent_type="Explore"`, `model: "sonnet"`, thoroughness: "very thorough") with the following prompt:
 
 ```
 {STACK_CONTEXT}

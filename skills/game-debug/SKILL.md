@@ -130,7 +130,7 @@ If nothing available → continue without context (backwards compatible).
 
 ### Enter Plan Mode
 
-> **Todo**: Use the `EnterPlanMode` tool now — PHASEs 1–6 (problem intake, codebase investigation, root cause analysis, research, fix plan generation, plan selection) benefit from Opus-level reasoning under the `opusplan` router. `AskUserQuestion`, `Read`, `Glob`, `Grep`, `WebSearch`, Context7 MCP, and Agent tools keep working in plan mode; only file writes are blocked — which is fine until PHASE 7 (reproduction test write). Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
+> **Todo**: Use the `EnterPlanMode` tool now — PHASEs 1–6 (problem intake, codebase investigation, root cause analysis, research, fix plan generation, plan selection) produce the fix plan — a reviewable artefact whose rejection sends the analysis back for revision, which is why they run inside plan mode as a genuine approval gate. `AskUserQuestion`, `Read`, `Glob`, `Grep`, `WebSearch`, Context7 MCP, and Agent tools keep working in plan mode; only file writes are blocked — which is fine until PHASE 7 (reproduction test write). Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
 
 ---
 
@@ -148,7 +148,7 @@ Outcome: confirmed problem summary (type + symptom + context + details) — inpu
 
 > **Todo**: mark PHASE 1 → `completed`, PHASE 2 → `in_progress`.
 
-Spawn one Explore agent (`subagent_type="Explore"`) to investigate in an isolated context. This keeps source file reads and git output out of the main session.
+Spawn one Explore agent (`subagent_type="Explore"`, `model: "sonnet"`) to investigate in an isolated context. This keeps source file reads and git output out of the main session.
 
 **Thoroughness based on problem type (PHASE 1):**
 

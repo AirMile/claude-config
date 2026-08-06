@@ -1,7 +1,8 @@
 # PHASE 4 + 5 — Fix Plans, Selection & Implementation
 
-Loaded from `SKILL.md § PHASE 3` when the user chose "Yes, generate fix plans" and `ExitPlanMode`
-closed the aggregation/report session. Owns everything from the fix-plan fan-out through the
+Loaded from `SKILL.md § PHASE 3` when the user chose "Yes, generate fix plans" — PHASE 3 no longer
+enters plan mode (`shared/PLAN-MODE.md § Wanneer plan mode`; a triage report is not a reviewable
+proposal), so there is nothing to exit here. Owns everything from the fix-plan fan-out through the
 worktree'd implementation and finalize offer.
 
 ## PHASE 4: Fix Plans
@@ -28,8 +29,9 @@ workflow's session-scoped transcript journal).
 
 > **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`.
 
-`EnterPlanMode` per `shared/PLAN-MODE.md § Entry` (a fresh entry — the PHASE 3 plan-mode session
-already closed via its own `ExitPlanMode` before PHASE 4 could launch a Workflow).
+`EnterPlanMode` per `shared/PLAN-MODE.md § Entry` — this is the fix-strategy go/no-go poort itself
+(a real approval gate: the chosen strategy + fix-set is the reviewable proposal, and rejection
+revises it), unrelated to PHASE 3 which never entered plan mode.
 
 ### Step 1: Present options
 

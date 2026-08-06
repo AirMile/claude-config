@@ -61,7 +61,8 @@ rework."`
 ## Step 2 — Enter plan mode
 
 > **Todo**: Use the `EnterPlanMode` tool now — spec review, composition, direction composition,
-> and the brief all benefit from Opus-level reasoning under the `opusplan` router.
+> and the brief converge on a reviewable `SHIP_PLAN`/BUILD PLAN the user approves before codegen,
+> a genuine gate per `shared/PLAN-MODE.md § Wanneer plan mode`.
 > `AskUserQuestion`, `Read`, `Glob`, `Grep`, `WebFetch` keep working; disk writes are deferred to
 > Step 8. Skip if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
 

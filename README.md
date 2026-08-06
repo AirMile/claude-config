@@ -47,7 +47,7 @@ Pulls the latest claude-config and rebuilds composed global files. For setup wit
 
 ### Recommended Claude Code settings
 
-`/model opusplan` + `"effortLevel": "high"` in `~/.claude/settings.json`. claude-config is built around this setup for token efficiency — Opus plans, Sonnet executes — not full-Opus runs. `/core-bootstrap` asks for your Claude plan and tunes the advice: the defaults are calibrated for **Max 5x**; Pro / Max 10x get different guidance.
+`/model opus` + `"effortLevel": "high"` in `~/.claude/settings.json`. claude-config is built around a fixed session model — Opus throughout, every phase — not a plan-mode-triggered switch: plan mode is a pure approval gate (`skills/shared/PLAN-MODE.md`), never a router. Cost control happens per-dispatch instead: skill-pipeline subagents pin cheap tiers (`sonnet`/`haiku`) explicitly where the work is mechanical (`skills/shared/SKILL-PATTERNS.md § Agent Model Selection`). `/core-bootstrap` asks for your Claude plan and tunes the advice: the defaults are calibrated for **Max 5x**; Pro / Max 10x get different guidance.
 
 ## Skills & pipelines
 

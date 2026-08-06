@@ -44,7 +44,8 @@ multiSelect: false
    - Identify visible sections (hero, nav, sidebar, content-area, footer, cards, etc.)
    - Infer purpose from layout and visible content
 
-   For multiple images: spawn N agents in parallel (one per image), merge results, show progress:
+   For multiple images: spawn N agents in parallel (one per image; `subagent_type: "general-purpose"`,
+   `model: "sonnet"` — mechanical extraction, not creative), merge results, show progress:
 
    ```
    Image 1/{N}: [page type] — {M} sections detected

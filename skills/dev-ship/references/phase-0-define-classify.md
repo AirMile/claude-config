@@ -4,13 +4,11 @@ The one interactive phase. All human decisions are front-loaded here; everything
 hands-off (except the conditional manual-test interlude in PHASE 3).
 
 **Plan-mode shape (token efficiency).** The whole define thinking-block — interview, requirements,
-architecture, classify, technique-derivation — runs **inside plan mode** (entered at Step 2b). Under
-an `opusplan`-style router that means it reasons on the **planning model** (e.g. Opus); execution
-(build/verify/refactor) runs on the **execution model** (e.g. Sonnet). Plan mode blocks `.project/`
-and source writes, so **all bookkeeping is hoisted to Step 2a (before plan mode)** and **all durable
+architecture, classify, technique-derivation — runs **inside plan mode** (entered at Step 2b). Plan
+mode blocks `.project/` and source writes — it is an approval gate, not a model router (the session
+model is `opus` throughout) — so **all bookkeeping is hoisted to Step 2a (before plan mode)** and **all durable
 artifacts are written at gate-accept (Step 4b, after plan mode exits)**. The gate is the single
-review + go/no-go for the whole plan — reject loops back inside plan mode to revise. Runs unchanged on
-a single fixed model (plan mode is then just structure, no model switch). An unforeseen
+review + go/no-go for the whole plan — reject loops back inside plan mode to revise. An unforeseen
 non-deferrable write mid-define uses `shared/PLAN-MODE.md § Administrative exit` — exit with an
 administrative note, write, and **re-enter plan mode before continuing the interview**.
 

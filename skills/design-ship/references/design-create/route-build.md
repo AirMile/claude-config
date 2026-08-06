@@ -28,7 +28,7 @@ On successful code generation: remove `transition`, set `status: "DOING"`, `stag
 
 #### Step 0b: Enter Plan Mode
 
-> **Todo**: Use the `EnterPlanMode` tool now — Steps 1–7 (entity/candidate/spec decisions, design levers, page composition, design directions, BUILD PLAN) all benefit from Opus-level reasoning under the `opusplan` router. `AskUserQuestion` modals, `Read`, `Glob`, `Grep`, and `WebFetch` keep working inside plan mode; only Write/Edit and git-writes are blocked — which is fine until codegen. The worktree is created after `ExitPlanMode` (Step 7b); the only disk writes (spec, design.\*, backlog) are deferred to the off-ramp exit or completion sync 10f. Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
+> **Todo**: Use the `EnterPlanMode` tool now — Steps 1–7 (entity/candidate/spec decisions, design levers, page composition, design directions, BUILD PLAN) converge on a reviewable BUILD PLAN the user approves before codegen, a genuine gate per `shared/PLAN-MODE.md § Wanneer plan mode`. `AskUserQuestion` modals, `Read`, `Glob`, `Grep`, and `WebFetch` keep working inside plan mode; only Write/Edit and git-writes are blocked — which is fine until codegen. The worktree is created after `ExitPlanMode` (Step 7b); the only disk writes (spec, design.\*, backlog) are deferred to the off-ramp exit or completion sync 10f. Skip `EnterPlanMode` if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
 
 #### Step 1: Entity selection
 

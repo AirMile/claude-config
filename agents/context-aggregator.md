@@ -1,6 +1,7 @@
 ---
 name: context-aggregator
 description: Aggregate prior feature decisions and thinking-output files into a compact relevance-filtered block for a target feature. Read-only — no edits.
+model: sonnet
 color: blue
 ---
 
