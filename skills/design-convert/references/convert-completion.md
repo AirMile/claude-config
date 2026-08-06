@@ -14,8 +14,8 @@ Update `.project/session/devinfo.json`:
       "mode": "copy | inspiration | sketch",
       "pageFile": "[page file path]",
       "components": ["[list of created component files]"],
-      "verificationRounds": 2,
-      "finalMatchQuality": "high",
+      "verificationRounds": "[computed — see §4.4, do not hand-write]",
+      "finalMatchQuality": "[from the last ROUND ASSESSMENT block in convert-verification-loop.md §3.2 — do not hand-write; if no assessment block exists, this field is absent, not guessed]",
       "framework": "[detected framework]",
       "theme": "[.project/project.json#theme or null]",
       "scope": "page | component | patch | audit",
@@ -101,6 +101,16 @@ Build the `Worktree:` line (reused verbatim in the printed report in §4.5b belo
 - `$IS_WORKTREE = true` → `Worktree:    {WT_BRANCH} — UNMERGED (auto-finalized in §4.6)`
 - `$IS_WORKTREE = false` → `Worktree:    not in a worktree`
 
+Compute the verification-artifact count rather than recalling it:
+
+```bash
+ROUNDS=$(ls .project/tmp/verify-round-*.png 2>/dev/null | wc -l)
+```
+
+`$ROUNDS = 0` and Playwright was available this run → the verification loop was skipped or ran degraded. Print `Verification: NOT RUN — convert-verification-loop.md was skipped` on the completion report (§4.5b) instead of a match-quality claim, and add it to 4.4b's Open-gaps bucket. `$ROUNDS > 0` → `verificationRounds = $ROUNDS`, `finalMatchQuality` = the `Match quality:` value from the last round's `ROUND ASSESSMENT` block (§3.2) — never a value recalled from memory without that block existing.
+
+Check whether this run's `TaskCreate` list (Step 0b) exists and every phase reached `completed`: no list, or an unfinished phase → print `Tasks: not tracked this run` on the completion report (§4.5b) instead of omitting the line silently.
+
 **Note:** the full `CONVERT BUILD COMPLETE` report is printed at the end of §4.5b, not here — it includes a `Commit:` line that needs the actual commit result, which doesn't exist yet at this point in the flow (mirrors `dev-verify`'s completion-sync: commit first, then print the report). This step only computes/holds the fields the report needs; the live-preview presentation below still happens now, since it isn't gated on the commit.
 
 If the visual verification loop rendered a live page (Playwright was available and ran ≥1 round — see `convert-verification-loop.md`), present that live page in the browser:
@@ -109,20 +119,28 @@ If the visual verification loop rendered a live page (Playwright was available a
 
 ### 4.4b Final Verification Round
 
-Whatever was shown so far (live preview, if any) is one-directional — it doesn't ask whether the result actually satisfies the user, or surface decisions made along the way that they might want to revisit. Close that gap here, **before** treating the run as done — and before §4.5b commits anything, so a "still needs work" answer never gets locked into a commit:
+Whatever was shown so far (live preview, if any) is one-directional — it doesn't ask whether the result actually satisfies the user, or surface decisions made along the way that they might want to revisit. Close that gap here, **before** treating the run as done — and before §4.5b commits anything, so a "still needs work" answer never gets locked into a commit.
 
-Summarize, in 1-3 lines, any judgment calls made during this run that a value-only report wouldn't surface — e.g. "kept X unlicensed asset out and substituted Y", "left section Z out of the page (no Figma match) but didn't delete the file", "didn't touch the site-wide brand color even though it differs from Figma". Skip this summary if the run had no such calls (a clean value-patch audit rarely does).
+Before writing anything below, if the run emitted any local asset path this session: `ls` each one. Any path that does not resolve is an Open gap, never a Decision.
+
+Report two labeled buckets — do not merge them:
+
+- **Decisions (max 3 lines)** — deliberate deviations you stand behind and would defend if asked, e.g. "kept X unlicensed asset out and substituted Y", "left section Z out of the page (no Figma match) but didn't delete the file". Omit if none.
+- **Open gaps (no line cap, one line each)** — anything the run could not complete, could not verify, or worked around: a substituted/invented asset or value, a verification step that was skipped or ran degraded, a fetch that failed. State `Gaps: none` explicitly if there genuinely are none — an omitted header reads as "forgotten," not "checked."
+
+Each line in both buckets must cite a concrete referent — a file path, a `file:line`, or a value visible in `git diff` vs the baseline SHA. Do not describe the codebase from memory; grep the diff first. A line you cannot cite is a line you should not write.
 
 ```yaml
 header: "Verification"
 question: "Klopt dit resultaat, of zijn er nog open punten voordat dit als afgerond geldt?"
 options:
-  - label: "Ziet er goed uit (Aanbevolen)", description: "Geen verdere wijzigingen nodig"
-  - label: "Er zijn nog open punten", description: "Beschrijf wat nog moet worden aangepast — deze skill-run pakt het meteen op"
+  - label: "Ziet er goed uit (Aanbevolen — only when Gaps: none)", description: "Geen verdere wijzigingen nodig"
+  - label: "Er zijn open gaps (Aanbevolen when the Gaps bucket is non-empty)", description: "Pak de gerapporteerde open gaps meteen op"
+  - label: "Er zijn andere open punten", description: "Beschrijf wat nog moet worden aangepast — deze skill-run pakt het meteen op"
 multiSelect: false
 ```
 
-On "Er zijn nog open punten": treat the free-text response as new input, address it before continuing to 4.5. Loop this question once more if the follow-up also surfaces changes; don't loop indefinitely — after the second round, hand off remaining items as a plain list instead of re-asking.
+On "Er zijn open gaps" or "Er zijn andere open punten": treat the response (the Gaps bucket, or free-text) as new input, address it before continuing to 4.5. Loop this question once more if the follow-up also surfaces changes; don't loop indefinitely — after the second round, hand off remaining items as a plain list instead of re-asking.
 
 ### 4.5 Dev-server cleanup
 
@@ -178,28 +196,29 @@ Follow `shared/SCOPED-COMMIT.md`. Convert's deltas:
 
 Then print the full completion report, using the `Worktree:` line built in §4.4 and the commit result from this step:
 
+Omit the `Interactions:` line entirely when no `$INTERACTION_SPEC` was set this run — don't print it empty.
+
 ```
 CONVERT BUILD COMPLETE
-═══════════════════════════════════════════════════════════
-
-Source:       [file path | URL | pasted image]
-Mode:         [1:1 copy | Inspiration | Sketch → high-fi]
+════════════════════════════════════════════════
+Source:       [path | URL | pasted image]
+Mode:         [1:1 copy | Inspiration | Sketch→high-fi]
 Framework:    [detected framework]
-Verification: [N] rounds, [High | Medium | Low] match
-Interactions: [[N] implemented, interaction check [PASS | N mismatches remaining] | omit line when no $INTERACTION_SPEC]
-Code quality: [PASS | [N] violations fixed]
+Tasks:        [n phases tracked | "not tracked"]
+Verification: [N] rounds, [High|Medium|Low] | "NOT RUN"
+Interactions: [N implemented, PASS | N mismatches]
+Code quality: [PASS | N violations fixed]
 Gaps:         [N linked | M created | K pending | "none"]
-Bans checked: [N forbidden patterns enforced | "none active"]
-Commit:       [{type}({target}): {subject} ({short-sha}) | "no changes to commit"]
-Worktree:     {WT_BRANCH} — UNMERGED (auto-finalized in §4.6) | not in a worktree
+Bans checked: [N enforced | "none active"]
+Commit:       [{type}({target}): {subject} (sha) | "none"]
+Worktree:     [{branch} — unmerged | not in a worktree]
 
 Files ([N]):
   Page:       [page file path]
   Components: [component paths]
 
-Next: run /design-ship {name} — build + runtime check, moves PAGE to DONE on PASS.
-
-═══════════════════════════════════════════════════════════
+Next: /design-ship {name} — runtime check, ships on PASS.
+════════════════════════════════════════════════
 ```
 
 ### 4.6 Auto-finalize

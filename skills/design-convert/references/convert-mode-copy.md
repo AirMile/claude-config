@@ -16,9 +16,12 @@ Copy-mode counterpart to token mapping: capture exact source values instead of m
 
 1. `get_design_context` on the node link → code representation with exact values (colors, spacing, typography, radii, shadows). Parse into `$EXTRACTED_STYLES`.
 2. `get_variable_defs` on the node link → the variables/styles backing those values (token names + values). Merge into `$EXTRACTED_STYLES` — keep the variable names, they inform naming in codegen.
-3. Assets: `download_assets` (PNG/JPG/SVG, max 20 nodes per call) → save under `public/` (or the framework's static dir) and record paths as `$EXTRACTED_ASSETS`.
+3. Assets — three-outcome branch, do not assume:
+   - `download_assets` present and returns files → save under `public/` (or the framework's static dir), record paths as `$EXTRACTED_ASSETS`.
+   - `download_assets` absent from the connected MCP toolset, OR present but returns empty for these nodes (both normal — not every Figma MCP server exposes it, and raster fills on unselected/grouped nodes routinely export empty) → fetch the image URLs `get_design_context` already returned (`http://localhost:.../assets/...`, served live by Figma desktop for the session's duration) directly via Bash (`curl -o public/images/{slug}.jpg {url}`); record the written paths as `$EXTRACTED_ASSETS`. These URLs die when Figma desktop closes — do not defer this fetch.
+   - Fetch also fails → this is a **blocking gap**, not a judgment call. Do not invent a path. Emit the live URL with the `{/* TODO: localize asset */}` comment and add the item to 4.4b's Open-gaps bucket.
 
-`get_variable_defs` returning empty is **normal** — agency files often use raw fills without Figma variables. Not an error: `get_design_context` already carries the exact values; proceed without variable names.
+`get_variable_defs` returning empty is **normal** — agency files often use raw fills without Figma variables. Not an error: `get_design_context` already carries the exact values; proceed without variable names. `$EXTRACTED_ASSETS` ending up empty after all three outcomes is equally normal — it is not evidence anything went wrong, only evidence the general asset rule below applies.
 
 **For `$INPUT_SOURCE = "figma-rest"`:** same as figma-mcp, but read exact values (fills, typography, layout, radii, effects) from the node-tree JSON captured in 0.1 (`.project/tmp/source-node.json`) → `$EXTRACTED_STYLES`, labeled `computed`. Assets: `GET /v1/images/{key}?ids={asset-node-ids}&format=png|svg` per asset node → `$EXTRACTED_ASSETS`.
 
@@ -87,12 +90,14 @@ Assets:
 
 ### 1.2 Confirm
 
+The question body must open with the `Sections:` line from SOURCE ANALYSIS (0.2), enumerated top-to-bottom in the exact order they will be generated — this is the only point in the route where that order becomes an artifact the user sees before codegen, rather than a mental note. If SOURCE ANALYSIS was compressed into this same confirmation (common when 0.2 and 1.1 end up presented together), the section order must still appear as its own line, not buried inside prose.
+
 ```yaml
 header: "Fidelity"
-question: "Is this extraction of the source's exact values correct?"
+question: "Sections (top-to-bottom): {list}. Is this extraction of the source's exact values correct?"
 options:
-  - label: "Yes, continue (Recommended)", description: "Use these exact values for code generation"
-  - label: "Adjust", description: "I want to correct specific values"
+  - label: "Yes, continue (Recommended)", description: "Use these exact values and this section order for code generation"
+  - label: "Adjust", description: "I want to correct specific values or the section order"
 multiSelect: false
 ```
 
@@ -104,7 +109,8 @@ If "Adjust": ask which values to change, update, re-confirm.
 
 - Use exact arbitrary Tailwind values from the fidelity table: `bg-[#FF5733]`, `text-[17px]`, `rounded-[12px]` — when no standard class matches exactly. Visual fidelity beats class purity.
 - Use exact text content from the fidelity table — never paraphrase, never substitute placeholder copy.
-- Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently. Exception `figma-mcp`: assets were already exported via `download_assets` in 1.0 — reference the local `$EXTRACTED_ASSETS` paths, no TODO needed.
+- Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently. Exception `figma-mcp` **when `$EXTRACTED_ASSETS` is non-empty**: reference the local paths from the branch above, no TODO needed. `$EXTRACTED_ASSETS` empty or unset → the general rule applies regardless of source type.
+- Never invent an asset path. The same rule that forbids paraphrasing placeholder copy (above) applies to assets: a `src`/`href` must resolve to a file written this run or carry the `{/* TODO: localize asset */}` comment with a live URL — never a plausible-looking filename that doesn't exist on disk.
 - Use the exact `font-family` with its fallback stack. If a Google Font is recognized: note the required import in the Generation Summary.
 - Figma sources (`figma-mcp`/`figma-rest`): Figma-emitted code is a **value source, not a code source**. Never copy absolute pixel offsets (`left-[92.33px]`) — reconstruct element groups with flex/grid + gap (visual result identical, code responsive). Replace data-URI SVG gradients with equivalent CSS gradients. Repeated visual patterns (buttons, cards, badges) become one shared component even when the file has no Figma components.
 - `$INTERACTION_SPEC` rows with `source: spec-text` or `observed` are ground truth — implement with exact values: arbitrary easing (`ease-[cubic-bezier(0.25,0.46,0.45,0.94)]`), exact scale/translate/duration values. Implementation patterns (sibling-dimming, scroll entrances, `prefers-reduced-motion` wrapper): `convert-generate-template.md § Motion`.

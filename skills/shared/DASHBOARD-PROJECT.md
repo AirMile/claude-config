@@ -10,7 +10,7 @@ The project dashboard is an interactive UI that displays and edits project metad
 
 **API endpoint `/{project}/feature/{name}`:** merges three sources — `feature.json` (if present), backlog-feature object (type/status/audit.\*), and `design.{pages|components}[name]` (for PAGE/COMPONENT). Path A design cards (no feature.json) are fully built from backlog + design spec.
 
-**UI sections (single-scroll):** Concept | Components | Stack | Config (CLAUDE.md)
+**UI sections (single-scroll):** Seed | Features | Design System | Stack | Config (CLAUDE.md)
 All sections are visible at once in one scroll — no tabs. Sidebar links are anchor-links that scroll to the relevant section. `stack`, `data`, `endpoints` and `theme` remain separate sections in project.json; the dashboard sections are project-specifically configured via the `visibleTabs` array in the template.
 
 ## Reading the dashboard

@@ -1,6 +1,6 @@
 ---
 name: design-convert
-description: Use with /design-convert — visual→code (sketch/Figma/URL/screenshot) or design-spec management.
+description: Use with /design-convert — Figma/URL/screenshot→code, or manage design specs.
 argument-hint: "[name|file-path|url|sketch]"
 reads:
   [
@@ -17,7 +17,7 @@ reads:
 writes: [devinfo.handoff, devinfo.tokenDrift, project.design, backlog.status]
 metadata:
   author: claude-config
-  version: 3.7.0
+  version: 3.10.0
   category: design
 ---
 
@@ -190,7 +190,7 @@ Triggers when Step 2 set `$ROUTE = design` AND `$SKILL_ARG` is non-empty.
 
 `$SKILL_ARG` is empty AND no image pasted AND `$ROUTE` not already set → `$ROUTE = design`.
 
-**Pre-flight summary:**
+**Pre-flight summary** (the `Mode:` line is shown only when non-default):
 
 ```
 PRE-FLIGHT CHECK
@@ -198,7 +198,7 @@ PRE-FLIGHT CHECK
 Directory:  [✓|✗] .project/
 Session:    [✓] [New session | Continuing from {skill}]
 Route:      [Design | Convert]
-Mode:       [— | patch (handoff) | backlog transition]   # only show when non-default
+Mode:       [— | patch (handoff) | backlog transition]
 ════════════════════════════════════════════════
 ```
 
