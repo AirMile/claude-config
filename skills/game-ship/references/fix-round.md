@@ -52,15 +52,19 @@ protect:
    same machinery the § Re-check ladder forces after 2 failed rounds — here it runs proactively,
    before a first guess is even attempted.
 
-   **Second-opinion hook** (auto-fires here, at most once per round, before the fix design below is
-   written into the plan file) — only for a finding that needed the unclear-root-cause path just
-   above: read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires the
-   consult (no confirm step) with INPUT = the ledger entry for the unclear finding + the file paths
-   implicated by the evidence read so far (fix-round row of § Brief contents). **Attended**: show
-   the digest, fold it into the root-cause hypothesis before writing the fix design. **Unattended**:
-   Opus weighs the digest and revises the hypothesis or confirms it, then proceeds. Set
-   `secondOpinionUsed` (round-scoped — resets each new round per § Budget), note the outcome in the
-   plan file's review surface, and carry it to the ship report's `Consult:` row (`SKILL.md`).
+   **Second-opinion hook, narrowed** (`shared/SECOND-OPINION.md § Gate 0` — a fix-round finding
+   rarely touches architecture or a durable decision, so this trigger mostly should NOT fire): only
+   for a finding that needed the unclear-root-cause path just above **and** the fix approach under
+   consideration would touch architecture or a durable decision — an ordinary unclear root cause
+   spends the budget on a second Explore pass instead (`shared/SECOND-OPINION.md § Route` — a
+   factual gap, not a judgment gap). When it does clear Gate 0: read
+   `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires the consult (no
+   confirm step, counterpart Fable) with INPUT = the ledger entry for the unclear finding + the file
+   paths implicated by the evidence read so far (fix-round row of § Brief contents). **Attended**:
+   show the digest, fold it into the root-cause hypothesis before writing the fix design.
+   **Unattended**: Opus weighs the digest against the pre-registered position and revises the
+   hypothesis or confirms it, then proceeds. Note the outcome in the plan file's review surface, and
+   carry it to the ship report's `Consult:` row (`SKILL.md`).
 
 2. **Group findings into file-disjoint groups** (scripts/scenes/resources/tests) — two findings share
    a group only if grouping them doesn't help; two findings that touch overlapping files **must** be

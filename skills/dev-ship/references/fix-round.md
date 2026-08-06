@@ -51,9 +51,9 @@ protect:
    and how it will be verified (repro test for TESTABLE, live re-check for MEASURABLE). Finding
    implicates an external library API? Research it per `shared/CONTEXT7.md` now — both tools work
    inside plan mode — and fold the results into the fix approach. Skip for purely internal logic.
-   Default to a single Explore agent for this research; use more only when scope is genuinely
-   uncertain across multiple files/areas (quality over quantity — the same principle `EnterPlanMode`
-   itself applies to its own exploration fan-out).
+   Default to a single Explore agent (`model: "sonnet"`) for this research; use more only when scope
+   is genuinely uncertain across multiple files/areas (quality over quantity — the same principle
+   `EnterPlanMode` itself applies to its own exploration fan-out).
 
    A finding whose root cause is still unclear after reviewing the ledger evidence does **not** get a
    guessed fix: run `references/debug-round.md` Steps 4–5 (Explore investigation + research) for that
@@ -61,16 +61,19 @@ protect:
    same machinery the § Re-check ladder escalates to on a first batch-fix failure — here it runs
    proactively, before a first guess is even attempted.
 
-   **Second-opinion hook** (auto-fires here, at most once per round, before the fix design below is
-   written into the plan file) — only for a finding that needed the unclear-root-cause path just
-   above: read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires the
-   consult (no confirm step) with INPUT = the ledger entry for the unclear finding + the file paths
-   implicated by the evidence read so far (fix-round row of § Brief contents). **Attended**: show
-   the digest, fold it into the root-cause hypothesis before writing the fix design. **Unattended**:
-   Opus weighs the digest and revises the hypothesis or confirms it, then proceeds. Set
-   `secondOpinionUsed` (round-scoped — resets each new round per § Budget), note the outcome in the
-   plan file's review surface, and carry it to the ship report's `Consult:` row
-   (`phase-5-report.md`).
+   **Second-opinion hook, narrowed** (`shared/SECOND-OPINION.md § Gate 0` — a fix-round finding
+   rarely touches architecture or a durable decision, so this trigger mostly should NOT fire): only
+   for a finding that needed the unclear-root-cause path just above **and** the fix approach under
+   consideration would touch `feature.json#architecture` or a `durableDecision` — an ordinary
+   unclear root cause spends the budget on a second Sonnet Explore pass instead
+   (`shared/SECOND-OPINION.md § Route` — a factual gap, not a judgment gap). When it does clear
+   Gate 0: read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires the
+   consult (no confirm step, counterpart Fable) with INPUT = the ledger entry for the unclear
+   finding + the file paths implicated by the evidence read so far (fix-round row of § Brief
+   contents). **Attended**: show the digest, fold it into the root-cause hypothesis before writing
+   the fix design. **Unattended**: Opus weighs the digest against the pre-registered position and
+   revises the hypothesis or confirms it, then proceeds. Note the outcome in the plan file's review
+   surface, and carry it to the ship report's `Consult:` row (`phase-5-report.md`).
 
 2. **Group findings into file-disjoint groups** — two findings share a group only if grouping them
    doesn't help; two findings that touch overlapping files **must** be grouped together (a single

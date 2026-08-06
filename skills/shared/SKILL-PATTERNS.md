@@ -475,6 +475,38 @@ A **fork** (`Agent` tool with `subagent_type: "fork"`) inherits the full convers
 
 ---
 
+## Agent Resume (Sparring)
+
+**When:** a consult per `shared/SECOND-OPINION.md § Mode` needs a second round — the main chat found
+a concrete factual error or an unsupported premise in the first digest and wants the same agent to
+address it with its own prior reasoning intact, rather than re-explaining the whole brief to a fresh
+spawn.
+
+**How:** the `Agent` tool's spawn result carries an agent id/name. `SendMessage` to that id/name
+resumes the agent from its own transcript — it keeps everything it read and reasoned on the first
+call, so the follow-up prompt only needs to state the correction, not restate the brief. Round 2's
+reply follows the **same delimited-block contract** as round 1 (`SECOND_OPINION_START/END` for a
+consult; the equivalent block for any other resumable contract).
+
+**Rules:**
+
+- **Hard cap: 2 rounds.** Round 2 is authorized only when the main chat can name a specific, citable
+  factual error or unsupported premise in round 1's digest (path/line that disproves it) — never
+  "what do you think of my response." That is the whole stopping rule; there is no round 3.
+- **Never for an agent that could continue the pipeline.** This mechanism is for read-only
+  consults/spars whose only output is a digest. It is the opposite of `phase-3-manual-finalize.md`'s
+  regression re-check, which dispatches a **fresh, non-fork** agent specifically so it cannot read
+  and act on this skill's own continuation instructions (`§ Fork Delegation`'s isolation-as-defense
+  rule) — do not resume that kind of agent under any circumstance; a fresh, isolated dispatch is the
+  correct choice there, not this pattern.
+- **Fallback required:** if resume is unavailable or errors, fall back to the one-shot digest and log
+  it — never block the flow waiting on a resume that won't complete.
+- **Pre-register a position before spawning round 1** — one line stating what the main chat would
+  decide without the consult. This makes "confirmed" vs. "revised" in the consult's own logging
+  falsifiable instead of a rubber stamp.
+
+---
+
 ## Description Format
 
 **When:** When writing or reviewing SKILL.md frontmatter `description`.

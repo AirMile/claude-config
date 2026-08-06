@@ -40,13 +40,16 @@ When § Tone Rules routes a dimension to a modal instead of an open question:
 - **Free input is named, not implied.** Phrase the `question` so "Other" reads as a genuine
   third path — e.g. "...or is it something else entirely?" — not a fallback nobody expects to
   click.
-- **"Second opinion (Fable)" is conditional, never first.** Add it only when this dimension
-  qualifies per `shared/QUESTIONING.md § Second-Opinion Option` (the modal is itself contested,
-  or the dimension already drew an "I don't know"). Selecting it fires the consult scoped to
-  this one dimension (`SECOND-OPINION.md § Brief contents → define interview dimension` row),
-  then re-presents this same modal once with the digest visible — it draws on define's one
-  shared consult slot (`SECOND-OPINION.md § Gate`), so once used here the Step 4b gate hook
-  will not fire again this run.
+- **"Second opinion" is conditional, never first.** Add it only when this dimension qualifies per
+  `shared/QUESTIONING.md § Second-Opinion Option` (the modal is itself contested, or the
+  dimension already drew an "I don't know"). Selecting it fires the consult scoped to this one
+  dimension (`SECOND-OPINION.md § Brief contents → define interview dimension` row) — this is an
+  **anchoring-gap** moment (`SECOND-OPINION.md § Counterpart`: many turns into one framing,
+  independence matters more than raw strength), so the counterpart is **Opus** by default; label
+  the option "Second opinion (Opus)". Only route to Fable instead when the user explicitly names
+  Fable. Re-presents this same modal once with the digest visible, and counts against the per-run
+  backstop (`SECOND-OPINION.md § Budget`) — a second consult later in the run is still available
+  unless that backstop is exhausted.
 - **`multiSelect`**: `true` when the readings don't exclude each other (e.g. two edge cases both
   apply), `false` when picking one settles the dimension.
 - Record the resolved reading the same way an Assumption Block bullet would have been recorded,
@@ -54,13 +57,17 @@ When § Tone Rules routes a dimension to a modal instead of an open question:
 
 ## Interview Start
 
-> **Barrier — no output before agents return.** Do not render the Assumption Block, an opening
-> question, or any modal until every agent spawned for this phase has returned:
-> `context-aggregator` (PHASE 0 §5, feeds the `PREVIOUSLY DECIDED` list this block sits above)
-> and, if one was clicked mid-interview, a Fable consult (§ Modal Form above). Don't half-render
-> the block and fill in the rest once the agent lands — wait, then compose it whole. The user
-> can still interrupt (Esc/stop) to skip the wait; this rule only blocks Claude from starting to
-> type early, it does not remove that escape.
+> **Barrier — narrowed to the form that actually consumes each agent's output.** The Assumption
+> Block waits on `context-aggregator` (PHASE 0 §5) alone — it feeds the `PREVIOUSLY DECIDED` list
+> the block sits above, so don't render the block until that agent returns. It does **not** wait
+> on a mid-interview consult (§ Modal Form): that agent's only consumer is the one modal that
+> spawned it, re-presented with the digest once the consult lands — everything else in the
+> interview (the next dimension's question, PHASE 1b) continues in the meantime, per
+> `SECOND-OPINION.md § Latency`'s rule that a detected/clicked trigger never stalls the whole
+> interactive flow. Don't half-render the Assumption Block and fill in the rest once
+> `context-aggregator` lands — wait, then compose it whole. The user can still interrupt (Esc/stop)
+> to skip any wait; this rule only blocks Claude from starting to type early, it does not remove
+> that escape.
 
 > **Todo:** run the Learnings Load now if PHASE 0 §5 (`dev-define/workflow.md`) has not already run
 > it this session (`shared/LEARNINGS-LOAD.md`, scopes `[component]`, `pitfall-prefix: true`,
@@ -129,7 +136,7 @@ the user knows it will be filled with a best-guess and can catch it at the gate.
 
 ## Handling "I Don't Know" Responses
 
-Follow the escalation ladder in `shared/QUESTIONING.md § Escalation Ladder`, applied per dimension. At step 2 the form switch means: a single AskUserQuestion with 2-4 concrete hypotheses for this dimension, carrying the "Second opinion (Fable)" option per `§ Modal Form` above — this and any `§ Modal Form` contested-dimension modal are the only `AskUserQuestion` calls allowed during the interview.
+Follow the escalation ladder in `shared/QUESTIONING.md § Escalation Ladder`, applied per dimension. At step 2 the form switch means: a single AskUserQuestion with 2-4 concrete hypotheses for this dimension, carrying the "Second opinion (Opus)" option per `§ Modal Form` above — this and any `§ Modal Form` contested-dimension modal are the only `AskUserQuestion` calls allowed during the interview.
 
 **In the closing summary**: if ≥1 dimension is unresolved, name it explicitly:
 

@@ -170,6 +170,12 @@ still on the feature branch in the worktree — not yet merged). Refactor always
 lenses); skip straight to the finalize step below **only** if the `--no-refactor` escape hatch was
 set **and** `securityDeep` is empty.
 
+**Transparency line (no modal)** — if the checkpoint's `manual.items[]` contains any
+`verdict: "deferred"` entry, print one line before continuing: `"Proceeding to refactor + merge with
+{N} deferred item(s) — external blockers never hold up a ship (policy:
+phase-3-manual-finalize.md § Findings ledger + routing); tracked on {VERIFY-card-name}."` States the
+policy at the moment it applies instead of only in the closing report.
+
 **Before spawning**: (a) capture the revert anchor `preRefactorSha = git -C {worktreePath}
 rev-parse HEAD` and patch it to the checkpoint; (b) run the TEAM_MODE + PR-state detection from
 `references/dev-verify/references/finalize.md` and decide `finalizeRoute: merge | halt` (`merge`

@@ -6,8 +6,8 @@ PHASE 1 of the dev workflow: define → build → test.
 > (Step 2c of `phase-0-define-classify.md`), not as a standalone skill. This copy is already adapted:
 > there is **no plan-mode machinery** and **no own phase tracking** (dev-ship's task list drives).
 > **dev-ship runs PHASE 0→2 of this file entirely inside plan mode** (it calls `EnterPlanMode` before
-> reading this file), so under an `opusplan`-style router the interview + architecture reason on the
-> planning model. Practically that means: reads, read-only Bash, `WebSearch`/Context7, `AskUserQuestion`,
+> reading this file) — plan mode here is the approval gate around the architecture decision, not a
+> model-routing hint (the session model is `opus` throughout). Practically that means: reads, read-only Bash, `WebSearch`/Context7, `AskUserQuestion`,
 > and the read-only `context-aggregator`/`define-scout` subagents all work here; only `.project/`/source
 > writes are blocked — and every write below is already deferred to accept. Run **PHASE 0→2** (interview
 >
@@ -151,7 +151,7 @@ Conduct the interview per the reference — one dimension at a time, each routed
 
 **>4 open forks** → handle the remainder inline during requirement extraction as edge cases.
 
-**Second-opinion signal** (bookkeeping only, no action here): if any fork above kept ≥2 viable options past the baseline gate — the user hesitated, chose "Other", or asked for the recommendation — note `secondOpinionSignal: "tied fork — {branch}"` in memory for dev-ship's Step 4b hook (`shared/SECOND-OPINION.md`). **If PHASE 1a already spent define's one consult slot** (a Fable click on a contested-dimension modal, `phase1a-interview.md § Modal Form`) — note `secondOpinionUsed: true` here too, so the Step 4b hook below sees the slot as spent and does not fire a second time this run.
+**Second-opinion spawn, in the background** (routing point, not just bookkeeping — `shared/SECOND-OPINION.md § Gate 0` — these are by construction architecture-changing forks, so Gate 0 clears automatically): if any fork above kept ≥2 viable options past the baseline gate — the user hesitated, chose "Other", or asked for the recommendation — spawn the Fable consult **now** per `shared/SECOND-OPINION.md § Spawn`, scoped to this one tied fork. Do **not** end the turn to wait on it — continue straight into PHASE 1c/PHASE 2 (`shared/SECOND-OPINION.md § Latency`: a detected, non-clicked trigger never blocks the interactive flow). The digest lands as a background task-notification and is read at the Step 4b gate (`phase-0-fresh-define.md`), which is already a stop the user waits at — note `secondOpinionSpawned: "tied fork — {branch}"` in memory so Step 4b knows to look for it. **Only the per-run backstop can block this** (`shared/SECOND-OPINION.md § Budget`) — a PHASE 1a interview click does not compete with it, they are independent consults now. If the backstop is exhausted, skip the spawn and note `secondOpinionSignal: "tied fork — {branch}"` only, unfired.
 
 #### Requirement Extraction + Checkpoint
 

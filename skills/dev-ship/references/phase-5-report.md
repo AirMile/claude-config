@@ -89,7 +89,15 @@ requires it at. The debug escalation count appears only when this run used
 counters that don't compose into one number.
 `Security:` takes suffix `→ persisted + todo security-{feature}` when the auto-todo fired,
 `→ persisted` when below the threshold, or reads `not run`. `Consult:` takes suffix
-`→ revised` when the consult changed an outcome, or reads `none` / `{context}: unavailable`.
+`→ revised` when the consult changed an outcome, `→ confirmed` when it didn't, `sparred (2
+rounds) → revised/confirmed` when a round-2 rebuttal fired, or reads `none` /
+`{context}: unavailable` (`shared/SECOND-OPINION.md § Logging` is authoritative for the full
+value set).
+`De-escalation overridden: ...` prints only when Step 4b's plan-approval gate found the
+completed draft tweak-sized and Accept was chosen anyway (`shared/TWEAK-DISCIPLINE.md §
+De-escalation gate` (b)) — omit the line entirely when the gate never fired, or fired and
+De-escalate was chosen instead (that path hands off to `/dev-tweak` and never reaches this
+report).
 
 Then print a `Next steps:` numbered block — markdown, **after** the fence so `/commands`
 stay clickable (`shared/SKILL-PATTERNS.md § Next Steps`). Success path: `1. /project-plan —

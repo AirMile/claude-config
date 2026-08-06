@@ -2,7 +2,7 @@
 
 Shared protocol for skills that gather input through user questions — interviews (`dev-ship (define phase)`, `game-ship (define phase)`), exploration rounds (`project-seed`), and technique dialogues (`project-seed` brainstorm/critique modes). Load this file when the question phase starts.
 
-**Plan-mode precondition**: question phases run inside plan mode so model routers (e.g. `opusplan`) route them through the planning model — see [PLAN-MODE.md](PLAN-MODE.md). Verify plan mode is active before the first question.
+**Plan-mode precondition**: question phases run inside plan mode because the resulting synthesis is a reviewable artefact subject to rejection/revision — a genuine approval gate, not a model-routing hint (see [PLAN-MODE.md](PLAN-MODE.md)). Verify plan mode is active before the first question.
 
 ---
 
@@ -115,15 +115,23 @@ Rules:
 - Struck bullets are not discarded — the consuming skill records which ones the user rejected;
   a struck bullet whose source was the seed is itself a drift signal (see that skill's own
   alignment-check phase for how it's used).
+- **A struck bullet the user's own words directly contradict is a detected consult trigger** —
+  not just a rejection, but the user's answer actively disagreeing with the cited source
+  (`shared/SECOND-OPINION.md`'s "dev-define interactive trigger, detected" row). This is
+  observable (the citation vs. the answer, not a vibe) and never blocks the interview — it queues
+  in the background and lands at PHASE 1b's forks or the Step 4b gate, same as the PHASE 1b
+  tied-fork spawn.
 
 ---
 
 ## Second-Opinion Option
 
-A contested modal (§ Contested Dimension above) may carry one extra option: **"Second opinion
-(Fable)"** — a user-invoked route into the existing consult mechanism in
-`shared/SECOND-OPINION.md`. Full gate, budget, and spawn mechanics live there; this section only
-governs where the option appears and how it composes with a modal.
+A contested modal (§ Contested Dimension above) may carry one extra option: **"Second opinion"** —
+a user-invoked route into the existing consult mechanism in `shared/SECOND-OPINION.md`. The
+counterpart defaults to **Opus** at this moment (`SECOND-OPINION.md § Counterpart`: mid-interview
+is an anchoring gap, not a difficulty gap) — label it "Second opinion (Opus)" unless the user names
+Fable explicitly. Full gate, budget, and spawn mechanics live there; this section only governs
+where the option appears and how it composes with a modal.
 
 - **When it appears**: on a contested modal, or on any modal re-asked after the user answered
   "I don't know" once on that dimension (§ Escalation Ladder below). Not on a plain enumerable
@@ -136,11 +144,11 @@ governs where the option appears and how it composes with a modal.
   recommendation visible. Never auto-applies it — the user still picks.
 - **Authorization class**: `SECOND-OPINION.md` states its trigger-fired consults are automatic
   with no permission prompt. A clickable option is a distinct, explicitly-named **user-invoked**
-  class in that same document (§ Gate) — it does not relax the trigger-fired path, it adds a
-  second one.
-- **Budget**: counts against the same per-phase and per-run caps as any other consult — see the
-  calling skill's own allocation (e.g. `dev-ship`/`game-ship` define: one slot shared across the
-  whole interview and the Step 4b gate).
+  class in that same document (§ Auto-spawn — authorization classes) — it does not relax the
+  trigger-fired path, it adds a second one.
+- **Budget**: gated by `SECOND-OPINION.md § Gate 0` (consequence precondition) and the per-run
+  backstop, not a per-phase slot — a click here does not consume or compete with any other
+  consult in the same phase.
 
 ---
 
