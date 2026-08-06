@@ -14,8 +14,10 @@ infer concerns from directory names.
 2. **Classify every changed file** by matching its _added_ lines against those concerns
    (`git diff -U0 -- <file> | grep '^+'`), not against its path. A theme-keyword sweep across all
    changed files at once is cheaper than reading them one by one.
-3. **Inspect what stays unclassified** — anything the narrative files didn't name, largest diffs
-   first. These are the undocumented concerns.
+3. **Read the files the sweep didn't settle**, largest diffs first. Two kinds, and the second is
+   the bigger one: files matching **no** concern (these are the undocumented concerns), and files
+   matching **three or more** (concerns share vocabulary, so a keyword sweep over-matches by
+   design). The sweep locates candidates; it never decides ownership — only the diff does.
 4. **Record, per file, which concerns touch it.** A file touched by 2+ concerns is a shared file
    and goes through § 3's incremental build; everything else is wholly owned.
 
@@ -30,8 +32,7 @@ AskUserQuestion, recommended-first:
 - "Coarser, grouped by theme" — bundle closely-related concerns into fewer commits
 - "One commit" — proceed with everything as a single commit
 
-If the changeset spans many files/directories, say so before asking — the user's answer should
-reflect the real scope, not a guess.
+Open with § 0's inventory — the user's answer should reflect the real scope, not a guess.
 
 **Gating (only when the chosen granularity produces 2+ commits)** — one more AskUserQuestion,
 recommended-first:
@@ -122,6 +123,12 @@ the tools read) — a partial split can leave a file syntactically valid but sem
 and catching that before it is in history is much cheaper than after. Docs/prose-only commits skip
 it. Non-zero exit → **STOP**: do not commit, report the failure and which commit's partial state
 produced it.
+
+**When the suite is slow enough that per-commit runs would dominate the split** (roughly: one run
+costs more than the whole split otherwise would), don't drop verification — downgrade it. Run the
+cheapest check that still catches a broken intermediate state (typecheck, lint, or the test path
+covering the staged files) per commit, and the full suite once before the final commit. Say which
+mode you picked and why, once, before the first commit.
 
 ## 5. Report the split
 
