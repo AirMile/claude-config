@@ -5,7 +5,7 @@ reads: [feature.externalRef, team.commitConvention, team.ticketPrefix]
 writes: [team.commitConvention, team.ticketPrefix]
 metadata:
   author: claude-config
-  version: 1.6.0
+  version: 1.7.0
   category: core
 ---
 
@@ -58,8 +58,8 @@ Once per project (cache in `project.json#team`). Skip if `team.commitConvention`
 
 2. **externalRef detect** (per commit, unless not applicable):
    - No `.project/features/` directory at all → not applicable, skip step 2 silently.
-   - Otherwise read `.project/features/<branch-or-feature-name>/feature.json` → check
-     `externalRef`:
+   - Otherwise read `.project/features/{feature-name}/feature.json` (the feature matching the
+     current branch) → check `externalRef`:
      - `type === "github"` → prefix suggestion: `(#{id})` as suffix
      - `type === "jira"` or `"linear"` → prefix suggestion: `{id}: ` as prefix
    - No feature.json → check branch name against `[A-Z]+-\d+` regex → use as prefix suggestion
@@ -126,12 +126,15 @@ If staged changes contain multiple unrelated groups:
 - `ticket-prefix` → `{ticketPrefix}-{number}: <description>`. Take the number from the
   externalRef, else from the branch name's `[A-Z]+-\d+` match. Neither available → fall back to
   `conventional` and say so in the confirm step.
-- `bracket` → `[{TAG}] <description>`, tag taken from the dominant tag in `git log`.
+- `bracket` → `[{TAG}] <description>`. Derive the tag from the changed area the same way a
+  Conventional scope is derived, using the tags already present in `git log` as the vocabulary —
+  a bracket repo tags per area, so reusing one dominant tag for every commit is wrong.
 - `freeform` → an imperative one-line subject, no type/scope grammar.
 
-The header limit, the English rule, and the no-emoji rule below apply to **every** convention;
-only the header's shape changes. A detected `externalRef` adds its own affix per § 1.5 step 2 on
-top of the shape chosen here.
+Only the header's shape changes. The header limit, the English rule, and the no-emoji rule below
+apply to **every** convention; the type and scope rules apply only to `conventional` (and to the
+`conventional` fallback above) — on `bracket` and `freeform` there is no type to validate. A
+detected `externalRef` adds its own affix per § 1.5 step 2 on top of the shape chosen here.
 
 **Format (Conventional Commits 1.0.0):**
 
