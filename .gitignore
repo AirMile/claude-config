@@ -20,6 +20,9 @@ settings.local.json
 # Personal overlay (user-owned, never commit to public repo)
 personal/
 
+# Skill export artifacts (regenerable via scripts/export-skill.sh)
+dist/
+
 # Playwright artifacts
 .playwright-mcp/
 .playwright-cli/

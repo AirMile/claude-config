@@ -90,6 +90,10 @@ Look for project-local config files first (e.g., inside the current project dire
 
 ## Skill Feedback
 
-If feedback concerns the behaviour of a specific skill, edit `skills/<skill-name>/SKILL.md` directly — that's the source of truth.
+Skills are a work product, not fixed infrastructure — improving them is part of the job, but always as a proposal first.
 
-Example: "core-commit should require a conventional scope" → edit `skills/core-commit/SKILL.md`. Skill-independent preferences ("be more concise in all answers") belong in `~/.claude/CLAUDE.md`.
+- **User-initiated**: feedback about a specific skill's behaviour → edit `skills/<skill-name>/SKILL.md` in the claude-config repo, that's the source of truth. Example: "core-commit should require a conventional scope" → edit `skills/core-commit/SKILL.md`. Skill-independent preferences ("be more concise in all answers") belong in `~/.claude/CLAUDE.md`.
+- **Self-observed**: note friction the moment it occurs during a skill run — for the user (a modal that was auto-decidable, a question asked twice, output they had to correct) or for the executor (an ambiguous or skippable instruction, a missing failure path, a reference loaded but unused). Raise it **after** the run's report, never mid-run; max 2-3 points, one line each, citing `skills/<name>/…`. Nothing concrete observed → say nothing, no ritual closer.
+- **Also in scope**: not just defects — fit and quality count too. Over-strictness (a mandatory step that blocks a sensible alternative, a rule with no escape hatch, hand-holding written so a weaker executor could follow that now only costs tokens) and improvability (logic duplicated across skills that belongs in `skills/shared/`, redundant phases, a reference that should be split or lazily loaded, a cheaper model tier that would do). Propose these the same way — one line, cite the file.
+- **Hard gate**: propose only. No skill-file edit and no commit until the user approves in that session — noticing a defect is never authorization to fix it.
+- **Routing after approval**: local wording, a hedge on a mandatory step, a wrong default → edit directly. Structural (phase order, lazy-loading split, agent/model choice, handoff contract) → `/core-audit <skill> "<observation>"`, which loads the full skill surface and gates the refactor.
