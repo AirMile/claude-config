@@ -262,9 +262,11 @@ Outcome matrix:
 
 Then `EnterWorktree(path: "$WT_PATH")` — enters the already-created worktree. Using `path:` bypasses `worktree.baseRef` since the branch and directory already exist.
 
-#### Step 3: Set up shared `.project/` and verify — one Bash call
+#### Step 3: Set up shared `.project/` and verify
 
-After `EnterWorktree` (or Destroy→recreate), run symlink setup + integrity check + gate + session file in **a single Bash block** (combine `shared/WORKTREE.md → Shared .project/ via symlink`, `shared/WORKTREE.md → Verify symlink integrity`, and the skill's gate/session-file commands to minimise round-trips):
+After `EnterWorktree` (or Destroy→recreate), run symlink setup + integrity check + gate + session file, combining steps into as few Bash calls as the sandbox allows (combine `shared/WORKTREE.md → Shared .project/ via symlink`, `shared/WORKTREE.md → Verify symlink integrity`, and the skill's gate/session-file commands to minimise round-trips). Some sandboxed worktree sessions reject multi-command/multi-line Bash blocks with "too complex to verify stays inside worktree" — when that happens, split into single-purpose commands and accept the extra round-trips; this is the correct fallback, not a failure to route around.
+
+**Editing `.project/backlog.json` (or any other symlinked shared file) from inside a worktree**: the `Edit` tool refuses writes through a worktree's `.project/` symlink to the main checkout ("Edit the worktree copy of this file instead of the shared-checkout path") — this is current harness behavior, not a bug to work around ad hoc. Do not hand-roll a JSON mutation via Bash/Python as a substitute; that bypasses `shared/BACKLOG.md`'s schema discipline and is a data-integrity risk. The refusal fires regardless of path form — worktree-relative, main-checkout-absolute, and the symlink's resolved real target (`readlink .project/backlog.json`) all hit the same block; there is no path form that gets Edit through. **Defer instead**: do not Edit `.project/backlog.json` while the session is inside the worktree. Apply the intended field changes via Edit once the session is back on the main checkout — normally right after finalize's `ExitWorktree`/cleanup completes (the usual completion-sync timing); if the write is genuinely needed mid-run, temporarily `ExitWorktree(action: keep)`, make the edit, then `EnterWorktree(path: ...)` to resume where you left off.
 
 ```bash
 # Example for dev-ship's build phase — adapt session payload per skill

@@ -133,20 +133,23 @@ drift"} | n/a: {reason} · Backlog impact: run ({file}) → {1-line impact resul
    - **`## Appendix — machine contract (skip review)`** — the complete `featureDraft` (incl.
      `verificationProfile`) as a single ```json block, **compact single-line JSON (no indentation)** —
      halves the token cost of the plan-file echo. This is what the extract reads on Accept.
-     **Second-opinion hook (between the plan-file write and `ExitPlanMode`)** — only when a
-     `secondOpinionSignal` was noted (PHASE 1b/PHASE 2) and `secondOpinionUsed` is not set.
-     Define has **one shared consult slot for the whole phase** (`shared/SECOND-OPINION.md §
-Gate` budget) — a Fable click on a PHASE 1a contested-dimension modal
-     (`dev-define/references/phase1a-interview.md § Modal Form`) sets `secondOpinionUsed: true`
-     already (`dev-define/workflow.md` PHASE 1b bookkeeping line), so this hook correctly skips
-     when the interview already spent it:
+     **Second-opinion hook (between the plan-file write and `ExitPlanMode`)**:
+     - **PHASE 1b already spawned a consult in the background** (`secondOpinionSpawned` set,
+       `dev-define/workflow.md § PHASE 1b`) — collect its digest here (it has had the whole PHASE
+       1c/PHASE 2 stretch to complete). Show it, fold DISAGREE items into the review surface
+       (attended: re-present the choice; unattended: Opus weighs it against the pre-registered
+       position and revises or confirms), and carry the outcome to the PHASE 5 report's `Consult:`
+       row. If a cited factual error survives, spawn round 2 per `shared/SECOND-OPINION.md § Mode`
+       before finalizing.
+     - **Otherwise**, only when `secondOpinionSignal` was noted (PHASE 2's cross-cutting-
+       architecture bookkeeping) and the per-run backstop isn't exhausted:
 
-   > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger
-   > auto-fires the consult agent (no confirm step) with INPUT = the plan file just written +
-   > dependency `feature.json` paths (define-gate row of § Brief contents). Show the digest, fold
-   > DISAGREE items into the review surface before exiting (attended: re-present the choice;
-   > unattended: Opus weighs it and revises or confirms), set `secondOpinionUsed`, and carry the
-   > outcome to the PHASE 5 report's `Consult:` row.
+       > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger
+       > auto-fires the consult agent (no confirm step) with INPUT = the plan file just written +
+       > dependency `feature.json` paths (define-gate row of § Brief contents). Show the digest,
+       > fold DISAGREE items into the review surface before exiting (attended: re-present the
+       > choice; unattended: Opus weighs it and revises or confirms), and carry the outcome to the
+       > PHASE 5 report's `Consult:` row.
 
 2. **`ExitPlanMode`** to present it for approval (this exits plan mode; the session returns to its
    prior permission mode).
@@ -199,8 +202,12 @@ net-new surface)` into the PHASE 5 report. On a non-tweak-sized draft this note 
      (signal-clear, remove the init checkpoint, `rmdir` the empty feature dir, strip `transition:
 "shipping"` from the backlog card) — no `note` this time (this isn't a park; the tweak run picks
      the card up next, not a later `/dev-ship` re-invoke). No `feature.json` was written — the draft
-     dies here, exactly as on Abort. Then invoke `/dev-tweak {feature-name}`, passing the card's **exact
-     name** so it resumes the same card instead of minting a new one (per `shared/TWEAK-DISCIPLINE.md
+     itself dies here, exactly as on Abort, but not its content: carry the in-memory draft's
+     `files[]` and `acceptance[]` into the handoff message, not just the card name — this is the
+     only copy of them that will ever exist; losing them here means the tweak run re-locates from
+     scratch and re-verifies with no requirement contract, which can leave it worse off than
+     Accept would have. Then invoke `/dev-tweak {feature-name}`, passing the card's **exact
+     name** plus that `files[]`/`acceptance[]` pair (per `shared/TWEAK-DISCIPLINE.md
 § De-escalation gate` (a)). Then **stop** — do not continue to Step 5; the tweak run reports its
      own outcome.
 

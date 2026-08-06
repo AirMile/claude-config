@@ -29,7 +29,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.9.6
+  version: 0.9.7
   category: game
 ---
 
@@ -276,10 +276,16 @@ Verify:    COVERED {n} GUT PASS · MANUAL {n} ({pass}/{fail}/{tweak}/{skip}/{def
 Refactor:  {lenses applied} · {improvements} applied ({reverted} reverted)
 Consult:   {none | "{context}: consulted ({trigger})" | "{context}: consulted ({trigger}) → revised" | "{context}: unavailable"}
 Merged:    {yes → main | no → {reason}}
+De-escalation overridden: tweak-sized ({N} files, no net-new surface)
 
 Auto-decisions ({N}):
 - {agent}: {decision} → chose {choice}
 ```
+
+`De-escalation overridden: ...` prints only when Step 4b's plan-approval gate found the
+completed draft tweak-sized and Accept was chosen anyway (`shared/TWEAK-DISCIPLINE.md §
+De-escalation gate` (b)) — omit the line entirely otherwise, including when De-escalate was
+chosen instead (that path hands off to `/game-tweak` and never reaches this report).
 
 **Ship-level learning extraction** (the layer the agents cannot see — game-ship owns it). The copied
 build/verify/refactor already wrote their **domain** learnings during their phases (do not re-write

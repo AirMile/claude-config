@@ -72,6 +72,7 @@ Refactor: {lenses applied} · {techniques} applied
 Security: {confirmed} confirmed · {dismissed} dismissed {suffix}
 Consult:  {context}: consulted ({trigger}) {suffix}
 Merged:   {yes → main | no → {reason}}
+De-escalation overridden: tweak-sized ({N} files, no net-new surface)
 
 Auto-decisions ({N}):
 - {agent}: {decision} → chose {choice}

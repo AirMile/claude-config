@@ -6,7 +6,7 @@ reads: [backlog.features, project-context.learnings]
 writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.6.0
+  version: 1.8.0
   category: game
 ---
 
@@ -64,6 +64,13 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
 1. **Locate** the change with minimal reads (Grep → targeted Read; `.tscn` files: read only the
    relevant node sections). The files found here feed the size-gate re-check and the learnings load
    below.
+
+   **Pre-seeded from a ship de-escalation handoff** (invocation carries a `files[]` +
+   `acceptance[]` pair, per [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) §
+   De-escalation gate (a)) → skip the Grep/Read locate itself; use the passed `files[]` as the
+   located set directly. The size-gate re-check still runs against that set — the handoff is not
+   an exemption from it. Hold the passed `acceptance[]` in memory and use it as PHASE 3's verify
+   checklist instead of relying on whatever coverage happens to already exist.
 
    > **Todo** (card mode): locate shows the described defect is already resolved on `main` — a later
    > commit fixed it, or it never applied → **stale card**. Do not invent a change to justify the

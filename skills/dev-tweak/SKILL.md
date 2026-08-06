@@ -12,7 +12,7 @@ reads:
 writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.21.0
+  version: 1.23.0
   category: dev
 ---
 
@@ -76,14 +76,15 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
 
 5. **Gate (intake pre-check) + guard**.
 
-   Apply these [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Size gate criteria to
-   the projected scope now — never from memory or from this file's own intro framing (criteria 2
-   and 4 need the real file set and are decided in PHASE 1 step 1 instead):
+   Apply [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Size gate criteria **1, 5
+   and 6** to the projected scope now — never from memory or from this file's own intro framing
+   (criteria 2, 3 and 4 need the real file set and are decided in PHASE 1 step 2 instead). Use the
+   shared table's own numbers — do not renumber locally:
 
-   1. **Net-new surface** — adds capability instead of adjusting existing behavior
-   2. **Guard hit with in-pipeline status** — see § Backlog guard resolution
-   3. **Debug tier-3 signals** — intermittent failure, cause spans multiple modules, or a prior
-      fix attempt already failed ([DEBUG-LADDER.md](../shared/DEBUG-LADDER.md) tier 3)
+   - **1 — Net-new surface** — adds capability instead of adjusting existing behavior
+   - **5 — Guard hit with in-pipeline status** — see § Backlog guard resolution
+   - **6 — Debug tier-3 signals** — intermittent failure, cause spans multiple modules, or a prior
+     fix attempt already failed ([DEBUG-LADDER.md](../shared/DEBUG-LADDER.md) tier 3)
 
    Any of these fires → Read `references/escalate.md` now, before locating.
 
@@ -100,13 +101,25 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    > **Todo**: print the intake status now, at this phase boundary — not deferred to the final
    > report: `Guard: ✓ no card overlap` (or the warn/advisory lines). Card mode prints
    > `Card: {name}` **instead** — the card already names the scope (step 5 skipped the guard), so
-   > there is no guard result to report. The `Gate:` verdict itself prints in PHASE 1 step 1, once
-   > the file set is known — do not print it here.
+   > there is no guard result to report. Runs even when step 5's gate is about to escalate (same
+   > mirrored rule as step 4's baseline) — `references/escalate.md § 3 (a)` reads this printed name
+   > when it promotes the card out of the tweak lane. The `Gate:` verdict itself prints in PHASE 1
+   > step 2, once the file set is known — do not print it here.
 
 ## PHASE 1 — Locate & context
 
 1. **Locate** the change with minimal reads (Grep → targeted Read). The files found here feed the
    size-gate re-check and the learnings load below.
+
+   **Pre-seeded from a ship de-escalation handoff** (invocation carries a `files[]` +
+   `acceptance[]` pair, per [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) §
+   De-escalation gate (a)) → skip the Grep/Read locate itself; use the passed `files[]` as the
+   located set directly. Everything downstream is unchanged: step 2's size-gate re-check still
+   runs against that set — the handoff is not an exemption from it, and a criterion firing here
+   still escalates exactly as a freshly-located set would. Hold the passed `acceptance[]` in
+   memory and use it as PHASE 3's verify checklist (a test/check that exercises one of its
+   scenarios counts toward Tier 1's auto-pass condition) instead of relying on whatever coverage
+   happens to already exist.
 
    > **Todo**: an intake step here — a clarifying `AskUserQuestion`, or what the located code reveals —
    > can surface that the real scope exceeds the size gate (the described 1-file tweak is actually a
@@ -149,22 +162,22 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    > genuine zero. The count feeds step 5's `Lane:` line below; no separate print here.
 
 4. **Durable-decisions check** — this is dev-tweak's only route back to a feature's already-settled
-design questions (`durableDecisions[]` has no other reader on the modify path — see
-`shared/FEATURE-LOAD.md`). `.project/` absent (already degraded at PHASE 0 step 1) → skip
-silently, same as the rest of this skill's graceful degradation.
+   design questions (`durableDecisions[]` has no other reader on the modify path — see
+   `shared/FEATURE-LOAD.md`). `.project/` absent (already degraded at PHASE 0 step 1) → skip
+   silently, same as the rest of this skill's graceful degradation.
 
-    `.project/` present → grep `.project/features/*/feature.json` and
-    `.project/features/archive/*/feature.json` for `files[].path` entries matching any located file
-    (repo-relative path match). No match on any feature → skip silently, no cost — most tweaks touch
-    files no pipeline feature ever built. Exactly one match → Read that `feature.json`, extract
-    `durableDecisions[]`. Multiple features match → take the most recently modified `feature.json`.
+   `.project/` present → grep `.project/features/*/feature.json` and
+   `.project/features/archive/*/feature.json` for `files[].path` entries matching any located file
+   (repo-relative path match). No match on any feature → skip silently, no cost — most tweaks touch
+   files no pipeline feature ever built. Exactly one match → Read that `feature.json`, extract
+   `durableDecisions[]`. Multiple features match → take the most recently modified `feature.json`.
 
-    `durableDecisions[]` present and non-empty → hold each entry's `constraint`/`chosen` as a hard
-    boundary during PHASE 2, same standing as `clarifications[]` in dev-build: a tweak whose natural
-    edit would contradict one (re-introduce a rejected option, violate a recorded constraint) must
-    instead follow the recorded `chosen` approach, or escalate via `references/escalate.md` if the
-    tweak cannot honor it within 1-3 files. No hits, or the field is empty → nothing to hold, proceed
-    as normal.
+   `durableDecisions[]` present and non-empty → hold each entry's `constraint`/`chosen` as a hard
+   boundary during PHASE 2, same standing as `clarifications[]` in dev-build: a tweak whose natural
+   edit would contradict one (re-introduce a rejected option, violate a recorded constraint) must
+   instead follow the recorded `chosen` approach, or escalate via `references/escalate.md` if the
+   tweak cannot honor it within 1-3 files. No hits, or the field is empty → nothing to hold, proceed
+   as normal.
 
 5. **Lane routing**.
 
@@ -179,6 +192,8 @@ silently, same as the rest of this skill's graceful degradation.
 > **Todo — PHASE 1 exit**: this phase produces exactly two printed lines, `Gate:` (step 2) and
 > `Lane:` (step 5). Both present in the output above → proceed to PHASE 2. Either missing → the
 > corresponding step did not run: go back and run it now. Do not enter PHASE 2 to "reconcile after".
+> An escalation firing anywhere in this phase is the one exception — the run ends at
+> `references/escalate.md` instead, which prints its own two-line report in place of `Gate:`/`Lane:`.
 
 ## PHASE 2 — Implement
 
@@ -187,7 +202,7 @@ silently, same as the rest of this skill's graceful degradation.
    match" (step 4), and a printed `Lane:` line (step 5). Judge what the transcript shows, not what
    you remember doing. Any one absent → go back to that step now; do not edit first and reconcile
    after.
-2. **Lane execution** — run the lane PHASE 1 step 4 picked, exactly as
+2. **Lane execution** — run the lane PHASE 1 step 5 picked, exactly as
    [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Lane routing defines it (A direct /
    B plan-mode design / C + `Plan` agent on `model: "opus"` + Fable consult per
    [shared/SECOND-OPINION.md](../shared/SECOND-OPINION.md)). Four dev-side deltas:
@@ -339,12 +354,14 @@ bullet below describes:
      or `user-confirmed` / `self-tested` for whichever Tier 2 path was taken. Auto-pass is never
      silent — the report always states why the modal didn't fire.
    - a `Lane:` line **always**, Lane A included — `Lane: {A|B|C} · Learnings: {n}` (carry PHASE 1
-     step 4's line forward verbatim; B/C append the matching row in one line). This field is the
-     proof PHASE 1 step 2's learnings load actually ran — its absence means that step was skipped.
+     step 5's line forward verbatim; B/C append the matching row in one line). This field is the
+     proof PHASE 1 step 3's learnings load actually ran — its absence means that step was skipped.
    - a `Consult:` line **only when Lane C actually spawned a consult** — values per
      [shared/SECOND-OPINION.md](../shared/SECOND-OPINION.md) § Logging (`consulted ({trigger})` /
      `consulted ({trigger}) → revised` / `consulted ({trigger}) → confirmed` / `unavailable`). Omit
      entirely on Lane A/B — there is nothing to log.
    - a `Learning:` line when one was written; `Escalation overridden: {criterion}` when applicable
    - `Next steps: /dev-ship {card}` **only** when the guard flagged a TODO card (free-text mode
-     only — card mode is terminal). Otherwise a tweak is terminal: no next-step offer.
+     only — card mode is terminal). Otherwise a tweak is terminal: no next-step offer. The one
+     card-mode exception is an escalation park (`references/escalate.md § 3 (a)`) — that path prints
+     its own `Pick it up with /dev-ship {name}.` line instead of this one.

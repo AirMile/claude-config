@@ -302,8 +302,12 @@ net-new surface)` into the PHASE 5 report. On a non-tweak-sized draft this note 
      (signal-clear, remove the init checkpoint, `rmdir` the empty feature dir, strip `transition:
 "shipping"` from the backlog card) — no `note` this time (this isn't a park; the tweak run picks
      the card up next, not a later `/game-ship` re-invoke). No `feature.json` was written — the draft
-     dies here, exactly as on Abort. Then invoke `/game-tweak {feature-name}`, passing the card's
-     **exact name** so it resumes the same card instead of minting a new one (per
+     itself dies here, exactly as on Abort, but not its content: carry the in-memory draft's
+     `files[]` and `acceptance[]` into the handoff message, not just the card name — this is the
+     only copy of them that will ever exist; losing them here means the tweak run re-locates from
+     scratch and re-verifies with no requirement contract, which can leave it worse off than
+     Accept would have. Then invoke `/game-tweak {feature-name}`, passing the card's
+     **exact name** plus that `files[]`/`acceptance[]` pair (per
      `shared/TWEAK-DISCIPLINE.md § De-escalation gate` (a)). Then **stop** — do not continue to Step 5;
      the tweak run reports its own outcome.
 

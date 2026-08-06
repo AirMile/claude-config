@@ -228,19 +228,31 @@ silently. Three options, semantics fixed here (the AskUserQuestion block and the
 live in each skill's `references/escalate.md`):
 
 - **(a) Park as TODO** _(recommended default)_ — **a live card is already in play** (card mode, or a
-  free-text guard match) → the card already sits at `TODO`, so parking touches no status/type/
-  lifecycle field — do **not** invoke `project-todo` here (it can only skip back to the same card
-  or, on a token-overlap miss, mint a stray duplicate). The one exception: if the board's pickup
-  action already set `transition: "tweaking"` on this card — the queue-marker the board writes for
-  both stacks the moment its `/dev-tweak`/`/game-tweak` copy button was clicked, not a lifecycle
-  state — **remove that field** as part of parking. Skipping this leaves the card
+  free-text guard match) → the card already sits at `TODO`, so parking never touches `status`. Do
+  **not** invoke `project-todo` here — it refuses to modify existing backlog items, so it can only
+  skip back to the same card or, on a token-overlap miss, mint a stray duplicate. Instead, this run
+  **promotes the card out of the tweak lane** with one targeted `Edit`: overwrite `type` away from
+  `TWEAK`/`POLISH` with the type inferred from the card's own description
+  (`project-todo/references/inference-rules.md`) — the `TWEAK`/`POLISH` row is unreachable by
+  construction, since the size gate just ruled the change exceeds it, exactly mirroring what
+  `dev-ship`'s/`game-ship`'s own offload flush already does for an over-gate finding
+  (`dev-ship/references/phase-3-manual-finalize.md § Offload flush`); append one provenance sentence
+  to `description` ("parked from /dev-tweak escalation ({criterion}) — exceeds tweak scope, pick up
+  with /dev-ship"); and remove `transition: "tweaking"` if the board's pickup action set it — the
+  queue-marker the board writes for both stacks the moment its `/dev-tweak`/`/game-tweak` copy
+  button was clicked, not a lifecycle state. Skipping the `transition` removal leaves the card
   stuck rendering "tweaking · queued" in the board's IN PROGRESS lane forever, since nothing else
-  ever clears it once the run that would have consumed it (this one) bails out instead. No other
-  field changes: `status` stays `TODO`. **No live card** → invoke the `project-todo` skill with one
-  sentence: description + escalation reason + touched-file hints. project-todo owns naming,
-  type/phase inference, dedup, and the backlog/project dual sync — the tweak skill performs **zero**
-  backlog writes on this path (no board transition was ever set here). Provenance goes in the
-  description text ("parked from /dev-tweak escalation").
+  ever clears it once the run that would have consumed it (this one) bails out instead. Without this
+  promotion the board's dedicated "Tweaks" lane (§ TWEAK cards below) keeps re-offering the same
+  `/dev-tweak` button, and the next pickup just re-derives the identical escalation from scratch.
+  Leave `type` untouched when the card was never `TWEAK`/`POLISH` to begin with (a free-text guard
+  match). This is a third sanctioned exception to the `type`/`transition` ownership in § Never below
+  — the write is provisional, a later ship define pass classifies fresh and overwrites `type` again
+  regardless. **No live card** → invoke the `project-todo` skill with one sentence: description +
+  escalation reason + touched-file hints. project-todo owns naming, type/phase inference, dedup, and
+  the backlog/project dual sync — the tweak skill performs **zero** backlog writes on this path (no
+  board transition was ever set here). Provenance goes in the description text ("parked from
+  /dev-tweak escalation").
 - **(b) Hand off to the pipeline** — invoke the ship skill (or debug skill, for tier-3 signals).
   **A live card is already in play** (card mode, or a free-text guard match) → always pass that
   card's exact name, never a re-derived description, so define's find-by-name resumes the same card
@@ -261,7 +273,14 @@ and asks** there too, folded into the existing plan-approval gate rather than a 
   ship's pre-plan-mode bookkeeping (backlog `transition`, live signal, checkpoint — the ship skill's
   own reference names the exact fields/order) so the card doesn't strand in the board's IN PROGRESS
   lane; pass the card's exact name into `/dev-tweak` (`/game-tweak`) so it resumes the same card
-  instead of minting a new one.
+  instead of minting a new one. **Also pass the completed draft's `files[]` and `acceptance[]`**
+  (still in memory — this handoff runs in the same chat session, no `/clear` involved) — never the
+  name alone. Without them the tweak run re-locates from scratch and loses the requirement contract
+  define just built, which is the whole point of routing back here rather than parking; with them,
+  `files[]` pre-seeds the tweak's own PHASE 1 locate step — that step's own size-gate re-check
+  (criteria 2, 3, 4) still runs against the pre-seeded set, this handoff is not an exemption from
+  it — and `acceptance[]` becomes its PHASE 3 verify checklist, which is _better_ verification than
+  a native tweak run gets on its own.
 - **(b) Continue with the pipeline** — conscious override; the final report carries
   `De-escalation overridden: tweak-sized ({N} files, no net-new surface)`.
 - **(c) Park** — reject the plan, card returns to `TODO`.
@@ -284,8 +303,8 @@ A tweak run must never:
   `dev-ship/references/dev-define/references/phase4-sync.md` § TWEAK promotion (dev) /
   `game-ship/references/game-define/references/phase5-sync.md` § POLISH promotion (game). That write
   belongs to define, never to this skill. **§ Escalation gate (a) exception**: parking a live card
-  that carries this board-set `transition` clears that one field (never `status`, never `type`) —
-  see § Escalation gate (a) above;
+  promotes it out of the tweak lane — overwrites `type` away from `TWEAK`/`POLISH` and clears this
+  board-set `transition` if present (never `status`) — see § Escalation gate (a) above;
 - create a card by hand — the backlog/project dual write ([BACKLOG.md](BACKLOG.md) § Parallel sync)
   is project-todo's job; the park path _invokes_ that skill; card pickup only ever mutates an
   **existing** TWEAK/POLISH card, never creates one;
