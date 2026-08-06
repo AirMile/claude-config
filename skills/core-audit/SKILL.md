@@ -3,7 +3,7 @@ name: core-audit
 description: Use with /core-audit to analyze and refine a skill from this conversation.
 metadata:
   author: claude-config
-  version: 4.7.0
+  version: 4.8.0
   category: core
 ---
 
@@ -60,6 +60,8 @@ Announce: `MODE: trace — real run found in conversation` or `MODE: static — 
 
 - Show `OBSERVATION (from argument): "[note]"` and set the note as the priority lens — map it onto one of the canned categories below where it clearly fits, but the raw note stays authoritative. Proceed straight to Step 3/4 (trace or static, whichever mode applies).
 - Note is too vague or incomplete to act on (no direction can be derived from it) → ask exactly ONE targeted follow-up: an `AskUserQuestion` that quotes the note and asks specifically for the missing detail — not the generic 4-option modal below.
+
+**Skill feedback the executor itself raised in the conversation** (`~/.claude/CLAUDE.md § Skill Feedback`'s self-observed half, reported after the target skill's own run) counts as the observation note: quote it back as `OBSERVATION (self-reported): "[note]"`, set it as the priority lens, and skip the modal below. Asking anyway re-requests something already on screen.
 
 **No observation note, trace mode** → ask:
 
