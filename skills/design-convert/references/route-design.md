@@ -244,11 +244,10 @@ Detect first:
 
 ```yaml
 header: "Design"
-question: "Design spec found ({N} pages, {M} flows, {P} principles, {C} components). What do you want to do?"
+question: "Design spec found ({N} pages, {M} flows, {P} principles, {C} components). What do you want to do? (Generate brief? Type it under Other.)"
 # If $HAS_BUILD_CANDIDATES = true:
 options:
   - label: "Build (Recommended)", description: "Generate code for {X} PAGE/COMPONENT(s) with status DEF — no visual material needed"
-  - label: "Generate brief", description: "Markdown brief for Claude Design (page or component)"
   - label: "View", description: "Show current design spec"
   - label: "Page", description: "Add or edit a page"
   - label: "Component", description: "Add or edit a component"
@@ -261,6 +260,8 @@ options:
 multiSelect: false
 ```
 
+Both branches stay at 4 options — the `$HAS_BUILD_CANDIDATES = true` branch previously listed 5 ("Generate brief" alongside Build/View/Page/Component), which exceeds the `AskUserQuestion` tool's hard 4-option cap. "Generate brief" is only Recommended (and worth its own card) when there's nothing to build yet; when build candidates exist, it's reachable via Other — route to Route: Brief same as before.
+
 "Other" options: "Convert from sketch/mockup or URL" — a PAGE/COMPONENT name is **optional**: set `$CONVERT_TARGET` when one is provided or selected; without one the Convert route's PHASE 0.1 asks for the visual input itself. Then:
 
 > **Todo**: Read `.claude/skills/design-convert/references/route-convert.md`
@@ -271,7 +272,7 @@ Also: "Flow" (manage flows), "Principles" (manage principles), "Delete" (remove 
 
 ## PHASE 1.5: Plan-Mode Gate (Conditional Entry)
 
-The action chosen in PHASE 1 routes to a synthesis interview or a CRUD/self-managed action. Synthesis (design reasoning across one or more `AskUserQuestion` rounds) deserves the planning model — so enter plan mode here, before PHASE 2 dispatch, only when the chosen route is a synthesis route. See [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) § Conditional entry.
+The action chosen in PHASE 1 routes to a synthesis interview or a CRUD/self-managed action. Synthesis (design reasoning across one or more `AskUserQuestion` rounds) produces a reviewable design diff the user can reject — a genuine approval gate — so enter plan mode here, before PHASE 2 dispatch, only when the chosen route is a synthesis route. See [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) § Conditional entry.
 
 **Enter plan mode** (follow PLAN-MODE.md Entry protocol — call `EnterPlanMode` before PHASE 2) when the chosen route is one of:
 
@@ -281,7 +282,7 @@ The action chosen in PHASE 1 routes to a synthesis interview or a CRUD/self-mana
 
 **Do NOT enter plan mode** for:
 
-- **Build** and **Create** — these self-manage plan mode internally (Build enters at the **start** of `route-build.md` (Step 0b) so entity/candidate/spec decisions land on the planning model, and defers worktree creation to after `ExitPlanMode` (Step 7b) since the worktree git-writes must run outside plan mode; Create enters at `route-create.md`).
+- **Build** and **Create** — these self-manage plan mode internally (Build enters at the **start** of `route-build.md` (Step 0b) so entity/candidate/spec decisions converge on a reviewable BUILD PLAN before codegen, and defers worktree creation to after `ExitPlanMode` (Step 7b) since the worktree git-writes must run outside plan mode; Create enters at `route-create.md`).
 - **View**, **Delete**, **Restore** — pure CRUD, kept friction-free.
 
 **Skip `EnterPlanMode` if already in plan mode** — if an active plan-mode system-reminder already exists (the user started `/plan-mode` themselves, or a prior synthesis loop already entered), skip the call and read the existing plan-file path from the active system-reminder.

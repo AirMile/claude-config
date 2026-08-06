@@ -560,7 +560,7 @@ Use {when|with} <trigger>. <short addition>. Use with /<command-name>[, optional
 
 **When:** A skill uses AskUserQuestion (multi-select) where the number of options is dynamic — depends on runtime context, scan results, stack, or user input. Applies to options generated from feature lists, agent outputs, file scans, or other unbounded sources.
 
-**How:** Enforce a hard cap of 7 options per modal. When more options exist, split into sequential category modals — one per logical group, in order of impact.
+**How:** Enforce a hard cap of 4 options per modal — this is the `AskUserQuestion` tool's own schema limit (`maxItems: 4`), not just a style preference; a 5th option makes the tool call fail outright. When more options exist, split into sequential category modals — one per logical group, in order of impact.
 
 **When NOT to use a modal — use plain-text list + free-form parse instead:**
 
@@ -574,7 +574,7 @@ Use `AskUserQuestion` only for the cancel/exit route (e.g., "Continue with selec
 
 **Rules:**
 
-- **Cap**: max 7 options per modal
+- **Cap**: max 4 options per modal (tool-enforced, not a convention)
 - **When more options are available**: split into sequential category modals, skip empty categories
 - **Never truncate silently**: prefer an extra modal over dropping options
 
@@ -587,7 +587,7 @@ Use `AskUserQuestion` only for the cancel/exit route (e.g., "Continue with selec
 | Debug fixes         | By component/layer (UI, logic, data, performance) |
 | Audit findings      | Core files → Config → Claude config → CLAUDE.md   |
 
-**Modals with fixed/small option sets (≤7 options) are not subject to this rule.**
+**Modals with fixed/small option sets (≤4 options) are not subject to this rule.**
 
 ---
 

@@ -58,7 +58,8 @@ Bump the audited skill's `metadata.version`: minor bump for significant changes,
 2. Validate frontmatter (required fields, description pattern + budget)
 3. Re-run the reference integrity check (all mentioned paths exist, no orphans)
 4. `reads:`/`writes:` changed → re-run `python3 scripts/check-handoff.py`
-5. Structural change to a `dev-*`/`game-*` pipeline skill → remind the user to check the counterpart skill (project CLAUDE.md § Rules for Changes)
+5. AskUserQuestion option blocks added, split, or merged → re-run `python3 scripts/check-modal-options.py --skill [name]`; must report 0 over-cap modals
+6. Structural change to a `dev-*`/`game-*` pipeline skill → remind the user to check the counterpart skill (project CLAUDE.md § Rules for Changes)
 
 ```
 REFINED: [skill-name]

@@ -19,7 +19,7 @@ Filter `gap_slots[]`:
 - Slot not relevant for framework → skip
 - Tier-1 module already installed in `package.json` but not in stack-slot → skip silently (PHASE 5 sync will fill it in)
 
-**Multi-select modal** (follow Modal Option Cap from SKILL.md; ≤7 slots = one modal, >7 = split per category group):
+**Multi-select modal** (Modal Option Cap is 4, not 7 — `shared/SKILL-PATTERNS.md § Modal Option Cap`. This block still lists up to 8 slots; because the option set is templated per empty relevant slot rather than a fixed list, it routes to Numbered List Selection instead of a modal split — tracked as a separate follow-up, not fixed here):
 
 ```yaml
 header: "Module gaps"

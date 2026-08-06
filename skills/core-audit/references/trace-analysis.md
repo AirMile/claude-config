@@ -11,6 +11,7 @@ Extract evidence from the target skill's real run in this conversation. Report o
 5. **Unused loads** — reference files Read during the run whose content influenced no subsequent output; context blocks assembled but never used. These are direct token waste per run.
 6. **Output mismatches** — output blocks the skill defines that could not be populated with available data, or were silently restructured to fit.
 7. **Artifacts** — files the skill claims to create vs files actually created during the run (visible in the conversation); handoff fields updated vs the `writes:` declaration.
+8. **Failed tool calls** — invocations that errored: an `Edit` whose `old_string` didn't match, Read/Bash on a path that doesn't exist, an unknown `subagent_type` or MCP tool, a schema error (wrong parameter, a 5th `AskUserQuestion` option — the tool caps at 4), a permission denial, or the same call retried 3+ times. Classify each as **skill-caused** (the skill supplied the wrong path, agent name, option set, command, or step order) or **executor noise** (stale read, transient failure, a path the skill never named). Only skill-caused errors become findings — quote the error and the instruction that produced it, and estimate the wasted tokens. A step that eventually succeeded after failed attempts is not a deviation — report it here, not in category 1.
 
 **Not exercised:** list branches, options, and phases the run never hit. These get static-only analysis in Step 4 — do not invent observations for them.
 
@@ -27,7 +28,11 @@ Deviations:
 Friction:
 - [user correction/interruption] → [section that caused it]
 
+Failed calls (skill-caused):
+- [tool] [error] → [instruction that caused it] ([location])
+
 Modals: [n] asked | [n] auto-decidable | "Other" answers: [n]
+Tool errors: [n] total | [n] skill-caused | [n] retry loops
 Unused loads: [files, or none]
 Not exercised: [branches/phases]
 

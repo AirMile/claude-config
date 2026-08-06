@@ -259,7 +259,7 @@ Category ↔ stack-key mapping:
 
 Categories without mapping (Routing, Animation, Icons, Auth, i18n, Analytics, Dev tools) always show the default description, regardless of snapshot.
 
-Two sequential modals (7-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`). Show Modal 1 first; show Modal 2 only when the user picks "More categories →".
+Four sequential modals (4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`). Show Modal 1 first; each subsequent modal shows only when the user picks that modal's "More categories →".
 
 **Modal 1 — core stack categories:**
 
@@ -270,14 +270,24 @@ options:
   - label: "Styling [context-aware]", description: "Tailwind, CSS-in-JS, etc."
   - label: "UI components [context-aware]", description: "shadcn-ui, Radix, headless libs"
   - label: "Testing [context-aware]", description: "Unit (Vitest), e2e (Playwright)"
-  - label: "Linting & formatting [context-aware]", description: "Biome or ESLint+Prettier"
-  - label: "State management [context-aware]", description: "Client state, server state"
-  - label: "Forms & validation [context-aware]", description: "Form libs + schema validators"
-  - label: "More categories →", description: "Routing, animation, icons, auth, i18n, analytics, dev tools"
+  - label: "More categories →", description: "Linting & formatting, state, forms, and more"
 multiSelect: false
 ```
 
-**Modal 2 — more categories** (only after "More categories →"):
+**Modal 2** (only after Modal 1's "More categories →"):
+
+```yaml
+header: "Category"
+question: "What do you want to add?"
+options:
+  - label: "Linting & formatting [context-aware]", description: "Biome or ESLint+Prettier"
+  - label: "State management [context-aware]", description: "Client state, server state"
+  - label: "Forms & validation [context-aware]", description: "Form libs + schema validators"
+  - label: "More categories →", description: "Routing, animation, icons, and more"
+multiSelect: false
+```
+
+**Modal 3** (only after Modal 2's "More categories →"):
 
 ```yaml
 header: "Category"
@@ -286,6 +296,16 @@ options:
   - label: "Routing", description: "File-based or declarative routers"
   - label: "Animation", description: "Motion libraries"
   - label: "Icons", description: "Icon packs"
+  - label: "More categories →", description: "Auth, i18n, analytics, dev tools"
+multiSelect: false
+```
+
+**Modal 4** (only after Modal 3's "More categories →"):
+
+```yaml
+header: "Category"
+question: "Which category?"
+options:
   - label: "Auth", description: "Auth providers and libraries"
   - label: "i18n", description: "Translation and routing"
   - label: "Analytics", description: "Privacy-first or full-stack"

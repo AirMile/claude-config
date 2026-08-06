@@ -109,10 +109,10 @@ options:
   - label: "Purpose", description: "Current: {purpose}"
   - label: "Variants/Sizes/States", description: "Current: {variants joined}"
   - label: "Props/Slots", description: "Current: {props joined}"
-  - label: "Status", description: "Current: {status}"
-  - label: "Scope / appliesTo", description: "Current: {scope}"
-  - label: "Notes", description: "Current: {notes or 'empty'}"
+  - label: "Meta (status, scope, notes)", description: "Status: {status} — Scope: {scope} — Notes: {notes or 'empty'}"
 multiSelect: true
 ```
+
+4 options, not 6 — `AskUserQuestion`'s hard cap applies to `multiSelect` lists too. "Status"/"Scope / appliesTo"/"Notes" — the three lowest-frequency edit targets — are folded into one "Meta" option; when selected, ask a one-line follow-up for which of the three (and the new value) instead of three separate cards.
 
 Process updates, proceed to PHASE 3 (Confirm).

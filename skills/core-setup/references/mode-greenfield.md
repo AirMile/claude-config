@@ -52,11 +52,12 @@ Applies to: Project description, Project name, Tech stack, Suggestions (per cate
 
 > **Todo**: call `TaskCreate` with the 12 phase items (see above). Mark Phase 1 → `in_progress` via `TaskUpdate`.
 
-1. **Language selection** — AskUserQuestion (single-select):
-   - Options: English, Nederlands, Deutsch, Français, Español
+1. **Language selection** — AskUserQuestion (two sequential modals, 4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`; show modal 2 only if "More languages →" is picked):
+   - Modal 1 options: English (Recommended), Nederlands, Deutsch, "More languages →"
+   - Modal 2 options: Français, Español
    - Store as `LANG_CHOICE` for Phase 6 (CLAUDE.md `## User Preferences`)
 
-1b. **Explanation Level** — AskUserQuestion (single-select):
+1b. **Explanation Level** — AskUserQuestion (two sequential modals, 4-option cap; show modal 2 only if "More levels →" is picked):
 
 ```yaml
 header: "Explanation Level"
@@ -68,6 +69,15 @@ options:
     description: "Standard. Jargon ok, no extra scaffolding."
   - label: "Beginner"
     description: "Every non-trivial term explained. Analogies always used. Good for stacks you're learning."
+  - label: "More levels →"
+    description: "Novice, Expert"
+multiSelect: false
+```
+
+```yaml
+header: "Explanation Level"
+question: "How should Claude calibrate jargon and explanation depth for this project?"
+options:
   - label: "Novice"
     description: "Framework-specific jargon explained. Analogies when helpful."
   - label: "Expert"

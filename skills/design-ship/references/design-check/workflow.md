@@ -64,7 +64,7 @@ Detect input type via fixed order:
 
 **3. Source-path** — `$1` has path separator or extension, no http-prefix → `targetType = "path"`, `fileTargets = [$1]`
 
-**4. No argument** → AskUserQuestion:
+**4. No argument** → AskUserQuestion (two sequential modals, 4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`; show modal 2 only if "More →" is picked):
 
 ```yaml
 header: "Target"
@@ -73,6 +73,14 @@ options:
   - label: "Running dev server (Recommended)", description: "Lighthouse + captures on dev server"
   - label: "Specific URL", description: "Enter a URL"
   - label: "Feature", description: "Audit a specific feature — auto-scope on files[] + routes[]"
+  - label: "More →", description: "Production build, Quick smoke check"
+multiSelect: false
+```
+
+```yaml
+header: "Target"
+question: "What do you want to check?"
+options:
   - label: "Production build", description: "Build first, then analyze"
   - label: "Quick smoke check", description: "Health check only — all routes in < 2 min"
 multiSelect: false

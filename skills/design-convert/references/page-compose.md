@@ -35,26 +35,29 @@ Label each by status:
 
 ## Step 2: Composition question
 
-```yaml
-header: "Page composition"
-question: "What goes on '{$TARGET}'? Select all that apply."
-options:
-  - label: "✓ {feature-name}", description: "DONE — ready to import"
-  - label: "○ {feature-name}", description: "DOING — will render as TODO-marker"
-  - label: "◷ {feature-name}", description: "DEFINED — will render as TODO-marker"
-  - label: "◻ {feature-name}", description: "TODO — will render as TODO-marker"
-  - label: "[Component] {component-name}", description: "{purpose} ({scope})"
-  - label: "+ New component", description: "Define a new reusable component and add to backlog"
-  - label: "+ New feature", description: "Define a new feature and add to backlog"
-multiSelect: true
-```
+The candidate count is unbounded and runtime-dependent (every backlog feature + every design component matching `$TARGET`) — an `AskUserQuestion` modal caps at 4 options, so this is the "holistic choice from an unbounded list" case `shared/SKILL-PATTERNS.md § Modal Option Cap` routes to plain-text instead. Use Numbered List Selection (`§ Numbered List Selection`), not a modal:
 
-Pre-select (recommended): union of two sources:
+1. Compute the pre-select set (recommended): union of two sources:
+   - DONE features with `pageHint` matching `$TARGET` (backlog-based)
+   - Any feature or component whose name matches an entry in `$EXISTING_IMPORTS[]` (already wired into the existing page file — regardless of status)
+2. Print every real candidate — no 4+2 cap, no items pushed to an unlabeled "Other" — as one numbered list, features first then components, each with its status icon:
 
-1. DONE features with `pageHint` matching `$TARGET` (backlog-based)
-2. Any feature or component whose name matches an entry in `$EXISTING_IMPORTS[]` (already wired into the existing page file — regardless of status)
+   ```
+   PAGE COMPOSITION — '{$TARGET}'
+   1. ✓ {feature-name}        DONE — ready to import
+   2. ○ {feature-name}        DOING — will render as TODO-marker
+   3. ◷ {feature-name}        DEFINED — will render as TODO-marker
+   4. ◻ {feature-name}        TODO — will render as TODO-marker
+   ...
+   N.   [Component] {component-name}   {purpose} ({scope})
+   N+1. + New component
+   N+2. + New feature
 
-Show max 4 feature candidates + max 2 component candidates. Use "Other" for the rest.
+   Suggested: {comma-separated numbers from the pre-select set}
+   Enter numbers (e.g. `1, 3, 5` or `1-4` or `all except 2`), or `suggested` to accept the pre-select.
+   ```
+
+3. Parse the reply per `§ Numbered List Selection`'s canonical syntax, plus the literal `suggested` → the pre-select set from step 1. Empty input still means "none" (the pattern's own safety default) — it is **not** a synonym for `suggested`, don't conflate the two. Echo the parsed selection before proceeding.
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Route: Update
 
-**AskUserQuestion:**
+**AskUserQuestion** (two unconditional multi-select modals, 4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`; both always shown, union the selections):
 
 ```yaml
 header: "Update"
@@ -12,9 +12,16 @@ options:
   - label: "Typography", description: "Adjust fonts"
   - label: "Spacing", description: "Adjust spacing scale"
   - label: "Breakpoints", description: "Adjust breakpoints"
+multiSelect: true
+```
+
+```yaml
+header: "Update"
+question: "Anything else to update?"
+options:
   - label: "Motion", description: "Adjust durations and easings"
   - label: "Interactions", description: "Adjust focus ring, hover, active states"
-  - label: "All", description: "Full reconfiguration"
+  - label: "All", description: "Full reconfiguration — overrides the sections above"
 multiSelect: true
 ```
 

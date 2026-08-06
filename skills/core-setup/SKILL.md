@@ -57,7 +57,7 @@ CLAUDE'S PICK: {chosen option} — {brief reason}
 
 ### Modal Option Cap
 
-For dynamic multi-select modals (Audit fixes, Resync drift, Tech stack, Suggestions, Documentation Generators): apply `shared/SKILL-PATTERNS.md` § Modal Option Cap. Modals with ≤7 options are exempt.
+For dynamic multi-select modals (Audit fixes, Resync drift, Tech stack, Suggestions, Documentation Generators): apply `shared/SKILL-PATTERNS.md` § Modal Option Cap — the cap is 4 options (tool-enforced `maxItems: 4`, not a style preference); split into sequential category modals above that, or route to Numbered List Selection when the option count is unbounded/runtime-dependent.
 
 ---
 

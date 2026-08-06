@@ -175,7 +175,7 @@ multiSelect: false
 
 **Smart split:** go to PHASE 5.
 
-**Single todo:** ask via combined AskUserQuestion:
+**Single todo:** ask via combined AskUserQuestion — Question 2 is two sequential modals (4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`; show modal 2b only if "More →" is picked):
 
 ```yaml
 # Question 1
@@ -188,13 +188,20 @@ options:
   - label: "P4", description: "Park for later"
 multiSelect: false
 
-# Question 2
+# Question 2a
 header: "Type"
 question: "Item type?"
 options:
   - label: "FEATURE (Recommended)"
   - label: "BUG"
   - label: "API"
+  - label: "More →"
+multiSelect: false
+
+# Question 2b (only if "More →" picked)
+header: "Type"
+question: "Item type?"
+options:
   - label: "PAGE"
   - label: "CHANGE"
 multiSelect: false

@@ -126,7 +126,7 @@ Read `.project/project.json` for stack info and previous `optimization_runs[]`.
 
 On resume: skip.
 
-**AskUserQuestion 1 — what to optimize?** (Auto-mode: FPS)
+**AskUserQuestion 1 — what to optimize?** (Auto-mode: FPS; two sequential modals, 4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`; show modal 2 only if "More →" is picked)
 
 ```yaml
 header: "Metric"
@@ -138,6 +138,15 @@ options:
     description: "ms per frame in a fixed benchmark scene. Lower is better."
   - label: "Memory footprint"
     description: "MB peak (Performance.MEMORY_STATIC). Lower is better."
+  - label: "More →"
+    description: "AI win-rate, Pathfinding speed"
+multiSelect: false
+```
+
+```yaml
+header: "Metric"
+question: "What do you want to optimize?"
+options:
   - label: "AI win-rate"
     description: "% wins of AI in M simulated matches. Higher is better."
   - label: "Pathfinding speed"

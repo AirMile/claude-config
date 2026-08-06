@@ -81,6 +81,8 @@ After concept detection, also check for broader scope:
 
 If scope context found AND project.json concept already loaded:
 
+Two sequential modals (4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`; show modal 2 only if "More →" is picked):
+
 ```yaml
 header: "Scope"
 question: "What do you want to think about?"
@@ -88,6 +90,14 @@ options:
   - label: "Concept (Recommended)", description: "Work with project.json concept"
   - label: "Implementation project", description: "Existing design/spec/Figma → scope document for build"
   - label: "Feature from backlog", description: "Focus on a specific feature"
+  - label: "More →", description: "Page / UX flow, Assignment / Large Feature, Standalone idea"
+multiSelect: false
+```
+
+```yaml
+header: "Scope"
+question: "What do you want to think about?"
+options:
   - label: "Page / UX flow", description: "Focus on layout, UX or user flow"
   - label: "Assignment / Large Feature", description: "Scope a task assignment, large feature, or cross-cutting concern"
   - label: "Standalone idea", description: "Standalone idea, not linked to the project"

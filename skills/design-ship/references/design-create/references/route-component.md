@@ -100,7 +100,7 @@ options:
 multiSelect: false
 ```
 
-Then:
+Then, two unconditional multi-select modals (4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`; both always shown, union the selections — not a "More" gate, since picking from modal 1 doesn't preclude wanting fields from modal 2):
 
 ```yaml
 header: "Edit: {component-name}"
@@ -110,6 +110,13 @@ options:
   - label: "Variants/Sizes/States", description: "Current: {variants joined}"
   - label: "Props/Slots", description: "Current: {props joined}"
   - label: "Status", description: "Current: {status}"
+multiSelect: true
+```
+
+```yaml
+header: "Edit: {component-name}"
+question: "Anything else to update?"
+options:
   - label: "Scope / appliesTo", description: "Current: {scope}"
   - label: "Notes", description: "Current: {notes or 'empty'}"
 multiSelect: true

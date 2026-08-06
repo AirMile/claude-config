@@ -60,7 +60,7 @@ grep -q "Language:" "$HOME/.claude/CLAUDE.md" 2>/dev/null && echo "found" || ech
 
 If `Language:` is found → store `LANGUAGE_CHOICE=skip` (language step skipped — re-runs leave existing setting alone).
 
-If `Language:` is not found → ask:
+If `Language:` is not found → ask (two sequential modals, 4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`; show modal 2 only if "More languages →" is picked):
 
 ```yaml
 header: "Language"
@@ -72,6 +72,15 @@ options:
     description: "Claude responds in Dutch"
   - label: "Deutsch"
     description: "Claude antwortet auf Deutsch"
+  - label: "More languages →"
+    description: "Français, Español"
+multiSelect: false
+```
+
+```yaml
+header: "Language"
+question: "Which language should Claude use for output?"
+options:
   - label: "Français"
     description: "Claude répond en français"
   - label: "Español"
@@ -166,7 +175,7 @@ header: "Claude plan"
 question: "Which Claude plan are you on? (used to tailor the post-bootstrap tip)"
 options:
   - label: "Max 5x"
-    description: 'Tip: /model opusplan + effortLevel:"high" — Opus inside plan mode, Sonnet for execution'
+    description: 'Tip: /model opus + effortLevel:"high" — full Opus; plan mode is an approval gate, not a routing switch'
   - label: "Pro"
     description: 'Tip: /model sonnet + effortLevel:"medium" — Opus quota is tight on Pro'
   - label: "Max 10x+"
@@ -664,13 +673,13 @@ Closing tip (always show):
 
 Based on `PLAN_TIER` (from PHASE 0), show one of the following blocks. These settings are not auto-applied — they require a runtime `/model` choice and an explicit edit to `~/.claude/settings.json`.
 
-Skills don't depend on a specific model — they use **plan mode** (`shared/PLAN-MODE.md`), which any model router executes. `opusplan` is a router that runs Opus for plan-mode phases and Sonnet for execution; it benefits Max 5x users where the Opus quota is sufficient.
+Skills don't depend on a specific model — they use **plan mode** (`shared/PLAN-MODE.md`) purely as an approval gate; the session model is `opus` throughout regardless of plan-mode state. For Max 5x users, `/model opus` spends Opus quota on the whole session, not just planning — watch usage; drop to `/model sonnet` if quota runs tight.
 
 - **`max-5x`**:
 
   ```
   Tip for Max 5x:
-    • Run /model opusplan      (Opus inside plan mode, Sonnet for execution)
+    • Run /model opus          (Opus for the whole session; watch quota since plan mode no longer switches to Sonnet for execution)
     • Set "effortLevel": "high" in ~/.claude/settings.json
   ```
 
@@ -680,7 +689,7 @@ Skills don't depend on a specific model — they use **plan mode** (`shared/PLAN
   Tip for Pro — Opus quota is tight:
     • Run /model sonnet (or leave default)
     • Set "effortLevel": "medium" in ~/.claude/settings.json
-    Plan mode still works under Sonnet; no need for opusplan on Pro.
+    Plan mode still works under Sonnet — it's purely an approval gate, not a model-routing device, so there's no separate router to choose.
   ```
 
 - **`max-10x`**:
@@ -689,7 +698,6 @@ Skills don't depend on a specific model — they use **plan mode** (`shared/PLAN
   Tip for Max 10x+ — quota headroom:
     • Run /model opus (full Opus for everything)
     • Set "effortLevel": "high" in ~/.claude/settings.json
-    opusplan is also fine if you prefer mixed routing.
   ```
 
 - **`skip`**: no plan-tier block shown.
