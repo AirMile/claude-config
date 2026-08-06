@@ -1,11 +1,11 @@
 ---
 name: core-commit
 description: Generate conventional commit messages from staged diffs. Use with /core-commit.
-reads: [feature.externalRef, team.commitConvention]
+reads: [feature.externalRef, team.commitConvention, team.ticketPrefix]
 writes: [team.commitConvention, team.ticketPrefix]
 metadata:
   author: claude-config
-  version: 1.5.0
+  version: 1.6.0
   category: core
 ---
 
@@ -119,6 +119,19 @@ If staged changes contain multiple unrelated groups:
   improvise a split by hand.
 
 ### 4. Generate Message
+
+**Convention integration** — apply the convention § 1.5 detected before shaping the header:
+
+- `conventional`, or nothing detected → the format below, unchanged.
+- `ticket-prefix` → `{ticketPrefix}-{number}: <description>`. Take the number from the
+  externalRef, else from the branch name's `[A-Z]+-\d+` match. Neither available → fall back to
+  `conventional` and say so in the confirm step.
+- `bracket` → `[{TAG}] <description>`, tag taken from the dominant tag in `git log`.
+- `freeform` → an imperative one-line subject, no type/scope grammar.
+
+The header limit, the English rule, and the no-emoji rule below apply to **every** convention;
+only the header's shape changes. A detected `externalRef` adds its own affix per § 1.5 step 2 on
+top of the shape chosen here.
 
 **Format (Conventional Commits 1.0.0):**
 
