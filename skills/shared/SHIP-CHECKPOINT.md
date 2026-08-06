@@ -43,7 +43,7 @@ command). See `BACKLOG.md § Board rendering`.
                 feature.json draft INSIDE plan mode, which blocks the `.project/` write that would
                 store it, so the draft lives only in memory + the plan file until accept. A
                 cross-session death before accept therefore re-runs define (the draft is not
-                recoverable) — the accepted cost of running the thinking on the planning model.
+                recoverable) — the accepted cost of the plan-mode write-block.
                 feature.json is written only at gate-accept (extracted from the plan-file appendix);
                 Step 5 (post-accept) sets the formalized SHIP_PLAN here. design: the FULL PHASE 0
                 objects — direction (incl. its token decisions + chosen layout), archetype, brief,
@@ -85,6 +85,23 @@ command). See `BACKLOG.md § Board rendering`.
                 round: 1-based counter, bumped before each fix-plan gate entry.
                 items: [{ id, title, verdict: "pass"|"fail"|"tweak"|"skip"|"defer"|"accepted"|"offloaded",
                           category, observed, expected, screenshot, source: "checklist"|"interview",
+                          manualReason: "perception"|"audio"|"tooling-gap"|"real-credentials"|
+                          "physical-device"|"screen-reader" (dev-verify/references/test-classification.md),
+                          evidence: "{path}"|"in-chat"|"none" (manual-interview-walkthrough.md § Step C),
+                          stepLog: [{ n, action, outcome }] (per-step observations from the guided
+                          walk, never a verdict — manual-interview-walkthrough.md § Step B3; absent
+                          on an item walked "alles in één keer" or answered before a walk started),
+                          divergedAt: number (the step index that diverged from `expected`, absent
+                          when every step confirmed — same section),
+                          helpAttempts: number (durable cap counter for the "Kom er niet uit" Help
+                          loop, starts at 1, never reset on resume — manual-interview-walkthrough.md
+                          § Step C),
+                          guided: bool (false when the user opted out of the step-by-step walk for
+                          this item — manual-interview-walkthrough.md § Step B; absent = default
+                          guided walk),
+                          tweakAttempts: number (durable polish-loop counter, starts at 1, cleared on
+                          resolution — phase-3-manual-finalize.md § Inline fix now / fix-round.md
+                          § Re-check; absent when no inline/polish loop is in progress),
                           debugTier: "light"|"heavy" (absent = not in the debug ladder),
                           heavyRoundFailed: bool (absent otherwise),
                           lightRoundNotes: string (absent unless debugTier reached "heavy"),
@@ -220,8 +237,9 @@ file first (Write tool) and pipe via `cat file | node ...` instead of inlining i
    executed by the main chat (PHASE 3's interactive round runs in the main chat). Finer-grained than
    the phase boundaries above, because the interactive round has its own resumable sub-state: upsert
    `manual.items` (dev) / `playtest.items` (game) — one item at a time, or batched as a JSON array —
-   via `ship-checkpoint.js item {name} manual|playtest` (see manual-interview-walkthrough.md § Batch
-   persist for the plan-mode-deferred batch case); patch `.interviewDone` after the interview close;
+   via `ship-checkpoint.js item {name} manual|playtest` (each write carries the item's full current
+   record — the upsert replaces by `id`, it does not merge fields; see
+   manual-interview-walkthrough.md § Step E); patch `.interviewDone` after the interview close;
    patch `.round` (+1) before entering the fix-plan gate's plan mode; patch `.fixPlan` at gate-accept;
    set `activeWorkflow: "phase3fix"` + `workflowRunId` + `prompts.fixGroupPromptPaths` at dispatch
    launch (write point 2 applies here too); patch `.dispatch` and clear

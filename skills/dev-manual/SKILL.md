@@ -14,17 +14,16 @@ reads:
   ]
 writes:
   [
-    feature.status,
     feature.tests,
     backlog.status,
     backlog.features,
     project-context.learnings,
     security.shipTriage,
   ]
-writes-terminal: [feature.refactor, backlog.overview]
+writes-terminal: [feature.status, feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 1.4.4
+  version: 1.6.0
   category: dev
 ---
 
@@ -55,6 +54,10 @@ as done, setting it `completed` directly — never leave all 4 sitting `pending`
 3. MANUAL 2: Refactor + finalize/merge
 4. MANUAL 3: Report
 
+A park (a debug-ladder park, a fix-round "Otherwise" park, or a finalize halt-for-team) leaves its
+MANUAL N item `in_progress` — never `completed` — until the parked work actually resolves on a later
+resume; a park is a stopping point, not a finished phase.
+
 ## MANUAL 0 — Resume + worktree/app
 
 > **Todo**: `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred (unused
@@ -83,10 +86,19 @@ as done, setting it `completed` directly — never leave all 4 sitting `pending`
 > Checkpoint exists → read it (this routing step is the phase's own work — MANUAL 0 skips
 > `in_progress` and marks straight to `completed` once a branch resolves below), confirm
 > `pipeline: "dev"` (a design/game checkpoint under the same feature name is a
-> different pipeline entirely — refuse with the same message as above if it doesn't match). Run
-> `node ~/.claude/scripts/ship-checkpoint.js route {feature}` and branch — every branch below marks
-> MANUAL 0 → `completed` (routing resolved) and seeds the rest of the `TaskCreate` list per the
-> stated statuses:
+> different pipeline entirely — refuse with the same message as above if it doesn't match).
+>
+> **Staleness pre-check** (belt-and-suspenders — independent of whatever `shared/WORKTREE.md § 4.6`
+> does later in MANUAL 1's own worktree-switch step): `git -C "$main_root" log --oneline
+"worktree-{feature}..$(git -C "$main_root" symbolic-ref --short HEAD)" | wc -l`. Non-zero → print
+> one line now, before routing: `"NOTE: worktree-{feature} is {N} commit(s) behind {default branch}
+— MANUAL 1/2 may need a rebase before refactor/finalize; not blocking, just visibility."` Cheap
+> (one `git log` call), does not replace WORKTREE.md's own staleness-rebase — only guarantees the
+> drift is surfaced even when the later switch takes the skip-because-already-in-worktree fast path.
+>
+> Run `node ~/.claude/scripts/ship-checkpoint.js route {feature}` and branch — every branch below
+> marks MANUAL 0 → `completed` (routing resolved) and seeds the rest of the `TaskCreate` list per
+> the stated statuses:
 >
 > **Cross-check before trusting `"phase3-completion"`**: the router derives this purely from
 > `results.verify.remainingManualItems` (the array). If the checkpoint instead carries a

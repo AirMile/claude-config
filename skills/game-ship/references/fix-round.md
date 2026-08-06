@@ -2,33 +2,23 @@
 
 Loaded from `phase-3-playtest.md § Findings ledger + routing` when the ledger has more than a couple
 of obvious cosmetic tweaks. Mirrors PHASE 0's define gate: bookkeeping is hoisted before plan mode,
-the round's fix **design** runs inside plan mode (Opus, under an `opusplan`-style router),
-`ExitPlanMode` is the single go/no-go, and execution (dispatch) runs after, on the execution model
-(Sonnet). Unlike PHASE 0, the input here — the findings ledger — is already durable on the checkpoint
-before this file is even read, so a cross-session death during the gate loses only the in-progress
-plan draft, never the walkthrough's work.
+the round's fix **design** runs inside plan mode (a genuine approval gate per
+`shared/PLAN-MODE.md § Wanneer plan mode` — the design is the reviewable artefact), `ExitPlanMode`
+is the single go/no-go, and execution (dispatch) runs after, on a pinned Sonnet dispatch. The input
+here — the findings ledger — is already durable on the checkpoint before this file is even read, so
+a cross-session death during the gate loses only the in-progress plan draft, never the walkthrough's
+work.
 
 This file owns everything from "the ledger needs a real fix round" through "every finding is resolved
 or explicitly deferred," then returns to `phase-3-playtest.md` for the regression re-check.
 
 ## § Hoisted bookkeeping (before plan mode)
 
-The ledger is already persisted (or, on the round-1 path below, still in memory — see the two cases).
-Before entering plan mode, check whether a plan-mode session is **already active** (the same check
-`§ Round gate`'s `EnterPlanMode` uses — an active plan-mode system-reminder):
-
-- **Not in plan mode yet** (round 2+ re-entry after `§ Re-check`, or a cross-session resume landing
-  directly in this gate) → execute both writes now: patch the checkpoint `playtest.round` incremented
-  (starts at 1 on the first round), and rewrite the live signal **with** `waiting: "fix-plan"` (main
-  checkout, per the worktree caveat) — this must happen **now**, not after `EnterPlanMode`, because
-  plan mode blocks the write and the board would otherwise show "running" while it is actually
-  blocked on the round-gate design work.
-- **Already in plan mode** (round 1, arriving straight from the playtest walkthrough's own plan-mode
-  session — `playtest-interview-walkthrough.md § Step A2`) → both writes are blocked (they are disk
-  writes; plan mode blocks `.project/` and the live signal alike). Defer them to `§ Accept →
-extraction` below. The board keeps showing `waiting: "playtest"` for the duration of the gate —
-  acceptable, since the gate itself is short and this `ExitPlanMode` is the same one that closes the
-  walkthrough's plan mode (`phase-3-playtest.md § Findings ledger + routing`).
+The ledger is already fully persisted (the walkthrough writes each item as it lands —
+`playtest-interview-walkthrough.md § Step E`; there is no in-memory ledger anymore). Every round,
+round 1 included, executes both writes now, before `§ Round gate`'s `EnterPlanMode`: patch the
+checkpoint `playtest.round` incremented (starts at 1 on the first round), and rewrite the live signal
+**with** `waiting: "fix-plan"` (main checkout, per the worktree caveat).
 
 ## § Round gate (plan mode)
 
@@ -121,13 +111,6 @@ file, `ExitPlanMode` again — loop until accepted (mirrors PHASE 0's gate-rejec
 No extraction script — the appendix JSON was authored this same plan-mode session, so the main chat
 parses it directly (a resume that lands back in the gate simply re-plans instead). On accept:
 
-0. **If this gate ran inside the walkthrough's own plan-mode session** (the deferred case from
-   `§ Hoisted bookkeeping` above) — do the deferred writes first, in one batch, right after this
-   `ExitPlanMode`: the walkthrough's batch persist
-   (`playtest-interview-walkthrough.md § Step E, Batch persist`) and the deferred `playtest.round`
-   increment. Skip the `waiting: "fix-plan"` live-signal write — the gate already resolved with this
-   same exit, so go straight to step 3 below's `waiting`-clear. (On a round 2+ gate, both writes
-   already happened in `§ Hoisted bookkeeping` — skip this step.)
 1. Patch the checkpoint: `playtest.fixPlan` = the appendix object.
 2. For every `agent`-dispatch group, write one rich descriptor file to
    `.project/session/ship-prompts/{feature}-fix-{groupId}.txt` — that group's findings (title, steps,

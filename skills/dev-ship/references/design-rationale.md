@@ -7,9 +7,9 @@ reasoning for when you need to understand _why_ the flow is built this way — i
 - **One human touchpoint up front** (PHASE 0: define only — technique passes are auto-derived),
   ending with a **plan-approval gate**: after define + classify the full feature plan is presented in
   plan mode and the user accepts it (or rejects → revise) before build starts. Then hands-off —
-  except the conditional manual-test interlude (PHASE 3). The define-phase HTML preview is a **visual
-  aid shown only when the feature has UI**; the plan-approval gate, not the preview, is the review
-  surface.
+  except the conditional manual-test interlude (PHASE 3). There is no define-phase HTML preview —
+  the ASCII wireframe is reviewed inline at the Step 4b gate itself (`dev-define/workflow.md § PHASE
+4`); the plan-approval gate is the whole review surface.
 - **85/15 is one flow, not two paths.** PHASE 3 either has manual items or falls through to just
   the completion (DONE write) — the merge happens at the end of PHASE 4, after refactor. The
   `verificationProfile` computed in PHASE 0 is an **advisory estimate**; AGENT 2's returned

@@ -77,25 +77,24 @@ signals for the whole session.
 
 Then run the **item-by-item interview walkthrough**: Read
 `.claude/skills/game-ship/references/playtest-interview-walkthrough.md` and execute it for the
-`remainingManualItems` from AGENT 2 — the walkthrough enters plan mode right after the game window
-launches (Step A2), items are presented one at a time against the single running game window, each
-judged live, non-pass verdicts get their detail captured immediately, and a closing interview asks
-what else should feel or behave differently. **Nothing is fixed during this walkthrough** — it only
-builds the findings ledger, collected in memory and batch-persisted to the checkpoint right after the
-`ExitPlanMode` named below (so a killed session resumes mid-walkthrough at the last **persisted**
-item, per § Resume entry).
+`remainingManualItems` from AGENT 2 — no plan mode is involved (the round is interactive collection,
+not a thinking phase — `playtest-interview-walkthrough.md § Plan mode is not used here`), items are
+presented one at a time against the single running game window, each judged live, non-pass verdicts
+get their detail captured immediately, and a closing interview asks what else should feel or behave
+differently. **Nothing is fixed during this walkthrough** — it only builds the findings ledger,
+persisted to the checkpoint item-by-item as each verdict lands (so a killed session resumes
+mid-walkthrough at the last **persisted** item, per § Resume entry).
 
 ## Findings ledger + routing
 
-You are still inside the walkthrough's plan mode here — this routing decision determines **which**
-`ExitPlanMode` closes it. Route on the accumulated in-memory ledger (`playtest.items` + any
-interview-close findings):
+No plan mode is involved here — the ledger is already fully persisted item-by-item, so this is a
+plain routing decision on `playtest.items` + any interview-close findings:
 
-| Ledger state                                                                      | Route                                                                                                                                                                         |
-| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No Fail/Tweak findings (all Pass, or only Skip/Defer)                             | `ExitPlanMode` now (short summary, e.g. "all N items pass") → batch-persist (walkthrough § Step E) → Regression re-check → Step 3                                             |
-| ≤3 findings, all DEBUG-LADDER tier 1 (symptom + cause both visible) and in-scope  | `ExitPlanMode` now → batch-persist → **Inline fix now** (below) → Regression → Step 3                                                                                         |
-| Anything else (any TESTABLE finding, >2 findings, or an unclear/multi-script fix) | Stay in plan mode — Read `fix-round.md` and run the round gate; **its** `ExitPlanMode` (presenting interview outcome + fix plan together) closes this walkthrough's plan mode |
+| Ledger state                                                                      | Route                                                                                                                     |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| No Fail/Tweak findings (all Pass, or only Skip/Defer)                             | Summarize (e.g. "all N items pass") → Regression re-check → Step 3                                                        |
+| ≤3 findings, all DEBUG-LADDER tier 1 (symptom + cause both visible) and in-scope  | **Inline fix now** (below) → Regression → Step 3                                                                          |
+| Anything else (any TESTABLE finding, >2 findings, or an unclear/multi-script fix) | Read `fix-round.md` and run the round gate; **it** does its own fresh `EnterPlanMode` — this walkthrough never opened one |
 
 **Inline fix now** — for each qualifying finding: fix it directly in the main chat, Read
 `shared/DEBUG-LADDER.md` and apply tier 1 (symptom + cause both visible, ≤1-2 scripts/scenes),
@@ -107,7 +106,7 @@ bullet — capped at 3 attempts per finding, no round-gate: after each attempt, 
 resume landing back on this item, read the existing `tweakAttempts` first and continue counting —
 never reset to 1.
 
-- **Satisfied at attempt ≤3** → clear `tweakAttempts`, `verdict: "pass"` in the same batch-persist.
+- **Satisfied at attempt ≤3** → clear `tweakAttempts`, `verdict: "pass"` in the same upsert.
 - **Turns out to need real investigation mid-loop** → re-file it as a failing finding immediately
   and drop out of this loop into `fix-round.md`'s Still-failing path, even if `tweakAttempts` hasn't
   hit 3 yet.

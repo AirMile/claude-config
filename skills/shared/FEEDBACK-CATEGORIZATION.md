@@ -14,10 +14,18 @@ mechanics.
 | MEASURABLE | A **relative threshold** with no clean unit test — timing, styling, layout, feel, a value that's "too much / too little" | **Direct fix** + re-check (live re-check where an app/game is running); no reproduction test |
 | SUBJECTIVE | **Vague** — "feels off", "looks wrong", "doesn't feel right" — not actionable as stated                                  | Cannot fix as-is → clarify first (below)                                                     |
 
-**SUBJECTIVE → clarify → re-categorize (mandatory).** Never hand a SUBJECTIVE item to a fix — ask
-**one** clarifying `AskUserQuestion` to make it concrete (which element/target, expected vs seen, too
-much/too little, wrong position/timing/behaviour, visual/audio/other), then re-categorize the answer
-as TESTABLE or MEASURABLE and route accordingly.
+**SUBJECTIVE → clarify → re-categorize (mandatory) — unless a route already answers it.** The
+mandatory-clarify rule is about **verdicts**, not routes: Claude never infers a verdict or a
+category from unverified prose. But when a caller already has a machine-recorded observation that
+pins the category on its own — e.g. dev-ship's manual round has `stepLog[divergedAt]`
+(`manual-interview-walkthrough.md § Step B3`), naming both the diverging step and what was
+observed against `expected` — that is not "unverified prose," it is an artefact Claude can check,
+and classifying from it is a route (which category, which fix lane), not a verdict (does it
+work). In that case, skip the modal: classify directly and print one line naming what was checked.
+When no such artefact exists, the modal stays mandatory as before — ask **one** clarifying
+`AskUserQuestion` to make it concrete (which element/target, expected vs seen, too much/too little,
+wrong position/timing/behaviour, visual/audio/other), then re-categorize the answer as TESTABLE or
+MEASURABLE and route accordingly.
 
 **How to fix, once categorized:** follow `shared/DEBUG-LADDER.md` — MEASURABLE is a tier-1 direct fix;
 TESTABLE is tier-2 (confirm the cause with evidence before editing). A failed round escalates a tier.

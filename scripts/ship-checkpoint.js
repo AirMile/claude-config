@@ -41,10 +41,12 @@
 // - signal-clear: remove active-<name>.json. Exit 0 whether or not it existed.
 // - item:         upsert one or more ledger items by "id" into the checkpoint's
 //                 manual.items (or playtest.items) array — append if the id is
-//                 new, replace in place if it already exists. Stdin accepts either
-//                 a single item object or a JSON array of item objects (batch
-//                 upsert, one atomic write — see manual-interview-walkthrough.md
-//                 § Batch persist).
+//                 new, REPLACE the whole item in place if it already exists (not a
+//                 field-level merge — the caller must send the item's full current
+//                 record, not just the changed field). Stdin accepts either a
+//                 single item object or a JSON array of item objects (batch upsert
+//                 across items, one atomic write — see manual-interview-walkthrough.md
+//                 § Step E).
 // - route:        print `{"route": "...", "resume": {...}|null}` for the given
 //                 checkpoint (no write) — the deterministic replacement for the
 //                 orchestrator's former prose routing (dev-ship/game-ship
@@ -336,9 +338,18 @@ if (cmd === "init") {
       // happened yet (dev-ship/references/phase-3-manual-finalize.md
       // § Verdict-flip rule).
       if (i.verdict === "tweak") return Boolean(i.offload);
-      return ["pass", "skip", "defer", "accepted", "offloaded"].includes(
-        i.verdict,
-      );
+      // "deferred" is the literal verdict string phase-3-manual-finalize.md
+      // (§ Step 3, knownIssues payload) and completion-sync.js's own
+      // KNOWN_ISSUE_VERDICTS both use for a Skip/Defer manual item -- keep
+      // "defer" too for any older checkpoint that predates that convention.
+      return [
+        "pass",
+        "skip",
+        "defer",
+        "deferred",
+        "accepted",
+        "offloaded",
+      ].includes(i.verdict);
     });
     if (!allResolved) return false;
     if (

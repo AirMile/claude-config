@@ -2,11 +2,12 @@
 
 Loaded from `phase-3-manual-finalize.md § Findings ledger + routing` when the ledger has more than a
 couple of obvious cosmetic tweaks. Mirrors PHASE 0's define gate: bookkeeping is hoisted before plan
-mode, the round's fix **design** runs inside plan mode (Opus, under an `opusplan`-style router),
-`ExitPlanMode` is the single go/no-go, and execution (dispatch) runs after, on the execution model
-(Sonnet). Unlike PHASE 0, the input here — the findings ledger — is already durable on the
-checkpoint before this file is even read, so a cross-session death during the gate loses only the
-in-progress plan draft, never the walkthrough's work.
+mode, the round's fix **design** runs inside plan mode (a genuine approval gate per
+`shared/PLAN-MODE.md § Wanneer plan mode` — the design is the reviewable artefact), `ExitPlanMode`
+is the single go/no-go, and execution (dispatch) runs after, on a pinned Sonnet dispatch. The input
+here — the findings ledger — is already durable on the checkpoint before this file is even read, so
+a cross-session death during the gate loses only the in-progress plan draft, never the walkthrough's
+work.
 
 This file owns everything from "the ledger needs a real fix round" through "every finding is
 resolved or explicitly deferred," then returns to `phase-3-manual-finalize.md` for the regression
@@ -14,28 +15,19 @@ re-check.
 
 ## § Hoisted bookkeeping (before plan mode)
 
-The ledger is already persisted (or, on the round-1 path below, still in memory — see the two cases).
-Before entering plan mode, check whether a plan-mode session is **already active** (the same check
-`§ Round gate`'s `EnterPlanMode` uses — an active plan-mode system-reminder):
+The ledger is already fully persisted (the walkthrough writes each item as it lands —
+`manual-interview-walkthrough.md § Step E`; there is no in-memory ledger to worry about anymore).
+Every round, round 1 included, executes both writes now, before `§ Round gate`'s `EnterPlanMode`
+(plan mode blocks both once entered): patch the checkpoint `manual.round` incremented (starts at 1
+on the first round), and rewrite the live signal **with** `waiting: "fix-plan"` (main checkout, per
+the worktree caveat).
 
-- **Not in plan mode yet** (round 2+ re-entry after `§ Re-check`, or a cross-session resume landing
-  directly in this gate) → execute both writes now: patch the checkpoint `manual.round` incremented
-  (starts at 1 on the first round), and rewrite the live signal **with** `waiting: "fix-plan"` (main
-  checkout, per the worktree caveat) — this must happen **now**, not after `EnterPlanMode`, because
-  plan mode blocks the write and the board would otherwise show "running" while it is actually
-  blocked on the round-gate design work.
-  **This bullet is mandatory on EVERY fix attempt past the first**, not just a formal "round 2" —
-  if `§ Re-check` sends any finding back for another fix (a failed polish-loop attempt that got
-  re-classified per the hard rule in `§ Re-check`, a re-dispatch, anything beyond the original
-  batch), that is round 2+ by definition: increment `manual.round` and come back through this gate
-  with a fresh `EnterPlanMode` + a new JSON appendix. There is no sanctioned "just fix it again
-  inline" path once the first dispatch has run and failed.
-- **Already in plan mode** (round 1, arriving straight from the interview walkthrough's own plan-mode
-  session — `manual-interview-walkthrough.md § Step A3`) → both writes are blocked (they are disk
-  writes; plan mode blocks `.project/` and the live signal alike). Defer them to `§ Accept →
-extraction` below. The board keeps showing `waiting: "manual-tests"` for the duration of the gate —
-  acceptable, since the gate itself is short and this `ExitPlanMode` is the same one that closes the
-  interview's plan mode (`phase-3-manual-finalize.md § Findings ledger + routing`).
+**This is mandatory on EVERY fix attempt**, not just a formal "round 2" — if `§ Re-check` sends any
+finding back for another fix (a failed polish-loop attempt that got re-classified per the hard rule
+in `§ Re-check`, a re-dispatch, anything beyond the original batch), that is round 2+ by definition:
+increment `manual.round` and come back through this gate with a fresh `EnterPlanMode` + a new JSON
+appendix. There is no sanctioned "just fix it again inline" path once the first dispatch has run and
+failed.
 
 ## § Round gate (plan mode)
 
@@ -135,14 +127,6 @@ file, `ExitPlanMode` again — loop until accepted (mirrors PHASE 0's gate-rejec
 No extraction script — the appendix JSON was authored this same plan-mode session, so the main chat
 parses it directly (a resume that lands back in the gate simply re-plans instead). On accept:
 
-0. **If this gate ran inside the interview's own plan-mode session** (the deferred case from
-   `§ Hoisted bookkeeping` above) — do the deferred writes first, in one batch, right after this
-   `ExitPlanMode`: the walkthrough's batch persist
-   (`manual-interview-walkthrough.md § Step E, Batch persist`) and the deferred `manual.round`
-   increment. Skip the `waiting: "fix-plan"` live-signal write — the gate already resolved with this
-   same exit, so go straight to step 3 below's plain `signal` rewrite (drop only the `waiting` key —
-   this is NOT the `signal-clear` subcommand, which would wrongly park the board mid-dispatch). (On a
-   round 2+ gate, both writes already happened in `§ Hoisted bookkeeping` — skip this step.)
 1. Patch the checkpoint: `manual.fixPlan` = the appendix object **read from the plan file's
    `## Appendix` block** — do not re-author it from memory. Missing block = a process error: go back
    and add it to the plan file first, do not reconstruct it ad hoc in the patch call.
@@ -241,40 +225,40 @@ entry` bullet 5 — no verdict, no `debugTier` set, dispatch already complete), 
   `tweakAttempts` first and continue counting from there — never reset to 1, or a crash/`/clear`
   becomes a way to dodge the cap.
   - Satisfied at attempt ≤3 → clear `tweakAttempts`, `verdict: "pass"`, done.
-  - Still not right after 3 attempts → stop looping — this is now evidence the MEASURABLE/≤1-2-file
-    classification was wrong, not a reason to keep guessing. `AskUserQuestion` — header: "Tweak not
-    converging", question: "This hasn't landed after 3 tries — {title}. What next?":
-    1. **"Escalate to root-cause analysis (Recommended)"** → clear `tweakAttempts`, then handle
-       exactly as the Otherwise bullet below (fail-class park) — treat it as evidence this belongs
-       in the debug ladder after all.
-    2. **"Accept anyway"** → clear `tweakAttempts`, `verdict: "accepted"`, done — same semantics as
-       the debug ladder's own terminal accept (`debug-round-heavy.md § 8`), reachable directly here
-       since forcing two more tiers on something the user is already fine leaving as-is would be
-       wasted effort.
+  - Still not right after 3 attempts → this is now evidence the MEASURABLE/≤1-2-file classification
+    was wrong, not a reason to keep guessing — and it's a **route**, not a verdict, so Claude
+    decides directly instead of asking (`manual-interview-walkthrough.md § Step C`'s verdict-vs-route
+    rule): this loop is MEASURABLE-only by construction (the hard rule above), so **route to Offload
+    flush**, not the debug ladder — a cosmetic finding that survived 3 tweak attempts is, by the
+    size gate's own "default to TWEAK when it's a close call" rule, definitionally a close call, not
+    an escalation. Clear `tweakAttempts`, run `phase-3-manual-finalize.md § Offload flush`. Print:
+    `3 pogingen, convergeert niet — {titel} gaat naar een TWEAK-kaart.` naming an "accepteer"
+    undo verb that stays live for one turn (falls to the same terminal accept semantics as
+    `debug-round-heavy.md § 8` — `verdict: "accepted"`, no card created — if the user takes it in
+    that window).
 - **Anything else that's tweak-class AND every other open finding this round is also tweak-class**
   (never when any open finding is `fail`-class — see the Fail-never-to-todo policy in
-  `phase-3-manual-finalize.md § Findings ledger + routing`) → one `AskUserQuestion`, the only choice
-  point on this path. When **every** remaining tweak-class finding is DEBUG-LADDER tier 1 and
-  in-scope (the same band `phase-3-manual-finalize.md § Findings ledger + routing`'s partition row
-  uses), offer:
-  1. **"Fix inline now (Recommended)"** → run `phase-3-manual-finalize.md § Inline fix now` for each
-     remaining finding, then proceed to the regression re-check and completion on the verified
-     scope.
-  2. **"Offload to TWEAK card(s)"** → run `phase-3-manual-finalize.md § Offload flush` for each
-     remaining finding instead, then proceed the same way.
-  3. **"Park — debug in a fresh chat"** → same park mechanics as below.
-
-  When at least one remaining tweak-class finding falls outside that band, drop the inline option —
-  offer only:
-  1. **"Offload to TWEAK card(s) (Recommended)"** → run
-     `phase-3-manual-finalize.md § Offload flush` for each remaining finding, then proceed to the
-     regression re-check and completion on the verified scope.
-  2. **"Park — debug in a fresh chat"** → same park mechanics as below.
+  `phase-3-manual-finalize.md § Findings ledger + routing`) → a **route, not a verdict**
+  (`manual-interview-walkthrough.md § Step C`'s verdict-vs-route rule) — decide directly, using the
+  same band `phase-3-manual-finalize.md § Findings ledger + routing`'s partition row already uses,
+  and report the outcome in one line instead of asking:
+  - **Every** remaining tweak-class finding is DEBUG-LADDER tier 1 and in-scope → run
+    `phase-3-manual-finalize.md § Inline fix now` for each, then proceed to the regression re-check
+    and completion on the verified scope. Print: `{N} tweak(s) fixed inline — {titles}.`
+  - **At least one** remaining tweak-class finding falls outside that band → run
+    `phase-3-manual-finalize.md § Offload flush` for **every** remaining finding on this path
+    (not just the ones outside the band — a mixed batch offloads as one unit so the ledger doesn't
+    split silently), then proceed the same way. Print: `{N} tweak(s) offloaded to TWEAK card(s) —
+{titles}.`
+    Park is not a route this bullet ever reaches on its own — nothing here is `fail`-class by this
+    bullet's own precondition, so the Otherwise bullet below owns every park decision.
 
 - **Otherwise (any `fail`-class finding, or any tweak — substantial or cosmetic — with a `fail`
-  sibling this round)** → park (one optional diagnostic question — e.g. what specifically changed
-  after the fix attempt — is allowed first, to sharpen `lightRoundNotes`; do not loop past that
-  single question):
+  sibling this round)** → park. Source `lightRoundNotes` directly from the finding's
+  `stepLog[divergedAt]` (`manual-interview-walkthrough.md § Step B3` — the step that diverged and
+  what was observed, already durable) instead of asking a diagnostic question; a finding with no
+  `stepLog` (e.g. it entered the ledger from the interview close, not a guided walk) falls back to
+  its `observed`/`expected` fields, still no question asked:
   1. Patch the ledger item: `debugTier: "light"`, and clear `tweakAttempts` if it was set from an
      escalated tweak loop above (via `ship-checkpoint.js item {feature} manual` — this write happens
      outside plan mode, we're back in the main-chat re-check step, not the gate).

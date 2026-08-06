@@ -74,7 +74,7 @@ State handoff between skills via `.project/session/devinfo.json` (schema: `share
 
 ## Key Patterns
 
-- **`.project/`**: all runtime artifacts (gitignored) — wireframes, config, session, screenshots, previews (`.project/previews/` = auto-opening HTML previews from dev-ship's define phase/design-tokens/design-convert via `shared/HTML-PRESENT.md`)
+- **`.project/`**: all runtime artifacts (gitignored) — wireframes, config, session, screenshots, previews (`.project/previews/` = auto-opening HTML previews from design-tokens/design-convert via `shared/HTML-PRESENT.md` — dev-ship's define phase has no HTML preview; the wireframe is reviewed inline at the Step 4b plan-approval gate), `.project/session/` = live checklist files for interactive rounds (manual/playtest walkthroughs, `shared/HTML-PRESENT.md`'s sibling non-HTML reading surface)
 - **`.project/project.json`**: central project dashboard (seed, design, theme, stack, endpoints, entities — `schemaVersion: 2`). Runtime context (architecture, context, learnings) lives in `project-context.json`; features in `backlog.json`. Schema: `shared/DASHBOARD.md`. Per-project CLAUDE.md references this for runtime context.
 - **Format-on-save**: hook runs Prettier (web) or gdformat (GDScript) after every Write/Edit
 - **Backlog**: `.project/backlog.json` (data store; board UI rendered by the server) with status TODO (To define) → DEFINED (To build) → DOING (To verify) → DONE (To refactor) → shipped (archived to `.project/archive/backlog-archive.json`)
