@@ -1,11 +1,11 @@
 ---
 name: core-commit
 description: Generate conventional commit messages from staged diffs. Use with /core-commit.
-reads: [feature.externalRef]
+reads: [feature.externalRef, team.commitConvention]
 writes: [team.commitConvention, team.ticketPrefix]
 metadata:
   author: claude-config
-  version: 1.4.0
+  version: 1.5.0
   category: core
 ---
 
@@ -56,8 +56,10 @@ Once per project (cache in `project.json#team`). Skip if `team.commitConvention`
    - Cache in `project.json#team.commitConvention`. For ticket-prefix: extract prefix (e.g. `"JIRA"`) → `project.json#team.ticketPrefix`.
    - No `.project/project.json` present (e.g. this tool's own meta-repo) → skip caching; detect convention fresh each session from `git log` only.
 
-2. **externalRef detect** (per commit, always):
-   - Search `feature.json` for current branch → check `externalRef`:
+2. **externalRef detect** (per commit, unless not applicable):
+   - No `.project/features/` directory at all → not applicable, skip step 2 silently.
+   - Otherwise read `.project/features/<branch-or-feature-name>/feature.json` → check
+     `externalRef`:
      - `type === "github"` → prefix suggestion: `(#{id})` as suffix
      - `type === "jira"` or `"linear"` → prefix suggestion: `{id}: ` as prefix
    - No feature.json → check branch name against `[A-Z]+-\d+` regex → use as prefix suggestion
