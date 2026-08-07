@@ -38,8 +38,8 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
    **Pre-existing untracked feature files on main** (e.g. large source content the main
    chat wrote directly during define, before your worktree existed): do **not** skip
    worktree creation to avoid losing them — `git stash -u` on main first, `git worktree
-   add` as normal, then `git stash pop` inside the new worktree before your first build
-   step. The worktree invariant has no exception; only the *order* changes. A stash-pop
+add` as normal, then `git stash pop` inside the new worktree before your first build
+   step. The worktree invariant has no exception; only the _order_ changes. A stash-pop
    conflict is a build blocker (`status: failed`), never a reason to improvise a
    direct-main build.
    Verify/refactor-agent: use the existing worktree (same absolute-path pattern, no
@@ -52,8 +52,15 @@ adapter wins** — the workflow was written to be run standalone; you are not ru
    verify probes) is allowed and expected. **If you cannot spawn sub-agents in this environment, run
    the same analysis INLINE** (read the files, apply the lens/probe yourself) — never skip the
    analysis, only change how it runs.
-10. **Background processes** — if you launch a dev server (`run_in_background`), store its PID and
-    **kill it before returning**. Never leak background processes.
+10. **Background processes** — two distinct rules:
+    - **Long-lived services** (a dev server via `run_in_background`): store the PID and
+      **kill it before returning**. Never leak background processes.
+    - **Your own verification** (test suite, linter, compile): run it **synchronously** and
+      wait for the exit in the same tool call. Never background it, and **never end your turn
+      waiting on a background job** — your turn ending IS your return, so a turn that ends on
+      a wait produces a task-notification with no result block, and the main chat has to redo
+      your work. A slow suite is not a reason to background it; raise the Bash `timeout`
+      instead.
 11. **TEAM_MODE / `gh` dispatch** — you never reach it (verify-agent skips finalize). Ignore
     `finalize.md`'s PR-state dispatch.
 12. **ToolSearch** — only load the deferred tools you actually use. Do **not** load

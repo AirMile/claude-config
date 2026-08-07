@@ -48,6 +48,32 @@ not blindly relaunch with `resumeFromRunId` on faith; verify first.
 4. No evidence of any progress (no worktree, no commits) → treat as a fresh launch of
    the same phase — `phase`/`completedPhases` on the checkpoint are unaffected either way.
 
+## 1b. Mid-run scope change
+
+The user can add or change a requirement while a phase is already running. **Check what the
+running work has already produced before you stop it** — the mirror of § 1a's
+verify-before-resume discipline. Elapsed-time intuition is not evidence.
+
+1. Read `journal.jsonl` in the workflow's transcript dir (the launch result names the path).
+   A `result` line means that agent finished; its return value is cached and survives a stop.
+2. Decide from that:
+   - **The running phase has not yet produced the artefact the new scope touches** (no
+     worktree, no commits) → `TaskStop`, patch `feature.json`, relaunch the same Workflow
+     fresh.
+   - **The running phase already finished it** (journal shows a green `build` result) →
+     `TaskStop` only the not-yet-finished tail, then run a **focused follow-up pass** on the
+     existing worktree for the new REQ alone. Feed the new REQ into the verify pointer file
+     before verify runs, or verify judges against a contract it was never given.
+3. Either way patch `feature.json` **before** dispatching: the new REQ with its
+   `acceptance[]`, the affected `files[]` entries, a new `buildSequence` step, and any
+   `durableDecision` the change forces. An agent dispatched without it builds and verifies
+   against a stale contract.
+4. Persist the salvaged result to the checkpoint (`results.build` / `results.verify`) with a
+   `note` naming the split, so `route` and a later session still see one coherent run.
+
+A scope change is never a reason to restart from PHASE 0 — `feature.json` is the contract and
+the gate already approved everything except the delta.
+
 ## 2. Route on the checkpoint
 
 Run `node ~/.claude/scripts/ship-checkpoint.js route {feature}` — it reads
@@ -118,9 +144,12 @@ parked from /dev-ship auto-verify (exceeds tweak size gate: {criterion})"` (plai
   covered-by match — count it as `nonActionable` instead of forcing it into either bucket.
   **Completion check**: after the loop,
   print one line — `Offload: {cardsCreated}/{M} notes → cards, {alreadyCovered} already covered,
-  {nonActionable} non-actionable` (`M` = `verify.improvementNotes.length`) — confirming
-  `cardsCreated + alreadyCovered + nonActionable` equals `M` before proceeding; a printed
-  mismatch is the signal that an invocation was skipped instead of run.
+{nonActionable} non-actionable, {routedToThisRun} routed into this run` (`M` =
+  `verify.improvementNotes.length`) — confirming the four counts sum to `M` before proceeding;
+  a printed mismatch is the signal that an invocation was skipped instead of run.
+  `routedToThisRun` covers a note AGENT 2 already surfaced as a remaining manual item or an
+  open design call for PHASE 3: it is neither parked nor dismissed, so counting it as
+  `nonActionable` would misreport an open decision as closed.
   These are AGENT 2's own observations, never a ledger item, so there's no `offload` field to
   upsert or verdict to set regardless of which card type they landed on. Do this before
   either branch below, since it applies regardless of which one fires. Branch on
