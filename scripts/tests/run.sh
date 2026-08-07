@@ -1041,6 +1041,53 @@ run_tm "seeded phase without header → WARN, exit 1" mismatch 1 "PHASE 2 has no
 run_tm "seeded phase never completed → WARN, exit 1" mismatch 1 'PHASE 2 is never marked `completed`'
 run_tm "unparsable seed → PARSE-SKIP, non-fatal exit 0" parse-skip 0 "PARSE-SKIP"
 
+# --- skill-feedback.js ---
+# Store lives outside the repo (~/.claude/skill-feedback.json), so every case
+# redirects it into a throwaway file via CLAUDE_SKILL_FEEDBACK_FILE.
+SF="$ROOT/scripts/skill-feedback.js"
+export CLAUDE_SKILL_FEEDBACK_FILE="$TMP/skill-feedback.json"
+rm -f "$CLAUDE_SKILL_FEEDBACK_FILE"
+
+run_sf() {
+  local label="$1" want="$2" actual="$3"
+  if [ "$actual" = "$want" ]; then
+    echo "PASS  skill-feedback: $label"
+    PASS=$((PASS + 1))
+  else
+    echo "FAIL  skill-feedback: $label (got: $actual, want: $want)"
+    FAIL=$((FAIL + 1))
+  fi
+}
+
+# (a) Batch add: two notes in one call → two rows.
+SF_ADD=$(node "$SF" add --skill dev-ship --note "verify asked too many questions" --note "debug-round.md loaded but unused" | grep -c '^stored #')
+run_sf "batch add stores each --note" "2" "$SF_ADD"
+
+# (b) Near-identical note for the same skill → recurrence bump, no new row.
+SF_DUPE=$(node "$SF" add --skill dev-ship --note "verify asked too MANY questions!" | tr -d '\n')
+run_sf "near-duplicate bumps count instead of adding" "stored #1 dev-ship (seen 2x)" "$SF_DUPE"
+
+# (c) Same text under a different skill is a distinct note (dedup is per-skill).
+SF_OTHER=$(node "$SF" add --skill core-commit --note "verify asked too many questions" --source user | tr -d '\n')
+run_sf "dedup is scoped per skill" "stored #3 core-commit (new)" "$SF_OTHER"
+
+# (d) list --skill filters, and orders most-recurrent first.
+SF_LIST=$(node "$SF" list --skill dev-ship | head -1 | awk '{print $1, $2}')
+run_sf "list --skill orders most-recurrent first" "#1 2x" "$SF_LIST"
+
+# (e) resolve drops the row from the default (open-only) listing; an unknown id warns, exit 0.
+node "$SF" resolve 1 999 > /dev/null 2>&1
+SF_RESOLVE_EXIT=$?
+SF_OPEN=$(node "$SF" list --skill dev-ship | wc -l | tr -d ' ')
+run_sf "resolve is non-fatal on an unknown id" "0" "$SF_RESOLVE_EXIT"
+run_sf "resolved note leaves the open listing" "1" "$SF_OPEN"
+
+# (f) Empty result → no output, exit 0 (silent-skip contract for unconditional callers).
+SF_EMPTY=$(node "$SF" list --skill no-such-skill; echo "exit=$?")
+run_sf "no matches → silent, exit 0" "exit=0" "$SF_EMPTY"
+
+unset CLAUDE_SKILL_FEEDBACK_FILE
+
 echo
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

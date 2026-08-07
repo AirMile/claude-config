@@ -52,6 +52,8 @@ Runs after the `ExitPlanMode` exit (normal mode — writes are unblocked again).
 
 Bump the audited skill's `metadata.version`: minor bump for significant changes, patch for a minors-only pass.
 
+Step 2.2 listed stored notes (`#id`) → close the ones an applied change actually addresses: `node ~/.claude/scripts/skill-feedback.js resolve <id> [<id>...] --reason "<skill> v<new-version>"`. Resolve only those — a note whose change was rejected or never proposed stays open on purpose, so it comes back (with a higher recurrence count) at the next audit.
+
 ## 5.4 Verify
 
 1. Re-read the modified files
@@ -68,6 +70,7 @@ Changes applied: [n] significant + [n] minor
 - [change titles]
 
 Version: [old] → [new]
+Stored notes: [n/a | resolved #id, #id | n left open]
 Frontmatter: [valid | issues found]
 References: [ok | missing/orphans]
 Counterpart: [n/a | sync needed: [skill]]

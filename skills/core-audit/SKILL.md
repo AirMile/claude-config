@@ -3,7 +3,7 @@ name: core-audit
 description: Use with /core-audit to analyze and refine a skill from this conversation.
 metadata:
   author: claude-config
-  version: 4.8.0
+  version: 4.9.0
   category: core
 ---
 
@@ -56,14 +56,18 @@ Announce: `MODE: trace — real run found in conversation` or `MODE: static — 
 
 ### 2.2 User pain points
 
-**Observation note captured in Step 1** → skip the modal below entirely:
+Gather candidate observations from three sources — never ask for something already available:
 
-- Show `OBSERVATION (from argument): "[note]"` and set the note as the priority lens — map it onto one of the canned categories below where it clearly fits, but the raw note stays authoritative. Proceed straight to Step 3/4 (trace or static, whichever mode applies).
-- Note is too vague or incomplete to act on (no direction can be derived from it) → ask exactly ONE targeted follow-up: an `AskUserQuestion` that quotes the note and asks specifically for the missing detail — not the generic 4-option modal below.
+1. **Argument note** from Step 1 — authoritative, and it alone decides the lens.
+2. **Self-reported in this conversation** — skill feedback the executor raised after the target skill's own run (`~/.claude/CLAUDE.md § Skill Feedback`). Already on screen; re-asking re-requests it.
+3. **Stored notes** — run `node ~/.claude/scripts/skill-feedback.js list --skill [name]`. No output = nothing stored (silent-skip contract, exit 0). Each line is `#id  Nx  date  skill  note`; keep the ids, Step 5 resolves the ones the refactor addresses.
 
-**Skill feedback the executor itself raised in the conversation** (`~/.claude/CLAUDE.md § Skill Feedback`'s self-observed half, reported after the target skill's own run) counts as the observation note: quote it back as `OBSERVATION (self-reported): "[note]"`, set it as the priority lens, and skip the modal below. Asking anyway re-requests something already on screen.
+Then branch on what came back:
 
-**No observation note, trace mode** → ask:
+- **Argument note present** → show `OBSERVATION (from argument): "[note]"`, set it as the priority lens, no modal. Stored notes for this skill still get listed underneath as `ALSO STORED: #id (Nx) [note]` — secondary lenses the analysis folds in where they fit. Note too vague to act on (no direction derivable) → exactly ONE targeted `AskUserQuestion` that quotes it and asks for the missing detail, not the generic modal below.
+- **No argument note, exactly one candidate** → use it: `OBSERVATION (self-reported | stored #id, seen Nx): "[note]"`, priority lens, no modal.
+- **No argument note, two or more candidates** → AskUserQuestion: header "Observation", question "Which of these should the [name] audit prioritise?", multiSelect: true. One option per candidate, ranked by recurrence count, then self-reported, then the rest; first option gets "(Recommended)". Label = the note shortened to a readable phrase, description = source + `seen Nx` + last date. Max 4 options — more candidates → name the remainder in one prose line above the modal (the built-in Other still reaches them).
+- **No candidates, trace mode** → ask:
 
 AskUserQuestion:
 
@@ -76,7 +80,7 @@ AskUserQuestion:
   - label: "Output wrong or too verbose", description: "Results missed the mark or buried the signal"
   - label: "I had to correct or re-steer", description: "Claude deviated from what the skill should do"
 
-**No observation note, static mode** → skip: there is no run to ask about.
+**No candidates, static mode** → skip: there is no run to ask about.
 
 Each selected or derived pain point becomes a priority lens: findings in Steps 3–4 that explain it rank above generic findings.
 
