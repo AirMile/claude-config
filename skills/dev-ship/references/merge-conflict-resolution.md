@@ -41,9 +41,14 @@ pull each side's complete pre-merge file out of the merge index instead of reaso
 marker fragments alone:
 
 ```bash
-git show :2:<path> > /tmp/ours.txt    # HEAD's version (stage 2)
-git show :3:<path> > /tmp/theirs.txt  # incoming branch's version (stage 3)
+# Scope per conflicting path: a second conflict in the same session, or a
+# leftover from a killed one, would silently reuse the previous content.
+slug=$(printf '%s' "<path>" | tr '/' '_')
+git show :2:<path> > "/tmp/merge-ours-$slug"    # HEAD (stage 2)
+git show :3:<path> > "/tmp/merge-theirs-$slug"  # incoming (stage 3)
 ```
+
+Remove both once the conflict is resolved (`rm -f /tmp/merge-ours-$slug /tmp/merge-theirs-$slug`).
 
 Having both complete files lets you diff them directly, which is far more reliable than parsing
 interleaved `<<<<<<<`/`=======`/`>>>>>>>` fragments for anything beyond a one-hunk conflict.

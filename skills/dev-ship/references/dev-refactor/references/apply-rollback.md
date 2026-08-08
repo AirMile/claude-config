@@ -33,11 +33,14 @@
 
    ```bash
    for file in {shared_files_for_this_feature}; do
-     cp "$file" "/tmp/refactor-snapshot-{feature_name}-$(basename $file)"
+     # Key on the full path, not basename: src/index.ts and lib/index.ts
+     # would share one snapshot and roll back the wrong file.
+     slug=$(printf '%s' "$file" | tr '/' '_')
+     cp "$file" "/tmp/refactor-snapshot-{feature_name}-$slug"
    done
    ```
 
-   Rollback for shared files uses the snapshot, not `git checkout` (which would also undo preceding features' accepted changes to that file).
+   Rollback for shared files uses the snapshot, not `git checkout` (which would also undo preceding features' accepted changes to that file). Rebuild the same `$slug` on the rollback side — a snapshot restored under a different key silently restores nothing.
 
    b. **Apply improvements using Edit tool:**
    - Follow priority order strictly
@@ -94,13 +97,14 @@
 
      # Files shared with already-applied features — restore from snapshot (not git, to preserve prior feature's edits):
      for file in {shared_files_for_this_feature}; do
-       cp "/tmp/refactor-snapshot-{feature_name}-$(basename $file)" "$file"
+       slug=$(printf '%s' "$file" | tr '/' '_')   # same key as the snapshot
+       cp "/tmp/refactor-snapshot-{feature_name}-$slug" "$file"
      done
      ```
 
      Mark feature as ROLLED_BACK with reason. Continue to next feature.
 
-   d. **Cleanup snapshots:** after the feature is APPLIED or ROLLED_BACK, remove its snapshots — `rm -f /tmp/refactor-snapshot-{feature_name}-*`. Prevents stale snapshots from leaking across sessions or colliding on identical basenames.
+   d. **Cleanup snapshots:** after the feature is APPLIED or ROLLED_BACK, remove its snapshots — `rm -f /tmp/refactor-snapshot-{feature_name}-*`. Prevents stale snapshots from leaking across sessions.
 
    e. **Report per feature:**
 

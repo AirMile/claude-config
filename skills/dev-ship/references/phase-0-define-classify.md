@@ -74,9 +74,12 @@ Plan mode blocks `.project/` writes, so **every** bookkeeping write happens here
    — the board badge follows the pipeline. (Define's own PHASE 0 §3 signal write is **skipped** —
    this is it; see Step 2c.)
 
-3. **Run marker** — set `transition: "shipping"` on the feature's `backlog.json` entry. This keeps
-   the card in the board's IN PROGRESS section between phases, when no agent is running. It is removed
-   by refactor's completion-batch (feature shipped) or by PHASE 5 cleanup on every other exit path.
+3. **Run marker** — ensure `transition: "shipping"` on the feature's `backlog.json` entry. Already
+   set → **no write**; state `Run marker: already set` and move on. That is the common case, not the
+   exception: the board's ⚡ Ship (auto) menu sets it when it queues the card, and Step 1's
+   transition match is precisely how such a card was resolved. This keeps the card in the board's IN
+   PROGRESS section between phases, when no agent is running. It is removed by refactor's
+   completion-batch (feature shipped) or by PHASE 5 cleanup on every other exit path.
 4. **Minimal light checkpoint** (SHIP-CHECKPOINT.md write point 0) — `init`
    `.project/session/ship-{feature}.json` with `pipeline: "dev"`, `feature`, `startedAt`/`updatedAt`,
    `status: "running"`, `phase: "PHASE 0 · define"`, `completedPhases: []`, `baselineSha` (from Step

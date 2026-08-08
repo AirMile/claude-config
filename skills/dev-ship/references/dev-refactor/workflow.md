@@ -67,7 +67,7 @@ The active-feature signal file is written in step 3 — in no-arg mode the featu
 
 2. **Step 2: Determine feature queue:**
 
-   - **Name provided** (`/dev-refactor auth`): validate the feature exists in `.project/features/`; queue = `[auth]` (regardless of refactor status), mode = `feature` → step 3.
+   - **Name provided** (the dev-ship path — AGENT 3's pointer file always names the feature, so this branch always wins here): validate the feature exists in `.project/features/`; queue = `[{feature}]` (regardless of refactor status), mode = `feature` → step 3. The two branches below are reachable only outside dev-ship.
    - **"recent"**: most recently modified `feature.json` with a `tests` section; queue = that feature, mode = `feature` → step 3.
    - **No argument**:
      > **Todo**: Read `.claude/skills/dev-ship/references/dev-refactor/references/queue-selection.md` (UI-queue detection → scope selection → small-items mode), build the queue, then continue to step 3.

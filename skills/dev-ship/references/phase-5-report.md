@@ -89,7 +89,11 @@ requires it at. The debug escalation count appears only when this run used
 `debug-round.md`/`debug-round-heavy.md` — fix rounds and debug escalations are separate
 counters that don't compose into one number.
 `Security:` takes suffix `→ persisted + todo security-{feature}` when the auto-todo fired,
-`→ persisted` when below the threshold, or reads `not run`. `Consult:` takes suffix
+`→ persisted` when below the threshold, or reads `not run`. **When `results.triage`
+carries a non-empty `scannersFailed[]`** (`ship-phase4.js` returns it — see
+`orchestration.md`'s write point 3), append ` · {N} scanner(s) failed:
+{codes}` — without it a half-failed scan reads exactly like a clean one, and the
+`confirmed`/`dismissed` counts silently under-report. `Consult:` takes suffix
 `→ revised` when the consult changed an outcome, `→ confirmed` when it didn't, `sparred (2
 rounds) → revised/confirmed` when a round-2 rebuttal fired, or reads `none` /
 `{context}: unavailable` (`shared/SECOND-OPINION.md § Logging` is authoritative for the full
