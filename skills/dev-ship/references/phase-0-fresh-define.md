@@ -42,7 +42,8 @@ That copy is **already adapted** for dev-ship — it carries no plan-mode machin
   `auto: true` — are deferred to that accept, so a rejected-and-abandoned define leaves no orphan card.
   Any conditional define writes (`00-split.md` + sub-feature `mkdir`s on a split) defer to accept too.
 - **Standing park escape** — every interview/decision question from here to the gate implicitly
-  allows "park this" (wrong moment, wrong order). On any park intent, stop and Read
+  allows "park this" (wrong moment, wrong order, or a premise the loaded context contradicts).
+  On any park intent, stop and Read
   `.claude/skills/dev-ship/references/define-park.md` (the rule itself lives in the workflow's
   Constraints). At the gate itself, Step 4b's Abort covers the same decision.
 

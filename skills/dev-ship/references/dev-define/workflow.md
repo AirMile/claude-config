@@ -31,11 +31,17 @@ PHASE 1 of the dev workflow: define → build → test.
 - **No phase-jump without checkpoint** — the PHASE 1b REQ-checkpoint (numbered REQ list, shown before PHASE 2) precedes architecture; the plan-approval gate (dev-ship Step 4b) is the review surface before feature.json is written.
 - **Standing park escape (PHASE 0→2, up to the gate).** At any point — an open interview
   question, any `AskUserQuestion` (including a free-text "Other" answer), or plain chat — the
-  user may signal this feature should not be built now: "park", "park this", "not now", "wrong
-  order", "another feature first", or equivalent. Treat it as **PARK-ESCAPE**: stop the current
-  phase immediately and Read `.claude/skills/dev-ship/references/define-park.md`. A feature does
-  not have to be built just because define started — a different build order is a legitimate
-  outcome.
+  user may signal this feature should not be built now. Two distinct signals, both PARK-ESCAPE:
+  **ordering** ("park", "park this", "not now", "wrong order", "another feature first", or
+  equivalent) and **premise invalidation** — the loaded context contradicts the card's own stated
+  problem: a measurement in a dependency's `feature.json` refutes it, a later shipped feature
+  already resolved it, or the card was machine-authored from code shape (`source: "/project-todo"`)
+  and no one has observed the symptom. The second is the one PHASE 0's own context load is most
+  likely to surface, and it is easy to mistake for a question about scope — when the evidence and
+  the card disagree, say so and offer the park rather than defining around it. On either signal:
+  stop the current phase immediately and Read
+  `.claude/skills/dev-ship/references/define-park.md`. A feature does not have to be built just
+  because define started — neither a different build order nor a dead premise is a failed run.
 
 ## Workflow
 
@@ -50,7 +56,12 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
 
 1. **Determine feature name.**
 
-   a) **Name provided** (`/dev-define auth`): use as feature name → go to step 2.
+   > **In the dev-ship context this has already run**: `phase-0-define-classify.md` Step 1 resolved
+   > the name with exactly this algorithm before entering plan mode. Take that name and go to
+   > step 2 — do not re-resolve. The branches below stay documented because Step 1 cites them as
+   > the canonical resolution order, not because they fire again here.
+
+   a) **Name provided**: use as feature name → go to step 2.
 
    b) **No name provided** (`/dev-define`): resolve in this priority order:
    1. Backlog transition match — `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` (parse per `shared/BACKLOG.md → Lifecycle Protocol → Read`) → auto-select, show `Backlog: ✓ Task picked up — {name}`, go to step 2.
