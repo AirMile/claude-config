@@ -5,6 +5,17 @@ touched by more than one concern. Do this before staging anything.
 
 ## 0. Inventory the concerns
 
+**Freeze the baseline before anything is staged** — § 3.5's gate compares against it, and once the
+first commit lands the pre-split state is no longer reconstructible:
+
+```bash
+# inside .git → always present, always gitignored, cwd-independent
+SCRATCH="$(git rev-parse --git-dir)/core-commit-split"
+mkdir -p "$SCRATCH"
+git rev-parse HEAD > "$SCRATCH/presplit-head"
+git diff > "$SCRATCH/presplit.diff"
+```
+
 § 1's granularity question is only answerable against a real inventory — derive it first, do not
 infer concerns from directory names.
 
@@ -84,33 +95,54 @@ For each commit, in dependency order:
    entirely — SKILL.md Step 2's load sits behind the blanket "Stage all?" ask this flow bypasses.
 
 2. For each shared file this commit touches, pick one technique:
-   - **`git apply --cached <patch>`** (default when the target hunks are already cleanly
-     `@@`-separated in `git diff <file>`): build a patch containing just those hunks and apply it
-     to the index, leaving the working tree untouched. `git diff` re-lists only the remaining
-     hunks after each apply, so the next commit's selection stays correct by construction.
+   - **`bash .claude/skills/core-commit/scripts/pick-hunks.sh <file> <hunk-index>...`**
+     (default when the target hunks are already cleanly `@@`-separated in `git diff <file>`):
+     stages exactly those hunks into the index via `git apply --cached`, leaving the working
+     tree untouched. Indices are 1-based against the current `git diff -- <file>`, which
+     re-lists only the remaining hunks after each apply — so the next commit's numbering stays
+     correct by construction. Exit 3 = no hunk matched, which means your index list is stale:
+     re-read `git diff` before retrying. Do not hand-build the patch; that is what this script
+     is for.
    - **Progressive Read+Edit** (fallback — works for any file, no patch-format risk; required
-     when two commits' content interleaves below hunk level): the working tree already holds the
-     _final_ state. Save it aside, temporarily Edit out every hunk that belongs to a _later_
-     commit, stage the file, commit, then restore so those hunks are available for their own
-     commit later.
+     when two commits' content interleaves below hunk level). This technique **destroys the
+     only copy of the final state** — the working tree holds content that exists nowhere else,
+     so git cannot recover it. Snapshot first:
+
+     ```bash
+     cp <file> "$SCRATCH/presplit-$(printf '%s' "<file>" | tr '/' '_')"
+     ```
+
+     Then temporarily Edit out every hunk belonging to a _later_ commit, stage, commit, and
+     restore from the snapshot so those hunks are available for their own commit. Keep the
+     snapshots until § 3.5 passes. A session that dies mid-edit recovers from them.
+
+     **Format-on-save fires on every Edit** (project CLAUDE.md § Key Patterns): it may reflow
+     lines you never touched, which both adds formatter noise to the commit and shifts the hunk
+     boundaries the next commit's selection depends on. Prefer the `pick-hunks.sh` path above,
+     which never touches the working tree; after any Edit, re-read `git diff` rather than
+     reusing a hunk list derived before it.
 3. Commit — still subject to Step 5's Confirm gate (or the batch gate on "Auto-commit all").
 4. If a later commit needs to add more content to that same shared file, it starts from the
    state this commit just left behind — do not pre-populate all commits' content at once.
 
-## 3.5. Integrity check (before the final commit)
+## 3.5. Integrity check (after the final commit)
 
-Compare the split's cumulative diff against the original pre-split diff:
-`git diff <pre-split-HEAD>..HEAD --stat`. File count and **deletion count** must match the
-original diff exactly (deletions are a reliable invariant; insertion counts can drift a little
-from estimation but should be in the same ballpark). Mismatch → stop before the final commit
-and find the dropped/duplicated hunk — do not push a split you haven't verified. **Exception**:
-a deletion-count drift of 1-2 lines may be accepted without tracing the exact line only after
-confirming via `git diff` on the specific file(s) involved that the difference is a formatter
-reflow (e.g. re-wrapped prose, reindented table) and not lost content — cite the file and line
-checked. Any larger drift, or one that can't be confirmed as a reflow, must be traced to a
-specific dropped/duplicated hunk before proceeding. A drift that still can't be located after a
-reasonable search stops the split — report the numbers and what was ruled out; never accept an
-untraced mismatch silently.
+Uses the baseline § 0 froze. After the **last** commit, check two things in this order:
+
+1. **Tree clean** — `git status --porcelain` prints nothing. Any remaining line is content the
+   split left on the floor; this is the cheapest signal there is.
+2. **Content identical** — `git diff "$(cat "$SCRATCH/presplit-head")"..HEAD > "$SCRATCH/split.diff"`,
+   then `diff "$SCRATCH/presplit.diff" "$SCRATCH/split.diff"`. Both compare the same two trees, so
+   an exact match is the expected result, not an approximation — no counting, no ballparks.
+
+Running this _before_ the final commit cannot succeed: the cumulative diff is missing that commit
+by construction. The gate is after the last commit, and it is what licenses the push.
+
+**A correction you made during the split** — a lint fix, a formatter reflow, an edit to keep a
+validator green — invalidates the baseline, because `presplit.diff` predates it. That is allowed
+but never silent: name the file and line, say why the edit was necessary, and show that the `diff`
+output contains that change and nothing else. Any other difference stops the split; report what you
+ruled out and never accept an untraced mismatch.
 
 ## 4. Verify before committing when a test suite exists
 
@@ -118,11 +150,15 @@ Discover the suite once, before the first commit: the project `CLAUDE.md`'s own 
 list, then `package.json` scripts (`test`, `check`, `lint`), then a `scripts/tests/` runner. None
 found → state "no suite found, skipping § 4" once and move on.
 
-Run it before **every commit whose staged set touches an executable file** (code, scripts, config
-the tools read) — a partial split can leave a file syntactically valid but semantically broken,
-and catching that before it is in history is much cheaper than after. Docs/prose-only commits skip
-it. Non-zero exit → **STOP**: do not commit, report the failure and which commit's partial state
-produced it.
+Run it before **every commit whose staged set is read by any check in that suite** — a partial
+split can leave a file syntactically valid but semantically broken, and catching that before it is
+in history is much cheaper than after. Non-zero exit → **STOP**: do not commit, report the failure
+and which commit's partial state produced it.
+
+Skip only when nothing staged is consumed by any check. **Markdown is not automatically prose**: in
+a repo whose checks parse docs — skill files, schema docs, generated references — a docs-only commit
+breaks the suite exactly as code does. Decide by what the suite reads, never by file extension.
+Unsure → run it; one run costs less than one bad commit.
 
 **When the suite is slow enough that per-commit runs would dominate the split** (roughly: one run
 costs more than the whole split otherwise would), don't drop verification — downgrade it. Run the
@@ -143,7 +179,7 @@ last commit, per `shared/OUTPUT.md § Report Block`:
 
 Integrity check {base}..HEAD:
   {n} files, +{ins} / -{del}
-  deletions match the pre-split diff ({n})
+  tree clean · diff identical to the pre-split baseline
 ```
 
 Name the shared files that were built incrementally rather than staged whole — that is the part
