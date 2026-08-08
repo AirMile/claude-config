@@ -10,7 +10,10 @@ Loaded only when PHASE Finalize fires (worktree branch + all test items PASS + r
 
 ```bash
 TEAM_MODE=$(jq -r '.team.mode // "solo"' .project/project.json 2>/dev/null || echo "solo")
-PR_INFO=$(gh pr list --head "$(git branch --show-current)" --state all --json number,url,state --limit 1 2>/dev/null)
+# Branch named explicitly: by now the caller stands on main_root
+# (orchestration.md § 5 step 0), so `git branch --show-current`
+# would answer `main` and probe the wrong branch.
+PR_INFO=$(gh pr list --head "worktree-{feature-name}" --state all --json number,url,state --limit 1 2>/dev/null)
 PR_STATE=$(echo "$PR_INFO" | jq -r '.[0].state // empty' 2>/dev/null || echo "")
 PR_NUMBER=$(echo "$PR_INFO" | jq -r '.[0].number // empty' 2>/dev/null || echo "")
 PR_URL=$(echo "$PR_INFO" | jq -r '.[0].url // empty' 2>/dev/null || echo "")

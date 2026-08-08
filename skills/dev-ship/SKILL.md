@@ -244,7 +244,8 @@ Manual tests run in the main chat so `AskUserQuestion` reaches the real user. Th
 full routing — item-by-item walkthrough + interview close → findings ledger (checkpoint) →
 conditional round-level fix-plan gate (mirrors PHASE 0's gate) → fix dispatch via
 `references/workflows/ship-fix.js` + inline mix → re-check round → regression re-check. On all-green
-complete the feature (DONE write) and **stay in the worktree**; finalize/merge runs at the end of
+complete the feature (DONE write) and **stay on the feature branch — do not merge yet** (§ 5 leaves
+the worktree itself, right before refactor); finalize/merge runs at the end of
 PHASE 4 so refactor commits land on the feature branch. **No refactor/finalize until failed items
 pass.** Once complete, continue per `references/orchestration.md` (the checkpoint's `route`
 subcommand sends you straight to PHASE 4) and handle its notification as described in § PHASE 1–4

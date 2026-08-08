@@ -19,9 +19,10 @@ inline costs nothing extra: Workflow already runs in the background and notifies
 - If the `Workflow` tool's schema is not yet loaded, call `ToolSearch query="select:Workflow"`
   first.
 - **`Workflow`'s `scriptPath` is NOT cwd-safe** (unlike `ship-checkpoint.js` above) — a relative
-  path resolves against the main chat's current directory. By §5 the main chat is always inside
-  `worktree-{feature}` (PHASE 3 Step 1 already switched in), where `.claude/` does not exist — a
-  relative `scriptPath` there fails outright. Always resolve `main_root` first (`git worktree
+  path resolves against the main chat's current directory. §5 opens by leaving the worktree, so cwd
+  is `main_root` from that point on; before it, cwd is still `worktree-{feature}`, where `.claude/`
+  does not exist. Neither position makes a relative `scriptPath` safe. Always resolve `main_root`
+  first (`git worktree
 list --porcelain | head -1`, same as the triage-persist step in §5) and pass an absolute path.
 - Each `Workflow(...)` launch below ends your turn with a short one-liner ("Shipping `{feature}` in
   the background — I'll report when it returns.") — no further tool calls until the task-notification
@@ -205,7 +206,14 @@ set **and** `securityDeep` is empty.
 phase-3-manual-finalize.md § Findings ledger + routing); tracked on {VERIFY-card-name}."` States the
 policy at the moment it applies instead of only in the closing report.
 
-**Before spawning**: (a) capture the revert anchor `preRefactorSha = git -C {worktreePath}
+**Before spawning**: (0) **leave the worktree** — PHASE 3 Step 1 switched the session into
+`worktree-{feature}`, which makes it worktree-isolated: the harness refuses every
+`git -C "$main_root" …`, including check (d) below and the merge itself. Call
+`ExitWorktree(action: keep)` now; the worktree stays on disk and AGENT 3 receives its path through
+the pointer file, so nothing downstream needs the session to sit inside it. Everything from here
+on names its target path explicitly rather than relying on cwd — including the branch name in (b),
+which `git branch --show-current` no longer supplies. (a) capture the revert anchor
+`preRefactorSha = git -C {worktreePath}
 rev-parse HEAD` and patch it to the checkpoint; (b) run the TEAM_MODE + PR-state detection from
 `references/dev-verify/references/finalize.md` and decide `finalizeRoute: merge | halt` (`merge`
 on the solo/`MERGED` rows, `halt` on the open-PR / team rows) — this decides whether AGENT 3 does

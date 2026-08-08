@@ -152,18 +152,33 @@ resume; a park is a stopping point, not a finished phase.
 
 ## MANUAL 2 — Refactor + finalize/merge
 
+> **STOP — leave the worktree before entering § 5.** MANUAL 1 switched the session into
+> `worktree-{feature}` (`shared/WORKTREE.md § Switch`), which makes it **worktree-isolated**:
+> the harness refuses every `git -C "$main_root" …`, including § 5's own pre-spawn
+> target-clean check (d) and the merge itself. Call `ExitWorktree(action: keep)` now — the
+> worktree stays on disk and AGENT 3 gets its path from the pointer file, so nothing
+> downstream needs the session to sit inside it. Two traps once you stand on main:
+> § 5's `scriptPath` must still be absolute, and `finalize.md`'s PR probe must be handed the
+> branch literally (`--head worktree-{feature}`) — `git branch --show-current` now answers
+> `main`, so the verbatim command would probe the wrong branch.
+>
 > **Todo**: mark MANUAL 1 → `completed`, MANUAL 2 → `in_progress`. Read
 > `.claude/skills/dev-ship/references/orchestration.md § 5` and follow it: refactor (AGENT 3) +
 > optional security triage (AGENT S), then finalize (solo-merge or halt-for-team, per
-> `dev-ship/references/dev-verify/references/finalize.md`). This is the same reference `/dev-ship`'s
+> `.claude/skills/dev-ship/references/dev-verify/references/finalize.md`). This is the same reference `/dev-ship`'s
 > own PHASE 4 reads — no dev-manual-specific variant.
 >
 > **`"phase3-completion"` entry** (from MANUAL 0): first run `orchestration.md § 4` (the no-manual
 > completion — Step 1 + Step 3 of `phase-3-manual-finalize.md` only) before § 5, exactly as
 > `/dev-ship`'s own no-manual path would.
 >
-> **`"phase4-finalize-only"` entry**: skip straight to § 5's finalize step — refactor already ran on
-> a prior resume.
+> **`"phase4-finalize-only"` entry**: refactor already ran on a prior resume — skip the refactor
+> spawn, but still run § 5's two non-refactor obligations before finalizing:
+> (a) the **deferred-items transparency line** (`orchestration.md § 5`) when the checkpoint's
+> `manual.items[]` holds any `verdict: "deferred"` entry — reword "refactor + merge" to "merge";
+> the disclosure belongs before the merge, not only in the closing report; and (b) the
+> **archive-reconcile guard** — never skip the reconcile because the project's `backlog.json`
+> looks inconsistent with it; say so to the user instead of silently matching precedent.
 
 ## MANUAL 3 — Report
 

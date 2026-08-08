@@ -63,8 +63,10 @@ Keep the checkpoint `phase: "PHASE 3"` throughout.
 ## Step 1 — Enter the worktree
 
 The agents ran in isolated contexts; the main-chat shell is **not** in the worktree. Switch in
-before anything else: execute `.claude/skills/shared/WORKTREE.md § Switch into existing worktree`
-with `feature-name = {feature}` and `feature.status = DOING`. This switches to `worktree-{feature}`
+before anything else: execute `.claude/skills/shared/WORKTREE.md` — **§ Switch into existing
+worktree** plus **§ Symlink Integrity Gate** only, not the whole file (§ Shared .project/ via
+symlink and § Caveats are auto-create material and never fire here) — with
+`feature-name = {feature}` and `feature.status = DOING`. This switches to `worktree-{feature}`
 (needed for the dev-server /
 Playwright daemon that the walkthrough uses) and runs the symlink-integrity gate.
 
