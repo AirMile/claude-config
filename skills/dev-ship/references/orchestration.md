@@ -253,9 +253,21 @@ empty-input safety net from §3 applies here.
 "{runId}","prompts":{...}}`. **End the turn here.**
 
 On return, write point 3: clear `activeWorkflow`/`workflowRunId`/`prompts`, merge
-`refactor`/`triage` into `results`. If `refactor.status: "failed"` → revert the branch (`git -C
-{worktreePath} reset --hard {preRefactorSha}`, non-fatal, note `reverted:true` for the report) —
-still finalize.
+`refactor`/`triage` into `results`.
+
+**STOP — `refactor.status: "failed"`.** First revert the branch (`git -C {worktreePath} reset
+--hard {preRefactorSha}` — captured at this section's step (a) above, ~40 lines up, and persisted
+to the checkpoint there; re-read it from the checkpoint rather than from context if the run was
+resumed. Note `reverted:true` for the report). The feature is still shippable —
+the revert restored the verified pre-refactor state — but the run's only quality pass did not
+converge, and the merge that follows is irreversible. Do **not** finalize silently:
+
+- **Attended** → AskUserQuestion before finalize: "Merge anyway (Recommended)" — the reverted
+  state is the state verify passed / "Halt — leave the worktree" — inspect the refactor failure
+  first; PHASE 5 reports the run as halted and the worktree stays.
+- **Unattended** → set `finalizeRoute: halt` instead of `merge`, and carry `{refactor.failedAt}`
+  into PHASE 5's report line. Never merge an unattended run whose refactor failed — nobody saw
+  why it failed, and the worktree is the only place left to find out.
 
 **Persist the triage** (only if `results.triage` is non-null — `scanners` was empty, or ran with 0
 findings above threshold, otherwise): the
