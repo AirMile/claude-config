@@ -5,7 +5,7 @@ reads: [feature.externalRef, team.commitConvention, team.ticketPrefix]
 writes: [team.commitConvention, team.ticketPrefix]
 metadata:
   author: claude-config
-  version: 1.8.0
+  version: 1.9.0
   category: core
 ---
 
@@ -49,7 +49,8 @@ ls .git/rebase-merge .git/rebase-apply \
 
 Once per project (cache in `project.json#team`). Skip if `team.commitConvention` is already set.
 
-1. **Convention detect**: `git log --oneline -20` → regex-match dominant pattern (>60% of commits):
+1. **Convention detect**: `git log --oneline -20` → regex-match dominant pattern (>60% of commits).
+   Count the matches; do not eyeball the list.
    - `^[a-z]+(\([a-z-]+\))?: ` → `"conventional"` (Conventional Commits)
    - `^[A-Z]+-\d+[: ]` → `"ticket-prefix"` (Jira/Linear style)
    - `^\[[A-Z-]+\]` → `"bracket"` (bracket-tag style)
@@ -72,15 +73,27 @@ Once per project (cache in `project.json#team`). Skip if `team.commitConvention`
 **Detect first** — the split path stages per commit, so a blanket `git add -A` would have to be
 undone. Run this against whatever diff you have (unstaged, or staged if something already is):
 
-- Detect based on path pattern (e.g. `.claude/` vs `src/` vs `public/`)
-- Detect based on type (deletions-only group vs additions group)
-- 2 clearly separated groups → Suggest split via AskUserQuestion:
-  - "Split into separate commits (Recommended)" → unstage the secondary group, commit primary first
+Group from `git diff --stat` / `--name-only` — by path pattern (`.claude/` vs `src/` vs `public/`)
+and by type (deletions-only vs additions). **Do not read full diffs here**: a split routes to § 0's
+inventory, which reads them once and owns the classification.
+
+Then apply the routing test, in this order:
+
+- **>2 groups, or any file touched by more than one group** (a shared narrative file — README,
+  CHANGELOG, a config/registry doc — is the usual case) → read `references/multi-commit-split.md`
+  and follow it from § 0. Do not improvise a split by hand, and stage nothing first: § 0 freezes
+  the pre-split baseline its integrity gate depends on.
+- **Exactly 2 groups, no file in both** → each commit takes whole files, so nothing can be
+  hand-split and lost. Suggest the split inline via AskUserQuestion:
+  - "Split into separate commits (Recommended)" → stage and commit group 1, then group 2
   - "One commit" → proceed with everything
-- **>2 groups, or a shared file (README, CHANGELOG, a config/registry doc) touched by more than
-  one concern** → read `references/multi-commit-split.md` and follow it from § 0 — do not
-  improvise a split by hand, and stage nothing first: § 0 freezes the pre-split baseline that
-  its own integrity gate depends on.
+
+  Two guards still apply, since this path skips the reference's § 3.5 and § 4: run the test suite
+  (discovered as in `multi-commit-split.md § 4`) before the first commit, and after the last one
+  confirm `git status --porcelain` prints nothing. Whole-file staging plus a clean tree is the
+  completeness proof here — no baseline freeze needed.
+
+- **1 group** → no split; continue to _Then stage_ below.
 
 **Then stage**, only when there are unstaged changes, nothing staged, and no split was triggered:
 

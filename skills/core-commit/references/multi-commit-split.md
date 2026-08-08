@@ -13,8 +13,16 @@ first commit lands the pre-split state is no longer reconstructible:
 SCRATCH="$(git rev-parse --git-dir)/core-commit-split"
 mkdir -p "$SCRATCH"
 git rev-parse HEAD > "$SCRATCH/presplit-head"
-git diff > "$SCRATCH/presplit.diff"
+git diff > "$SCRATCH/presplit.diff"   # tracked changes only
+git ls-files --others --exclude-standard > "$SCRATCH/presplit-new"
 ```
+
+`git diff` cannot see untracked files, so their paths are frozen separately — § 3.5 excludes them
+from its comparison and checks them by name instead. Do not fold them in with `git add -N`: that
+mutates the index this flow depends on being untouched.
+
+Shell state does not persist between Bash calls, so `SCRATCH` is re-derived in every snippet below
+that uses it. That repetition is deliberate — do not collapse it.
 
 § 1's granularity question is only answerable against a real inventory — derive it first, do not
 infer concerns from directory names.
@@ -46,7 +54,8 @@ AskUserQuestion, recommended-first:
 Open with § 0's inventory — the user's answer should reflect the real scope, not a guess.
 
 **Gating (only when the chosen granularity produces 2+ commits)** — one more AskUserQuestion,
-recommended-first:
+recommended-first. Ask it only after the granularity answer is in: batching it with the granularity
+question asks a conditional question unconditionally.
 
 - header: "Gating"
 - question: "This will produce {n} commits. How do you want to approve them?"
@@ -103,12 +112,20 @@ For each commit, in dependency order:
      correct by construction. Exit 3 = no hunk matched, which means your index list is stale:
      re-read `git diff` before retrying. Do not hand-build the patch; that is what this script
      is for.
-   - **Progressive Read+Edit** (fallback — works for any file, no patch-format risk; required
-     when two commits' content interleaves below hunk level). This technique **destroys the
+   - **Scripted line-level rewrite** (preferred whenever `pick-hunks.sh` cannot isolate the
+     content — two commits interleaving below hunk level, or a single hunk holding both): do the
+     temporary removal with a `node`/`python3` one-liner via Bash instead of Edit. Hooks fire on
+     `Write|Edit|MultiEdit` only, so this keeps format-on-save out of it — no reflow noise, no
+     shifted hunk boundaries. Snapshot first exactly as below, and have the script assert the
+     shape it expects (first and last line of the range) and exit non-zero before writing
+     anything.
+   - **Progressive Read+Edit** (last resort — for content a script cannot address by line; works
+     for any file, no patch-format risk). This technique **destroys the
      only copy of the final state** — the working tree holds content that exists nowhere else,
      so git cannot recover it. Snapshot first:
 
      ```bash
+     SCRATCH="$(git rev-parse --git-dir)/core-commit-split"
      cp <file> "$SCRATCH/presplit-$(printf '%s' "<file>" | tr '/' '_')"
      ```
 
@@ -125,15 +142,38 @@ For each commit, in dependency order:
 4. If a later commit needs to add more content to that same shared file, it starts from the
    state this commit just left behind — do not pre-populate all commits' content at once.
 
-## 3.5. Integrity check (after the final commit)
+## 3.5. Integrity check (after the final commit — this licenses the push)
 
-Uses the baseline § 0 froze. After the **last** commit, check two things in this order:
+Uses the baseline § 0 froze. After the **last** commit, check three things in this order:
 
 1. **Tree clean** — `git status --porcelain` prints nothing. Any remaining line is content the
    split left on the floor; this is the cheapest signal there is.
-2. **Content identical** — `git diff "$(cat "$SCRATCH/presplit-head")"..HEAD > "$SCRATCH/split.diff"`,
-   then `diff "$SCRATCH/presplit.diff" "$SCRATCH/split.diff"`. Both compare the same two trees, so
-   an exact match is the expected result, not an approximation — no counting, no ballparks.
+2. **Content identical** — compare the same two trees, excluding the paths that were untracked at
+   baseline (`presplit.diff` could never contain them):
+
+   ```bash
+   SCRATCH="$(git rev-parse --git-dir)/core-commit-split"
+   EXCL=$(sed 's|^|:(exclude)|' "$SCRATCH/presplit-new")
+   git diff "$(cat "$SCRATCH/presplit-head")"..HEAD -- . $EXCL \
+     > "$SCRATCH/split.diff"
+   diff "$SCRATCH/presplit.diff" "$SCRATCH/split.diff"
+   ```
+
+   An exact match is the expected result, not an approximation — no counting, no ballparks.
+
+3. **New files landed** — every path in `presplit-new` must be tracked at HEAD. No output = all
+   landed; an empty `presplit-new` runs the loop zero times, so there is no case to guard:
+
+   ```bash
+   SCRATCH="$(git rev-parse --git-dir)/core-commit-split"
+   while IFS= read -r f; do
+     git ls-files --error-unmatch "$f" >/dev/null 2>&1 ||
+       echo "MISSING: $f"
+   done < "$SCRATCH/presplit-new"
+   ```
+
+   Step 1 already fails on one left behind; this names which. (`while read` rather than
+   `xargs -a`: BSD `xargs` on macOS has no `-a`, and this form survives paths with spaces.)
 
 Running this _before_ the final commit cannot succeed: the cumulative diff is missing that commit
 by construction. The gate is after the last commit, and it is what licenses the push.
@@ -154,6 +194,12 @@ Run it before **every commit whose staged set is read by any check in that suite
 split can leave a file syntactically valid but semantically broken, and catching that before it is
 in history is much cheaper than after. Non-zero exit → **STOP**: do not commit, report the failure
 and which commit's partial state produced it.
+
+**What the run covers**: the suite reads the working tree, not the index. On the `pick-hunks.sh`
+path the tree never changes during the split, so every run returns the same verdict — run it once
+before the first commit and once before the last, not per commit. Only the scripted-rewrite and
+Read+Edit paths genuinely put a partial state in the tree; there, run it per commit as written. A
+check script that is itself new in this split is present in the tree and runs normally.
 
 Skip only when nothing staged is consumed by any check. **Markdown is not automatically prose**: in
 a repo whose checks parse docs — skill files, schema docs, generated references — a docs-only commit
