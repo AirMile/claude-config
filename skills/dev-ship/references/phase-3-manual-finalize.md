@@ -126,6 +126,17 @@ over re-deriving; (b) the project `CLAUDE.md` **Commands** table; (c) `package.j
 - **CLI / TUI / server-only / library** → no window: drive it as the `run` skill's pattern for that
   type does (run the binary, start the server, exercise the export) and hand the user the concrete
   command + expected output instead of a URL.
+- **An app no vehicle here can launch** (a desktop app behind a runtime the harness does not drive —
+  MT5/Wine, a device simulator, a physical rig). The same condition
+  `manual-interview-walkthrough.md § Step A2` already recognises as "no vehicle means no evidence":
+  there it switches the sweep to user-evidence mode, here it switches the launch to a
+  **prepare-then-hand-over**. Do the half you can: build/compile, sync artifacts to wherever the
+  runtime actually reads them, and run the project's own staleness check so the hand-over is not
+  against a stale build. Then hand the user the concrete open-it steps and **name the signal that
+  proves the running build is yours** (a version label, a fresh log line) — the no-hot-reload rule
+  below applies in full, since nothing here reloads. Prefer a machine-readable side channel the app
+  writes (a log file, an export) over asking the user to transcribe values: it is faster, and it is
+  evidence rather than testimony.
 
 Principle: **the lighter command is acceptable only when it can actually exercise the item.** If a
 manual item touches a capability the lighter command does not provide (native runtime, backend, SSR),
@@ -146,6 +157,23 @@ Before creating any test fixture file (e.g. for a read-only-file or permission-e
 verify which path the running app actually has open (its own settings/store, not an assumption
 that "the worktree" == "what the app shows") — a fixture written to the wrong path silently never
 appears in the app and costs a full extra round to diagnose.
+
+**Presets are app state too — pin them before the first observation.** A saved template, workspace,
+profile, layout or theme changes what is under test even when it "loads nothing" of the feature
+itself, and it is invisible in every screenshot. The first observation of every item must come from
+a **fresh instance with no preset applied**, and the hand-off to the user says so in those words. A
+preset applied part-way through invalidates every observation after it — treat that round as void
+rather than reasoning about the results. Where the app persists such state per document/window
+(charts, boards, canvases), "fresh" means a new one, not a reset of the existing one.
+
+**No hot reload → confirm the running build another way.** The HMR/rebuild grep above assumes a dev
+server that announces reloads. A compiled or desktop app caches its loaded module: replacing the
+artifact on disk while the app is running does **not** reload it, so a file-level sync check reports
+green while the previous build keeps executing. Before handing over any item, confirm the running
+build from something the app itself renders — a build stamp/version label, or a visible fingerprint
+of the change (a new field, a new row, a changed count). No such signal available → restart the app
+rather than re-attach or re-open, and say which signal you used. A disk comparison is evidence about
+the disk, never about the process.
 
 > If you genuinely must detect readiness programmatically (e.g. to auto-open a browser tab), it MUST
 > (a) tolerate ANSI color codes — match the bare word (`grep -aE "Running|Finished|error"`), never a
@@ -355,7 +383,9 @@ Stop the app you launched in Step 2 in **either** of these two moments — which
 Kill the process(es) you started in Step 2 in either case. A lingering app process serves no further
 purpose here and would otherwise still be running when PHASE 4 spawns the refactor agent into the
 same worktree (potential file-lock/port contention, and simply wasted resources). Skip silently when
-Step 2 never launched anything (the no-manual path).
+Step 2 never launched anything (the no-manual path). **Never kill an app the user started
+themselves** (the prepare-then-hand-over branch): you did not start it, it holds no worktree cwd,
+and a deferred item often wants it left open. Say in one line that it is still running and why.
 
 **Clean up manual-test fixtures created outside the worktree.** When the app's active-project
 selection pointed at the main checkout instead of the worktree (the mismatch this file already warns

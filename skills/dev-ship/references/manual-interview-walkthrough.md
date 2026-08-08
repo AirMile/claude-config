@@ -53,7 +53,9 @@ only prepares evidence for the human to confirm against.
 **Native-shell exception (check first)**: when the app under test is a native-shell app whose window
 no automation vehicle can drive (Tauri/Electron without a working WebDriver), skip this sweep
 entirely — no vehicle means no evidence. Evidence-class items then run in **user-evidence mode**:
-the proof comes from the user in Step C instead of from this sweep.
+the proof comes from the user in Step C instead of from this sweep. Same condition, other side:
+when the harness cannot even *start* the app, `phase-3-manual-finalize.md § Step 2`'s
+prepare-then-hand-over branch owns the launch.
 
 **Primary — fresh Sonnet agent, not a fork.** The sweep's context (the item list, the app URL, the
 launch state) is cheaply re-statable as paths and facts — it is not conversation-load-bearing the
@@ -196,6 +198,23 @@ now`) — the 3rd time this item reaches Step C, the modal drops the 4th option 
     Skip; blocking external prereq for Defer — account, CORS-origin, API-token, third-party
     config). **Defer is for external blockers only** — "it is broken" is by definition a **Fail**,
     never a Defer.
+
+> **STOP — a broken item is Claude's to catch too, not only the user's.** The item-text correction
+> above sits under `Kom er niet uit`, so it only fires once the *user* is stuck. Two defects show up
+> earlier than that, while you are presenting or checking the item, and both silently produce a
+> wrong verdict if walked as written:
+>
+> - **The vehicle cannot cause the effect.** The step names a tool or control that does not produce
+>   the thing under test, so the expected outcome would hold with or without the fix — the item is
+>   unfalsifiable and a Pass on it means nothing.
+> - **The observation is humanly impossible.** The step asks the user to see something they have no
+>   way to identify (one row among hundreds, a change they never had a baseline for).
+>
+> This is a **route, not a verdict** — decide it yourself, do not open a modal. Say in one line what
+> is broken and why, propose the corrected step, patch the ledger item's `steps`/`expected` via the
+> Step E upsert, and record it as a `stepLog` entry with `divergedFromItemText: true` so the report
+> can show the item was repaired rather than merely passed. Do not spend a `helpAttempt` on it —
+> that counter is for the user being stuck, and this is not that.
 
 **Systemic blocker discovered mid-item** — when the Skip/Defer reason is an environment/
 infrastructure issue that will equally block every remaining un-walked item (not something specific
