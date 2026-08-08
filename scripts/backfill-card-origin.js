@@ -72,15 +72,56 @@ function readJson(file) {
   }
 }
 
+// A `source` naming one of these skills is recorded provenance in its own
+// right: they only ever create a card by parking something a run observed. The
+// value was written by the pipeline at creation time, so this is evidence, not
+// inference.
+//
+// An explicit list, NOT a `/(dev|game|design)-*` pattern: `/design-convert`
+// would match such a pattern but is user-driven (the user supplies the visual
+// input), and going forward it stamps `origin: "user"` — a pattern would have
+// backfilled its history as `agent` and contradicted every new card it writes.
+// `/project-plan`, `/project-todo` and `/team-issues` are user-driven for the
+// same reason and are absent here deliberately.
+const AGENT_SOURCES = new Set([
+  "/dev-ship",
+  "/dev-define",
+  "/dev-verify",
+  "/dev-manual",
+  "/dev-tweak",
+  "/dev-inspect",
+  "/game-ship",
+  "/game-tweak",
+  "/game-debug",
+]);
+
+// Some historical values carry a parenthetical suffix ("/dev-ship (auto-verify
+// offload)") in violation of BACKLOG.md § Source field convention — strip it
+// back to the bare slug before matching, and store the normalized form.
+function bareSource(value) {
+  const m = String(value || "").match(/^(\/[a-z][a-z0-9-]*)(?:\s*\(.*\))?$/i);
+  return m ? m[1].toLowerCase() : null;
+}
+
 function classify(card) {
   // Never overwrite an existing decision — this script is a migration, not an
   // authority. A card already carrying origin was stamped by its writer.
   if (card.origin) return null;
+
   const text = card.description || "";
   for (const rule of EVIDENCE) {
     const m = text.match(rule.re);
     if (m) return { origin: "agent", source: rule.source(m) };
   }
+
+  const bare = bareSource(card.source);
+  if (bare && AGENT_SOURCES.has(bare)) return { origin: "agent", source: bare };
+
+  // Everything else — including the bulk of `source: "/project-todo"` cards —
+  // carries no record of who created it. project-todo rewrites the caller's
+  // sentence into a proper description (§ Description quality), so an offload's
+  // "parked from /dev-ship" hint is consumed as an instruction and never
+  // reaches the stored text. Absent stays absent: a wrong label is worse.
   return null;
 }
 
