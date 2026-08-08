@@ -9,7 +9,13 @@ result format only.
 
 ## Item-handling rules
 
-**REQ-pointer (mandatory, all steps below)**: every generated test file gets one comment line directly above the test — `// {REQ-id} · {feature-name}` — same convention as build's `dev-build/techniques/tdd.md` § Step 1. This is what lets a failing test resolve back to `feature.json#requirements[]` and `#durableDecisions[]` later; `scripts/check-req-tags.js` validates it.
+**REQ-pointer (mandatory, all steps below)**: every generated test file gets one comment line directly above the test — `// {REQ-id} · {feature-name}` — same convention as build's `dev-build/techniques/tdd.md` § Step 1. This is what lets a failing test resolve back to `feature.json#requirements[]` and `#durableDecisions[]` later.
+
+> **Todo — after the last test file is written, before reporting results**: run
+> `node ~/.claude/scripts/check-req-tags.js --project "$REPO"`. Non-zero exit = a REQ-pointer no
+> longer resolves to a requirement in `feature.json` (typo, renamed feature, deleted REQ) — fix the
+> pointer, then re-run. Until this line existed the rule was asserted in prose and never enforced,
+> so a dangling pointer only surfaced months later at the moment it was needed.
 
 Execute these steps for each non-COVERED AUTO item:
 
