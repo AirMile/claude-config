@@ -92,8 +92,8 @@ Then run [§ Continue](#continue).
 ## Seed save procedure
 
 1. Create `.project/` folder if it doesn't exist
-2. Write the full concept document as plain markdown to `.project/project-seed.md`
-3. Update project.json: Read `.project/project.json` (or create with `{}`), set `seed.name` (H1 title), `seed.pitch` (first paragraph, 1-2 sentences), `seed.seedFile = "project-seed.md"`. Mode `seed` only: also set `seed.scope` (active scope: `concept` | `implementation` | `feature` | `page` | `standalone`). Remove `seed.content` if it exists (legacy, migrated to .md). Write back.
+2. Write the concept document to `.project/project-seed.md`. **New or replaced concept → full Write. Focused edit of an existing seed → targeted Edits only**, same surgical contract as `project-todo/references/seed-alignment.md § Write path`: touch only the sections the run actually changed, leave the rest byte-identical. A seed over ~300 lines is never rewritten in full to change part of it — both the rewrite cost and the risk of silently dropping an untouched section scale with the document, and the edit route is the common case on a mature seed.
+3. Apply the canonical mutation set from [shared/SEED.md § Write targets](SEED.md#write-targets-sync-phase) — `seed.name`, `seed.pitch` and the `backlog.json#overview` co-update all live in that table; do not duplicate it here. Two seed-specific additions on top of it: `seed.seedFile = "project-seed.md"`, and (mode `seed` only) `seed.scope` (active scope: `concept` | `implementation` | `feature` | `page` | `standalone`). Remove `seed.content` if it exists (legacy, migrated to .md).
 4. **Drift reconciliation**: if `accumulatedDrift[]` (collected during input parsing) is non-empty, remove those entries from their source arrays — from each `feature.json#seedDrift[]` and from `backlog.json#seedDrift[]`. Log: `Reconciled {N} drift item(s) from {sources}.` Empty or absent → skip silently.
 
 ---

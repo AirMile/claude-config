@@ -24,7 +24,17 @@ Develop the idea through rounds of concrete, clickable questions. Question conte
 
 1. **STOP — gate, run before any PHASE 2 question**: has Project Memory Load run yet for this route? It reads `.project/project.json` + `.project/project-context.json` (built-state/backlog summary) and relevant `learnings[]`, then prints one `PROJECT MEMORY` block — see `initial-intake.md § Step 1d` for the exact procedure. Skip only for: Sync route, standalone scope, no `.project/`. If it has not run yet, run it now — before Round 1's questions, not after.
 2. Determine scope from PHASE 1a: `concept` | `implementation` | `feature` | `page` | `standalone`
-3. **Focused-edit route** (initial-intake Step 1 "Edit" with a specific change request): skip the Round 1 templates — ask targeted questions on the change area directly ([shared/QUESTIONING.md](../../shared/QUESTIONING.md) form choice). The templates below are for fresh scoping.
+3. **Focused-edit route** (initial-intake Step 1 "Edit" with a specific change request): skip the Round 1 templates below — those are for fresh scoping — and use this one instead. One question per axis, only the axes the change actually touches:
+
+   ```yaml
+   header: "Change" # what exactly should be different?
+   header: "Replaces" # which recorded decision does this overrule?
+   header: "Blast radius" # what else in the document follows from it?
+   header: "Firmness" # record as a decision, or park as an open question?
+   ```
+
+   Never mix an axis of the change itself with document hygiene (stale sections, outdated counts, deferred drift) in one modal — hygiene is the executor's job to fix, not the user's to answer. ([shared/QUESTIONING.md](../../shared/QUESTIONING.md) governs form choice within each axis.)
+
 4. Otherwise pick the matching Round 1 template below
 5. All questions go in a single message as parallel AskUserQuestion calls
 
@@ -75,10 +85,12 @@ header: "Definition of Done" # acceptance criteria?
 **Note:** The templates above are guides — headers only. Every question and option MUST be specific to THIS scope instance. Derive concrete, relevant options from the available context (design file, backlog item, conversation).
 
 **After each round**, use AskUserQuestion — **skip this gate only when the previous round's
-answer was itself free-text/"Other" that raises a new question or asks something not yet
-covered** (an observable signal, not a judgment call) — proceed straight into the next targeted
-round in that case. Every round that ended in a clean option-pick still gets the gate; this is
-not a general license to keep going whenever it "feels" like the user wants more. Otherwise ask:
+answer raises something you must resolve before any further round makes sense**: a factual
+correction, a request for information you don't have yet, or a rejected premise. A free-text
+answer that merely states a preference ("do it this way", "you decide") is a clean answer and
+still gets the gate. **Ask the gate at least once before PHASE 3, whatever else happened** —
+without that floor the escape swallows every round in a conversation where the user answers
+freely, which is most of them. Otherwise ask:
 
 ```yaml
 header: "Deeper Dive"
@@ -106,6 +118,8 @@ multiSelect: false
 - `multiSelect: true` where multiple answers make sense
 - Maximum 4 questions per round (parallel in one message)
 - Adapt question style to idea type (game vs product vs story)
+- **Match the wording to `Explanation Level` in CLAUDE.md.** At Beginner level an option label never carries an internal step number, a class name, or a config field — name the thing by what it does for the user. "Stap 0: sizing + risicobewaking" is a label the author understands; "de rekenmachine: hoeveel koop ik bij dit risico" is one the user can pick from
+- **A choice between two designs is a comparison, not a preference.** Put the trade-off in front of the modal first — one compact block, a criterion per row, both options beside each other — and only then ask. A modal whose options each need three lines of description is a comparison in disguise, and the user will answer it with free text asking for exactly that table
 - Save criticism or expansion for later--this phase is pure idea capture
 
 ---
@@ -117,7 +131,17 @@ multiSelect: false
 
 ### PHASE 4: Generate Output
 
-**Open the plan file with a structured overview of all gathered input** — a scope-matching aspect table (concept/standalone/page: Topic, Scope, Target Audience, Core Experience, Deeper Dives · implementation: Topic, Source of Truth, Pages in Scope, Tech Stack, Open Decisions · feature: Topic, Goal, Existing Context, Out of Scope, Definition of Done) followed by a concise summary, THEN the concept document itself. These columns are a minimum, not a ceiling — when the rounds surfaced more distinct aspects (trade-offs, open decisions, extra dimensions), add rows/columns to represent them rather than compressing into the template. For a focused-edit route, present a change-summary (before → after per changed aspect) instead of the full aspect table. This way the overview is anchored to the artifact ExitPlanMode always shows, instead of a standalone step that can be silently skipped.
+**Open the plan file with a structured overview of all gathered input**, then the concept document itself. Four rules, in order:
+
+1. **Fresh scoping** → a scope-matching aspect table. Columns by scope:
+   - concept / standalone / page: Topic, Scope, Target Audience, Core Experience, Deeper Dives
+   - implementation: Topic, Source of Truth, Pages in Scope, Tech Stack, Open Decisions
+   - feature: Topic, Goal, Existing Context, Out of Scope, Definition of Done
+2. **Focused-edit route** → a change-summary instead (before → after per changed aspect), never the full aspect table.
+3. These columns are a minimum, not a ceiling. When the rounds surfaced aspects the template has no column for (trade-offs, open decisions, extra dimensions), add rows or columns — do not compress them away to fit.
+4. Follow the table with a concise summary before the document starts.
+
+Anchoring the overview to the plan file is deliberate: `ExitPlanMode` always shows that file, so the overview cannot be skipped the way a standalone output step can.
 
 Create a structured markdown document (pure markdown, no preamble or "Here's your document:" framing; `#` title, `##` sections). Required: **Title** (H1), **Short description** (1-2 sentences), **Core concept**. Additional sections by type — pick the set from scope: implementation → Implementation projects; feature/assignment → Features/assignments; concept/page/standalone → judge the content (creative vs product; hybrid → merge both sets):
 

@@ -1,6 +1,6 @@
 ---
 name: project-seed
-description: Use when scoping, expanding, or stress-testing an idea. Use with /project-seed.
+description: Use when scoping, expanding or stress-testing an idea. Use with /project-seed.
 reads:
   [
     concept.seed,
@@ -14,10 +14,17 @@ reads:
     project-context.architecture,
     project-context.learnings,
   ]
-writes: [concept.seed, project.thinking, feature.seedDrift, backlog.seedDrift]
+writes:
+  [
+    concept.seed,
+    project.thinking,
+    feature.seedDrift,
+    backlog.seedDrift,
+    backlog.overview,
+  ]
 metadata:
   author: claude-config
-  version: 2.3.0
+  version: 2.4.0
   category: project
 ---
 
