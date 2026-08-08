@@ -23,31 +23,28 @@ writes:
 writes-terminal: [feature.status, feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 1.6.0
+  version: 1.9.0
   category: dev
 ---
 
 # Manual (dev-ship pipeline tail)
 
 Owns the back half of the dev pipeline for a feature `/dev-ship` already carried through build and
-auto-verify: the manual test round (with its fix/debug rounds), refactor, and finalize/merge. This is
-**not a separate pipeline** — it resumes the exact same ship checkpoint `/dev-ship` writes, reading
-the same reference files under `dev-ship/references/` (`phase-3-manual-finalize.md`,
-`manual-interview-walkthrough.md`, `fix-round.md`, `debug-round.md`, `debug-round-heavy.md`,
-`orchestration.md`, `phase-5-report.md`) rather than duplicating them. `/dev-ship {feature}` still
-resumes into the same place — this skill exists so the parked hand-off after auto-verify has a name
-that says what actually happens next, and so a feature's manual round can be picked back up without
-re-reading the whole `/dev-ship` skill.
+auto-verify: the manual test round (with its fix/debug rounds), refactor, and finalize/merge. **Not
+a separate pipeline** — it resumes the same ship checkpoint and reads the same `dev-ship/references/`
+files, named per phase below, rather than duplicating them. `/dev-ship {feature}` resumes into the
+same place; this skill exists so the parked hand-off has a name that says what happens next.
 
 **Trigger**: `/dev-manual {feature}` (the feature name is required — there is no no-arg pickup; a
 ship checkpoint is always feature-scoped).
 
 ## Workflow
 
-**Phase tracking** — first action of the skill, once a checkpoint is confirmed to exist (see MANUAL
-0 below): call `TaskCreate` with these 4 items (it always creates them `pending` — no initial-status
-param exists), then immediately follow with one `TaskUpdate` per item the checkpoint already shows
-as done, setting it `completed` directly — never leave all 4 sitting `pending`:
+**Phase tracking** — MANUAL 0 owns when this fires (after the checkpoint is confirmed) and its
+`Todo` carries the `ToolSearch`. Call `TaskCreate` with these 4 items (it always creates them
+`pending` — no initial-status param exists), then immediately follow with one `TaskUpdate` per item
+the checkpoint already shows as done, setting it `completed` directly — never leave all 4 sitting
+`pending`:
 
 1. MANUAL 0: Resume + worktree/app
 2. MANUAL 1: Manual round (walkthrough + fix/debug)
@@ -62,10 +59,10 @@ resume; a park is a stopping point, not a finished phase.
 
 > **Todo**: `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred (unused
 > on the VERIFY-card branch below, but MANUAL 0's own routing needs them regardless of which branch
-> it resolves to). If they don't resolve, skip task tracking and continue — but still print one
+> it resolves to). If they don't resolve, skip task tracking and continue. Either way, print one
 > line at every MANUAL N → MANUAL N+1 transition below (e.g. "MANUAL 1 → MANUAL 2: manual round
-> done, refactor starting") so a run without the tool still carries a visible progress signal
-> instead of silence between phases. Resolve `main_root` (`git worktree list --porcelain | head -1 | awk '{print $2}'` — always resolve
+> done, refactor starting") — phases run tens of tool calls long, and the task list alone leaves
+> the user without a narrative marker for where the run is. Resolve `main_root` (`git worktree list --porcelain | head -1 | awk '{print $2}'` — always resolve
 > this first, cwd may already be inside a feature worktree where `.project/session/` is not shared).
 >
 > `test -f "$main_root/.project/session/ship-{feature}.json"` fails → there is no open ship run for
@@ -100,14 +97,25 @@ resume; a park is a stopping point, not a finished phase.
 > marks MANUAL 0 → `completed` (routing resolved) and seeds the rest of the `TaskCreate` list per
 > the stated statuses:
 >
-> **Cross-check before trusting `"phase3-completion"`**: the router derives this purely from
-> `results.verify.remainingManualItems` (the array). If the checkpoint instead carries a
-> `remainingManualItemsCount > 0` with no (or a shorter) `remainingManualItems` array, and
-> `manual.items` doesn't already cover that many items, the checkpoint is malformed — the
-> router's "nothing to test" verdict is not trustworthy. Print the mismatch and ask the user how
-> to proceed (re-run auto-verify to regenerate the array, or reconstruct it from
-> `plan.verificationProfile`) before routing to MANUAL 2 — never silently skip the manual round
-> on a malformed checkpoint.
+> **Cross-check before trusting `"phase3-completion"`**: the router derives this purely from whether
+> every entry in `manual.items` is resolved — it never re-reads how many items the round was
+> supposed to walk. Compare **both** directions before believing it:
+>
+> 1. `results.verify.remainingManualItemsCount` (when present) against the length of the
+>    `results.verify.remainingManualItems` array — a count larger than the array means the array was
+>    truncated.
+> 2. The length of `remainingManualItems` against the number of entries in `manual.items` — a ledger
+>    covering fewer items than the array means the walkthrough never reached them.
+>
+> Either side short → the checkpoint is malformed **or the round is simply unfinished**, and the
+> router's "nothing to test" verdict is not trustworthy. Direction 2 is the common real case: a
+> resume that walked some items, resolved them, and stopped — every ledger entry is resolved, so
+> `route` reports completion while items sit unwalked. Do not route to MANUAL 2 on it; go to
+> **MANUAL 1** and run the walkthrough for the items not yet present in `manual.items` (the same
+> filter `phase-3-manual-finalize.md § Resume entry` bullet 8 uses). Only a genuine array/count
+> mismatch (direction 1) needs the user: print it and ask how to proceed (re-run auto-verify to
+> regenerate the array, or reconstruct it from `plan.verificationProfile`). Never silently skip the
+> manual round on either.
 >
 > - `"phase12"` → build/auto-verify hasn't completed yet — this skill's job hasn't started. Print:
 >   _"Build/auto-verify for `{feature}` hasn't finished — resume with `/dev-ship {feature}` instead."_
@@ -191,6 +199,15 @@ resume; a park is a stopping point, not a finished phase.
 
 Same as `/dev-ship`: a failed workflow leaves the checkpoint on disk (`status: "failed"`) rather than
 completing it — re-run `/dev-manual {feature}` (or `/dev-ship {feature}`, identical result) to retry,
-or go straight to `dev-ship/references/debug-round-heavy.md` (non-ledger entry) for a repeated build/verify
+or go straight to `.claude/skills/dev-ship/references/debug-round-heavy.md` (non-ledger entry) for a repeated build/verify
 failure. This skill never resumes a `"phase12"` failure itself (see MANUAL 0's refusal above) — that
 retry always goes through `/dev-ship`.
+
+**Crash between the merge and the checkpoint deletion.** The checkpoint still says
+`phase4-finalize-only` while the branch is already merged and deleted, so a re-run routes to
+MANUAL 2 and `finalize.md`'s Branch Resolution dead-ends on "No worktree found". That is the
+shape of a *finished* ship, not a broken one — do not re-merge. Confirm both: the default
+branch's tip is the merge commit (`git log --oneline -1`), and the feature sits in
+`.project/archive/backlog-archive.json#archived[]` with `shipped: true`. Both hold → run § 5's
+post-merge reconcile (re-stamp `shippedSha`, state-push), delete the checkpoint, go to MANUAL 3.
+Either fails → the merge never landed; re-enter MANUAL 2 normally.
