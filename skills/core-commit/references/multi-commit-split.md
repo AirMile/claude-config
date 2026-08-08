@@ -13,9 +13,14 @@ first commit lands the pre-split state is no longer reconstructible:
 SCRATCH="$(git rev-parse --git-dir)/core-commit-split"
 mkdir -p "$SCRATCH"
 git rev-parse HEAD > "$SCRATCH/presplit-head"
-git diff > "$SCRATCH/presplit.diff"   # tracked changes only
+git diff HEAD > "$SCRATCH/presplit.diff"   # tracked changes, staged and not
 git ls-files --others --exclude-standard > "$SCRATCH/presplit-new"
 ```
+
+`HEAD`, not a bare `git diff`: SKILL.md § 2 explicitly allows entering with something already
+staged, and a bare `git diff` cannot see it — the baseline would then be missing content that
+§ 3.5's `base..HEAD` comparison legitimately contains, failing a correct split. Pre-staged content
+also lands in whichever commit stages first unless § 2 assigns it deliberately.
 
 `git diff` cannot see untracked files, so their paths are frozen separately — § 3.5 excludes them
 from its comparison and checks them by name instead. Do not fold them in with `git add -N`: that
@@ -30,9 +35,11 @@ infer concerns from directory names.
 1. **Read the shared narrative files first** — CHANGELOG, README, a config/registry doc in the
    diff. On a documented changeset these name most of the concerns outright and hand you the
    vocabulary for the rest.
-2. **Classify every changed file** by matching its _added_ lines against those concerns
-   (`git diff -U0 -- <file> | grep '^+'`), not against its path. A theme-keyword sweep across all
-   changed files at once is cheaper than reading them one by one.
+2. **Classify every changed file** by its _added_ lines, never by its path. § 0 already froze the
+   complete diff, so start there rather than re-deriving it: `presplit.diff` under roughly 2000
+   lines → Read it whole (2–4 calls) and classify from that — cheaper and more accurate than
+   sampling. Larger → sweep theme keywords across all changed files at once
+   (`git diff -U0 -- <file> | grep '^+'`) and leave full reads to step 3.
 3. **Read the files the sweep didn't settle**, largest diffs first. Two kinds, and the second is
    the bigger one: files matching **no** concern (these are the undocumented concerns), and files
    matching **three or more** (concerns share vocabulary, so a keyword sweep over-matches by
@@ -104,7 +111,7 @@ For each commit, in dependency order:
    entirely — SKILL.md Step 2's load sits behind the blanket "Stage all?" ask this flow bypasses.
 
 2. For each shared file this commit touches, pick one technique:
-   - **`bash .claude/skills/core-commit/scripts/pick-hunks.sh <file> <hunk-index>...`**
+   - **`bash ~/.claude/skills/core-commit/scripts/pick-hunks.sh <file> <hunk-index>...`**
      (default when the target hunks are already cleanly `@@`-separated in `git diff <file>`):
      stages exactly those hunks into the index via `git apply --cached`, leaving the working
      tree untouched. Indices are 1-based against the current `git diff -- <file>`, which
@@ -153,11 +160,16 @@ Uses the baseline § 0 froze. After the **last** commit, check three things in t
 
    ```bash
    SCRATCH="$(git rev-parse --git-dir)/core-commit-split"
-   EXCL=$(sed 's|^|:(exclude)|' "$SCRATCH/presplit-new")
-   git diff "$(cat "$SCRATCH/presplit-head")"..HEAD -- . $EXCL \
+   EXCL=()
+   while IFS= read -r f; do EXCL+=(":(exclude)$f"); done \
+     < "$SCRATCH/presplit-new"
+   git diff "$(cat "$SCRATCH/presplit-head")"..HEAD -- . "${EXCL[@]}" \
      > "$SCRATCH/split.diff"
    diff "$SCRATCH/presplit.diff" "$SCRATCH/split.diff"
    ```
+
+   Array, not an unquoted `$EXCL`: word-splitting would break a path with a space, the same case
+   step 3 below deliberately survives.
 
    An exact match is the expected result, not an approximation — no counting, no ballparks.
 
@@ -177,6 +189,11 @@ Uses the baseline § 0 froze. After the **last** commit, check three things in t
 
 Running this _before_ the final commit cannot succeed: the cumulative diff is missing that commit
 by construction. The gate is after the last commit, and it is what licenses the push.
+
+**All three green → `rm -rf "$SCRATCH"`.** The per-file snapshots § 3 may have written are
+crash-recovery state for _this_ split; left behind, a later run's recovery restores the wrong
+file — the exact failure those snapshots exist to prevent. Any check red → keep the directory,
+that is what it is for.
 
 **A correction you made during the split** — a lint fix, a formatter reflow, an edit to keep a
 validator green — invalidates the baseline, because `presplit.diff` predates it. That is allowed

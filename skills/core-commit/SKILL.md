@@ -5,7 +5,7 @@ reads: [feature.externalRef, team.commitConvention, team.ticketPrefix]
 writes: [team.commitConvention, team.ticketPrefix]
 metadata:
   author: claude-config
-  version: 1.9.0
+  version: 1.10.0
   category: core
 ---
 
@@ -49,8 +49,20 @@ ls .git/rebase-merge .git/rebase-apply \
 
 Once per project (cache in `project.json#team`). Skip if `team.commitConvention` is already set.
 
-1. **Convention detect**: `git log --oneline -20` → regex-match dominant pattern (>60% of commits).
-   Count the matches; do not eyeball the list.
+1. **Convention detect**: count matches over the last 20 subjects — do not eyeball the list.
+   Run the count, read the winner off it (>60% = 13+ of 20; no pattern reaches it → `freeform`):
+
+   ```bash
+   S=$(git log --pretty=%s -20)
+   for p in '^[a-z]+(\([a-z-]+\))?: ' '^[A-Z]+-[0-9]+[: ]' '^\[[A-Z-]+\]'
+   do
+     printf '%s  %s\n' "$(printf '%s\n' "$S" | grep -cE "$p")" "$p"
+   done
+   ```
+
+   `--pretty=%s` and not `--oneline`: the patterns below are anchored at `^`, which never matches
+   past `--oneline`'s sha prefix. (POSIX ERE has no `\d` — the command spells it `[0-9]`.)
+
    - `^[a-z]+(\([a-z-]+\))?: ` → `"conventional"` (Conventional Commits)
    - `^[A-Z]+-\d+[: ]` → `"ticket-prefix"` (Jira/Linear style)
    - `^\[[A-Z-]+\]` → `"bracket"` (bracket-tag style)
