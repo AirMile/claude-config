@@ -35,7 +35,7 @@ game: `/game-debug`).
 **Second consumer: pre-offload sizing.** Criteria 1-4 aren't only a `/dev-tweak`/`/game-tweak` intake
 check — `dev-ship`'s manual-round and auto-verify offload flushes
 (`dev-ship/references/phase-3-manual-finalize.md § Offload flush`,
-`dev-ship/references/orchestration.md § 5`) and their `game-ship` mirrors judge a finding against
+`dev-ship/references/orchestration.md § 3`) and their `game-ship` mirrors judge a finding against
 these same four criteria **before** deciding whether it
 becomes a `type TWEAK`/`POLISH` card or a plain backlog card, so an oversized finding never enters
 the tweak fast path only to bounce straight back out at this file's own § Escalation gate. Criteria 5
@@ -60,12 +60,16 @@ matches picks the lane, never a score or a sum:
 | 1   | Stale or obsolete/superseded card, or a docs-only / `.project`-only change                                        | A    |
 | 2   | A verify round in this run failed, **or** a size-gate escalation was consciously overridden (§ Escalation gate c) | C    |
 | 3   | PHASE 1 locate left ≥2 candidate sites open, or landed on none                                                    | B    |
-| 4   | A `pitfall` learning from the learnings load touches a located path                                               | B    |
+| 4   | A learning printed with type `pitfall` carries the `⟨path⟩` marker (its `paths[]` overlap a located file)         | B    |
 | 5   | Otherwise                                                                                                         | A    |
 
 Why these are Sonnet-safe: none of them asks "how sure are you" — each reads off an artifact that
 already exists at evaluation time. Row 3 counts candidate sites in the locate result just produced;
-row 4 is a grep-shaped learnings-load hit; row 2 is this run's own history.
+row 4 reads two markers `learnings-search.js load` prints on every line — the `feature · type` one
+and the `⟨path⟩` one it appends when the entry's own `paths[]` overlap the caller's `--paths`. Both
+must be present. Membership of the component-scoped block is **not** a substitute: that block ranks
+on feature tokens too, so a line can sit there with no path overlap at all. No classification call,
+and never a re-read of the raw learnings store; row 2 is this run's own history.
 
 - **A — direct.** No `EnterPlanMode`. Identical to the pre-lane behavior.
 - **B — designed.** `EnterPlanMode` (skip if already active) → design → write the decision to the

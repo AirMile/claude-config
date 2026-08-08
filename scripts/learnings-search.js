@@ -342,6 +342,13 @@ function buildCtx({ query = "", feature = "", tags = [], paths = [] } = {}) {
     tokens,
     tags: tagSet,
     pathTokens: pTokens,
+    // Raw normalised paths, kept alongside the tokens: fmtLine's ⟨path⟩ marker
+    // needs an EXACT match, not the loose token overlap scoring uses. Two files
+    // in the same directory share almost all their path tokens, which is right
+    // for ranking and wrong for a lane decision.
+    paths: new Set(
+      (paths || []).map((p) => String(p).replace(/\\/g, "/").replace(/^\.\//, "")),
+    ),
   };
 }
 
@@ -477,20 +484,32 @@ function scopeSearch(active, archive, ctx, type, cap = 12) {
 }
 
 // ── Formatting ───────────────────────────────────────────────────────────────
-function fmtLine(e) {
+function fmtLine(e, ctx) {
   const tags = (e.tags || []).length
     ? "  " + e.tags.map((t) => "#" + t).join(" ")
     : "";
   const arch = e._archived ? " (archived)" : "";
+  // Both markers are load-bearing, not decoration: consumers select on them
+  // (shared/TWEAK-DISCIPLINE.md § Lane routing row 4 fires only on a `pitfall`
+  // that ALSO carries ⟨path⟩). Every real entry carries a `feature`, so printing
+  // only the feature left the type invisible and the selection undecidable.
+  // The path half was undecidable for the same reason: paths[] was never
+  // printed, and block membership is no substitute — component scope ranks on
+  // feature tokens too, so a line can sit there with zero path overlap.
+  const pathHit =
+    ctx?.paths?.size && (e.paths || []).some((p) => ctx.paths.has(String(p).replace(/\\/g, "/")))
+      ? " ⟨path⟩"
+      : "";
   return (
     "  [" +
     (e.date || "?") +
     "] " +
-    (e.feature || e.type) +
+    (e.feature ? e.feature + " · " + e.type : e.type) +
     " — " +
     e.summary +
     tags +
-    arch
+    arch +
+    pathHit
   );
 }
 
@@ -513,7 +532,7 @@ function cmdLoad(root, flags) {
     if (p.length)
       out.push(
         "Project pitfalls (relevant / recent):",
-        ...p.map((s) => fmtLine(s.e)),
+        ...p.map((s) => fmtLine(s.e, ctx)),
         "",
       );
   }
@@ -522,7 +541,7 @@ function cmdLoad(root, flags) {
     if (c.length)
       out.push(
         "Component-scoped (" + feature + "):",
-        ...c.map((s) => fmtLine(s.e)),
+        ...c.map((s) => fmtLine(s.e, ctx)),
         "",
       );
   }
@@ -531,7 +550,7 @@ function cmdLoad(root, flags) {
     if (a.length)
       out.push(
         "Architectural patterns (project-wide):",
-        ...a.map((s) => fmtLine(s.e)),
+        ...a.map((s) => fmtLine(s.e, ctx)),
         "",
       );
   }
@@ -584,7 +603,7 @@ function cmdSearch(root, flags) {
     );
     return;
   }
-  if (results.length) console.log(results.map((s) => fmtLine(s.e)).join("\n"));
+  if (results.length) console.log(results.map((s) => fmtLine(s.e, ctx)).join("\n"));
 }
 
 function cmdSuggestTags(root) {
