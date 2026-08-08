@@ -25,8 +25,9 @@ file `orchestration.md § 5` just persisted, not the about-to-be-deleted checkpo
 an `AskUserQuestion` (a confirmed CRITICAL/HIGH security finding is not optional to surface, unlike
 the Smart-Todo Creation pattern's usual confirm-first flow, `shared/SKILL-PATTERNS.md § Smart
 Suggestions`). Dedup first (`shared/BACKLOG.md § Writing the backlog` name check): if
-`data.features.find(f => f.name === "security-{feature}")` already exists and is open, skip creation
-and log one line instead. Otherwise push to `backlog.json#data.features[]`:
+`features.find(f => f.name === "security-{feature}")` already exists and is open, skip creation
+and log one line instead. Otherwise push to `backlog.json#features[]` (the **top-level** array —
+not a nested `data.features`; `data` holds only `updated`, same trap `define-park.md § 4` names):
 
 ```json
 {

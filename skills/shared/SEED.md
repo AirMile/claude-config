@@ -108,7 +108,7 @@ multiSelect: false
 
 ### Resolution outcomes
 
-- **Yes** → generate inline rewrite of `project-seed.md` (preserve unaffected sections verbatim, rewrite only drifted sections); derive updated `seed.pitch` (1–2 sentences) if stale. In plan-mode skills: append proposed full file to plan file under `## Proposed seed update` heading for review. Carry `seedUpdateApproved: true` to sync phase. **The sync phase MUST also co-update `backlog.json#data.overview` whenever `seed.pitch` changed** — same source of truth, two surfaces. See [§ Write targets](#write-targets-sync-phase) for the canonical mutation set. Exception: `/project-todo` never generates a section rewrite — its Yes-path applies the pre-approved targeted Edit(s) only.
+- **Yes** → generate inline rewrite of `project-seed.md` (preserve unaffected sections verbatim, rewrite only drifted sections); derive updated `seed.pitch` (1–2 sentences) if stale. In plan-mode skills: append proposed full file to plan file under `## Proposed seed update` heading for review. Carry `seedUpdateApproved: true` to sync phase. **The sync phase MUST also co-update `backlog.json#overview` whenever `seed.pitch` changed** — same source of truth, two surfaces. See [§ Write targets](#write-targets-sync-phase) for the canonical mutation set. Exception: `/project-todo` never generates a section rewrite — its Yes-path applies the pre-approved targeted Edit(s) only.
 - **Skip** → record drift items as `seedDrift[]` (each entry per the schema below) and persist in the skill's primary artifact (`feature.json#seedDrift[]` or `backlog.json#data.seedDrift[]`). Picked up later by `/project-seed § Sync`, `/project-seed brainstorm` (concept-scope save), or `/project-seed critique` (concept-scope save) — first one to successfully rewrite the seed clears the matching entries. Carry `seedUpdateApproved: false`.
 - **Adjust** → loop on item selection, regenerate rewrite, re-prompt.
 
@@ -145,7 +145,7 @@ When `seedUpdateApproved: true` reaches the consumer skill's sync phase, the fol
 | `.project/project-seed.md`   | Always (full rewrite of approved content) | Write full file                                                                                             |
 | `project.json#seed.pitch`    | If pitch differs from previous            | Targeted Edit                                                                                               |
 | `project.json#seed.name`     | Only if H1 title in rewrite changed       | Targeted Edit                                                                                               |
-| `backlog.json#data.overview` | If `seed.pitch` changed                   | Replace with new pitch (or first 1–2 sentences if pitch > ~200 chars). Skip silently when already matching. |
+| `backlog.json#overview` | If `seed.pitch` changed                   | Replace with new pitch (or first 1–2 sentences if pitch > ~200 chars). Skip silently when already matching. |
 
 `/project-todo` deviation: the `project-seed.md` row is a **targeted Edit** (surgical contract, `project-todo/references/seed-alignment.md`), never a full-file write; the pitch/name/overview rows apply unchanged.
 

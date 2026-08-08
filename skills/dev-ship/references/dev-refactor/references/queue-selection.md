@@ -4,7 +4,7 @@ Loaded only for the refactor phase's no-argument path. (Name-provided and "recen
 
 ### b0) UI-queue detection (check first)
 
-`queued = data.features.filter(f => f.transition === "refactoring" && f.status === "DONE" && !f.shipped)` (see `shared/BACKLOG.md → Lifecycle Protocol`)
+`queued = features.filter(f => f.transition === "refactoring" && f.status === "DONE" && !f.shipped)` over `backlog.json#features[]` — the **top-level** array, not a nested `data.features` (`data` holds only `updated`) (see `shared/BACKLOG.md → Lifecycle Protocol`)
 
 If `queued.length > 0`:
 
@@ -40,7 +40,7 @@ Present scope selection via **AskUserQuestion**:
 
 ## Small-items mode (`--small-items` or via choice)
 
-- Item queue = all `data.features` with `status === "DONE" && !shipped && !feature.json`
+- Item queue = all `backlog.json#features[]` entries with `status === "DONE" && !shipped && !feature.json`
 - For each item: determine scope via git log — find commits with item name in commit message: `git log --oneline --grep="{item.name}" -- {src/}`
 - If no commits found: log warning "No commits found for {name} — skip or check manually", skip the item
 - Scope files = all files changed in those commits: `git diff {first_hash}^..{last_hash} --name-only`

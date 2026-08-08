@@ -64,7 +64,7 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
    a) **Name provided**: use as feature name → go to step 2.
 
    b) **No name provided** (`/dev-define`): resolve in this priority order:
-   1. Backlog transition match — `data.features.find(f => f.type === "FEATURE" && f.transition === "defining")` (parse per `shared/BACKLOG.md → Lifecycle Protocol → Read`) → auto-select, show `Backlog: ✓ Task picked up — {name}`, go to step 2.
+   1. Backlog transition match — `features.find(f => f.type === "FEATURE" && f.transition === "defining")` over `backlog.json#features[]`, the **top-level** array (not a nested `data.features` — `data` holds only `updated`) → auto-select, show `Backlog: ✓ Task picked up — {name}`, go to step 2.
    2. First TODO in backlog → confirm via AskUserQuestion ("{name} (Recommended)" / "Different feature").
    3. No backlog but concept present (`SEED_CONTEXT.present` per `shared/SEED.md`) → AskUserQuestion: generate backlog first via `/project-plan` (Recommended, then stop) or define a standalone feature directly.
    4. No backlog, no concept (or direct-define chosen) → offer 3 kebab-case suggestions via AskUserQuestion, derived from `seed.goals[]`/`seed.pitch` noun-phrases, falling back to `stack.framework` generics.

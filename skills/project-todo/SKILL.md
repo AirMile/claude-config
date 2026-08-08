@@ -197,7 +197,7 @@ If criterion 2 (thin description) fired, fold the answers into the sharpened des
 
 5. **Seed drift resolution** (executes the PHASE 1 verdict + 1x answer — no new modal, no re-scan):
    - **Aligned** → log `Seed: ✓ aligned`, done.
-   - **Approved edit** (user picked "Apply edit(s)" in the PHASE 1x call) → apply the previewed Edit(s) literally to `.project/project-seed.md`, then the co-updates per `shared/SEED.md § Write targets` (pitch only when the replaced sentence appears in `seed.pitch`; `backlog.json#data.overview` rides the step-6 write pass). Details: `references/seed-alignment.md § Write path`. Log: `Seed: ✓ updated — {n} edit(s) applied`.
+   - **Approved edit** (user picked "Apply edit(s)" in the PHASE 1x call) → apply the previewed Edit(s) literally to `.project/project-seed.md`, then the co-updates per `shared/SEED.md § Write targets` (pitch only when the replaced sentence appears in `seed.pitch`; `backlog.json#overview` rides the step-6 write pass). Details: `references/seed-alignment.md § Write path`. Log: `Seed: ✓ updated — {n} edit(s) applied`.
    - **Declined / record-only / escape hatch** → prepare the drift `entry` (real `category`, verbatim `seedSays` for contradictions) per `shared/SEED.md § Drift entry schema` with `source: "/project-todo"`, `ref: "feature:{name}"`, for later `/project-seed § Sync` pickup. Log: `Seed: ⚠ drift recorded — {category}: {name}`.
 
 6. **Write back:** Edit the JSON in `.project/backlog.json`. Find a unique anchor in the existing features array and use Edit to insert the new object before it. Prepared drift entries from step 5 are appended to `data.seedDrift[]` in this same write pass (initialize the array if absent) — no separate write roundtrip.

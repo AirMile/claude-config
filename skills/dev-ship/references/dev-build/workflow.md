@@ -243,7 +243,7 @@ Guidelines:
 
 For each `pageName` in `feature.pageHint[]`:
 
-- Find `data.features[name===pageName]` in `backlog.json` (type must be `"PAGE"`).
+- Find `features[name===pageName]` in `backlog.json` — the **top-level** `features[]` array, not a nested `data.features` (`data` holds only `updated`) (type must be `"PAGE"`).
 - If found: add `{feature-name}` to `page.dependencies[]` (dedupe). Write back to `backlog.json`.
 - If not found: silent skip (PAGE may not be in backlog yet — `/design-convert` Route:Page will create it later).
 

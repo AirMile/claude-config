@@ -65,6 +65,6 @@ Preview shows only the forms that apply (replacement diff, append block, or both
 
 ## Write path (executed in PHASE 2 step 5)
 
-- **Approved** → apply the previewed Edit(s) literally to `.project/project-seed.md`, then follow `shared/SEED.md § Write targets` with one deviation: the `project-seed.md` row is the targeted Edit above, never a full-file write. Pitch: targeted Edit only when the replaced sentence also appears in `project.json#seed.pitch`; `backlog.json#data.overview` co-update rides the same write pass as step 6. Append-form edits never touch pitch/overview. Log: `Seed: ✓ updated — {n} edit(s) applied`.
+- **Approved** → apply the previewed Edit(s) literally to `.project/project-seed.md`, then follow `shared/SEED.md § Write targets` with one deviation: the `project-seed.md` row is the targeted Edit above, never a full-file write. Pitch: targeted Edit only when the replaced sentence also appears in `project.json#seed.pitch`; `backlog.json#overview` co-update rides the same write pass as step 6. Append-form edits never touch pitch/overview. Log: `Seed: ✓ updated — {n} edit(s) applied`.
 - **Declined / record-only** → append each `entry` to `backlog.json#data.seedDrift[]` in the step-6 write pass (initialize the array if absent). Log: `Seed: ⚠ drift recorded — {category}: {name}`.
 - **Aligned** → log `Seed: ✓ aligned`.
