@@ -23,7 +23,7 @@ writes:
 writes-terminal: [feature.status, feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 1.9.0
+  version: 1.11.0
   category: dev
 ---
 
@@ -57,12 +57,12 @@ resume; a park is a stopping point, not a finished phase.
 
 ## MANUAL 0 — Resume + worktree/app
 
-> **Todo**: `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred (unused
-> on the VERIFY-card branch below, but MANUAL 0's own routing needs them regardless of which branch
-> it resolves to). If they don't resolve, skip task tracking and continue. Either way, print one
-> line at every MANUAL N → MANUAL N+1 transition below (e.g. "MANUAL 1 → MANUAL 2: manual round
-> done, refactor starting") — phases run tens of tool calls long, and the task list alone leaves
-> the user without a narrative marker for where the run is. Resolve `main_root` (`git worktree list --porcelain | head -1 | awk '{print $2}'` — always resolve
+> **Todo**: Resolve `main_root` FIRST and route per the branches below. Only the checkpoint branches
+> seed or mark tasks — load their tools at that point with
+> `ToolSearch query="select:TaskCreate,TaskUpdate"` (both are deferred), never upfront: the
+> VERIFY-card and not-found branches mark nothing, so an eager load is dead weight on two of the
+> three branches. If they don't resolve, skip task tracking and continue; each phase below opens
+> with its own transition line either way. `main_root` = (`git worktree list --porcelain | head -1 | awk '{print $2}'` — always resolve
 > this first, cwd may already be inside a feature worktree where `.project/session/` is not shared).
 >
 > `test -f "$main_root/.project/session/ship-{feature}.json"` fails → there is no open ship run for
@@ -86,12 +86,27 @@ resume; a park is a stopping point, not a finished phase.
 > different pipeline entirely — refuse with the same message as above if it doesn't match).
 >
 > **Staleness pre-check** (belt-and-suspenders — independent of whatever `shared/WORKTREE.md § 4.6`
-> does later in MANUAL 1's own worktree-switch step): `git -C "$main_root" log --oneline
-"worktree-{feature}..$(git -C "$main_root" symbolic-ref --short HEAD)" | wc -l`. Non-zero → print
-> one line now, before routing: `"NOTE: worktree-{feature} is {N} commit(s) behind {default branch}
-— MANUAL 1/2 may need a rebase before refactor/finalize; not blocking, just visibility."` Cheap
-> (one `git log` call), does not replace WORKTREE.md's own staleness-rebase — only guarantees the
-> drift is surfaced even when the later switch takes the skip-because-already-in-worktree fast path.
+> does later in MANUAL 1's own worktree-switch step): `DEFAULT=$(git -C "$main_root" symbolic-ref
+--short HEAD); git -C "$main_root" log --oneline "worktree-{feature}..$DEFAULT" | wc -l`. Zero →
+> say nothing.
+>
+> Non-zero → the commit count alone does not predict cost, so probe for a real overlap before
+> wording the note. `git -C "$main_root" merge-tree --write-tree --name-only "$DEFAULT"
+"worktree-{feature}"` exits 1 on conflict and lists the conflicting paths from its second line on
+> (line 1 is the tree oid); it writes nothing to the working tree.
+>
+> - **Exit 0** → `"NOTE: worktree-{feature} is {N} commit(s) behind {default branch} — rebases
+clean, no action needed."`
+> - **Exit 1** → not a visibility note, a scheduled cost. Print: `"NOTE: worktree-{feature} is {N}
+commit(s) behind {default branch} AND conflicts with it in: {paths}. MANUAL 2's merge WILL stop
+on this — budget for dev-ship/references/merge-conflict-resolution.md before finalize, and after
+resolving, grep the merged file for symbols either side deleted: cross-feature breakage lands
+OUTSIDE the conflict markers when a symbol this branch removed gets merged cleanly into code the
+other side added. Not a reason to stop now."`
+>
+> Two git calls, no working-tree mutation. Does not replace WORKTREE.md's own staleness-rebase —
+> it only guarantees the drift, and its real cost, is surfaced even when the later switch takes the
+> skip-because-already-in-worktree fast path.
 >
 > Run `node ~/.claude/scripts/ship-checkpoint.js route {feature}` and branch — every branch below
 > marks MANUAL 0 → `completed` (routing resolved) and seeds the rest of the `TaskCreate` list per
@@ -131,11 +146,13 @@ resume; a park is a stopping point, not a finished phase.
 >   → `completed`, MANUAL 2 → `in_progress`, leave MANUAL 3 `pending`, then go straight to
 >   **MANUAL 2**.
 >
-> **Note**: the branch table above already sets every MANUAL N mark it names on entry — the
-> `Todo` in each section below only marks what that branch table didn't already cover; skip
-> a mark silently wherever MANUAL 0 already made it.
+> **Note**: the branch table above already made every mark it names — later sections only mark what
+> it didn't cover.
 
 ## MANUAL 1 — Manual round (walkthrough + fix/debug)
+
+**Print first**: `MANUAL 0 → MANUAL 1: checkpoint resumed, manual round starting.` Phases run tens
+of tool calls long; the task list alone leaves the user without a marker for where the run is.
 
 > **Todo**: mark MANUAL 1 → `in_progress`.
 > Read `.claude/skills/dev-ship/references/phase-3-manual-finalize.md` and follow it from
@@ -151,6 +168,16 @@ resume; a park is a stopping point, not a finished phase.
 > On completion, that file's Step 3 already hands off to `orchestration.md § 5` internally — continue
 > there (**MANUAL 2** below) rather than re-deriving the transition.
 >
+> **App already running** — the norm on desktop/native/terminal projects: the user has it open, and
+> that is often why they invoked this skill. `phase-3-manual-finalize.md § Step 2` only covers the
+> case where you launch it. Do not relaunch blindly, and do not skip Step 2 either — a process that
+> was started before this resume may hold a build older than the branch under test, and on a
+> compiled or desktop app replacing the artifact on disk does **not** reload it. Confirm the running
+> build from something the app itself renders (a version/build stamp, a visible fingerprint of the
+> change) — a file comparison is evidence about the disk, never about the process. Stale → rebuild
+> and reload BEFORE handing over item 1, and say which signal you used. Step 2's teardown then kills
+> only what you started yourself; leave a pre-existing instance running.
+>
 > **Checkpoint-only resume note**: unlike a same-session `/dev-ship` run, dev-manual never has
 > AGENT 2's structured result in context — `phase-3-manual-finalize.md § Step 3`'s completion-sync
 > payload (`requirements[]` verdicts, `checklist{}` statuses) must be reconstructed from
@@ -160,6 +187,10 @@ resume; a park is a stopping point, not a finished phase.
 
 ## MANUAL 2 — Refactor + finalize/merge
 
+**Print first**: `MANUAL 1 → MANUAL 2: manual round done, refactor starting.`
+
+> **Todo**: mark MANUAL 1 → `completed`, MANUAL 2 → `in_progress`.
+>
 > **STOP — leave the worktree before entering § 5.** MANUAL 1 switched the session into
 > `worktree-{feature}` (`shared/WORKTREE.md § Switch`), which makes it **worktree-isolated**:
 > the harness refuses every `git -C "$main_root" …`, including § 5's own pre-spawn
@@ -170,8 +201,7 @@ resume; a park is a stopping point, not a finished phase.
 > branch literally (`--head worktree-{feature}`) — `git branch --show-current` now answers
 > `main`, so the verbatim command would probe the wrong branch.
 >
-> **Todo**: mark MANUAL 1 → `completed`, MANUAL 2 → `in_progress`. Read
-> `.claude/skills/dev-ship/references/orchestration.md § 5` and follow it: refactor (AGENT 3) +
+> Read `.claude/skills/dev-ship/references/orchestration.md § 5` and follow it: refactor (AGENT 3) +
 > optional security triage (AGENT S), then finalize (solo-merge or halt-for-team, per
 > `.claude/skills/dev-ship/references/dev-verify/references/finalize.md`). This is the same reference `/dev-ship`'s
 > own PHASE 4 reads — no dev-manual-specific variant.
@@ -190,6 +220,9 @@ resume; a park is a stopping point, not a finished phase.
 
 ## MANUAL 3 — Report
 
+**Print first**: `MANUAL 2 → MANUAL 3: merged, writing the report.` (Or `halted` in place of
+`merged` when finalize took the halt-for-team route.)
+
 > **Todo**: mark MANUAL 2 → `completed`, MANUAL 3 → `in_progress`. Read
 > `.claude/skills/dev-ship/references/phase-5-report.md` and follow it — shared with `/dev-ship`'s own
 > PHASE 5, the only difference being which phase-tracking unit gets marked `in_progress`/`completed`
@@ -206,7 +239,7 @@ retry always goes through `/dev-ship`.
 **Crash between the merge and the checkpoint deletion.** The checkpoint still says
 `phase4-finalize-only` while the branch is already merged and deleted, so a re-run routes to
 MANUAL 2 and `finalize.md`'s Branch Resolution dead-ends on "No worktree found". That is the
-shape of a *finished* ship, not a broken one — do not re-merge. Confirm both: the default
+shape of a _finished_ ship, not a broken one — do not re-merge. Confirm both: the default
 branch's tip is the merge commit (`git log --oneline -1`), and the feature sits in
 `.project/archive/backlog-archive.json#archived[]` with `shipped: true`. Both hold → run § 5's
 post-merge reconcile (re-stamp `shippedSha`, state-push), delete the checkpoint, go to MANUAL 3.
