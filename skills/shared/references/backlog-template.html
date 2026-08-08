@@ -198,6 +198,29 @@
       initCollapseStore("backlog", data.project);
 
       let _trackFilter = "ALL"; // "ALL" | "DESIGN" | "DEV"
+      // Provenance filter — see shared/BACKLOG.md § Card provenance.
+      // "MINE" is origin !== "agent", so cards with no origin (written before
+      // the field existed, or by a writer that does not stamp it) group with
+      // the user's own rather than being claimed as machine-made.
+      let _originFilter = "ALL"; // "ALL" | "MINE" | "AUTO"
+      const matchesOrigin = (f) =>
+        _originFilter === "ALL" ||
+        (_originFilter === "AUTO"
+          ? f.origin === "agent"
+          : f.origin !== "agent");
+
+      // Row headline = the description's lead sentence only (BACKLOG.md
+      // § Description quality → Lead sentence). Agent-parked cards carry a
+      // plain-language lead followed by a technical locator; showing the whole
+      // blob lets the locator eat the visible row. The split requires
+      // whitespace + a capital after the stop, so "Obelisk.mq5 declares …"
+      // does not split on the file extension. Nothing is hidden: the full
+      // text stays in the title attribute and in the detail drawer.
+      function leadSentence(text) {
+        const s = (text || "").trim();
+        const m = s.match(/^([\s\S]*?[.!?])\s+(?=[A-Z])/);
+        return m && m[1].length >= 20 ? m[1] : s;
+      }
 
       // Wire up project settings modal + team-mode toggle (lives in the
       // gear/prefs menu's #pn-mode-slot, shared nav chrome from
@@ -780,16 +803,27 @@
         const dualTrack = hasDesign && hasDev;
 
         // Build track filter pills
+        const hasAgentCards = active.some((f) => f.origin === "agent");
         const pillsContainer = document.getElementById("type-pills");
         if (pillsContainer) {
+          let pillsHtml = "";
           if (dualTrack) {
-            pillsContainer.innerHTML =
+            pillsHtml +=
               `<button class="type-pill${_trackFilter === "ALL" ? " active" : ""}" onclick="_trackFilter='ALL';render()">All</button>` +
               `<button class="type-pill${_trackFilter === "DESIGN" ? " active" : ""}" onclick="_trackFilter='DESIGN';render()">Design</button>` +
               `<button class="type-pill${_trackFilter === "DEV" ? " active" : ""}" onclick="_trackFilter='DEV';render()">Dev</button>`;
-          } else {
-            pillsContainer.innerHTML = "";
           }
+          // Provenance pills — only worth the chrome once a run has actually
+          // parked something itself; on a board of hand-written cards the
+          // split has nothing to separate.
+          if (hasAgentCards) {
+            if (pillsHtml) pillsHtml += `<span class="pill-sep"></span>`;
+            pillsHtml +=
+              `<button class="type-pill${_originFilter === "ALL" ? " active" : ""}" onclick="_originFilter='ALL';render()">All</button>` +
+              `<button class="type-pill${_originFilter === "MINE" ? " active" : ""}" onclick="_originFilter='MINE';render()" title="Cards you asked for">Mine</button>` +
+              `<button class="type-pill${_originFilter === "AUTO" ? " active" : ""}" onclick="_originFilter='AUTO';render()" title="Cards a pipeline run parked by itself">Auto</button>`;
+          }
+          pillsContainer.innerHTML = pillsHtml;
         }
 
         // Build action-btn toolbar
@@ -851,6 +885,7 @@
               !f.shipped &&
               !isInProgress(f) &&
               effectiveTypeFilter(f.type) &&
+              matchesOrigin(f) &&
               (status === "TODO" || !DESIGN_ONESHOT_TYPES.includes(f.type)),
           );
 
@@ -1094,6 +1129,7 @@
           let items = data.features.filter(
             (f) =>
               isInProgress(f) &&
+              matchesOrigin(f) &&
               (_trackFilter === "ALL" ||
                 (_trackFilter === "DESIGN"
                   ? isDesignTrackType(f.type)
@@ -1166,6 +1202,7 @@
               f.status !== "TODO" &&
               f.status !== "CANCELLED" &&
               !isInProgress(f) &&
+              matchesOrigin(f) &&
               (_trackFilter === "ALL" ||
                 (_trackFilter === "DESIGN"
                   ? isDesignTrackType(f.type)
@@ -1694,6 +1731,12 @@
           f.type === "SECURITY" ? null : SUB_TYPE_LABELS[f.type] || null;
 
         let metaHtml = "";
+        // Provenance chip — only for agent-parked cards. "user" and absent
+        // render nothing on purpose: chipping every card would make the
+        // marker invisible again (shared/BACKLOG.md § Card provenance).
+        if (f.origin === "agent") {
+          metaHtml += `<span class="origin-badge" title="Parked by ${esc(f.source || "a pipeline run")} — you did not ask for this card">⚙ auto</span>`;
+        }
         const deps = f.dependencies || [];
         const unresolvedDeps = deps.filter((dep) => !isDepResolved(dep));
         const isBlocked = unresolvedDeps.length > 0;
@@ -1766,7 +1809,7 @@
           <span class="row-name">${esc(f.name)}</span>
           ${meta.progressLabelHtml}
           ${subLabel ? `<span class="row-sub-tag">${subLabel}</span>` : ""}
-          ${f.description ? `<span class="row-desc">${esc(f.description)}</span>` : ""}
+          ${f.description ? `<span class="row-desc" title="${esc(f.description)}">${esc(leadSentence(f.description))}</span>` : ""}
           <div class="row-actions-group">
             <div class="row-meta">${metaHtml}</div>
             ${editDeleteHtml}

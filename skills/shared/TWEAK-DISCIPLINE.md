@@ -252,8 +252,11 @@ live in each skill's `references/escalate.md`):
   Leave `type` untouched when the card was never `TWEAK`/`POLISH` to begin with (a free-text guard
   match). This is a third sanctioned exception to the `type`/`transition` ownership in § Never below
   — the write is provisional, a later ship define pass classifies fresh and overwrites `type` again
-  regardless. **No live card** → invoke the `project-todo` skill with one sentence: description +
-  escalation reason + touched-file hints. project-todo owns naming, type/phase inference, dedup, and
+  regardless. Parking a live card never touches its `origin` — that field belongs to whoever created
+  the card, not to whoever re-typed it. **No live card** → invoke the `project-todo` skill with one
+  sentence: description + escalation reason + touched-file hints + the mandatory provenance token
+  (`origin agent via /dev-tweak` / `/game-tweak` — `BACKLOG.md § Card provenance`). project-todo owns
+  naming, type/phase inference, dedup, and
   the backlog/project dual sync — the tweak skill performs **zero** backlog writes on this path (no
   board transition was ever set here). Provenance goes in the description text ("parked from
   /dev-tweak escalation").

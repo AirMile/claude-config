@@ -406,6 +406,9 @@ if (hasDeferredIssue) {
       phase: entry.phase || "P2",
       description,
       source: pipeline === "game" ? "/game-ship" : "/dev-ship",
+      // A VERIFY card is minted by this script off a ship ledger, never asked
+      // for by a human — see shared/BACKLOG.md § Card provenance.
+      origin: "agent",
       dependencies: blockers,
       parentFeature: name,
       auto: true,
@@ -422,6 +425,8 @@ if (Array.isArray(payload.seedPages)) {
       phase: "P3",
       description: `Page introduced via fix in ${name}. Routes: ${p.routePattern}`,
       source: "/dev-verify",
+      // Discovered by the verify pass, not requested — § Card provenance.
+      origin: "agent",
       dependencies: [name],
       parentFeature: name,
       auto: true,

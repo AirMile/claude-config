@@ -128,7 +128,8 @@ deferred" — it returns control here only when ready for the regression re-chec
 checkpoint stays open, the feature stays non-DONE — see `fix-round.md § Re-check`'s park option), or
 escalated via the debug ladder. `tweak` findings, out-of-scope defects split off by the Scope check
 (`shared/FEEDBACK-CATEGORIZATION.md § Scope check`), and net-new capability (walkthrough Step F)
-default to `/project-todo` offload — `type POLISH` only for a tweak that also fits
+default to `/project-todo` offload — always carrying the provenance token
+`origin agent via /game-ship` (`shared/BACKLOG.md § Card provenance`); `type POLISH` only for a tweak that also fits
 `shared/TWEAK-DISCIPLINE.md § Size gate` (ledger verdict `"tweak"`); plain inference
 (`SYSTEM`/`MECHANIC`/`CONTENT`) for a tweak that exceeds it or an out-of-scope defect, both ledger
 verdict `"offloaded"`. Net-new capability never enters the ledger at all (no verdict, no `POLISH`

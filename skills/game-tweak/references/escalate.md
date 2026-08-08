@@ -57,7 +57,7 @@ targeted `Edit` on the card in `backlog.json#features[]`, three fields:
    free-text guard match, never `POLISH`) → leave `type` untouched.
 2. **`description`** — append one sentence naming the provenance, the same information the
    no-live-card branch below already hands to `project-todo`: `Parked from /game-tweak escalation
-   ({criterion}) — exceeds tweak scope, pick up with /game-ship.`
+({criterion}) — exceeds tweak scope, pick up with /game-ship.`
 3. **`transition`** — remove if present. The board sets this the moment its `/game-tweak` copy
    button was clicked (`shared/TWEAK-DISCIPLINE.md` § Escalation gate (a)); nothing else consumes it
    once this run bails instead of finishing the tweak, so skipping this leaves the card stuck
@@ -74,8 +74,10 @@ un-queued` (drop "un-queued" when no `transition` was present) + `Pick it up wit
 
 **No live card** (a genuine free-text run with no guard match) — invoke the `project-todo` skill
 (Skill tool) with one sentence: the change description + the escalation reason + touched-file hints
-(e.g. _"Add a dash ability with cooldown — parked from /game-tweak escalation (net-new surface:
-input action + signal); touches player/player.gd"_). project-todo owns naming, type/phase inference,
+(e.g. _"Add a dash ability with cooldown — origin agent via /game-tweak, parked from /game-tweak
+escalation (net-new surface: input action + signal); touches player/player.gd"_). The
+`origin agent via /game-tweak` token is mandatory (`shared/BACKLOG.md § Card provenance`) — without
+it the card is written as if the user asked for it. project-todo owns naming, type/phase inference,
 dedup, and the backlog/project dual sync — this skill performs zero backlog writes. Then finish with
 the same two-line report using the name project-todo returns.
 

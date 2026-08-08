@@ -37,6 +37,7 @@ Read `.project/backlog.json` and parse as JSON. For PHASE 0 read-only access, pr
       "phase": "P1|P2|P3|P4",
       "description": "Description",
       "source": "/project-plan",
+      "origin": "user|agent|null — see § Card provenance",
       "dependencies": ["other-feature"],
       "risk": "1-5|null",
       "note": "free text|null — park context, see § Park notes",
@@ -95,6 +96,43 @@ The `description` field is the only planning context that survives until `/dev-s
 - **Decisions folded in**: answers from planning question-rounds (open-question resolutions, thinking rounds) that shape this feature land in the description — a decision that only lives in the planning chat is lost.
 - **Length**: 1–3 sentences. Needing more usually means the feature is too large (split it) or the detail belongs in define, not on the card.
 
+### Lead sentence (mandatory for agent-parked cards)
+
+A card parked by a run (`origin: "agent"` — § Card provenance) is written straight off a finding, and findings are phrased for whoever is holding the code. That produces board rows nobody can scan:
+
+```
+✗ OnCalculate in MQL5/Indicators/Obelisk/Obelisk.mq5 declares a local
+  taZoneFillPlotRank map with two entries mapping to the same rank …
+✗ tools/tests/test_orphan_cleanup_wiring.py's negative-control block
+  (test_marker_absent_when_disabled) asserts on a value that is …
+```
+
+Neither says **what is wrong** or **why it matters** — the reader has to open the file to find out whether the card deserves an afternoon. The board truncates on width, so the technical locator eats the entire visible row.
+
+The `description` of an agent-parked card therefore has two parts, in this order:
+
+1. **Lead sentence — plain language, no paths, no symbol names, no test names.** What is wrong or what should change, and the consequence, in terms the user would use. This is the part the board row shows.
+2. **Locator — everything technical.** File paths, symbols, test names, line regions, the observed→expected pair. One or two sentences.
+
+```
+✓ Two colour zones are drawn on the same layer, so one silently hides the
+  other on overlapping ranks. OnCalculate in
+  MQL5/Indicators/Obelisk/Obelisk.mq5 declares a local taZoneFillPlotRank
+  map with two entries mapping to the same rank.
+
+✓ A test meant to prove the marker disappears when the feature is off
+  passes even when it is on, so that switch is effectively untested.
+  tools/tests/test_orphan_cleanup_wiring.py, negative-control block
+  test_marker_absent_when_disabled.
+```
+
+Two rules keep the lead sentence honest:
+
+- **Never open with a path, a filename, a symbol, or a test name.** If the first six words contain one, it is a locator sentence, not a lead sentence — rewrite it.
+- **Name the consequence, not just the deviation.** "Docstrings tag stale REQ ids" is a deviation; "the test docs point at requirements that no longer exist, so the suite reads as covering things it doesn't" is a consequence. The consequence is what tells the user whether to care.
+
+This applies to every agent-parked card regardless of type, and matters most for `TWEAK` and `BUG` — the two types that arrive in volume and compete for attention in the same lane. A user-written card is exempt: the user already knows what they meant.
+
 ## Writing the backlog
 
 **Legacy migration on first write:** if `.project/backlog.json` does not exist but `.project/backlog.html` does, migrate before mutating: extract the JSON from `<script id="backlog-data">`, add `"schemaVersion": 2`, write it to `.project/backlog.json`, and delete `.project/backlog.html`. Then proceed below. (Idempotent — once `backlog.json` exists this step never fires again.)
@@ -121,9 +159,60 @@ For small mutations (status flip, one field) prefer the Edit tool on the JSON fi
 
 The `source` field on a backlog item indicates which skill created it. Convention: **always with leading slash**, e.g. `"/project-todo"`, `"/project-plan"`, `"/design-convert"`.
 
-**Independent rule:** A feature is INDEPENDENT (never overwritten by `/project-plan` during rebuild) when `source` is set to anything other than `"/project-plan"`. Features without a `source` field, or with `"/project-plan"`, are concept-derived and managed by `/project-plan`.
+`source` names the skill that **actually created** the card, not the skill that performed the write. A ship run that parks a finding invokes `/project-todo` to do the writing, but the card's source is `"/dev-ship"` — see § Card provenance for how that value travels.
+
+**Independent rule:** A feature is INDEPENDENT (never overwritten by `/project-plan` during rebuild) when `source` is set to anything other than `"/project-plan"`. Features without a `source` field, or with `"/project-plan"`, are concept-derived and managed by `/project-plan`. Re-stamping `source` from `"/project-todo"` to the real creator (`"/dev-ship"`, `"/game-ship"`, …) preserves this — every such value is still `!== "/project-plan"`.
 
 Readers also accept slash-less variants (`"project-todo"`) and legacy values (`"dev-todo"`) — both are still INDEPENDENT under the rule above.
+
+## Card provenance
+
+`source` alone cannot answer the question a board user actually asks — _did I ask for this, or did a run notice it by itself?_ `/project-todo` is both the place the user captures an idea **and** the writer every ship-run offload routes through, so a single field collapses the two. The `origin` field is that second axis:
+
+| `origin`  | Meaning                                                               |
+| --------- | --------------------------------------------------------------------- |
+| `"user"`  | A human asked for this card                                           |
+| `"agent"` | A pipeline run observed it and parked it without being asked          |
+| absent    | Unknown — predates this field, or a writer that does not yet stamp it |
+
+**Absent is never treated as `"user"`.** Defaulting to `user` would silently relabel every not-yet-migrated writer as human intent, which is exactly the claim the field exists to make trustworthy. Absent renders no chip on the board and is grouped with `user` only for filtering (the "Mine" filter shows `origin !== "agent"`).
+
+### How provenance reaches `/project-todo`
+
+Skill call sites invoke `/project-todo` with one sentence that already carries inline conventions (`type TWEAK`, `depends on {feature}`). Provenance uses the same form — an **explicit token**, never inferred from prose:
+
+```
+"{observed} → {expected}, type TWEAK, depends on {feature},
+ origin agent via /dev-ship, parked from /dev-ship manual round"
+```
+
+Deliberately not derived from the existing `parked from /{skill}` phrase, even though most payloads carry one: that phrase is prose a model rewrites per run, and provenance that depends on wording drifts. Resolution in `/project-todo`:
+
+| Situation                                          | `origin`  | `source`        |
+| -------------------------------------------------- | --------- | --------------- |
+| Explicit `origin agent via /{skill}` token present | `"agent"` | `/{skill}`      |
+| User typed `/project-todo` themselves              | `"user"`  | `/project-todo` |
+| A skill invoked it without the token               | omit      | `/project-todo` |
+
+Row 3 should be unreachable — `scripts/check-card-provenance.js` fails the release checklist when a call site's payload template omits the token.
+
+### Writers that bypass `/project-todo`
+
+They stamp `origin` directly:
+
+| Writer                                                 | `origin`                     |
+| ------------------------------------------------------ | ---------------------------- |
+| `/project-plan` (generate + update)                    | `"user"`                     |
+| `/team-issues`                                         | `"user"`                     |
+| `/design-convert` (page sync, route-convert)           | `"user"`                     |
+| `scripts/completion-sync.js` (VERIFY cards, seedPages) | `"agent"`                    |
+| define-time split (§ Define-time split)                | inherit from the parent card |
+
+A split's children inherit rather than defaulting: the parent was the user's card, and re-labelling its fragments as agent work would misreport who wanted the feature.
+
+`/dev-ship`'s § Impact Check `partial` rescope and `shared/TWEAK-DISCIPLINE.md § Escalation gate` (a) both mutate **existing** cards — neither ever touches `origin`, which belongs to whoever created the card.
+
+**Backfill**: `node {config_repo}/scripts/backfill-card-origin.js --project <dir>` stamps pre-existing cards, but only where `description` carries a literal provenance sentence (`parked from /{skill}`). No match → left untouched. It never guesses from card naming or writing style; a wrong provenance label is worse than an absent one.
 
 ## Reordering (array position is order)
 
@@ -616,7 +705,10 @@ outcome — `{dev,game}-ship/references/define-park.md`), the mutation is:
   `status: "TODO"`, `source` = the splitting ship skill (e.g. `"/dev-ship"` — INDEPENDENT under
   § Source field convention), `phase` inherited from the parent, `dependencies[]` inherited from
   the parent (plus any inter-child dependency), descriptions per § Description quality. Small
-  1–3-file children may be `type: "TWEAK"` (game: `"POLISH"`).
+  1–3-file children may be `type: "TWEAK"` (game: `"POLISH"`). **`origin` is inherited from the
+  parent verbatim** (omitted when the parent had none) — a split is a reshaping of work the parent's
+  creator already asked for, so stamping the children `agent` would misreport who wanted the feature
+  (§ Card provenance).
 - **Dependents repointed** — every other card with the parent in `dependencies[]` gets the parent
   name replaced by the child(ren) that cover what it needs; when unclear, all children.
 

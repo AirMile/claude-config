@@ -39,8 +39,9 @@ options:
 ## 3. Execute the choice
 
 - **(a) Park as TODO** — invoke the `project-todo` skill with one sentence: change description +
-  escalation reason + the resolved `file:line` hints (provenance: _"parked from /dev-inspect
-  escalation"_). project-todo owns naming, dedup, and the backlog/project dual sync — this skill
+  escalation reason + the resolved `file:line` hints + the mandatory provenance token
+  (_"origin agent via /dev-inspect, parked from /dev-inspect escalation"_ —
+  `shared/BACKLOG.md § Card provenance`). project-todo owns naming, dedup, and the backlog/project dual sync — this skill
   performs zero backlog writes. Finish with two lines: the card name + `Pick it up with /dev-ship {name}.`
 - **(b) Hand off to /dev-ship** — resolve mid-run edits first (§ 1), then invoke the `dev-ship`
   skill with the change description as args. Do not pre-create a card: define owns registration.

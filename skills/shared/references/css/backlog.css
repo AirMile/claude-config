@@ -1411,6 +1411,30 @@ body {
   cursor: default;
 }
 
+/* Provenance marker — a card a pipeline run parked by itself.
+   Deliberately muted, not a warning colour: agent-parked is a fact about
+   who wrote the card, not a problem with it. See BACKLOG.md § Card provenance. */
+.origin-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* Separator between the track pill group and the provenance pill group. */
+.pill-sep {
+  width: 1px;
+  height: 14px;
+  margin: 0 4px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
 .known-issue-badge {
   font-size: 10px;
   font-weight: 600;

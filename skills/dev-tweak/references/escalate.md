@@ -66,7 +66,7 @@ identical dead end on the next click, re-running the same escalation from scratc
    untouched.
 2. **`description`** — append one sentence naming the provenance, the same information the
    no-live-card branch below already hands to `project-todo`: `Parked from /dev-tweak escalation
-   ({criterion}) — exceeds tweak scope, pick up with /dev-ship.`
+({criterion}) — exceeds tweak scope, pick up with /dev-ship.`
 3. **`transition`** — remove if present. The board sets this the moment its `/dev-tweak` copy
    button was clicked (`shared/TWEAK-DISCIPLINE.md` § Escalation gate (a)); nothing else consumes it
    once this run bails instead of finishing the tweak, so skipping this leaves the card stuck
@@ -85,8 +85,10 @@ Then finish the tweak run with a two-line report:
 
 **No live card** (a genuine free-text run with no guard match) — invoke the `project-todo` skill
 (Skill tool) with one sentence: the change description + the escalation reason + touched-file hints
-(e.g. _"Add bulk-select to the file navigator — parked from /dev-tweak escalation (net-new surface);
-touches src/components/navigator"_). project-todo owns naming, type/phase inference, dedup, and the
+(e.g. _"Add bulk-select to the file navigator — origin agent via /dev-tweak, parked from /dev-tweak
+escalation (net-new surface); touches src/components/navigator"_). The `origin agent via /dev-tweak`
+token is mandatory (`shared/BACKLOG.md § Card provenance`) — without it the card is written as if the
+user asked for it. project-todo owns naming, type/phase inference, dedup, and the
 backlog/project dual sync — this skill performs zero backlog writes. Then finish with the same
 two-line report using the name project-todo returns.
 

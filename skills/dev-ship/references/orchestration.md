@@ -135,9 +135,9 @@ code/test failure follows the branches below.
   `shared/TWEAK-DISCIPLINE.md § Size gate` criteria 1-4 (same judgment and same default-to-TWEAK-on-
   a-close-call rule as `phase-3-manual-finalize.md § Offload flush` — an auto-verify improvement note
   is typically small, but not always) and invoke `/project-todo` **once per uncovered note**: within
-  the gate, `"{note}, type TWEAK, depends on {feature}, parked from /dev-ship auto-verify"`;
+  the gate, `"{note}, type TWEAK, depends on {feature}, origin agent via /dev-ship, parked from /dev-ship auto-verify"`;
   exceeding it, drop the `type` hint and name the reason instead — `"{note}, depends on {feature},
-parked from /dev-ship auto-verify (exceeds tweak size gate: {criterion})"` (plain inference then
+origin agent via /dev-ship, parked from /dev-ship auto-verify (exceeds tweak size gate: {criterion})"` (plain inference then
   lands on `CHANGE`/`FEATURE`). These are independent single-sentence cards, not a cross-domain
   cluster, so do not concatenate multiple notes into one call (`/project-todo`'s own multi-item split
   is content-signal-based, not a manual-batch interface). A note that is self-documenting in the

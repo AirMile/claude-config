@@ -200,11 +200,15 @@ new interview close; that only runs once per full walkthrough).
      projected scope against `shared/TWEAK-DISCIPLINE.md § Size gate` criteria 1-4 (same judgment,
      same default-to-fastpath-on-a-close-call rule as
      `dev-ship/references/phase-3-manual-finalize.md § Offload flush` — criteria 5-6 don't apply
-     pre-offload). **Within the gate** → route to `/project-todo` with no explicit type hint (plain
-     inference lands on `POLISH`, same as a hand-typed "polish/juice/feel" description), patch
-     `offload: "{card-name}"`, verdict stays `"tweak"`. **Exceeding the gate** → route to
+     pre-offload). Every route below carries the mandatory provenance token
+     `origin agent via /game-ship` (`shared/BACKLOG.md § Card provenance`) — without it the card is
+     written as if the user asked for it. **Within the gate** → route to `/project-todo` with no
+     explicit type hint (plain inference lands on `POLISH`, same as a hand-typed
+     "polish/juice/feel" description) —
+     `"{observed} → {expected}, origin agent via /game-ship, parked from /game-ship playtest round"`
+     — patch `offload: "{card-name}"`, verdict stays `"tweak"`. **Exceeding the gate** → route to
      `/project-todo` naming the reason
-     (`"{observed} → {expected}, parked from /game-ship playtest round (exceeds tweak size gate: {criterion})"`;
+     (`"{observed} → {expected}, origin agent via /game-ship, parked from /game-ship playtest round (exceeds tweak size gate: {criterion})"`;
      inference then lands on `SYSTEM`/`MECHANIC`/`CONTENT` instead of `POLISH`),
      patch `offload: "{card-name}"`, verdict `"offloaded"` — a different card type and terminal
      verdict from the in-gate case (an out-of-scope-defect split-off is the third case that also

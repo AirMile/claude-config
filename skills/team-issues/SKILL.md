@@ -276,6 +276,7 @@ Per accepted todo: insert into `data.features[]` (after dedup check on `name`):
   "phase": "{phase}",
   "description": "{issue title}\n\n{fragment excerpt, max 500 chars}",
   "source": "/team-issues",
+  "origin": "user",
   "externalRef": {
     "type": "{github|jira|linear}",
     "id": "{issue id}",

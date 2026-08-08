@@ -108,7 +108,7 @@ Collect every item's verdict, then write once:
   there, otherwise `archive/backlog-archive.json#archived[]`.
 - **Fail** — a deferred test failing on re-test is a real regression, never silently closed. Invoke
   `/project-todo` with one sentence: `"{title} fails on re-test → {expected}, type BUG, depends on
-{feature}, re-tested from the verify-{feature} card"`. Set the matching `tests.checklist[]` entry to
+{feature}, origin agent via /dev-manual, re-tested from the verify-{feature} card"`. Set the matching `tests.checklist[]` entry to
   `status: "fail"` + `retestedAt` + the new BUG card's name (never leave it on `"deferred"` — the
   item is no longer deferred, and Pass/Still-blocked both update it). Remove the deferred
   `knownIssues[]` entry (the new BUG card supersedes it) and note the BUG card's name against this
@@ -117,7 +117,7 @@ Collect every item's verdict, then write once:
   only if the user gave a new one. **Different blocker than recorded** (the original cleared or was
   never the real cause, but a newly-found _external_ limitation still blocks the test — a
   feature-code fault is the **Fail** branch above instead): invoke `/project-todo` for the new
-  blocker (one sentence, `type TWEAK`, `depends on {feature}`), then repoint **both**
+  blocker (one sentence, `type TWEAK`, `depends on {feature}`, `origin agent via /dev-manual`), then repoint **both**
   `knownIssues[].blocker` (feature.json) and the `verify-{feature}` card's `dependencies[]` to the
   new card's name, so a later pickup gates on the right blocker. Still no card write (Step 5) — the
   VERIFY card stays open.

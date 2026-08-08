@@ -292,7 +292,7 @@ If scope is a full page (not a single component):
 2. See `shared/BACKLOG.md → Lifecycle Protocol → Read`. Filter: `(type === "PAGE" || type === "COMPONENT") && transition === "converting"` — if found, auto-select as task (show: `Backlog: ✓ Task picked up — {taskName}`).
 3. If `$CONVERT_TARGET` is set: use it as the page name to match (skip name derivation). Otherwise derive from scope selection. Find feature: `data.features.find(f => f.name === "{kebab-case-page-name}")`
    - **Found**: use as task reference. Do NOT modify `status` or add `stage` during build — the page stays `TODO` until PHASE 4 completion. Skip write.
-   - **Not found**: store `$NEW_BACKLOG_ENTRY = { "name": "{name}", "type": "PAGE", "status": "TODO", "phase": "P4", "description": "Converted from visual input", "dependencies": [] }`. **Do not write yet** — Phase 4 completion (4.2) writes the entry along with the DONE sync.
+   - **Not found**: store `$NEW_BACKLOG_ENTRY = { "name": "{name}", "type": "PAGE", "status": "TODO", "phase": "P4", "description": "Converted from visual input", "source": "/design-convert", "origin": "user", "dependencies": [] }` (`source`/`origin` per `shared/BACKLOG.md § Card provenance` — converting the user's own visual input is `user`). **Do not write yet** — Phase 4 completion (4.2) writes the entry along with the DONE sync.
 
 If scope is a component: skip this step.
 
@@ -457,11 +457,12 @@ Per section in `$PATCH_SECTIONS`:
    For `$SCOPE = audit` on a **structural mismatch** (convert-audit.md Step D escalation fired): `$PATCH_SECTIONS` carries section-level work items, not property diffs — this step's "direct value swap, Edit only" rule does not apply. Treat each item as normal codegen instead: new sections → Write a new component file + import it; reordered/rewritten sections → full-file Edit; retired sections → remove the import/usage from the page file only (leave the component file on disk unless the user asked to delete it).
 
 2a. **CMS-backed sections** (`contentSource: "cms"`, tagged in `convert-audit.md` Step A): a CMS write has none of PHASE 4's rollback safety net — that machinery (scoped commit, worktree, recoverable before-state) protects code, not external state. Before mutating:
-   - Capture the before-values in the report (what's being overwritten, not just what it becomes).
-   - Confirm the target dataset/environment explicitly with the user (production vs preview/staging) — never assume which one a query/client points at.
-   - Prefer emitting a runnable migration/patch script the user reviews and runs, over a direct mutation, unless the user has explicitly opted into direct writes for this run.
-   - Wrong **images** get a different disposition than wrong **text**: text is generally fixable straight from the Figma ground truth; a wrong stock photo needs a real asset this route doesn't have — flag it `needs asset from user` rather than substituting a different placeholder.
-   - Then mutate via the project's CMS client/API (not the Edit tool — there is no file to Edit).
+
+- Capture the before-values in the report (what's being overwritten, not just what it becomes).
+- Confirm the target dataset/environment explicitly with the user (production vs preview/staging) — never assume which one a query/client points at.
+- Prefer emitting a runnable migration/patch script the user reviews and runs, over a direct mutation, unless the user has explicitly opted into direct writes for this run.
+- Wrong **images** get a different disposition than wrong **text**: text is generally fixable straight from the Figma ground truth; a wrong stock photo needs a real asset this route doesn't have — flag it `needs asset from user` rather than substituting a different placeholder.
+- Then mutate via the project's CMS client/API (not the Edit tool — there is no file to Edit).
 
 3. Apply via **Edit tool** — never Write — for value-level patches on `contentSource: "code"` sections. Structural-mismatch items follow the codegen rule above instead; CMS-backed sections follow 2a instead. Find the exact string, replace only that block (value-level) or the full section (structural).
 4. Show a brief summary per edit — this is the artifact that makes the change auditable after the fact, don't skip it even when the diff feels obvious:

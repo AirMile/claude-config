@@ -30,6 +30,7 @@ Parallel sync: those are dev-ship/design-ship runtime concerns this skill never 
          "phase": "P1|P2|P3|P4",
          "description": "{description}",
          "source": "/project-plan",
+         "origin": "user",
          "dependencies": ["{other-feature}"],
          "risk": "{1-5 from PHASE 1 risk-score — WEB MODE only, omit in game mode}"
        }

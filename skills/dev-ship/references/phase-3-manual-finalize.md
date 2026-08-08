@@ -268,21 +268,25 @@ duplicate card.
   straight to `/dev-tweak` too), underestimating burns the round-trip described in this file's own
   design notes (a `/dev-tweak` session that immediately re-escalates to `/dev-ship`). Only a clear
   gate hit routes the other way. **Within the gate** → invoke `/project-todo` with one sentence:
-  `"{observed} → {expected}, type TWEAK, depends on {feature}, parked from /dev-ship manual round"`
+  `"{observed} → {expected}, type TWEAK, depends on {feature}, origin agent via /dev-ship, parked from /dev-ship manual round"`
   — batch at most 3 items per invocation (`project-todo/SKILL.md § PHASE 0` step 3's own multi-item
-  split cap). Ledger verdict stays `"tweak"`.
+  split cap). The `origin agent via /dev-ship` token is mandatory on every variant below too
+  (`shared/BACKLOG.md § Card provenance`) — without it the card is written as if the user asked for
+  it. Ledger verdict stays `"tweak"`.
 - **Tweak-class finding, exceeding the tweak size gate.** Same finding, but the judgment above hit a
   clear criterion. Invoke `/project-todo` with **no** explicit `type` hint — normal inference then
   lands on `CHANGE` ("now does X, should do Y") or `FEATURE` as the default — and name the reason in
   the sentence:
-  `"{observed} → {expected}, parked from /dev-ship manual round (exceeds tweak size gate: {criterion})"`.
+  `"{observed} → {expected}, origin agent via /dev-ship, parked from /dev-ship manual round (exceeds tweak size gate: {criterion})"`.
   Ledger verdict is `"offloaded"`, not `"tweak"` — this finding is headed for
   the ordinary pipeline, same as the out-of-scope case below, even though it originated as an
   in-scope tweak-class judgment.
 - **Out-of-scope defect finding** (`shared/FEEDBACK-CATEGORIZATION.md § Scope check`,
   `manual-interview-walkthrough.md § Step D`, `fix-round.md`'s scope-check bullet). Invoke
   `/project-todo` with normal type inference (no explicit `type` hint — this is a real defect, not
-  an improvement, so it lands on `BUG`), same batching cap. Patch the ledger item's verdict to
+  an improvement, so it lands on `BUG`) but **with** the provenance token —
+  `"{observed} → {expected}, origin agent via /dev-ship, parked from /dev-ship manual round (out of scope)"`
+  — same batching cap. Patch the ledger item's verdict to
   `"offloaded"` instead of `"tweak"` — it is a different card type and a different terminal verdict
   from the tweak case above, even though the write mechanics are identical.
 

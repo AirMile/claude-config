@@ -13,7 +13,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 2.2.0
+  version: 2.3.0
   category: project
 ---
 
@@ -66,6 +66,21 @@ STACK: game   (→ /game-ship pipeline)
 1. **Determine description:**
    - Argument provided → use as starting description
    - No argument → ask the user directly: "What do you want to add to the backlog?" Wait for their answer.
+
+   **Provenance token (strip before anything else):** a calling skill passes an explicit
+   `origin agent via /{skill}` token inside the sentence (`shared/BACKLOG.md § Card provenance`).
+   Detect it, record `CARD_ORIGIN` / `CARD_SOURCE`, and **remove the token from the description
+   text** so it never lands on the card:
+   - Token present → `CARD_ORIGIN = "agent"`, `CARD_SOURCE = "/{skill}"`.
+   - No token, user typed `/project-todo` themselves → `CARD_ORIGIN = "user"`, `CARD_SOURCE = "/project-todo"`.
+   - No token but a skill invoked this run → `CARD_ORIGIN` **unset** (the field is omitted
+     entirely), `CARD_SOURCE = "/project-todo"`. Never fall back to `"user"` here: that would
+     relabel an un-migrated caller as human intent, and provenance you cannot trust is worse than
+     provenance you do not have.
+
+   Both values are carried through the whole run and applied identically in PHASE 2 steps 3 and 8.
+   In a multi-item split every child inherits them — the split is a formatting decision, not a
+   change of who asked.
 
 2. **Size advisory (no modal):**
 
@@ -128,6 +143,8 @@ Per queue item, derive:
 - **`dependencies`** — § Dependencies inference against the existing backlog names.
 - **`description`** — a self-contained card per `shared/BACKLOG.md § Description quality`: concrete observable behavior, scope boundary, 1–3 sentences. Never a restatement of the name.
 
+  **When `CARD_ORIGIN === "agent"`**, apply § Description quality → **Lead sentence** as well: the incoming sentence is a finding written for whoever held the code, so rewrite it into a plain-language lead (what is wrong + the consequence, no paths/symbols/test names in the first six words) followed by the technical locator. Do **not** paste the caller's sentence through verbatim — that is exactly what produces board rows nobody can scan. A user-typed description is exempt; keep their wording.
+
 Record, per field, whether the inference was **certain** or hit a gate criterion. Track why each choice was made — PHASE 3 reports it.
 
 **Seed alignment scan** (after the field derivation, before the gate):
@@ -164,16 +181,17 @@ If criterion 2 (thin description) fired, fold the answers into the sharpened des
      "transition": "designing",
      "phase": "{inferred priority}",
      "description": "{inferred description}",
-     "source": "/project-todo",
+     "source": "{CARD_SOURCE}",
+     "origin": "{CARD_ORIGIN}",
      "dependencies": []
    }
    ```
 
-   **`description` norm:** apply `shared/BACKLOG.md § Description quality` — self-contained, concrete behavior + scope boundary, gate answers (PHASE 1x) folded in, 1–3 sentences. The card text is the only context `/dev-ship` (define phase) / `/game-ship` (define phase) gets when it is picked up later; never write a bare restatement of the name.
+   **`description` norm:** apply `shared/BACKLOG.md § Description quality` — self-contained, concrete behavior + scope boundary, gate answers (PHASE 1x) folded in, 1–3 sentences, and for an agent-parked card the mandatory **lead sentence** before the locator. The card text is the only context `/dev-ship` (define phase) / `/game-ship` (define phase) gets when it is picked up later; never write a bare restatement of the name.
 
    **`transition` rule:** only include `"transition": "designing"` when `type === "PAGE"` or `type === "COMPONENT"`. Omit the field entirely for all other types (FEATURE, API, THEME, PAGE-GAP, etc.).
 
-   The `source: "/project-todo"` field signals to `/project-plan` that this feature was added manually (INDEPENDENT) and must never be overwritten during a backlog rebuild.
+   **`source` / `origin` rule:** both come from PHASE 0 step 1 (`CARD_SOURCE` / `CARD_ORIGIN`), never hardcoded. `CARD_ORIGIN` unset → **omit the `origin` key entirely**; never write `null` and never default to `"user"`. Any `source` value keeps the card INDEPENDENT for `/project-plan` (the rule is `!== "/project-plan"`, not `=== "/project-todo"` — see `shared/BACKLOG.md § Source field convention`), so a re-stamped `"/dev-ship"` is still protected from a backlog rebuild.
 
 4. **Update metadata:** set `data.updated` to current date (`YYYY-MM-DD`)
 
@@ -210,6 +228,7 @@ If criterion 2 (thin description) fired, fold the answers into the sharpened des
    - Read `.project/project.json` (already read in Pre-PHASE 0)
    - Initialize `features = []` if missing
    - Check duplicate on `name` — if found and status > TODO: MERGE (update `summary`, preserve status). Otherwise push:
+
      ```json
      {
        "name": "{kebab-name}",
@@ -218,10 +237,14 @@ If criterion 2 (thin description) fired, fold the answers into the sharpened des
        "phase": "{P1-P4}",
        "summary": "{description, max 200 chars}",
        "dependencies": [],
-       "source": "/project-todo",
+       "source": "{CARD_SOURCE}",
+       "origin": "{CARD_ORIGIN}",
        "created": "{YYYY-MM-DD}"
      }
      ```
+
+     Same `source`/`origin` rule as step 3 — identical values, and `origin` omitted entirely when unset. Writing one file with provenance and the other without desyncs the dashboard silently.
+
    - Write `.project/project.json`
 
    `seed.content` is legacy — never write it. `project-seed.md` is only ever touched by the approved surgical path in step 5.

@@ -19,9 +19,13 @@ After defining pages, sync them to the backlog:
        "transition": "designing",
        "phase": "P3",
        "description": "{page.purpose}",
+       "source": "/design-convert",
+       "origin": "user",
        "dependencies": []
      }
      ```
+     `source` + `origin` per `shared/BACKLOG.md § Card provenance` — a page composed from the
+     user's own visual input is `user`, not `agent`.
      Track this item in `$NEW_ITEMS[]` for the handoff prompt.
    - **Found**: skip (don't overwrite existing items)
 4. Set `data.updated` to today's date
