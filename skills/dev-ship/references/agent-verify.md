@@ -52,6 +52,13 @@ not the pasted slice.
    `references/orchestration.md § 3`'s offload flush before continuing (never blocks; never enters
    `remainingManualItems`). Continue to PHASE 3.
 
+   `improvementNotes` entries are **objects** (`{note, severity, class, paths?, dependsOn?}` —
+   `prompts/verify.md`), not bare strings. Pass the array through to the flush verbatim: its first
+   step pipes it to `scripts/improvement-notes.js`, which normalizes any legacy bare-string entry
+   itself. When parsing the **fallback** `SHIP_VERIFY_RESULT_START/END` block (below), build the same
+   object shape — a hand-parse that flattens each note back to a string still works, but loses the
+   severity and class the routing and the recurrence counter depend on.
+
 **Contract check**: every element of `remainingManualItems` must carry a `manualReason` as a
 **structured field on the item itself** (one of
 `perception`/`real-credentials`/`audio`/`physical-device`/`screen-reader`/`tooling-gap` —

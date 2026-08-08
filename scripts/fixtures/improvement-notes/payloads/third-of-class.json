@@ -1,0 +1,1 @@
+[{"note":"deleted-field scan has no negative control","severity":"medium","class":"test-coverage-gap","paths":["t/c.py"]}]

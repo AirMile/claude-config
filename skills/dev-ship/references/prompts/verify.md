@@ -47,10 +47,59 @@ SCOPE LIMITS (critical — this is a partial verify):
 - Commit any AUTO fix-loop changes into the worktree branch (scoped commit), same as dev-verify.
 - If an AUTO item cannot be made to pass after the fix-loop: STOP, do not merge, return status
   "failed" with the item.
-- **Non-blocking improvement observations**: if you notice something that works but could be
-  better — a rough edge, awkward copy, a small polish item — that is NOT a failure and does NOT
-  belong in `remainingManualItems` or `failedAt`. Note it as a short string in `improvementNotes`
-  instead and move on; never let it affect `status` or block completion.
+- **Non-blocking improvement observations**: something that works but could be better — a rough
+  edge, a gap in the tests, a small polish item — is NOT a failure and does NOT belong in
+  `remainingManualItems` or `failedAt`. Put it in `improvementNotes` and move on; it never affects
+  `status` or blocks completion. The rules below govern what you emit there.
+
+  **Actionability bar — all three must hold, or do not emit the note at all:**
+  1. It names a file **and** a symbol (or a line region) that exists in the worktree.
+  2. It names a change as a verb + object a reader could start on without re-deriving the finding.
+  3. The note text stands on its own — a reader who has not seen this diff understands what is
+     wrong and why it matters.
+
+  This bar is the only filtering you do. Everything that clears it gets emitted and classified;
+  deciding what deserves a backlog card happens downstream, where the decision is recorded and the
+  user can audit it. Do not silently drop a note because it feels minor — classify it `low` and let
+  the routing handle it.
+
+  **`severity` — read it off the note, do not estimate it:**
+
+  | Value    | Requirement                                                                                                                                                                                               |
+  | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `high`   | The note **names a concrete trigger** — an input, a state, or a sequence — under which the shipped code gives a wrong result, hangs, leaks, or throws unhandled. No named trigger → not `high`.           |
+  | `medium` | The note **names an artifact already in this repo** that the code contradicts: a convention rule, an acceptance criterion, a REQ id, or a named sibling implementation. No named artifact → not `medium`. |
+  | `low`    | Everything else — taste, naming, docstrings, dead code, cosmetic polish.                                                                                                                                  |
+
+  There is deliberately no `critical`: an observation that severe is a `failedAt` or a manual item,
+  not a non-blocking note. If you are reaching for it, you have mis-filed the finding.
+
+  **`class` — exactly one of these eleven.** The value is compared literally downstream to spot a
+  finding class that keeps recurring across features, so pick the closest existing value rather than
+  inventing a shade of one:
+
+  ```
+  test-coverage-gap    behavior with no test, or a test that cannot fail
+  error-handling       an error path swallowed, unlogged, or surfaced unhelpfully
+  input-validation     unvalidated or unbounded input at a boundary
+  resource-lifecycle   unclosed / unbounded / unreleased resources, missing cleanup
+  concurrency          races, ordering assumptions, unawaited work
+  duplication          the same logic now exists in more than one place
+  naming-and-docs      names, comments, docstrings, REQ-id drift
+  dead-code            unreachable code, unused exports or accessors
+  ui-polish            copy, spacing, states, affordances
+  config-drift         hardcoded values that belong in config, environment assumptions
+  other                nothing above fits — the note MUST say why
+  ```
+
+  **Emit at most 3.** If more than 3 clear the bar, sort by severity (`high` > `medium` > `low`) and
+  keep the top 3 — **sort first, then cut**, so the cap keeps the most important notes rather than
+  the ones you happened to write first. Never merge two notes into one to fit. There is no minimum:
+  **zero notes is the normal outcome on a clean feature**, and emitting 3 every run is itself a
+  contract violation.
+
+  **`dependsOn`** — set it to a backlog card name when this note cannot be acted on until that card
+  ships; otherwise omit it.
 
 **Manual-item authoring**: `steps` must read as concrete, numbered, end-user-executable UI actions
 (which button, which menu, which literal input) — not abstract preconditions ("open two tabs with
@@ -80,5 +129,10 @@ autoDecisions:
 
 - <auto-choice, or "none">
   improvementNotes:
-- <short non-blocking observation, or omit the key entirely when none>
+- note: <the observation, <=200 chars, self-contained>
+  severity: high | medium | low
+  class: test-coverage-gap | error-handling | input-validation | resource-lifecycle | concurrency | duplication | naming-and-docs | dead-code | ui-polish | config-drift | other
+  paths: [<repo-relative path>, ...] # 0-2
+  dependsOn: <backlog card name, or omit>
+  # max 3, sorted severity-desc; omit the whole key when there are none
   SHIP_VERIFY_RESULT_END

@@ -109,11 +109,62 @@ const VERIFY_SCHEMA = {
       description: 'item id + short reason, or "none"',
     },
     autoDecisions: { type: "array", items: { type: "string" } },
+    // Shape only — no maxItems. The cap of 3 lives in prompts/verify.md and is
+    // re-applied defensively by scripts/improvement-notes.js. A schema-level
+    // array constraint is deliberately avoided: this validator's behaviour on a
+    // violated array bound is unverified here, and a rejected structured output
+    // on an *advisory* field would return null, which ship-phase12 reads as
+    // "verify died" — losing a green build over a fourth polish note.
     improvementNotes: {
       type: "array",
-      items: { type: "string" },
       description:
-        "Non-blocking improvement observations noticed during auto-verify — never failures. Optional; omitted or empty when none.",
+        "Non-blocking improvement observations noticed during auto-verify — never failures. " +
+        "Max 3, sorted severity-desc (enforced in prompts/verify.md and by scripts/improvement-notes.js). " +
+        "Optional; omitted or empty when none.",
+      items: {
+        type: "object",
+        properties: {
+          note: {
+            type: "string",
+            description: "the observation, <= 200 chars, self-contained",
+          },
+          severity: {
+            enum: ["high", "medium", "low"],
+            description:
+              "high = names a concrete trigger for wrong output/hang/leak/unhandled throw; " +
+              "medium = names an existing repo artifact the code contradicts; low = everything else. " +
+              "'critical' is deliberately absent — that severity is a failure, not a note.",
+          },
+          class: {
+            enum: [
+              "test-coverage-gap",
+              "error-handling",
+              "input-validation",
+              "resource-lifecycle",
+              "concurrency",
+              "duplication",
+              "naming-and-docs",
+              "dead-code",
+              "ui-polish",
+              "config-drift",
+              "other",
+            ],
+            description:
+              "finding class — compared literally to detect a class recurring across features",
+          },
+          paths: {
+            type: "array",
+            items: { type: "string" },
+            description: "0-2 repo-relative paths",
+          },
+          dependsOn: {
+            type: "string",
+            description:
+              "backlog card that must ship before this note is actionable; omit when none",
+          },
+        },
+        required: ["note", "severity", "class"],
+      },
     },
   },
   required: [

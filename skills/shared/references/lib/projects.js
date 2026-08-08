@@ -63,10 +63,31 @@ function mergeArchivedFeatures(projectRootAbs, features) {
   return out;
 }
 
+// Notes a ship run's auto-verify produced but deliberately did not turn into a
+// card (below the severity floor, over the per-run cap, or of a class whose
+// standing rule already covers it) — see scripts/improvement-notes.js. Read-only
+// here; the board renders them as a collapsed "Withheld" section so suppression
+// stays visible instead of silently disappearing. Best-effort: a missing or
+// corrupt store just yields an empty list, never an error on the board route.
+function readWithheldNotes(projectRootAbs) {
+  try {
+    const file = path.join(projectRootAbs, ".project/withheld-notes.json");
+    if (!fs.existsSync(file)) return [];
+    const store = JSON.parse(fs.readFileSync(file, "utf8"));
+    return Array.isArray(store.notes) ? store.notes : [];
+  } catch {
+    return [];
+  }
+}
+
 function writeBacklogData(projectRootAbs, data) {
   const jsonFile = path.join(projectRootAbs, BACKLOG_PATH);
   const wsDir = path.dirname(jsonFile);
   if (!fs.existsSync(wsDir)) fs.mkdirSync(wsDir, { recursive: true });
+  // withheldNotes is injected read-only on the GET routes and lives in its own
+  // file. Same round-trip trap as the archived features below: a client save
+  // would otherwise copy it into backlog.json, where nothing ever cleans it up.
+  if (data && "withheldNotes" in data) delete data.withheldNotes;
   // Defensive: GET /backlog merges archived (already-shipped) features into the
   // in-memory model via mergeArchivedFeatures above, so the board can resolve
   // dependencies on them. If a client round-trips that merged model back through
@@ -231,6 +252,7 @@ module.exports = {
   readBacklogData,
   writeBacklogData,
   mergeArchivedFeatures,
+  readWithheldNotes,
   backlogExists,
   backlogMtime,
 };

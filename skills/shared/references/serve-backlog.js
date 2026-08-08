@@ -42,6 +42,7 @@ const {
   readBacklogData,
   writeBacklogData,
   mergeArchivedFeatures,
+  readWithheldNotes,
   backlogExists,
   backlogMtime,
 } = require("./lib/projects");
@@ -651,6 +652,7 @@ http
           if (Array.isArray(data.features)) {
             data.features = mergeArchivedFeatures(projectPath, data.features);
           }
+          data.withheldNotes = readWithheldNotes(projectPath);
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify(data, null, 2));
         } else {
@@ -728,6 +730,11 @@ http
             projectPath,
             backlogDataObj.features,
           );
+        }
+        // Suppressed auto-verify notes — rendered as a collapsed section so
+        // what the pipeline withheld stays auditable (see § Withheld).
+        if (backlogDataObj) {
+          backlogDataObj.withheldNotes = readWithheldNotes(projectPath);
         }
         var backlogData = backlogDataObj
           ? JSON.stringify(backlogDataObj, null, 2)

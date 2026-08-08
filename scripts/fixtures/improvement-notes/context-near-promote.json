@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "learnings": [],
+  "improvementClasses": [
+    {
+      "class": "test-coverage-gap",
+      "count": 2,
+      "first": "2026-08-01",
+      "last": "2026-08-05",
+      "exemplars": [
+        { "note": "gate test has no negative control", "feature": "f1", "paths": ["t/a.py"] },
+        { "note": "scan test cannot fail", "feature": "f2", "paths": ["t/b.py"] }
+      ],
+      "promotionPending": null,
+      "promotedAt": null,
+      "promotedCount": 0,
+      "resets": 0
+    }
+  ]
+}

@@ -11,7 +11,8 @@ The file `.project/project-context.json` contains runtime context read only by b
   "schemaVersion": 2,
   "architecture": {},
   "context": {},
-  "learnings": []
+  "learnings": [],
+  "improvementClasses": []
 }
 ```
 
@@ -272,6 +273,61 @@ Append-only at write time. Skills that complete features extract learnings autom
 
 **This replaces the dynamic CLAUDE.md sections** (`## Project structure`, `## Routing`, `## Non-obvious patterns`). CLAUDE.md now only contains a reference to `project.json` for this context.
 
+## improvementClasses
+
+Per-project recurrence counter for auto-verify finding **classes**. Written only by
+`scripts/improvement-notes.js`, on behalf of `/dev-ship`'s offload flush
+(`dev-ship/references/orchestration.md § 3`). Never hand-edited.
+
+```json
+[
+  {
+    "class": "test-coverage-gap",
+    "count": 3,
+    "first": "2026-07-02",
+    "last": "2026-08-08",
+    "exemplars": [
+      { "note": "…", "feature": "auth-login", "paths": ["src/auth/session.ts"] }
+    ],
+    "promotionPending": {
+      "class": "…",
+      "count": 3,
+      "summary": "…",
+      "tags": ["testing"],
+      "paths": [],
+      "exemplars": ["…"],
+      "proposedAt": "2026-08-08"
+    },
+    "promotedAt": null,
+    "promotedCount": 0,
+    "resets": 0
+  }
+]
+```
+
+**Why it exists**: token dedup provably cannot see "same class, different site" — a missing negative
+control on three different files shares neither filename nor wording, so each one arrives looking
+like news. Counting the class instead of the instance is what turns three cards into one standing
+rule.
+
+**Lifecycle**: every emitted note bumps its class (including `low` — a low-severity class that keeps
+recurring is exactly what a standing rule fixes). At `count` 3 the script writes a
+`promotionPending` **proposal**; `/dev-ship` PHASE 5 asks a human to confirm it, and only then does a
+`pitfall` learning get appended and `promotedAt` set. After promotion, `medium` notes of that class
+stop producing cards (`high` never does — promotion is about the class, carding about the instance).
+At `promotedCount + 3` the class escalates to a single card asking for a mechanical guard: a class
+that survives its own learning is a tooling problem, not a review problem.
+
+**Decay**: a bump more than 180 days after `last` resets `count` to 0 and increments `resets` — two
+findings that far apart are not a pattern. `class: "other"` never promotes or escalates; its members
+are heterogeneous by definition, and legacy-shape notes normalize into it.
+
+`exemplars[]` is capped at 3 (FIFO) and is what the proposal's summary is written from — never the
+class name, so a mis-assigned class cannot produce a confident, wrong rule.
+
+Not a handoff namespace consumed by another skill: it is terminal state whose only downstream
+consumer is `learnings[]`, via the human-confirmed promotion above.
+
 ## thinking-output
 
 Thinking-skills (`/project-research`, `/project-seed` brainstorm/critique modes) write their full output to `.project/thinking/*.md` (filename: `{date}-{type}-{slug}.md`). Those markdown files are the only source of truth — there is no top-level `thinking[]` array in `project.json`.
@@ -284,11 +340,12 @@ Skills that consume thinking-output (such as `/dev-ship`, define phase) read dir
 
 ### project-context.json sections
 
-| Section        | Written by                                                           | When                                                                   |
-| -------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `architecture` | `/dev-ship` (`routes[]` only), `/game-ship` (full component graph)   | On architecture definition / after build                               |
-| `context`      | `/core-setup`, `/dev-ship`, `/game-ship`                             | On build/refactor (structure, routing, patterns)                       |
-| `learnings`    | `/dev-ship`, `/game-ship`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred), teammate/legacy code (synced) |
+| Section              | Written by                                                           | When                                                                   |
+| -------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `architecture`       | `/dev-ship` (`routes[]` only), `/game-ship` (full component graph)   | On architecture definition / after build                               |
+| `context`            | `/core-setup`, `/dev-ship`, `/game-ship`                             | On build/refactor (structure, routing, patterns)                       |
+| `learnings`          | `/dev-ship`, `/game-ship`, `/core-pull`, `/core-setup --mode=mature` | Feature completion (extracted/inferred), teammate/legacy code (synced) |
+| `improvementClasses` | `/dev-ship` (via `scripts/improvement-notes.js`)                     | Auto-verify offload flush (`references/orchestration.md § 3`)          |
 
 Handoff namespace for `learnings` is `project-context.learnings` — matches the `reads:`/`writes:` declarations in skill frontmatter (see `shared/DEVINFO.md`).
 

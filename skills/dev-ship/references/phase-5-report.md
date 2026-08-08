@@ -120,6 +120,39 @@ same dedup): a recurring `autoDecisions` pattern, manual-test friction (an item 
 needed a human), or a refactor technique the test-guard **reverted** (signals a fragile pattern).
 Only write genuinely reusable signals — skip if none.
 
+**Pending class promotions** (run this **before** the consolidation gate below, so a confirmed
+promotion is part of the same batch). The auto-verify offload flush
+(`references/orchestration.md § 3`) records a recurring finding class as a **proposal**, never as a
+learning — that stretch of the run is unattended and a standing build rule is too durable a decision
+to make with nobody watching. Here a human is back, so collect and resolve them:
+
+```bash
+node ~/.claude/scripts/improvement-notes.js pending "$MAIN_ROOT"
+```
+
+Empty `pending[]` → skip silently, no output. Otherwise **one** `AskUserQuestion` covering all open
+proposals (≤4; more than that, take the 4 highest `count` and leave the rest pending for the next
+run), each showing the proposed `summary` verbatim as the option text so the user approves the
+literal sentence rather than a description of it. First option is always _"Approve all
+(Recommended)"_.
+
+Per approved class: append the learning via `shared/LEARNING-WRITE.md` § Writer Append Protocol with
+`type: "pitfall"` (the build phase loads with `pitfall-prefix: true` —
+`dev-build/references/context-loading.md`, so a pitfall is what actually reaches the next build),
+`source: "inferred"` (it follows from recurrence across features, not from one event), and the
+proposal's own `summary`/`tags`/`paths`. Then settle the class row:
+
+```bash
+node ~/.claude/scripts/improvement-notes.js promote-confirm "$MAIN_ROOT" --class {class}   # approved
+node ~/.claude/scripts/improvement-notes.js promote-reject  "$MAIN_ROOT" --class {class}   # declined
+```
+
+Print one line per outcome, including the inverse operation, so an approval made in passing is
+trivially undone: `Learning written: {class} ({count}x) — undo by removing the entry from
+project-context.json#learnings[] and running promote-reject.` A **declined** proposal clears the
+pending marker without setting `promotedAt`, so the class keeps counting and may propose again later
+— declining is "not yet", not "never".
+
 **Memory consolidation** (so future ship runs have insight). This step then runs the
 consolidation gate per `shared/LEARNING-WRITE.md § Consolidation Gate` — that section owns the
 trigger; empty output is the normal no-op, not a broken script. Archived entries stay **searchable by

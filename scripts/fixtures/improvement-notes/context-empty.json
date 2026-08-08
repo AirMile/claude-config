@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 2,
+  "architecture": { "routes": ["/a"] },
+  "context": { "structure": "keep" },
+  "learnings": [{ "summary": "pre-existing", "type": "pattern" }],
+  "customKey": "must survive"
+}

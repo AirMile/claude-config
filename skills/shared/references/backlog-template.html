@@ -1275,6 +1275,68 @@
           chipsHtml += `<a href="#cancelled-section" class="sb-cancelled" data-status="CANCELLED" style="opacity:0.45;font-size:11px">${esc("Archived")} (${cancelledItems.length})</a>`;
         }
 
+        // Withheld section — auto-verify findings a ship run deliberately did
+        // NOT turn into cards (below the severity floor, over the per-run cap,
+        // or covered by a standing rule). Collapsed by default, and never
+        // filtered by the origin pills: these are agent findings by definition,
+        // and hiding them behind a filter would recreate the invisibility the
+        // section exists to prevent. Nothing here is a card — no row actions,
+        // no status, just the record of what was suppressed and why.
+        const withheldNotes = Array.isArray(data.withheldNotes)
+          ? data.withheldNotes
+          : [];
+        const withheldShown = searchTerm
+          ? withheldNotes.filter(
+              (n) =>
+                (n.note || "").toLowerCase().includes(searchTerm) ||
+                (n.class || "").toLowerCase().includes(searchTerm) ||
+                (n.feature || "").toLowerCase().includes(searchTerm),
+            )
+          : withheldNotes;
+        if (withheldShown.length > 0) {
+          const whSection = document.createElement("section");
+          whSection.className = "group group--archived collapsed";
+          whSection.id = "withheld-section";
+
+          const whHeader = document.createElement("div");
+          whHeader.className = "group-header";
+          whHeader.dataset.status = "WITHHELD";
+          whHeader.innerHTML = `<h2>${esc("Withheld")} (${withheldShown.length})</h2>`;
+          whHeader.addEventListener("click", () => {
+            whSection.classList.toggle("collapsed");
+            setCollapsed(
+              "section:withheld-section",
+              whSection.classList.contains("collapsed"),
+            );
+          });
+          whSection.appendChild(whHeader);
+
+          const whBody = document.createElement("div");
+          whBody.className = "group-body";
+          withheldShown
+            .slice()
+            .reverse()
+            .forEach((n) => {
+              const row = document.createElement("div");
+              row.className = "row withheld-row";
+              row.innerHTML = `<div class="row-summary">
+                <span class="row-name">${esc(n.class || "other")}</span>
+                <span class="row-sub-tag">${esc(n.severity || "")}</span>
+                <span class="row-desc" title="${esc(n.note || "")}">${esc(n.note || "")}</span>
+                <div class="row-actions-group"><div class="row-meta">
+                  <span class="origin-badge" title="Why this was not carded">${esc(n.reason || "")}</span>
+                  ${n.feature ? `<span class="dep-icon" title="Observed while shipping ${esc(n.feature)}">${esc(n.feature)}</span>` : ""}
+                  ${n.dependsOn ? `<span class="dep-icon" title="Blocked by ${esc(n.dependsOn)}">${esc(n.dependsOn)}</span>` : ""}
+                </div></div>
+              </div>`;
+              whBody.appendChild(row);
+            });
+          whSection.appendChild(whBody);
+          board.appendChild(whSection);
+
+          chipsHtml += `<a href="#withheld-section" class="sb-cancelled" data-status="WITHHELD" style="opacity:0.45;font-size:11px">${esc("Withheld")} (${withheldShown.length})</a>`;
+        }
+
         // Build section chips
         const chips = document.getElementById("section-chips");
         if (chips) {

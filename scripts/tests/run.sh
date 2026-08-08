@@ -1088,6 +1088,92 @@ run_sf "no matches → silent, exit 0" "exit=0" "$SF_EMPTY"
 
 unset CLAUDE_SKILL_FEEDBACK_FILE
 
+# --- improvement-notes.js ---
+# Triage for dev-ship's auto-verify improvement notes: the countable half of the
+# offload flush (sort/cap, per-class recurrence with decay, card floor, the
+# withheld audit trail, promote/escalate). The judgment half stays in the skill.
+IN_S="$ROOT/scripts/improvement-notes.js"
+INFX="$ROOT/scripts/fixtures/improvement-notes"
+INT=$(mktemp -d)
+mkdir -p "$INT/proj/.project"
+
+in_reset() { rm -f "$INT/proj/.project/withheld-notes.json"; cp "$INFX/$1" "$INT/proj/.project/project-context.json"; }
+in_triage() { cat "$INFX/payloads/$1" | node "$IN_S" triage "$INT/proj" --feature "${2:-f}"; }
+in_ctx() { node -e 'const c=require(process.argv[1]);process.stdout.write(JSON.stringify(eval("c."+process.argv[2])))' "$INT/proj/.project/project-context.json" "$1"; }
+run_in() {
+  if [ "$2" = "$3" ]; then echo "PASS  improvement-notes: $1"; PASS=$((PASS + 1));
+  else echo "FAIL  improvement-notes: $1 (expected: $2, got: $3)"; FAIL=$((FAIL + 1)); fi
+}
+
+# (a) Legacy bare strings normalize to medium/other and still become candidates —
+# a resumed Workflow replays cached pre-change results, and nothing may vanish.
+in_reset context-empty.json
+IN_A=$(in_triage legacy.json | node -e 'const d=JSON.parse(require("fs").readFileSync(0));process.stdout.write([d.cardCandidates.length,d.cardCandidates[0].severity,d.cardCandidates[0].class].join("|"))')
+run_in "legacy bare strings → medium/other, still carded" "2|medium|other" "$IN_A"
+
+# (b) The cap keeps the HIGHEST severities, not the first written. This is the
+# test that proves capping cannot silently drop a correctness finding.
+in_reset context-empty.json
+IN_B=$(in_triage mixed-five.json | node -e 'const d=JSON.parse(require("fs").readFileSync(0));process.stdout.write(d.cardCandidates.map(c=>c.severity).join(","))')
+run_in "cap sorts before cutting (high+medium survive 3 lows)" "high,medium" "$IN_B"
+IN_B2=$(node -e 'const s=require(process.argv[1]);process.stdout.write(String(s.notes.filter(n=>n.reason==="over per-run cap").length))' "$INT/proj/.project/withheld-notes.json")
+run_in "over-cap notes land in the withheld store" "2" "$IN_B2"
+
+# (c) Promotion at count 3 writes a PROPOSAL only — learnings[] stays untouched
+# and promotedAt stays null until a human confirms at PHASE 5.
+in_reset context-near-promote.json
+IN_C=$(in_triage third-of-class.json | node -e 'const d=JSON.parse(require("fs").readFileSync(0));process.stdout.write([d.promote.length,d.promote[0]&&d.promote[0].tags.join("+"),d.cardCandidates.length].join("|"))')
+run_in "3rd of a class → proposal, and the note STILL cards" "1|testing|1" "$IN_C"
+run_in "proposal does not set promotedAt" "null" "$(in_ctx 'improvementClasses[0].promotedAt')"
+run_in "proposal does not touch learnings[]" "0" "$(in_ctx 'learnings.length')"
+
+# (d) Unknown top-level keys survive the write (the board's save endpoint and
+# learnings-write.js both round-trip this file).
+run_in "unknown top-level keys preserved" '"must survive"' "$(in_reset context-empty.json; in_triage legacy.json >/dev/null; in_ctx customKey)"
+
+# (e) A 4th of the same class does not mint a second proposal.
+in_reset context-near-promote.json
+in_triage third-of-class.json >/dev/null
+IN_E=$(in_triage third-of-class.json | node -e 'const d=JSON.parse(require("fs").readFileSync(0));process.stdout.write(String(d.promote.length))')
+run_in "4th of a class → no second proposal" "0" "$IN_E"
+
+# (f) Confirm → promotedAt set; then medium is suppressed but high still cards.
+in_reset context-near-promote.json
+in_triage third-of-class.json >/dev/null
+node "$IN_S" promote-confirm "$INT/proj" --class test-coverage-gap >/dev/null
+IN_F=$(echo '[{"note":"another missing control","severity":"medium","class":"test-coverage-gap"},{"note":"real race","severity":"high","class":"test-coverage-gap"}]' | node "$IN_S" triage "$INT/proj" --feature f | node -e 'const d=JSON.parse(require("fs").readFileSync(0));process.stdout.write([d.cardCandidates.map(c=>c.severity).join(","),d.belowFloor[0].reason].join("|"))')
+run_in "after promotion: medium withheld, high still cards" "high|class already promoted" "$IN_F"
+
+# (g) A promoted class that keeps recurring escalates once, at promotedCount + 3.
+in_reset context-promoted.json
+IN_G=$(in_triage escalating.json | node -e 'const d=JSON.parse(require("fs").readFileSync(0));process.stdout.write(d.escalate.map(e=>e.class+":"+e.count).join(","))')
+run_in "promoted class recurring → escalation card" "naming-and-docs:6" "$IN_G"
+
+# (h) class "other" is heterogeneous by definition and never promotes.
+in_reset context-empty.json
+in_triage other.json >/dev/null; in_triage other.json >/dev/null
+IN_H=$(in_triage other.json | node -e 'const d=JSON.parse(require("fs").readFileSync(0));process.stdout.write(String(d.promote.length))')
+run_in "class 'other' never promotes" "0" "$IN_H"
+
+# (i) Decay: a sighting older than 180 days resets the count, so two findings
+# far apart never masquerade as a pattern.
+in_reset context-stale.json
+in_triage after-decay.json >/dev/null
+run_in "stale class decays: count resets to 1" "1" "$(in_ctx 'improvementClasses[0].count')"
+run_in "stale class decays: resets incremented" "1" "$(in_ctx 'improvementClasses[0].resets')"
+
+# (j) A withheld note keeps its blocker link — losing it would strand the note.
+in_reset context-empty.json
+in_triage blocked-low.json >/dev/null
+IN_J=$(node -e 'const s=require(process.argv[1]);const n=s.notes[0];process.stdout.write([n.reason,n.dependsOn].join("|"))' "$INT/proj/.project/withheld-notes.json")
+run_in "withheld note keeps dependsOn and reason" "low|broken-level-history-horizon" "$IN_J"
+
+# (k) Unparsable stdin must never fail a green ship.
+in_reset context-empty.json
+IN_K=$(echo 'not json at all' | node "$IN_S" triage "$INT/proj" --feature f >/dev/null 2>&1; echo "exit=$?")
+run_in "unparsable stdin → exit 0 (never fails a green ship)" "exit=0" "$IN_K"
+
+
 echo
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

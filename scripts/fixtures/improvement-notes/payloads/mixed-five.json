@@ -1,0 +1,7 @@
+[
+  { "note": "naming nit A", "severity": "low", "class": "naming-and-docs" },
+  { "note": "dead accessor B", "severity": "low", "class": "dead-code" },
+  { "note": "race on concurrent scan", "severity": "high", "class": "concurrency" },
+  { "note": "spacing C", "severity": "low", "class": "ui-polish" },
+  { "note": "hardcoded timeout contradicts conventions.md", "severity": "medium", "class": "config-drift" }
+]

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "learnings": [],
+  "improvementClasses": [
+    {
+      "class": "concurrency",
+      "count": 2,
+      "first": "2025-11-01",
+      "last": "2025-12-01",
+      "exemplars": [{ "note": "old race", "feature": "f0", "paths": [] }],
+      "promotionPending": null,
+      "promotedAt": null,
+      "promotedCount": 0,
+      "resets": 0
+    }
+  ]
+}

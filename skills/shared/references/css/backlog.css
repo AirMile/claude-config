@@ -1426,6 +1426,17 @@ body {
   cursor: default;
 }
 
+/* A withheld note is a record, not a card — no actions, no status, and dimmed
+   so it never competes with real work for attention. */
+.withheld-row {
+  opacity: 0.62;
+  cursor: default;
+}
+
+.withheld-row:hover {
+  opacity: 0.85;
+}
+
 /* Separator between the track pill group and the provenance pill group. */
 .pill-sep {
   width: 1px;

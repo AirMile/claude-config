@@ -40,6 +40,11 @@ TOP_LEVEL_FILES = [
     "project-seed.md",
     "conventions.md",
     "architecture.mmd",
+    # Audit trail of auto-verify findings that deliberately did not become cards
+    # (scripts/improvement-notes.js). Syncs because a record of what the pipeline
+    # suppressed is only trustworthy if it survives switching machines — a
+    # device-local copy would silently under-report.
+    "withheld-notes.json",
 ]
 
 # Per-feature files under features/<name>/ — regenerable reports (stryker-report.json

@@ -127,30 +127,69 @@ since a dead-agent result would just replay `null` from cache) before routing an
 code/test failure follows the branches below.
 
 - `status: "green"` → mark `completedPhases += ["PHASE 1","PHASE 2"]`, `phase: "PHASE 3"`.
-  Re-read `.project/` from disk. **Offload flush**: non-empty `verify.improvementNotes` → for each
-  note, first check `backlog.json#features[]` for an existing TODO card whose `description` already
-  covers it (a concurrent sibling `/dev-ship` run shares this project's `.project/`, not a
-  per-worktree copy, and may have already logged the same observation) — skip the `/project-todo`
-  call for that note if a match exists. Otherwise judge the note's projected scope against
-  `shared/TWEAK-DISCIPLINE.md § Size gate` criteria 1-4 (same judgment and same default-to-TWEAK-on-
-  a-close-call rule as `phase-3-manual-finalize.md § Offload flush` — an auto-verify improvement note
-  is typically small, but not always) and invoke `/project-todo` **once per uncovered note**: within
-  the gate, `"{note}, type TWEAK, depends on {feature}, origin agent via /dev-ship, parked from /dev-ship auto-verify"`;
-  exceeding it, drop the `type` hint and name the reason instead — `"{note}, depends on {feature},
-origin agent via /dev-ship, parked from /dev-ship auto-verify (exceeds tweak size gate: {criterion})"` (plain inference then
-  lands on `CHANGE`/`FEATURE`). These are independent single-sentence cards, not a cross-domain
-  cluster, so do not concatenate multiple notes into one call (`/project-todo`'s own multi-item split
-  is content-signal-based, not a manual-batch interface). A note that is self-documenting in the
-  code and names no follow-up action (AGENT 2 says so explicitly) needs neither a card nor a
-  covered-by match — count it as `nonActionable` instead of forcing it into either bucket.
-  **Completion check**: after the loop,
-  print one line — `Offload: {cardsCreated}/{M} notes → cards, {alreadyCovered} already covered,
-{nonActionable} non-actionable, {routedToThisRun} routed into this run` (`M` =
-  `verify.improvementNotes.length`) — confirming the four counts sum to `M` before proceeding;
-  a printed mismatch is the signal that an invocation was skipped instead of run.
-  `routedToThisRun` covers a note AGENT 2 already surfaced as a remaining manual item or an
-  open design call for PHASE 3: it is neither parked nor dismissed, so counting it as
-  `nonActionable` would misreport an open decision as closed.
+  Re-read `.project/` from disk.
+
+  **Offload flush** — non-empty `verify.improvementNotes` → run the four steps below, then continue.
+  The countable work (normalizing a legacy shape, sorting, capping, the per-class recurrence
+  counter, the card floor, the withheld audit trail) belongs to
+  `scripts/improvement-notes.js`; what stays here is exactly the two judgments a script cannot make:
+  _does an existing card already cover this_, and _does it exceed the tweak size gate_.
+
+  1. **Triage.** Pipe the notes array to the script and print its `line` verbatim:
+
+     ```bash
+     echo '<verify.improvementNotes as JSON>' \
+       | node ~/.claude/scripts/improvement-notes.js triage "$MAIN_ROOT" --feature {feature}
+     ```
+
+     It returns `{ line, cardCandidates[], belowFloor[], promote[], escalate[] }` and has already
+     written the counter and the withheld store. It never exits non-zero on bad note data — an
+     advisory channel must not be able to fail a green ship.
+
+  2. **`promote[]` — write the proposal, not the learning.** The script has already recorded a
+     `promotionPending` on the class row; there is **nothing to write to `learnings[]` here**. Print
+     one line per entry: `Learning proposed: {class} ({count}x) — confirm at PHASE 5, or drop with
+'node ~/.claude/scripts/improvement-notes.js promote-reject "$MAIN_ROOT" --class {class}'`.
+     A recurring class becoming a standing build rule is a durable decision that shapes every later
+     build, so it waits for a human; PHASE 5 folds all open proposals into one question. Never
+     confirm one here — this stretch of the run is unattended by design and there is nobody to ask.
+
+  3. **`escalate[]` — one card per entry.** A class that keeps recurring _after_ its learning landed
+     is a tooling problem, not a review problem. Invoke `/project-todo`:
+     `"Add a mechanical guard for recurring {class} findings ({count}x in this project) — a lint rule,
+test helper or CI check; the standing learning is not holding, type CHANGE, origin agent via
+/dev-ship, parked from /dev-ship auto-verify"`.
+
+  4. **`cardCandidates[]` — the existing per-note routing, unchanged.** For each candidate: first
+     check `backlog.json#features[]` for an existing TODO card whose `description` already covers it
+     (a concurrent sibling `/dev-ship` run shares this project's `.project/`, not a per-worktree
+     copy, and may have already logged the same observation) — skip the `/project-todo` call if a
+     match exists. Otherwise judge its projected scope against `shared/TWEAK-DISCIPLINE.md § Size
+gate` criteria 1-4 (same judgment and same default-to-TWEAK-on-a-close-call rule as
+     `phase-3-manual-finalize.md § Offload flush`) and invoke `/project-todo` **once per uncovered
+     candidate**: within the gate,
+     `"{note}, type TWEAK, depends on {feature}, origin agent via /dev-ship, parked from /dev-ship auto-verify"`;
+     exceeding it, drop the `type` hint and name the reason instead — `"{note}, depends on {feature},
+origin agent via /dev-ship, parked from /dev-ship auto-verify (exceeds tweak size gate: {criterion})"`
+     (plain inference then lands on `CHANGE`/`FEATURE`). Carry the candidate's `dependsOn` into the
+     `depends on` clause when it is set. These are independent single-sentence cards, not a
+     cross-domain cluster, so do not concatenate multiple notes into one call (`/project-todo`'s own
+     multi-item split is content-signal-based, not a manual-batch interface). A candidate that is
+     self-documenting in the code and names no follow-up action needs neither a card nor a
+     covered-by match — count it as `nonActionable`.
+
+  **Completion check**: after step 4, print
+  `Offload: {cardsCreated}/{C} candidates → cards, {alreadyCovered} already covered,
+{nonActionable} non-actionable, {routedToThisRun} routed into this run` where `C` =
+  `cardCandidates.length` — **not** the raw note count; the notes below the floor are already
+  accounted for on the script's own line. Confirm the four counts sum to `C` before proceeding; a
+  printed mismatch is the signal that an invocation was skipped instead of run. `routedToThisRun`
+  covers a candidate AGENT 2 already surfaced as a remaining manual item or an open design call for
+  PHASE 3: it is neither parked nor dismissed, so counting it as `nonActionable` would misreport an
+  open decision as closed. The `classes proposed` / `escalated` counts on the script's line are
+  **annotational and deliberately outside both sums** — a proposed class's `high`/`medium` instance
+  still gets its own card, because promotion is about the class while carding is about this instance.
+
   These are AGENT 2's own observations, never a ledger item, so there's no `offload` field to
   upsert or verdict to set regardless of which card type they landed on. Do this before
   either branch below, since it applies regardless of which one fires. Branch on
@@ -174,6 +213,7 @@ origin agent via /dev-ship, parked from /dev-ship auto-verify (exceeds tweak siz
     in this chat instead of parking: re-arm the live signal and run the full manual walkthrough per
     `SKILL.md § PHASE 3` (`phase-3-manual-finalize.md`, Step 1 + Step 2 + Step 3) — **not** the no-manual
     shortcut in **§ 4** below, which only applies when `remainingManualItems` was empty.
+
 - `failedPhase: "build"` → patch `{"status":"failed"}` (keep everything else),
   `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}`, print the failure recovery
   message (SKILL.md § PHASE 1–4), proceed to PHASE 5's failure path.

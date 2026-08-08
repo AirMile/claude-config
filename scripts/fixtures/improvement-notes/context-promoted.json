@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "learnings": [],
+  "improvementClasses": [
+    {
+      "class": "naming-and-docs",
+      "count": 5,
+      "first": "2026-08-01",
+      "last": "2026-08-07",
+      "exemplars": [{ "note": "stale REQ ids in docstrings", "feature": "f1", "paths": [] }],
+      "promotionPending": null,
+      "promotedAt": "2026-08-02",
+      "promotedCount": 3,
+      "resets": 0
+    }
+  ]
+}

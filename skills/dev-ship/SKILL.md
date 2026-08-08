@@ -30,10 +30,16 @@ writes:
     conventions,
     security.shipTriage,
   ]
-writes-terminal: [feature.status, feature.refactor, backlog.overview]
+writes-terminal:
+  [
+    feature.status,
+    feature.refactor,
+    backlog.overview,
+    project-context.improvementClasses,
+  ]
 metadata:
   author: claude-config
-  version: 0.62.0
+  version: 0.63.0
   category: dev
 ---
 
