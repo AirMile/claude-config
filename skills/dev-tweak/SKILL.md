@@ -12,7 +12,7 @@ reads:
 writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.23.0
+  version: 1.24.0
   category: dev
 ---
 
@@ -46,15 +46,25 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    for `{current}`; different → use `{main_worktree}/.project/`. `.project/` absent → degrade
    gracefully: skip the card lookup, guard, and learnings silently, keep the rest (the code change is
    the value; do not scaffold).
-2. **Mode + description**: `.project/` present → load once:
-   `node ~/.claude/scripts/backlog-load.js "$REPO" guard-items` (reused by step 6's guard — one
-   load, not two). The invocation argument matches a live `TWEAK` card — exact name, or an
-   unambiguous ≥2-shared-token match — per
-   [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup path 1?
-   - **Match → card mode.** Description = the card's `description`. Dependency check: `guard-items`
-     omits `dependencies[]`, so read the matched card's `dependencies` from `backlog.json` directly —
-     one `AskUserQuestion` only when a dependency is present and not yet `shipped`/`DONE` (per
-     TWEAK-DISCIPLINE § Card pickup); no dependencies field → skip silently.
+2. **Mode + description**: `.project/` present → resolve the card with the **narrowest load that can
+   answer the question**, per [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card
+   pickup path 1 (exact name, or an unambiguous ≥2-shared-token match against live `TWEAK` cards):
+   - **Invocation argument is a bare kebab-case token** (a plausible card name) → try the
+     single-card load FIRST: `node ~/.claude/scripts/backlog-load.js "$REPO" read-feature "<arg>"`.
+     `present: true` + `type: "TWEAK"` → card mode, and this payload already carries
+     `dependencies[]` — no second read, no `guard-items` load at all (card mode skips step 5's guard
+     anyway, so the full-backlog payload would be loaded for nothing).
+   - **`present: false`, a non-TWEAK type, or free-text prose** → THEN load
+     `node ~/.claude/scripts/backlog-load.js "$REPO" guard-items` for the ≥2-shared-token match and
+     step 5's guard (one load, not two).
+   - **Match → card mode.** Description = the card's `description`. Dependency check against
+     `dependencies[]` from whichever load ran (`guard-items` omits the field — on that path read the
+     matched card's `dependencies` from `backlog.json` directly): one `AskUserQuestion` only when a
+     dependency is present and not yet `shipped`/`DONE` (per TWEAK-DISCIPLINE § Card pickup); no
+     dependencies field → skip silently. A dependency `read-feature` reports as `present: false` is
+     usually **already resolved and archived**, not missing — check
+     `.project/features/archive/*/feature.json` for `status: "DONE"` before warning the user about
+     an unshipped parent.
    - **No match, or `.project/` absent → free-text mode.** Description from the invocation argument;
      if empty, ask one short question.
 3. **Branch guard**.
@@ -145,7 +155,10 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    → Read `references/escalate.md` before any design work.
 
    > **Todo**: print `Gate: ✓ tweak-sized ({n} file(s))` now. Not printed → this step did not run;
-   > do not proceed to step 3.
+   > do not proceed to step 3. One exception to "now": an intake `AskUserQuestion` in step 1 whose
+   > answer itself decides the file set (a scope choice between a 1-file and a 2-file fix) — print
+   > the `Gate:` line after that answer lands, since `{n}` does not exist before it. Never skip the
+   > print, only defer it past that one question.
 
 3. **Learnings** — **mandatory, not gated on tweak size**. Run exactly this, after locate so
    `--paths` carries the real file anchors (see [shared/LEARNINGS-LOAD.md](../shared/LEARNINGS-LOAD.md)
@@ -169,8 +182,19 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    `.project/` present → grep `.project/features/*/feature.json` and
    `.project/features/archive/*/feature.json` for `files[].path` entries matching any located file
    (repo-relative path match). No match on any feature → skip silently, no cost — most tweaks touch
-   files no pipeline feature ever built. Exactly one match → Read that `feature.json`, extract
-   `durableDecisions[]`. Multiple features match → take the most recently modified `feature.json`.
+   files no pipeline feature ever built. Exactly one match → project out **only** the fields the
+   next paragraph actually holds — never a full Read of `feature.json`, whose `rationale`/`finding`
+   narratives routinely run to thousands of words:
+
+   ```bash
+   node -e 'const f=require(process.argv[1]);
+     const keep=["decision","constraint","chosen"];
+     const p=(f.durableDecisions||[]).map(
+       x=>Object.fromEntries(keep.map(k=>[k,x[k]])));
+     console.log(JSON.stringify(p,null,1))' <path-to-feature.json>
+   ```
+
+   Multiple features match → take the most recently modified `feature.json`.
 
    `durableDecisions[]` present and non-empty → hold each entry's `constraint`/`chosen` as a hard
    boundary during PHASE 2, same standing as `clarifications[]` in dev-build: a tweak whose natural
@@ -246,6 +270,16 @@ Scoped to the touched modules — never the full suite unless it is genuinely fa
   project's own docs first — `CLAUDE.md § Commands`, `.project/`, or the test harness's own config —
   and only fall back to the web defaults below when the project names none. A non-JS project
   (Python/Go/Rust/C++) will not have the commands in the next two bullets.
+- **The documented command is suite-wide** (the common case outside JS: `pytest <dir>`,
+  `go test ./...`, `cargo test`) → do **not** run it as written; the project naming it does not
+  make it scoped. Derive the scoped form — append the touched test file(s), or a `-k`/pattern
+  filter — and run any build/compile step those same docs mandate as its own separate command. Run
+  the unscoped command only when a measured run comes back under ~60s; over that, name in the
+  report which scoped subset ran instead.
+- **The project's docs mandate a post-build step** (deploy, sync an artifact to a runtime data
+  directory, restart a service) → it belongs to verify, not to "later": a green test run on a build
+  the user's runtime never received is a false pass. Run it, or state explicitly in the report that
+  it is still outstanding — never leave it unmentioned.
 - **Web defaults**: `npx vitest related <files>`, or the project's test command with a path/pattern
   filter.
 - **Harness failure** (collection/import error, missing interpreter or deps, stale virtualenv) is
@@ -317,10 +351,19 @@ bullet below describes:
 
 ## PHASE 4 — Wrap-up
 
-1. **Scoped commit** per [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md) — land via
-   `~/.claude/scripts/scoped-commit.sh` (§ 5), never a bare `git add && git commit`. Write the
-   commit message to a scratch file under `.project/session/` first — `--message` takes a file
-   path, not inline text. Deltas: baseline `pre-tweak-status.txt`; OVERLAP policy **auto-include**
+1. **Scoped commit** per [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md) — never a bare
+   `git add && git commit`. Write the commit message to a scratch file
+   under `.project/session/` first, then land with exactly this call — the script accepts no other arguments, and in
+   particular there is **no baseline flag**: `pre-tweak-status.txt` is your own reference for
+   categorizing files, never something you pass in.
+
+   ```bash
+   bash ~/.claude/scripts/scoped-commit.sh \
+     --message <path-to-message-file> \
+     --files <comma-separated-paths>
+   ```
+
+   Deltas vs § 5: baseline `pre-tweak-status.txt`; OVERLAP policy **auto-include**
    (the fix is the point); fallback: ask which files belong to the tweak. **`--files` lists the
    files THIS run edited** — never the whole baseline diff: a concurrent `/dev-tweak` on the same
    tree makes its own files look NEW against your baseline too (§ 2's NEW category cannot tell them
@@ -328,6 +371,7 @@ bullet below describes:
    (size-gate criterion 1); use `{fix|refactor|perf|style|test|chore}({slug}): {summary}` (`test`
    for a tweak whose only change is added/expanded test coverage). Cleanup: remove the baseline
    file and the commit-message scratch file.
+
 2. **Card-mode completion** (skip entirely in free-text mode): run
    [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup **completion write** as
    specified there — field list, archive move, and the board-app revert guard all live in that
@@ -343,6 +387,16 @@ bullet below describes:
    append via `learnings-write.js append` with `type: "pitfall"`, `source: "extracted"`, 0-3 tags,
    then run the Consolidation Gate once (`LEARNING-WRITE.md § Consolidation Gate`). Skip both
    silently otherwise. No state auto-push (TWEAK-DISCIPLINE § Registration policy).
+
+   **Stale-learning correction** — separate from the 0-1 budget above, and not gated on the bugfix
+   filter: PHASE 1 step 3's load surfaced a learning this tweak just made **wrong** (a convention it
+   renamed, a limit it lifted, a path it moved) → correct that entry in place with
+   `learnings-write.js enrich` (patch its `summary`; `match` on `feature` + `type` +
+   `summaryEquals`). This repairs existing memory rather than adding to it, so it neither counts
+   against the 0-1 budget nor triggers the Consolidation Gate, and it is not a new backlog write.
+   Leaving a contradicted learning in place is the drift trap this closes — the next run reads it as
+   current and undoes the tweak.
+
 4. **Report** — one fenced block per `shared/OUTPUT.md` § Report Block (≤72 chars, Label-value
    grammar), with any "what changed" prose detail outside the fence. Fields:
    - what changed, with `file:line` refs; checks run; commit sha
