@@ -61,3 +61,15 @@ routes its evidence gate on this field and persists it into the manual ledger. A
 human-only criterion or a real tooling gap, is a contract violation — AGENT 2 should have executed
 it itself as AUTO/BROWSER (`prompts/verify.md` tells the agent to do exactly this) instead of
 pushing it to the human round.
+
+**On detection** (main chat, at read time — never carry a violating item into PHASE 3 unexamined):
+do **not** re-run AGENT 2; a full verify pass to relabel one item costs more than it saves.
+Per violating item, classify it yourself against
+`dev-verify/references/test-classification.md § MANUAL`:
+
+- Meets a MANUAL criterion → write the missing `manualReason` yourself and continue.
+- Does not → drop it from `remainingManualItems` and record it for the PHASE 5 report as
+  `Verify contract: {N} item(s) reclassified` — it was AUTO-verifiable, and PHASE 3 must not
+  spend a human round on it.
+
+An empty `remainingManualItems` after this pass routes to PHASE 4 exactly as a clean verify would.

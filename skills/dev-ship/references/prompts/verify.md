@@ -38,8 +38,9 @@ SCOPE LIMITS (critical — this is a partial verify):
   Exception: when the app shell cannot be driven by any available vehicle (native-shell app without a
   working WebDriver) and the item depends on the native runtime, classify it `tooling-gap` instead of
   forcing a browser run against a dev server that cannot exercise it.
-- DO NOT run the MANUAL walkthrough (dev-verify PHASE 2 / manual-walkthrough.md) — collect the
-  MANUAL items (each with its `manualReason`) and return them instead.
+- DO NOT run the MANUAL walkthrough — it belongs to dev-ship PHASE 3 in the main chat, where
+  `AskUserQuestion` reaches the real user. Collect the MANUAL items (each with its
+  `manualReason`) and return them instead.
 - DO NOT run completion-sync's DONE transition and DO NOT run PHASE Finalize — leave backlog status
   as DOING and do NOT merge or remove the worktree. Finalize is the main chat's job (PHASE 4, after
   refactor).

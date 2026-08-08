@@ -26,18 +26,18 @@ argument patterns below describe this phase's own input handling, not a user-fac
 4. PHASE 5d: Requirement Verification
 5. PHASE 6: Completion
 
+Two headings below are deliberately **not** in that list and must never be seeded: `PHASE 2: Manual Walkthrough` (a guard against reintroducing a second manual flow — see its own section) and any finalize phase (see the worktree check directly below). A heading with no seeded task is intentional here, not an omission to repair.
+
 **Worktree check** — after resolving `feature-name` in PHASE 0 Step 1, detect whether a worktree exists for this feature:
 
 ```bash
 git worktree list --porcelain | grep -q "branch refs/heads/worktree-{feature-name}$"
 ```
 
-Match → add PHASE Finalize at end via `TaskCreate`. (PHASE Finalize itself decides whether to act based on test outcome — always add it when a worktree exists, regardless of which checkout currently runs the skill.)
+**Never seed a PHASE Finalize.** This workflow has no standalone trigger — it runs only as dev-ship's AGENT 2, where a worktree always exists but finalize/merge is the main chat's own PHASE 4 tail. `prompts/verify.md` ("DO NOT run PHASE Finalize") and `non-interactive-contract.md` rule 7/11 ("ignore the workflow's Finalize / FINALIZE.md / ExitWorktree phase entirely") both forbid it here, so seeding it would create a task the agent is immediately told to skip. The worktree check above governs the fix-loop phases below and nothing else.
 
 Add fix-loop phases via `TaskCreate` ONLY when they will fire:
 
-- Inline feedback provided → add PHASE 1b before PHASE 2b
-- MANUAL items in classification → add PHASE 2 before PHASE 2b
 - FAILs in PHASE 2b → add PHASE 3, PHASE 4, PHASE 5, PHASE 5b
 - Any PHASE 4 fixes touched previously-PASS AUTO items → add PHASE 5c
 
@@ -56,10 +56,8 @@ Use `TaskUpdate` to set `in_progress` per phase at start and `completed` at end.
    - **No arg + multiple verifying features** → AskUserQuestion to choose; recommend the most-recently-updated one.
    - **No arg + no verifying feature** → fallback to `status === "DOING"`; still none → suggest via AskUserQuestion.
 
-2. **Parse input:**
-   - Feature name only → proceed to classification (continue at Step 3).
-   - Feature name + inline feedback → skip to PHASE 1b.
-   - Feature name + free text → skip to PHASE 1b.
+2. **Parse input:** the pointer file names only the feature — proceed to classification
+   (continue at Step 3). There is no inline-feedback branch; see PHASE 2 below.
 
 3. **Validate build output** — Feature load: `node ~/.claude/scripts/context-load.js "$REPO" feature-verify "{feature-name}"` (see [shared/FEATURE-LOAD.md](.claude/skills/shared/FEATURE-LOAD.md)). Parse `checklist[]` from the output.
 
@@ -193,37 +191,25 @@ Display: `AUTO PASS: {n}  AUTO FAIL: {n}  TOOL_ERROR → MANUAL: {n}`
 
 ---
 
-### PHASE 1b: Parse Inline Feedback
+### PHASE 2: Manual Walkthrough — not part of this workflow
 
-> **Not reachable from dev-ship's own invocation**: AGENT 2 (`agent-verify.md`) never passes
-> `{feedback}` — its pointer file names only the feature — and `prompts/verify.md` scopes
-> AGENT 2 to this workflow's AUTOMATED portion only. This phase fires only for a standalone
-> `/dev-verify` re-invocation with inline feedback, if one ever exists outside dev-ship again.
+> **Not reachable from dev-ship's own invocation**, and there is no other invocation:
+> `prompts/verify.md` explicitly forbids AGENT 2 from running a manual walkthrough ("DO NOT run
+> the MANUAL walkthrough — collect the MANUAL items with their `manualReason` and return them").
+> dev-ship's real manual round is `references/manual-interview-walkthrough.md`, driven by the
+> main chat in PHASE 3, because `AskUserQuestion` must reach the actual user. **Do not add a
+> second manual flow here** — that is what this phase used to be, and the two drifted apart.
 
-> **Todo**: mark PHASE 1 → `completed`, PHASE 1b → `in_progress`.
+There is likewise no inline-feedback phase: AGENT 2 never receives `{feedback}` (its pointer file
+names only the feature), so feedback parsing belongs to PHASE 3's fix round, not here.
 
-**When:** user provided feedback with `/dev-verify {name} {feedback}` (skips PHASE 1 + 2).
-
-Parse into item/PASS/FAIL/notes. Accept `1:PASS 2:FAIL note` and free text.
-Show summary, go to the fix loop (PHASE 3 — read `references/fix-loop.md`).
-
-Unclear feedback → AskUserQuestion: Re-enter (Recommended) | Continue per item | Explain.
-
----
-
-### PHASE 2: Manual Walkthrough
-
-> **Todo**: mark PHASE 1b → `completed`, PHASE 2 → `in_progress`.
-
-**When:** there are MANUAL items.
-
-> **Todo**: Read '.claude/skills/dev-ship/references/dev-verify/references/manual-walkthrough.md' and execute it (smoke pre-check, per-item walkthrough, Pass/Fail/Skip/Defer). Then continue at PHASE 2b.
+Continue at PHASE 2b with an empty manual-result set.
 
 ---
 
 ### PHASE 2b: Combined Results
 
-> **Todo**: mark PHASE 2 → `completed`, PHASE 2b → `in_progress`.
+> **Todo**: mark PHASE 1 → `completed`, PHASE 2b → `in_progress`.
 
 Merge COVERED + automated + manual results.
 
@@ -323,15 +309,13 @@ DEFERRED items: write per-item `tests.checklist[i] = { status: "deferred", defer
 
 ---
 
-### PHASE Finalize
+### PHASE Finalize — not part of this workflow
 
-> **Todo**: mark PHASE 6 → `completed`, PHASE Finalize → `in_progress`.
+> **Never run or seed it here.** Finalize/merge is the main chat's own PHASE 4 tail: it reads
+> `references/dev-verify/references/finalize.md` itself (`orchestration.md § 5`) after the refactor
+> agent returns, so refactor commits land on the feature branch before the merge. AGENT 2 is
+> explicitly forbidden from it by `prompts/verify.md` and `non-interactive-contract.md` rule 7/11.
+> **Do not reinstate a finalize phase here** — the phase this section used to hold seeded a task
+> the agent was then told to ignore, which is the contradiction its removal resolved.
 
-**Run only if BOTH true:**
-
-1. All test items PASS (no open fix-loop items)
-2. Current branch matches `worktree-*` pattern (`git branch --show-current`)
-
-> **Todo**: Read '.claude/skills/dev-ship/references/dev-verify/references/finalize.md' for the full flow (ExitWorktree note, auto-dispatch by TEAM_MODE + PR state, session-reorientation guard).
-
-> **Todo**: mark PHASE Finalize → `completed`.
+Mark PHASE 6 → `completed` and return; there is no phase after it.
