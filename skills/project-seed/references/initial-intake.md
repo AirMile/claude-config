@@ -168,9 +168,9 @@ Run Step 1d (once scope is set), then proceed to Step 2 with the argument as sta
 
 > **Todo**: Read `.claude/skills/project-seed/references/project-sync.md` and execute the sync flow: gather project state → detect gaps (incl. deferred `seedDrift[]`) → select → integrate → write + drift cleanup.
 
-**Step 1d: Project Memory Load (mandatory — runs right after Step 1a or Step 1b resolves scope, before PHASE 2)**
+**Step 1d: Project Memory Load** — mandatory. It sits last in this file because every route above feeds into it, but it **runs right after Step 1a or Step 1b resolves the scope**, before any PHASE 2 question.
 
-> **Todo**: Once the active scope is known, read [shared/INPUT-PARSING.md § Project Memory Load](../../shared/INPUT-PARSING.md) and run it (seed variant: implementation and assignment scopes use the concept-scope learnings config). Step 2 question rounds must derive Round-1 options from what is actually built, and PHASE 4 output must not silently contradict `status: done` components.
+> **Todo**: Once the active scope is known, read [shared/INPUT-PARSING.md § Project Memory Load](../../shared/INPUT-PARSING.md) and run it (seed variant: implementation and assignment scopes use the concept-scope learnings config). Step 2 question rounds must derive Round-1 options from what is actually built — including the archived features, which no other source reports — and PHASE 4 output must not silently contradict `status: done` components.
 
 Skip only for: the Sync route (Step 1c — `project-sync.md` gathers richer state itself), standalone scope, and projects without `.project/`.
 

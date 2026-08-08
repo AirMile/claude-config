@@ -9,6 +9,7 @@ Loaded only when the user chose "Sync with project" in Step 1. Enrich the existi
 - Collect all feature names, descriptions, and types from backlog
 - Read `.project/project.json` → extract `entities` (names, descriptions) and `endpoints` (paths, methods) if present
 - **Built architecture**: run the `ideation` profile from [shared/PROJECT-CONTEXT-LOAD.md](../../shared/PROJECT-CONTEXT-LOAD.md) — components with `status: "done"` are a gap source (built but possibly undescribed); `planned` components are context only
+- **Shipped features**: the profile's `ARCHIVED_COUNT` / `ARCHIVED_RECENT` output. On a mature project this is **the primary gap source**: archived features left `backlog.json` when they were archived, so the backlog scan above cannot see them at all. For each archived name the concept does not mention, read `.project/features/archive/{dir}/feature.json` (`description` + `durableDecisions` only, never the whole folder) and make it a gap row. Cap at the 20 most recent when the archive is larger, and say so in the analysis instead of truncating silently
 - **Learnings** via [shared/LEARNINGS-LOAD.md](../../shared/LEARNINGS-LOAD.md) (`scopes: [architectural]`, `pitfall-prefix: true`, `current-feature: none`) — shown as context in the analysis, never as gap rows
 - Scan codebase for routes/pages:
   - Glob `app/**/page.tsx`, `src/pages/**/*.tsx`, `src/routes/**/*.tsx`
@@ -34,7 +35,7 @@ Present findings:
 PROJECT SYNC ANALYSIS
 
 Concept: {title}
-Backlog features: {count} · Codebase routes: {count} · Entities: {count} · Endpoints: {count} · Built components: {count} · Deferred drift: {count}
+Backlog features: {count} · Codebase routes: {count} · Entities: {count} · Endpoints: {count} · Built components: {count} · Shipped (archived): {count} · Deferred drift: {count}
 
 GAPS DETECTED:
 
@@ -44,7 +45,8 @@ GAPS DETECTED:
 | 2  | Codebase          | /api/webhooks    | API     | No                 |
 | 3  | Entity            | User             | DATA    | Partial            |
 | 4  | Architecture      | {component-name} | BUILT   | No                 |
-| 5  | /dev-ship (define phase) drift | {featureDecides} | drift   | drift — {category} |
+| 5  | Archive           | {feature-name}   | SHIPPED | No                 |
+| 6  | /dev-ship (define phase) drift | {featureDecides} | drift   | drift — {category} |
 
 ALREADY COVERED:
 - {feature described in both concept and backlog}
@@ -52,7 +54,7 @@ ALREADY COVERED:
 {LEARNINGS CONTEXT block, if any — context for integration phrasing, not gap rows}
 ```
 
-Architecture rows (source = `Architecture`, type `BUILT`) are components with `status: "done"` in `project-context.json` that the concept does not describe — built reality the concept is missing. Drift rows (source = `/dev-ship (define phase) drift`, `/game-ship (define phase) drift`, `/project-plan drift`, `/project-todo drift`) originate from deferred `seedDrift[]` entries — decisions that already happened in earlier skill runs and were explicitly skipped or hit `/project-todo`'s record-only path. The `In Concept` column renders `drift — {category}` so contradiction / new-direction / scope-expansion are visibly distinct. Show `seedSays` in the `Name` column (for contradictions this is a verbatim seed quote) and `featureDecides` as context so the user understands what changed.
+Architecture rows (source = `Architecture`, type `BUILT`) are components with `status: "done"` in `project-context.json` that the concept does not describe — built reality the concept is missing. Archive rows (source = `Archive`, type `SHIPPED`) are the same idea for finished features: shipped, archived, and invisible to every other source in step 1. On a project that archives, expect these to outnumber the `BUILT` rows. Drift rows (source = `/dev-ship (define phase) drift`, `/game-ship (define phase) drift`, `/project-plan drift`, `/project-todo drift`) originate from deferred `seedDrift[]` entries — decisions that already happened in earlier skill runs and were explicitly skipped or hit `/project-todo`'s record-only path. The `In Concept` column renders `drift — {category}` so contradiction / new-direction / scope-expansion are visibly distinct. Show `seedSays` in the `Name` column (for contradictions this is a verbatim seed quote) and `featureDecides` as context so the user understands what changed.
 
 **3. Select gaps to integrate:**
 

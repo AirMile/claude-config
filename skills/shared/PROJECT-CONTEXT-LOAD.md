@@ -29,6 +29,14 @@ For the ideation modes of `project-seed` (seed, brainstorm, critique) via
 "what exists and what's planned", no file paths, no `connects_to`/`endpoints` detail. Caps (40
 components, 40 active features) bound the combined block at roughly 600–900 tokens.
 
+**Three sources, not two — the archive is not optional.** A shipped feature leaves
+`backlog.json` entirely when it is archived, so `DONE` counts only the features finished but not
+yet cleaned up. `project-context.json#architecture.components` is the intended built-state
+source, but it is empty on projects that never populated it. Read together, those two can report
+"nothing built" on a project with dozens of shipped features — observed 2026-08-08 on a repo with
+32 archived features, 0 components and 4 `DONE`, none of which were among the 32. The archive
+listing below is what makes the count honest; do not drop it as a cheap optimisation.
+
 ```bash
 # project-context.json — compact built-state
 node -e "
@@ -54,4 +62,13 @@ node -e "
       .slice(0, 40)
   }, null, 2));
 " 2>/dev/null || echo "BACKLOG: not present"
+
+# features/archive/ — shipped features, invisible to both sources above
+ARCHIVE="$REPO/.project/features/archive"
+if [ -d "$ARCHIVE" ]; then
+  echo "ARCHIVED_COUNT: $(ls "$ARCHIVE" | wc -l | tr -d ' ')"
+  echo "ARCHIVED_RECENT:"; ls "$ARCHIVE" | sort | tail -12 | sed 's/^/  /'
+else
+  echo "ARCHIVED_COUNT: 0"
+fi
 ```

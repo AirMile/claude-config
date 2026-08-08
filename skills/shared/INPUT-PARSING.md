@@ -125,6 +125,7 @@ Run directly after the scope is known (after § PHASE 1a; seed variant: after th
 
    Data flow: {dataFlow or "—"}
    Built: {N done} — {done component names}
+   Shipped: {ARCHIVED_COUNT} archived — {12 most recent, or "—"}
    Planned: {M planned} — {planned component names}
    Backlog: {TODO}/{DEFINED}/{DOING}/{DONE} — active: {active names, truncate at 10 + "(+K more)"}
 
@@ -134,9 +135,9 @@ Run directly after the scope is known (after § PHASE 1a; seed variant: after th
      {file} — {H1}
    ```
 
-   Omit empty sections. Token budget: the whole block stays under ~2k tokens (profile caps + learnings caps + filename-only thinking matches).
+   Omit empty sections — except `Shipped`, which is always printed when `ARCHIVED_COUNT > 0`. **`Built: 0` with a non-zero `Shipped` is not an empty project**: it means the built state lives in the archive, not in `project-context.json`, and every later phase must read it that way. Never report the backlog `DONE` count as "what has been built" — archived features are gone from `backlog.json` entirely. Token budget: the whole block stays under ~2k tokens (profile caps + learnings caps + filename-only thinking matches).
 
-6. **Behavioral rule** for all subsequent phases: components with `status: done` and backlog items in DOING/DONE are **existing reality** — ideate around them, do not re-propose them as new ideas. When a generated direction contradicts built state, flag it explicitly as a deliberate change (this feeds the seed-drift machinery on save).
+6. **Behavioral rule** for all subsequent phases: components with `status: done`, backlog items in DOING/DONE, **and every archived feature** are **existing reality** — ideate around them, do not re-propose them as new ideas. When a generated direction contradicts built state, flag it explicitly as a deliberate change (this feeds the seed-drift machinery on save).
 
 ### PHASE 1b: Manual input fallback
 
