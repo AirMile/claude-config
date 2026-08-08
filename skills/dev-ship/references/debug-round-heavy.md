@@ -75,6 +75,24 @@ runs, its output becomes the evidence § 5's fix plan works from — record whic
 
 ## 5. Fix plan — one, evidence-backed
 
+> **Todo** (BEFORE drafting the plan below — not after): is the diagnosis still contested?
+> `lightRoundNotes` shows the light-tier hypothesis was **refuted** (the same condition § 4 uses to
+> re-investigate), or this is a **non-ledger entry** (§ 1) with no prior-tier history to lean on, or
+> § 4's own re-investigation came back without a cause. Any of those → Read
+> `.claude/skills/shared/SECOND-OPINION.md` and follow it. INPUT = the evidence dossier + the paths
+> behind it from Step 4 (debug fix-plan row of § Brief contents). Counterpart: **Fable**.
+> **Attended**: show the digest. **Unattended**: Opus weighs it. Set `secondOpinionUsed`
+> (round-scoped).
+>
+> The digest must inform the plan you are about to write. Drafting first and folding the consult in
+> afterwards is the failure mode this marker exists to prevent — by then the plan is anchored and
+> the consult reads as a review of a decision already made. Skip only when the light round's
+> hypothesis survived and § 4 reused it directly.
+>
+> Firing this consumes the round's one consult slot — § 8's dead-end consult will then log
+> `unavailable (budget)` if this round also fails; that is an accepted trade, not a bug (a confirmed
+> diagnosis rarely needs a second consult at the ceiling too).
+
 Write ONE fix plan from Step 4's evidence — no agent fan-out; this tier already spent its
 evidence-gathering budget getting here, and three agents speculating on identical input adds no new
 information. **Spec-issue** items (an acceptance criterion was implemented wrong, not just its
@@ -94,17 +112,6 @@ Reproduction test assertion: {what the test must assert to prove the bug}
 The scope note is the point of writing this out explicitly: it's the same judgment call a
 minimal-vs-thorough-vs-defensive choice used to force, now made once, in the open, as part of the
 plan itself rather than as three competing drafts.
-
-**Second-opinion hook** (auto-fires here, at most once per round, before `ExitPlanMode`) — only when
-the diagnosis is still contested: `lightRoundNotes` shows the light-tier hypothesis was **refuted**
-(the same condition § 4 uses to re-investigate), or this is a **non-ledger entry** (§ 1) with no
-prior-tier history to lean on. Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — INPUT =
-this plan (as drafted so far) + the evidence paths from Step 4 (debug fix-plan row of § Brief
-contents). **Attended**: show the digest, fold it into the plan before `ExitPlanMode`. **Unattended**:
-Opus weighs the digest and revises the plan or confirms it, then proceeds. Set `secondOpinionUsed`
-(round-scoped). Firing this hook consumes the round's one consult slot — § 8's dead-end consult will
-then log `unavailable (budget)` if this round also fails; that's an accepted trade, not a bug (a
-confirmed diagnosis rarely needs a second consult at the ceiling too).
 
 ## 6. Plan approval
 
@@ -205,14 +212,18 @@ entry`'s per-item precedence.
   for whoever reviews the accept/park outcome). Patch the item (`heavyRoundFailed: true`, keep
   `debugTier: "heavy"`, the re-scored `difficulty`/`difficultySignals`), `signal-clear`.
 
-  **Second opinion (auto-fires here, before the modal)** — the dead-end itself is always a valid
-  trigger; only skipped if `secondOpinionUsed` is already set this round. Read
-  `.claude/skills/shared/SECOND-OPINION.md § Spawn` and consult with INPUT = the reproduction
-  test path, this round's plan file, the failed-fix file paths (`git diff --stat`), and ≤10 lines
-  of failing output (debug-ceiling row of § Brief contents). Show the digest, set
-  `secondOpinionUsed`. **Attended**: the digest's RECOMMENDATION informs the modal below but never
-  picks for the user. **Unattended**: Opus weighs the digest itself before choosing an option below
-  and logs `→ revised`/`→ confirmed` accordingly. Carry the outcome to the report's `Consult:` row.
+  > **Todo** (BEFORE the modal below — the dead-end itself is always a valid trigger; skip only if
+  > `secondOpinionUsed` is already set this round): Read
+  > `.claude/skills/shared/SECOND-OPINION.md § Spawn` and consult with INPUT = the reproduction
+  > test path, this round's plan file, the failed-fix file paths (`git diff --stat`), and ≤10 lines
+  > of failing output (debug-ceiling row of § Brief contents). Show the digest, set
+  > `secondOpinionUsed`. **Attended**: the digest's RECOMMENDATION informs the modal below but never
+  > picks for the user. **Unattended**: Opus weighs the digest itself before choosing an option below
+  > and logs `→ revised`/`→ confirmed` accordingly. Carry the outcome to the report's `Consult:` row.
+  >
+  > A ceiling consult routinely disagrees with the accept-or-park framing itself — it may show that
+  > a measurement the round treated as proof was an inference, and name a cheaper probe than either
+  > option offers. Present the modal only after the digest is on screen.
 
   Then a single `AskUserQuestion` — no "another round" option; the only escalation left is
   accept-or-park, with the digest (if any) visible above it:

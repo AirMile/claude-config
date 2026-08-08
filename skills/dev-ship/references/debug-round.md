@@ -84,6 +84,22 @@ inside plan mode. Skip when the root cause is purely internal logic.
 **Proactive-entry callers stop here** — `fix-round.md § Round gate` continues designing the fix from
 this evidence itself; §§ 6–8 below apply only to the primary (parked) entry.
 
+> **Todo** (primary entry only, before § 6 — check this now, not after the plan is drafted): did
+> § 4's investigation **refute** this round's entry hypothesis, or return "no defect found" while
+> the symptom persists? → Read `.claude/skills/shared/SECOND-OPINION.md` and follow it. INPUT = the
+> § 4 digest + the ledger item's evidence paths (debug fix-plan row of § Brief contents).
+> Counterpart: **Fable**. Set `secondOpinionUsed` (round-scoped) and carry it into § 8's
+> `lightRoundNotes` so the heavy round knows one already ran.
+>
+> Any other outcome — the digest points at a cause — **skip it**: `SECOND-OPINION.md § Route` sends a
+> factual gap to Explore, not to a spar, and most light rounds end that way. This hook fires only
+> AFTER evidence exists, never before it; a consult ahead of investigation is the case the trigger
+> table records as deliberately excluded (game-debug PHASE 3), and that exclusion still stands.
+>
+> Why it earns its slot: a refuted hypothesis means the round is about to design a fix on a reading
+> that has already failed once. The cheapest correction available at that moment is an independent
+> reader of the same dossier — no new evidence required.
+
 ## 6. Single evidence-backed fix plan
 
 Write one fix plan for this item — no 3-agent fan-out. `ExitPlanMode` is the go/no-go.
@@ -116,7 +132,9 @@ Re-check via `manual-interview-walkthrough.md` Steps B–E for this one item (no
   light-tier park — you're already past light, there's nowhere lower to send it.
 - **Still failing on its own `expected` text** (the scope check in `manual-interview-walkthrough.md
 § Step D` already split off anything unrelated) → this light round's one evidence-backed attempt
-  didn't hold.
+  didn't hold. If § 5's consult fired this round, `lightRoundNotes` (step 2 below) must say so and
+  carry its RECOMMENDATION — the heavy round's own § 5 hook skips when `secondOpinionUsed` is
+  already set, so an unrecorded consult silently costs the ceiling one.
   1. **Re-score first** — a failed round is new evidence; re-run `shared/DEBUG-LADDER.md § Difficulty
 triage` before deciding anything below (a signal like reproducibility or origin can flip once
      you've seen the fix not hold). Fold the updated score into the same durable write in step 2.
