@@ -24,7 +24,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 0.9.0
+  version: 0.9.1
   category: design
 ---
 
@@ -237,7 +237,8 @@ Auto-decisions ({N}):
 > copy the user regenerated repeatedly (signals a brief gap), **or a concrete gap surfaced during
 > the run itself** (a skipped/broken step, an environment issue found while reviewing). Only write
 > genuinely reusable signals — skip if none. Then run the consolidation gate per
-> `shared/LEARNING-WRITE.md § Consolidation Gate` (trigger `> 60` → merge, archive, target ≤40).
+> `shared/LEARNING-WRITE.md § Consolidation Gate` — that section owns the trigger; empty output is
+> the normal no-op, not a broken script.
 
 > **Todo**: mark PHASE 5 → `completed`.
 

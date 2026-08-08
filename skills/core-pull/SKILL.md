@@ -15,7 +15,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 4.2.0
+  version: 4.2.1
   category: core
 ---
 

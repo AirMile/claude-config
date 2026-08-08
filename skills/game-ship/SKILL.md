@@ -29,7 +29,7 @@ writes:
 writes-terminal: [feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 0.9.7
+  version: 0.10.0
   category: game
 ---
 
@@ -296,8 +296,8 @@ human), or a refactor improvement the GUT test-guard **reverted** (signals a fra
 Only write genuinely reusable signals — skip if none.
 
 **Memory consolidation** (so future `game-ship` runs have insight). This step then runs the
-consolidation gate per `shared/LEARNING-WRITE.md § Consolidation Gate` (trigger `> 60` →
-merge per-feature clusters, archive originals, target ≤40). Archived entries stay **searchable by
+consolidation gate per `shared/LEARNING-WRITE.md § Consolidation Gate` — that section owns the
+trigger; empty output is the normal no-op, not a broken script. Archived entries stay **searchable by
 relevance** (the loader scans the archive as a damped tier), so consolidation shrinks the active
 list without losing recall. This closes the loop: the next `game-ship` run's PHASE 0 `SHIP_CONTEXT`
 preloads the relevant learnings via `shared/LEARNINGS-LOAD.md`.

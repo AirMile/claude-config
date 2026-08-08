@@ -188,9 +188,9 @@ Add surviving entries to `learnings[]`. Write `project-context.json` back.
 
 Track counts for PHASE 5 report: `{ patterns: P, pitfalls: Q, observations: R, by_authors: [...] }`.
 
-**4j.7) Consolidation (only when `learnings.length > 60` after sync)**
+**4j.7) Consolidation**
 
-Run the consolidation gate per `shared/LEARNING-WRITE.md § Consolidation Gate` (trigger `> 60`, merge per-feature clusters, archive originals, target ≤ 40, one report line). Fold its write into the same `learnings[]`/archive write as 4j.6/4j.8. Skip silently when under the threshold.
+Run the consolidation gate per `shared/LEARNING-WRITE.md § Consolidation Gate` — that section owns the trigger; empty output is the normal no-op, not a broken script. Fold its write into the same `learnings[]`/archive write as 4j.6/4j.8.
 
 **4j.8) Opportunistic tag backfill**
 
