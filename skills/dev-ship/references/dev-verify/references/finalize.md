@@ -48,16 +48,28 @@ push here instead.
 ## Post-merge reconcile + state-push (merge route only)
 
 After a successful merge (the `solo`/`MERGED` rows above — **not** the halt rows), the main chat must
-finish two postconditions the pre-merge agent could not:
+finish three postconditions the pre-merge agent could not:
 
 1. **Reconcile the archive.** The pre-merge refactor agent wrote its completion batch in the worktree
-   and could not see the merge, so enforce the archive postcondition here: verify the feature is
-   **absent** from `backlog.json#features[]` **and present** in
-   `.project/archive/backlog-archive.json#archived[]` with `shipped: true` — the same re-read invariant
-   `dev-refactor/references/completion-batch.md` already requires. **Self-heal a half-run**: if the
-   entry was removed from `features[]` but never archived, reconstruct the archive entry from
-   `feature.json`; if it is still in `features[]`, move it into the archive now — a green completion
-   always ends archive-only.
+   and could not see the merge — and on a worktree ship it may not have written it at all: `.project/`
+   is symlinked out of the agent's sandbox, so the whole completion batch can silently no-op. Enforce
+   `dev-refactor/references/completion-batch.md § Step 3b` here, all four feature-level invariants,
+   not just the backlog pair:
+
+   a. **Absent** from `backlog.json#features[]`.
+   b. **Present** in `.project/archive/backlog-archive.json#archived[]` with `shipped: true`,
+   `shippedAt`, `shippedSha` and a non-empty `summary`.
+   c. `f.refactor === "REFACTORED"` iff `f.shipped === true` — never one without the other.
+   d. **Feature-dir moved**: `.project/features/archive/{shippedAt}-{name}/` exists and
+   `.project/features/{name}/` no longer does.
+
+   **Self-heal a half-run** (each independently — a and d fail separately):
+
+   - Removed from `features[]` but never archived → reconstruct the archive entry from
+     `feature.json`; still in `features[]` → move it into the archive now. A green completion
+     always ends archive-only.
+   - Feature-dir not moved → run `completion-batch.md § Step 5`'s `mv` now (idempotent):
+     `mkdir -p .project/features/archive && mv .project/features/{name}/ .project/features/archive/{shippedAt-date}-{name}/`.
 2. **Re-stamp `shippedSha`** in the archive entry to the merge sha (`git -C {main_root} rev-parse HEAD`),
    not the pre-merge refactor commit the agent recorded.
 3. **State auto-push** — follow `shared/STATE-SYNC-PUSH.md § Auto-push` (non-fatal — on failure print
