@@ -15,109 +15,59 @@ Run once after a worktree is first created (Step 3 of auto-create). Makes backlo
 
 ### What to share
 
-| Path                            | Share?  | Reason                                                                                            |
-| ------------------------------- | ------- | ------------------------------------------------------------------------------------------------- |
-| `.project/backlog.json`         | **Yes** | Status updates (DOING, DONE) visible on main instantly                                            |
-| `.project/features/`            | **Yes** | `feature.json` readable from both checkouts                                                       |
-| `.project/project.json`         | **Yes** | Design spec, theme, routing — project-wide                                                        |
-| `.project/project-context.json` | **Yes** | Learnings, architecture — project-wide                                                            |
-| `.project/archive/`             | **Yes** | Shipped-feature backlog archive + archived feature.json dirs — project-wide, not session-bound    |
-| `.project/wireframes/`          | **Yes** | Design artifacts — not code, not session-bound                                                    |
-| `.project/screenshots/`         | **Yes** | Audit artifacts — not session-bound                                                               |
-| `.project/thinking/`            | **Yes** | Research output — not session-bound                                                               |
-| `.project/session/`             | **No**  | Skill-state per worktree (`active-{feature}.json`, `pre-debug-status.txt`, `design-history.json`) |
+| Path                            | Share?  | Reason                                                                                                                                                                                               |
+| ------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.project/backlog.json`         | **Yes** | Status updates (DOING, DONE) visible on main instantly                                                                                                                                               |
+| `.project/features/`            | **Yes** | `feature.json` readable from both checkouts                                                                                                                                                          |
+| `.project/project.json`         | **Yes** | Design spec, theme, routing — project-wide                                                                                                                                                           |
+| `.project/project-context.json` | **Yes** | Learnings, architecture — project-wide                                                                                                                                                               |
+| `.project/archive/`             | **Yes** | Shipped-feature backlog archive + archived feature.json dirs — project-wide, not session-bound                                                                                                       |
+| `.project/wireframes/`          | **Yes** | Design artifacts — not code, not session-bound                                                                                                                                                       |
+| `.project/screenshots/`         | **Yes** | Audit artifacts — not session-bound                                                                                                                                                                  |
+| `.project/thinking/`            | **Yes** | Research output — not session-bound                                                                                                                                                                  |
+| `.project/session/`             | **No**  | Skill-state per worktree (`active-{feature}.json`, `pre-debug-status.txt`, `design-history.json`)                                                                                                    |
 | `CLAUDE.md`                     | **Yes** | Gitignored (local project config, not committed — shared/TEAM.md), so `git worktree add` never carries it; project instructions and worktree-bound tooling notes must be visible in the worktree too |
 
 ### Procedure
 
+One call — the whole thing (safety gates, per-path handling, wiring, the CLAUDE.md link, and
+the required-symlink assertion) lives in `scripts/wire-project-symlinks.sh`:
+
 ```bash
-WT="{main_root}/.claude/worktrees/{feature-name}"
-MP="{main_root}/.project"
-
-# SAFETY GATE — run before any rm/ln below, every time this procedure is invoked
-# (fresh auto-create, Step 4.5 repair, or the Symlink Integrity Gate auto-repair).
-# If WT ever resolves to main_root itself (a bad substitution, a stale/empty
-# {feature-name}, or a caller that passed main_root as WT by mistake), every
-# rm -rf + ln -sfn pair below collapses into deleting-then-relinking the SAME
-# path — replacing main_root's real .project/ files with symlinks that point at
-# themselves. .project/ is gitignored (no git history), so this is unrecoverable
-# from this repo alone. Abort loudly instead of silently corrupting:
-case "$WT" in
-  */.claude/worktrees/*) ;;
-  *)
-    echo "ERROR: refusing to wire .project/ symlinks — WT does not look like a worktree path: $WT"
-    echo "Expected shape: {main_root}/.claude/worktrees/{feature-name}. Aborting, nothing touched."
-    exit 1
-    ;;
-esac
-if [ "$(cd "$WT" 2>/dev/null && pwd -P)" = "$(cd "{main_root}" 2>/dev/null && pwd -P)" ]; then
-  echo "ERROR: refusing to wire .project/ symlinks — WT resolves to main_root itself ($WT)."
-  echo "This procedure must target a worktree, never the main checkout. Aborting, nothing touched."
-  exit 1
-fi
-
-# SAFETY GATE 2 — $WT/.project itself must be a real directory, never a symlink. This
-# procedure only ever creates PER-FILE symlinks *inside* $WT/.project; a whole-directory
-# symlink at $WT/.project (e.g. an earlier agent improvising `ln -s "$MP" "$WT/.project"`
-# as a shortcut instead of following this procedure) makes every path below resolve THROUGH
-# it onto main_root's real files — so `rm -f "$WT/.project/backlog.json"` deletes the real
-# file and the following `ln -sfn` recreates it as a self-referential symlink, exactly like
-# Safety Gate 1's hazard, even though $WT itself passed the check above. Detect and repair
-# in place before anything else runs:
-if [ -L "$WT/.project" ]; then
-  echo "WARN: $WT/.project is itself a symlink (not the expected per-file scheme) — removing the ad-hoc link and creating a real directory before wiring per-file symlinks."
-  rm -f "$WT/.project"
-  mkdir -p "$WT/.project"
-fi
-# ^ the mkdir above is deliberately duplicated with the one below — this block must stay
-# self-contained and order-independent. If an executing agent reconstructs this script from
-# memory/paraphrase instead of copying it verbatim (observed in practice), a reordering that
-# puts the unconditional mkdir before this check would otherwise leave $WT/.project missing
-# entirely once the stale symlink is removed, since nothing later recreates it.
-
-# macOS/Linux — ensure .project dir exists in worktree, then symlink shared paths
-mkdir -p "$WT/.project/session"
-
-# Remove any ad-hoc nested symlink (.project/.project) that a prior session may have created
-rm -f "$WT/.project/.project"
-
-rm -f "$WT/.project/backlog.json"
-rm -rf "$WT/.project/features" "$WT/.project/archive" "$WT/.project/wireframes" \
-       "$WT/.project/screenshots" "$WT/.project/thinking"
-rm -f "$WT/.project/project.json" "$WT/.project/project-context.json"
-
-ln -sfn "$MP/backlog.json"          "$WT/.project/backlog.json"
-ln -sfn "$MP/features"              "$WT/.project/features"
-ln -sfn "$MP/archive"               "$WT/.project/archive"
-ln -sfn "$MP/wireframes"            "$WT/.project/wireframes"
-ln -sfn "$MP/screenshots"           "$WT/.project/screenshots"
-ln -sfn "$MP/thinking"              "$WT/.project/thinking"
-ln -sfn "$MP/project.json"          "$WT/.project/project.json"
-ln -sfn "$MP/project-context.json"  "$WT/.project/project-context.json"
-
-# CLAUDE.md is gitignored (not committed — shared/TEAM.md), so a fresh worktree never gets
-# it from `git worktree add`. Symlink it too — safe to dangle if main has none yet.
-if [ -f "{main_root}/CLAUDE.md" ]; then
-  rm -f "$WT/CLAUDE.md"
-  ln -sfn "{main_root}/CLAUDE.md" "$WT/CLAUDE.md"
-fi
-
-# Assert: all required symlinks must resolve — fail loudly instead of silently passing with broken links
-# (archive/ is deliberately excluded — like wireframes/screenshots/thinking below, its source may not
-# exist yet on a fresh project with zero shipped features, so it may dangle safely)
-WIRE_FAILED=()
-for f in backlog.json features project.json project-context.json; do
-  if ! { [ -L "$WT/.project/$f" ] && [ -e "$WT/.project/$f" ]; }; then
-    WIRE_FAILED+=("$f")
-  fi
-done
-if [ ${#WIRE_FAILED[@]} -ne 0 ]; then
-  echo "ERROR: symlink wire-up failed for: ${WIRE_FAILED[*]}"
-  echo "Check permissions on $WT/.project/ and that $MP exists."
-  exit 1
-fi
-
+bash ~/.claude/scripts/wire-project-symlinks.sh \
+  --worktree "{main_root}/.claude/worktrees/{feature-name}" \
+  --main-root "{main_root}" \
+  --feature "{feature-name}"
 ```
+
+Exit 0 = wired. Exit 1 = refused or failed, reason on stderr — treat a non-zero exit as a hard
+stop, never continue to a `.project/` write on it.
+
+**Why a script and not an inline block** (it was one until it bit): executing agents reconstruct
+long bash from memory rather than copying it verbatim, sandboxed worktree sessions reject compound
+bash as "too complex to verify stays inside worktree", and the block lived in two places that had
+already drifted apart. One invocation removes all three failure modes.
+
+**What it guarantees** — three gates, in the order they run:
+
+1. **Never targets the main checkout.** A worktree path not shaped
+   `{main_root}/.claude/worktrees/…`, or resolving to main root itself, aborts before any mutation.
+   Without this, every rm+ln pair collapses into deleting-then-relinking the same path, replacing
+   main's real `.project/` files with symlinks pointing at themselves — and `.project/` is
+   gitignored, so that is unrecoverable from the repo alone.
+2. **`$WT/.project` is forced to be a real directory.** A whole-directory symlink there (an agent
+   improvising `ln -s "$MP" "$WT/.project"`) makes every per-file path resolve through it onto
+   main's real files — gate 1's hazard by another route.
+3. **Never deletes a real file.** Per shared path: absent → skipped; a symlink → replaced (the
+   normal case); a real file byte-identical to main → replaced; a real file that **differs** →
+   moved to `{main_root}/.project/.rescued/{feature}-{timestamp}/` and reported, never deleted; a
+   real file whose **main counterpart is missing** → promoted into main, since the worktree copy is
+   then the only copy. Any non-zero `diff` exit counts as divergent, read errors included.
+
+Gate 3 exists because the old block deleted unconditionally: content written into the worktree
+during a broken-symlink window was destroyed silently — observed once, a unique learning in
+`project-context.json` vanished during a repair. A `RESCUED`/`PROMOTED` line in the output means
+the worktree held content main did not: surface it to the user and reconcile by hand.
 
 **Caveat**: if main's `.project/backlog.json` does not exist yet (fresh project), `ln -sfn` creates a dangling symlink — this resolves itself as soon as the first backlog write happens on main. Skills check for file existence before reading, so a dangling symlink is safe.
 
@@ -227,7 +177,7 @@ expected_path = "{main_root}/.claude/worktrees/{feature-name}"
 
 #### Step 4.5: Repair shared `.project/` (idempotent)
 
-When `EnterWorktree` was just called in Step 4 (i.e. `current_root` changed to `expected_path`), immediately follow `## Shared .project/ via symlink` to re-wire the symlinks before the calling skill's PHASE 0 continues. The wire-up is fully idempotent — `ln -sfn` overwrites stale copies, `rm -f`/`rm -rf` of file-copies is safe. **Skip if** `current_root` was already `expected_path` at the start of Step 4 (no switch occurred) AND the verify-block in `### Verify symlink integrity` passes.
+When `EnterWorktree` was just called in Step 4 (i.e. `current_root` changed to `expected_path`), immediately follow `## Shared .project/ via symlink` to re-wire the symlinks before the calling skill's PHASE 0 continues. The wire-up is idempotent and non-destructive — a stale symlink is replaced, and a real file is never deleted (§ Procedure gate 3 rescues or promotes it instead). A `RESCUED`/`PROMOTED` line in its output is not noise: pass it on to the user. **Skip if** `current_root` was already `expected_path` at the start of Step 4 (no switch occurred) AND the verify-block in `### Verify symlink integrity` passes.
 
 This ensures that any skill using Switch finds healthy symlinks before its first backlog write, even if a prior session (or a `/core-pull` run inside the worktree) silently destroyed them.
 
@@ -341,7 +291,7 @@ if [ "$(git rev-parse --show-toplevel)" != "$MAIN_ROOT" ]; then
 fi
 ```
 
-`FAILED` non-empty → **auto-repair**: follow `## Shared .project/ via symlink` (the `rm -f` + `ln -sfn` block is idempotent; safe to re-apply). Display: `GATE: auto-repaired .project/ symlinks ({list})`.
+`FAILED` non-empty → **auto-repair**: follow `## Shared .project/ via symlink` (the script is idempotent and never deletes a real file, so re-applying it is safe). Display: `GATE: auto-repaired .project/ symlinks ({list})` — and when the script reported `RESCUED`/`PROMOTED`, add that line verbatim: the worktree held content main did not.
 
 Repair itself fails (any `ln -sfn` returns non-zero, or post-repair re-check finds remaining `FAILED`) → ABORT: `"Symlink repair failed for: {list}. Check permissions on {worktree}/.project/."`
 

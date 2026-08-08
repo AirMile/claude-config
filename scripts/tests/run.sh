@@ -1173,6 +1173,84 @@ in_reset context-empty.json
 IN_K=$(echo 'not json at all' | node "$IN_S" triage "$INT/proj" --feature f >/dev/null 2>&1; echo "exit=$?")
 run_in "unparsable stdin → exit 0 (never fails a green ship)" "exit=0" "$IN_K"
 
+# ---------------------------------------------------------------------------
+# wire-project-symlinks.sh — the .project/ symlink wiring must never destroy
+# content. Each case builds a throwaway main-checkout + worktree pair.
+# ---------------------------------------------------------------------------
+
+WP_S="$ROOT/scripts/wire-project-symlinks.sh"
+WP_BASE="$(mktemp -d)"
+WP_MAIN="$WP_BASE/repo"
+WP_WT="$WP_MAIN/.claude/worktrees/feat-x"
+
+run_wp() {
+  if [ "$2" = "$3" ]; then echo "PASS  wire-symlinks: $1"; PASS=$((PASS + 1));
+  else echo "FAIL  wire-symlinks: $1 (expected: $2, got: $3)"; FAIL=$((FAIL + 1)); fi
+}
+
+wp_reset() {
+  rm -rf "$WP_MAIN"
+  mkdir -p "$WP_MAIN/.project/features" "$WP_WT/.project"
+  echo '{"main":1}' > "$WP_MAIN/.project/backlog.json"
+  echo '{"main":1}' > "$WP_MAIN/.project/project.json"
+  echo '{"learnings":["main"]}' > "$WP_MAIN/.project/project-context.json"
+}
+
+wp_run() { bash "$WP_S" --worktree "$WP_WT" --main-root "$WP_MAIN" --feature feat-x 2>&1; }
+
+# (a) The normal case: an existing symlink is replaced, nothing is rescued.
+wp_reset
+ln -sfn "$WP_MAIN/.project/backlog.json" "$WP_WT/.project/backlog.json"
+wp_run >/dev/null
+run_wp "symlink is re-wired" "yes" "$([ -L "$WP_WT/.project/backlog.json" ] && echo yes || echo no)"
+run_wp "nothing rescued on the normal path" "no" "$([ -d "$WP_MAIN/.project/.rescued" ] && echo yes || echo no)"
+
+# (b) A real file byte-identical to main carries no unmerged content.
+wp_reset
+cp "$WP_MAIN/.project/project-context.json" "$WP_WT/.project/project-context.json"
+wp_run >/dev/null
+run_wp "identical real file → replaced by symlink" "yes" "$([ -L "$WP_WT/.project/project-context.json" ] && echo yes || echo no)"
+run_wp "identical real file → no rescue dir" "no" "$([ -d "$WP_MAIN/.project/.rescued" ] && echo yes || echo no)"
+
+# (c) The regression this gate exists for: a divergent real file is content a
+# broken-symlink window wrote into the worktree. It must survive.
+wp_reset
+echo '{"learnings":["UNIQUE-from-worktree"]}' > "$WP_WT/.project/project-context.json"
+WP_OUT="$(wp_run)"; WP_RC=$?
+run_wp "divergent real file → exit 0" "0" "$WP_RC"
+run_wp "divergent real file → WARN printed" "yes" "$(echo "$WP_OUT" | grep -q 'WARN: rescued' && echo yes || echo no)"
+WP_R="$(find "$WP_MAIN/.project/.rescued" -name project-context.json 2>/dev/null | head -1)"
+run_wp "divergent real file → content preserved" "yes" "$([ -n "$WP_R" ] && grep -q 'UNIQUE-from-worktree' "$WP_R" && echo yes || echo no)"
+WP_OUTSIDE=no
+[ "${WP_R#"$WP_MAIN/.project/.rescued"}" != "$WP_R" ] && WP_OUTSIDE=yes
+run_wp "divergent real file → rescue lands outside the worktree" "yes" "$WP_OUTSIDE"
+
+# (d) Main has no counterpart: the worktree copy is the only copy, so promote it
+# rather than rescuing it behind a dangling symlink.
+wp_reset
+rm -f "$WP_MAIN/.project/project-context.json"
+echo '{"learnings":["only-copy"]}' > "$WP_WT/.project/project-context.json"
+WP_OUT="$(wp_run)"
+run_wp "main missing → PROMOTED reported" "yes" "$(echo "$WP_OUT" | grep -q 'PROMOTED to main' && echo yes || echo no)"
+run_wp "main missing → content moved to main" "yes" "$(grep -q 'only-copy' "$WP_MAIN/.project/project-context.json" 2>/dev/null && echo yes || echo no)"
+
+# (e) Gate 1: a worktree path equal to main root must abort before any mutation.
+wp_reset
+WP_BEFORE="$(cat "$WP_MAIN/.project/backlog.json")"
+bash "$WP_S" --worktree "$WP_MAIN" --main-root "$WP_MAIN" >/dev/null 2>&1
+run_wp "worktree == main root → exit 1" "1" "$?"
+run_wp "worktree == main root → main untouched" "$WP_BEFORE" "$(cat "$WP_MAIN/.project/backlog.json")"
+run_wp "worktree == main root → no self-referential symlink" "no" "$([ -L "$WP_MAIN/.project/backlog.json" ] && echo yes || echo no)"
+
+# (f) Gate 2: a whole-directory symlink at $WT/.project would make every path
+# below resolve onto main's real files.
+wp_reset
+rm -rf "$WP_WT/.project"; ln -sfn "$WP_MAIN/.project" "$WP_WT/.project"
+wp_run >/dev/null
+run_wp "WT/.project symlink → replaced by a real dir" "yes" "$([ ! -L "$WP_WT/.project" ] && [ -d "$WP_WT/.project" ] && echo yes || echo no)"
+run_wp "WT/.project symlink → main's real file survives" "yes" "$([ -f "$WP_MAIN/.project/backlog.json" ] && [ ! -L "$WP_MAIN/.project/backlog.json" ] && echo yes || echo no)"
+
+rm -rf "$WP_BASE"
 
 echo
 echo "Result: $PASS passed, $FAIL failed"

@@ -271,27 +271,14 @@ After `EnterWorktree` (or Destroy→recreate), run symlink setup + integrity che
 ```bash
 # Example for dev-ship's build phase — adapt session payload per skill
 WT="{main_root}/.claude/worktrees/{feature-name}"
-MP="{main_root}/.project"
 
-mkdir -p "$WT/.project/session"
-rm -f "$WT/.project/.project"
-rm -f "$WT/.project/backlog.json"
-rm -rf "$WT/.project/features" "$WT/.project/wireframes" "$WT/.project/screenshots" "$WT/.project/thinking"
-rm -f "$WT/.project/project.json" "$WT/.project/project-context.json"
-ln -sfn "$MP/backlog.json"         "$WT/.project/backlog.json"
-ln -sfn "$MP/features"             "$WT/.project/features"
-ln -sfn "$MP/wireframes"           "$WT/.project/wireframes"
-ln -sfn "$MP/screenshots"          "$WT/.project/screenshots"
-ln -sfn "$MP/thinking"             "$WT/.project/thinking"
-ln -sfn "$MP/project.json"         "$WT/.project/project.json"
-ln -sfn "$MP/project-context.json" "$WT/.project/project-context.json"
-
-# CLAUDE.md is gitignored (not committed — shared/TEAM.md), so `git worktree add` never
-# carries it. Symlink it too — safe to dangle if main has none yet.
-if [ -f "{main_root}/CLAUDE.md" ]; then
-  rm -f "$WT/CLAUDE.md"
-  ln -sfn "{main_root}/CLAUDE.md" "$WT/CLAUDE.md"
-fi
+# Symlink wiring + CLAUDE.md link + the three safety gates + the required-symlink
+# assertion, all in one call. Do NOT hand-roll the rm/ln pairs here: this file used to
+# carry its own copy of that block, it drifted out of sync with the canonical one
+# (it was missing archive/), and it deleted real files outright.
+# Canonical: shared/WORKTREE.md → Shared .project/ via symlink.
+bash ~/.claude/scripts/wire-project-symlinks.sh \
+  --worktree "$WT" --main-root "{main_root}" --feature "{feature-name}" || exit 1
 
 # convex-test's import.meta.glob resolves relative to node_modules' physical location, not
 # the worktree — a symlinked/parent-resolved node_modules silently bundles main's stale
