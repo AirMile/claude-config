@@ -356,6 +356,16 @@ and state auto-push (its § Post-merge reconcile).
 the extract-both-sides + reconstruct technique and the diff3 shared-closing-brace-tail trap that
 silently breaks a naive concatenation.
 
+**After the merge, before cleanup — verify the target branch, always.** The refactor agent's own
+test run happened pre-merge, on the feature branch; it says nothing about the merged result. A
+clean auto-merge is exactly where cross-feature breakage hides — it lands OUTSIDE any conflict
+markers when a symbol this branch removed merges cleanly into code the other side added, so a
+conflict-free merge is not evidence of a working one. Commits that landed on the default branch
+while this run was in flight are the common source. Run the project's own test/lint commands on the
+target branch: dispatch a fresh (non-fork) `general-purpose` agent, `model: "sonnet"`, digest only —
+never inline. Green → proceed to cleanup. Red → the worktree is still on disk and is the only place
+left to fix from: stop before `git worktree remove` and report.
+
 **Do not skip the archive-reconcile check even if the project's actual `backlog.json` looks
 inconsistent with it.** Re-read `backlog.json#features[]` after the merge: if the just-shipped
 feature is still present there, that is a half-run — move it to `.project/archive/backlog-archive.json`

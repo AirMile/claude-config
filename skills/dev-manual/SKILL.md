@@ -23,7 +23,7 @@ writes:
 writes-terminal: [feature.status, feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 1.11.0
+  version: 1.13.0
   category: dev
 ---
 
@@ -95,18 +95,16 @@ resume; a park is a stopping point, not a finished phase.
 "worktree-{feature}"` exits 1 on conflict and lists the conflicting paths from its second line on
 > (line 1 is the tree oid); it writes nothing to the working tree.
 >
-> - **Exit 0** → `"NOTE: worktree-{feature} is {N} commit(s) behind {default branch} — rebases
-clean, no action needed."`
+> - **Exit 0** → `"NOTE: worktree-{feature} is {N} commit(s) behind {default branch} — merges
+clean; MANUAL 1's worktree switch rebases it automatically, nothing for you to do."`
 > - **Exit 1** → not a visibility note, a scheduled cost. Print: `"NOTE: worktree-{feature} is {N}
 commit(s) behind {default branch} AND conflicts with it in: {paths}. MANUAL 2's merge WILL stop
-on this — budget for dev-ship/references/merge-conflict-resolution.md before finalize, and after
-resolving, grep the merged file for symbols either side deleted: cross-feature breakage lands
-OUTSIDE the conflict markers when a symbol this branch removed gets merged cleanly into code the
-other side added. Not a reason to stop now."`
+on this — budget for dev-ship/references/merge-conflict-resolution.md before finalize. Not a
+reason to stop now."`
 >
-> Two git calls, no working-tree mutation. Does not replace WORKTREE.md's own staleness-rebase —
-> it only guarantees the drift, and its real cost, is surfaced even when the later switch takes the
-> skip-because-already-in-worktree fast path.
+> Two git calls, no working-tree mutation — this surfaces the drift and its real cost even when
+> MANUAL 1's switch takes the skip-because-already-in-worktree fast path, and never replaces
+> WORKTREE.md's own staleness-rebase.
 >
 > Run `node ~/.claude/scripts/ship-checkpoint.js route {feature}` and branch — every branch below
 > marks MANUAL 0 → `completed` (routing resolved) and seeds the rest of the `TaskCreate` list per
@@ -191,20 +189,34 @@ of tool calls long; the task list alone leaves the user without a marker for whe
 
 > **Todo**: mark MANUAL 1 → `completed`, MANUAL 2 → `in_progress`.
 >
-> **STOP — leave the worktree before entering § 5.** MANUAL 1 switched the session into
-> `worktree-{feature}` (`shared/WORKTREE.md § Switch`), which makes it **worktree-isolated**:
-> the harness refuses every `git -C "$main_root" …`, including § 5's own pre-spawn
-> target-clean check (d) and the merge itself. Call `ExitWorktree(action: keep)` now — the
-> worktree stays on disk and AGENT 3 gets its path from the pointer file, so nothing
-> downstream needs the session to sit inside it. Two traps once you stand on main:
-> § 5's `scriptPath` must still be absolute, and `finalize.md`'s PR probe must be handed the
-> branch literally (`--head worktree-{feature}`) — `git branch --show-current` now answers
-> `main`, so the verbatim command would probe the wrong branch.
+> **STOP — check where the session stands before entering § 5.** MANUAL 1 may have switched the
+> session into `worktree-{feature}` (`shared/WORKTREE.md § Switch`), which would make it
+> **worktree-isolated** — the harness then refuses every `git -C "$main_root" …`, including
+> § 5's own pre-spawn target-clean check (d) and the merge itself. Probe, don't assume: run
+> `git -C "$main_root" status --porcelain` — check (d) needs that output anyway, so this costs
+> nothing extra.
+>
+> - **It works** → the session was launched in the worktree rather than switched into it, so
+>   `ExitWorktree` has no session to end and returns a no-op error (the same case
+>   `finalize.md`'s own ExitWorktree note documents). Do not call it. Stay put and name every
+>   target path explicitly from here on.
+> - **It is refused** → the session is worktree-isolated. Call `ExitWorktree(action: keep)` now
+>   — the worktree stays on disk and AGENT 3 gets its path from the pointer file, so nothing
+>   downstream needs the session to sit inside it.
+>
+> Two traps either way: § 5's `scriptPath` must be absolute, and `finalize.md`'s PR probe must
+> be handed the branch literally (`--head worktree-{feature}`) — once off the branch
+> `git branch --show-current` answers `main`, so the verbatim command would probe the wrong one.
 >
 > Read `.claude/skills/dev-ship/references/orchestration.md § 5` and follow it: refactor (AGENT 3) +
 > optional security triage (AGENT S), then finalize (solo-merge or halt-for-team, per
 > `.claude/skills/dev-ship/references/dev-verify/references/finalize.md`). This is the same reference `/dev-ship`'s
 > own PHASE 4 reads — no dev-manual-specific variant.
+>
+> § 5's **post-merge target-branch verification** (run the suite on the target before cleanup) is
+> not optional on a resume — it is the one obligation MANUAL 0's staleness probe cannot cover, since
+> that probe is a snapshot taken at resume and commits landing during the run are invisible to it.
+> The rule itself lives in § 5; do not restate it here.
 >
 > **`"phase3-completion"` entry** (from MANUAL 0): first run `orchestration.md § 4` (the no-manual
 > completion — Step 1 + Step 3 of `phase-3-manual-finalize.md` only) before § 5, exactly as
