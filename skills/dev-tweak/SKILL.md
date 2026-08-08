@@ -12,7 +12,7 @@ reads:
 writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.24.0
+  version: 1.29.0
   category: dev
 ---
 
@@ -22,7 +22,8 @@ Fast path for small web-stack changes: a bugfix, copy/styling adjustment, config
 refactor that fits 1-3 files. Everything heavier belongs to `/dev-ship` — the gate that decides is
 [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) (size gate, backlog guard, registration
 policy, never-do list). No `TaskCreate` phase tracking — a tweak run is minutes of work with no
-compaction risk; ceremony is what this skill exists to avoid. Safe to run several `/dev-tweak`
+compaction risk; ceremony is what this skill exists to avoid (deliberate, not a gap:
+`check-task-markers.py` expects 0 units here). Safe to run several `/dev-tweak`
 invocations concurrently against the same repo/branch — PHASE 4's commit lands atomically per
 [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md) § 5. Skill file stays English; user-facing
 output follows `CLAUDE.md § User Preferences → Language:`.
@@ -62,9 +63,10 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
      matched card's `dependencies` from `backlog.json` directly): one `AskUserQuestion` only when a
      dependency is present and not yet `shipped`/`DONE` (per TWEAK-DISCIPLINE § Card pickup); no
      dependencies field → skip silently. A dependency `read-feature` reports as `present: false` is
-     usually **already resolved and archived**, not missing — check
-     `.project/features/archive/*/feature.json` for `status: "DONE"` before warning the user about
-     an unshipped parent.
+     usually **already resolved and archived**, not missing — look it up in
+     `.project/archive/backlog-archive.json#archived[]` and check `shipped: true` (the criterion per
+     TWEAK-DISCIPLINE § Card pickup). An archived `feature.json` carries `status`, never `shipped`,
+     so `status: "DONE"` there is a weaker fallback signal, not the check.
    - **No match, or `.project/` absent → free-text mode.** Description from the invocation argument;
      if empty, ask one short question.
 3. **Branch guard**.
@@ -174,58 +176,54 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    > result — fix the invocation and re-run before proceeding. Only exit 0 with empty stdout is a
    > genuine zero. The count feeds step 5's `Lane:` line below; no separate print here.
 
-4. **Durable-decisions check** — this is dev-tweak's only route back to a feature's already-settled
-   design questions (`durableDecisions[]` has no other reader on the modify path — see
+4. **Durable-decisions check** — dev-tweak's only route back to a feature's already-settled design
+   questions (`durableDecisions[]` has no other reader on the modify path — see
    `shared/FEATURE-LOAD.md`). `.project/` absent (already degraded at PHASE 0 step 1) → skip
    silently, same as the rest of this skill's graceful degradation.
 
    `.project/` present → grep `.project/features/*/feature.json` and
    `.project/features/archive/*/feature.json` for `files[].path` entries matching any located file
    (repo-relative path match). No match on any feature → skip silently, no cost — most tweaks touch
-   files no pipeline feature ever built. Exactly one match → project out **only** the fields the
-   next paragraph actually holds — never a full Read of `feature.json`, whose `rationale`/`finding`
-   narratives routinely run to thousands of words:
+   files no pipeline feature ever built.
 
-   ```bash
-   node -e 'const f=require(process.argv[1]);
-     const keep=["decision","constraint","chosen"];
-     const p=(f.durableDecisions||[]).map(
-       x=>Object.fromEntries(keep.map(k=>[k,x[k]])));
-     console.log(JSON.stringify(p,null,1))' <path-to-feature.json>
-   ```
-
-   Multiple features match → take the most recently modified `feature.json`.
-
-   `durableDecisions[]` present and non-empty → hold each entry's `constraint`/`chosen` as a hard
-   boundary during PHASE 2, same standing as `clarifications[]` in dev-build: a tweak whose natural
-   edit would contradict one (re-introduce a rejected option, violate a recorded constraint) must
-   instead follow the recorded `chosen` approach, or escalate via `references/escalate.md` if the
-   tweak cannot honor it within 1-3 files. No hits, or the field is empty → nothing to hold, proceed
-   as normal.
+   > **Todo**: a feature matched → Read
+   > `.claude/skills/dev-tweak/references/durable-decisions.md` and follow it (field projection,
+   > multi-match tiebreak, and how the recorded constraints bind PHASE 2).
 
 5. **Lane routing**.
 
-   > **Todo**: judge [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Lane routing's
-   > table fresh against this run's actual locate/learnings results, never from memory — re-read the
-   > file only if its content isn't already in context from PHASE 0. Evaluate rows in order; the
-   > first match picks the lane. Print one line, always — Lane A included:
+   > **Todo**: judge this table fresh against this run's actual locate/learnings results, never
+   > from memory. Evaluate rows in order; the first match picks the lane. Source of truth:
+   > [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Lane routing — do not renumber
+   > locally, same policy as PHASE 0 step 5's inlined size-gate criteria.
+   >
+   > | #   | Condition                                                                                                                                          | Lane |
+   > | --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+   > | 1   | Stale or obsolete/superseded card, or a docs-only / `.project`-only change                                                                         | A    |
+   > | 2   | A verify round in this run failed, **or** a size-gate escalation was consciously overridden (§ Escalation gate c)                                  | C    |
+   > | 3   | PHASE 1 locate left ≥2 candidate sites open, or landed on none                                                                                     | B    |
+   > | 4   | A learning printed with type `pitfall` carries the `⟨path⟩` marker (its own `paths[]` overlap a located file) — read the marker, never re-classify | B    |
+   > | 5   | Otherwise                                                                                                                                          | A    |
+   >
+   > A lane only ever moves up during a run, and never overrules the size gate. Row 2 fired → Read
+   > TWEAK-DISCIPLINE § Lane routing for its hard rules (the second failed round ends the tweak)
+   > before designing.
+   >
+   > Then print one line, always — Lane A included:
    > `Lane: {A|B|C} · Learnings: {n} ({matched pitfall, or "no pitfall on located paths"})`.
    > `{n}` = total lines the load printed across all blocks — a raw count, not a deduped one;
    > nothing downstream depends on the exact number.
 
-> **Todo — PHASE 1 exit**: this phase produces exactly two printed lines, `Gate:` (step 2) and
-> `Lane:` (step 5). Both present in the output above → proceed to PHASE 2. Either missing → the
-> corresponding step did not run: go back and run it now. Do not enter PHASE 2 to "reconcile after".
-> An escalation firing anywhere in this phase is the one exception — the run ends at
-> `references/escalate.md` instead, which prints its own two-line report in place of `Gate:`/`Lane:`.
-
 ## PHASE 2 — Implement
 
-1. **STOP — gate before the first `Edit`**: scroll up and confirm three artifacts exist above this
-   point — a `learnings-search.js` tool result (step 3), a `feature.json` grep result or its "no
-   match" (step 4), and a printed `Lane:` line (step 5). Judge what the transcript shows, not what
-   you remember doing. Any one absent → go back to that step now; do not edit first and reconcile
-   after.
+1. **STOP — gate before the first `Edit`**: scroll up and confirm four artifacts exist above this
+   point — a printed `Gate:` line (PHASE 1 step 2), a `learnings-search.js` tool result (step 3), a
+   `feature.json` grep result or its "no match" (step 4), and a printed `Lane:` line (step 5).
+   Judge what the transcript shows, not what you remember doing. Any one absent → go back to that
+   step now; do not edit first and reconcile after. All four present → say so in one line
+   (`Pre-edit gate: ✓ 4/4`) before the first `Edit` — a gate that leaves no trace cannot be
+   distinguished from a gate that was skipped. An escalation firing in PHASE 1 is the one exception:
+   the run ends at `references/escalate.md` instead, which prints its own two-line report.
 2. **Lane execution** — run the lane PHASE 1 step 5 picked, exactly as
    [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Lane routing defines it (A direct /
    B plan-mode design / C + `Plan` agent on `model: "opus"` + Fable consult per
@@ -278,8 +276,10 @@ Scoped to the touched modules — never the full suite unless it is genuinely fa
   report which scoped subset ran instead.
 - **The project's docs mandate a post-build step** (deploy, sync an artifact to a runtime data
   directory, restart a service) → it belongs to verify, not to "later": a green test run on a build
-  the user's runtime never received is a false pass. Run it, or state explicitly in the report that
-  it is still outstanding — never leave it unmentioned.
+  the user's runtime never received is a false pass. Run it. Could not run it → it becomes a PHASE 4
+  step 4 `Next steps:` item, phrased as the command the user runs — never a line inside the report
+  fence: an unrun step is the user's action, and label-value lines read as archive data they scroll
+  past.
 - **Web defaults**: `npx vitest related <files>`, or the project's test command with a path/pattern
   filter.
 - **Harness failure** (collection/import error, missing interpreter or deps, stale virtualenv) is
@@ -297,7 +297,10 @@ Scoped to the touched modules — never the full suite unless it is genuinely fa
   live check as passed when it wasn't run.
 
 New failures vs the baseline → fix within the current tier's discipline; unfixable within tweak
-scope → Read `references/escalate.md`. A failed round also feeds
+scope → Read `references/escalate.md`. **Not a failed round**: a test or assertion *this same PHASE 2
+pass authored* failing on its own defect (an over-broad matcher, a wrong fixture), corrected without
+touching the code under change — that is the test loop working. It becomes a failed round the moment
+the correction reaches the source under change. A failed round also feeds
 [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Lane routing row 2: the **first**
 failed round in this run lifts to Lane C for the next PHASE 2 pass (re-score, don't re-derive from
 scratch — the lane only ever moves up); a **second** failed round on the same issue routes to
@@ -315,10 +318,21 @@ proof only, never a self-assessment of "this is trivial":
 - at least one **test exercises the changed behavior** (lint/typecheck alone doesn't count; a
   change with no covering test doesn't count), AND
 - this is **not** a visual/copy tweak (the "visual/copy tweaks" bullet above still applies — a
-  live re-check there is human judgment, not machine proof), AND no reachability caveat fired (the
-  "can't reach/drive the running app" bullet above).
+  live re-check there is human judgment, not machine proof), AND no reachability caveat fired.
+  That caveat is **not** visual/copy-only: it fires for any change whose user-visible effect can
+  only be confirmed in a running app or runtime this session cannot drive (game engine, trading
+  terminal, daemon). Source-level proof that the call site is correct is real evidence, but it is
+  not that confirmation — route to Tier 2 and name what the user should look at.
 
-Any one of these failing → Tier 2.
+**Only the covering-test bullet failed, and coverage is one mechanical assertion away** — an
+existing test file already covers the touched module AND the assertion is mechanical (a value, a
+source-level invariant, a rendered string) → add that one case, re-run the checks, and re-evaluate
+Tier 1. Size-gate criterion 3 fires on a new test _file_ only, so this stays tweak-sized, and PHASE
+4's commit-type list already carries `test` for exactly this. No such file, or the assertion needs a
+new harness or fixture (criterion 3 fires) → Tier 2. Bounded on purpose: never invent a test whose
+only purpose is to dodge the modal.
+
+Any other one of these failing → Tier 2.
 
 **Tier 2 — ask.** Correctness rests on human judgment → one `AskUserQuestion` before wrap-up, four
 options. Use these four verbatim — do not improvise replacements even when a live check was
@@ -363,42 +377,87 @@ bullet below describes:
      --files <comma-separated-paths>
    ```
 
-   Deltas vs § 5: baseline `pre-tweak-status.txt`; OVERLAP policy **auto-include**
-   (the fix is the point); fallback: ask which files belong to the tweak. **`--files` lists the
-   files THIS run edited** — never the whole baseline diff: a concurrent `/dev-tweak` on the same
-   tree makes its own files look NEW against your baseline too (§ 2's NEW category cannot tell them
-   apart). **Message type is never `feat`** — a tweak by definition adds no net-new capability
-   (size-gate criterion 1); use `{fix|refactor|perf|style|test|chore}({slug}): {summary}` (`test`
-   for a tweak whose only change is added/expanded test coverage). Cleanup: remove the baseline
-   file and the commit-message scratch file.
+   Deltas vs § 5, one rule per line:
 
-2. **Card-mode completion** (skip entirely in free-text mode): run
-   [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup **completion write** as
-   specified there — field list, archive move, and the board-app revert guard all live in that
-   section; do not restate or re-derive them here. Re-read `backlog.json`/the archive after writing
-   and confirm the card landed as `shipped` before reporting `Card: {name} → shipped` — a running
-   board app can silently revert this write.
+   - Baseline is `pre-tweak-status.txt`; OVERLAP policy is **auto-include** (the fix is the point);
+     fallback: ask which files belong to the tweak.
+   - **`--files` lists the files THIS run edited** — never the whole baseline diff. A concurrent
+     `/dev-tweak` on the same tree makes its own files look NEW against your baseline too (§ 2
+     buckets every changed file as NEW / OVERLAP / PRE-EXISTING; NEW cannot tell your file from
+     theirs).
+   - **Message type is never `feat`** — a tweak adds no net-new capability (size-gate criterion 1).
+     Use `{fix|refactor|perf|style|test|chore}({slug}): {summary}`, `test` when the only change is
+     added or expanded test coverage.
+   - Cleanup: remove the baseline file and the commit-message scratch file.
+
+2. **Card-mode completion** (skip entirely in free-text mode): move the card from
+   `.project/backlog.json#features[]` to `.project/archive/backlog-archive.json#archived[]`,
+   setting exactly `shipped: true`, `shippedAt` (`YYYY-MM-DD`), `shippedSha` (step 1's commit),
+   and `summary` (the tweak's one-line outcome). **Those four and no others** — a `status` flip
+   or a `transition` delete is not part of this write. Semantics, the archiving contract, and
+   the dashboard rationale live in
+   [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup → completion write;
+   read it only if the move itself is unclear.
+
+   Then run [shared/BACKLOG.md](../shared/BACKLOG.md) § Archive-move invariant: re-read both
+   files and confirm the card is **absent** from `features[]` **and** present in `archived[]`
+   with all four fields. A running board app (`serve-backlog.js`) can silently revert an
+   external write from its in-memory store — re-apply on a revert. Only once this holds does
+   the report carry `Card: {name} → shipped`.
 
    **Obsolete/superseded card instead** (PHASE 1's confirmed obsolete branch): run that same file's
    § Card pickup **cancellation write** instead — the card stays in `features[]`, no archive move.
 
 3. **Optional learning (0-1)**: only for a bugfix whose root cause has value beyond this spot
-   (filter per [shared/LEARNING-WRITE.md](../shared/LEARNING-WRITE.md) § Writer Append Protocol) —
-   append via `learnings-write.js append` with `type: "pitfall"`, `source: "extracted"`, 0-3 tags,
-   then run the Consolidation Gate once (`LEARNING-WRITE.md § Consolidation Gate`). Skip both
-   silently otherwise. No state auto-push (TWEAK-DISCIPLINE § Registration policy).
+   (filter per [shared/LEARNING-WRITE.md](../shared/LEARNING-WRITE.md) § Writer Append Protocol).
+   The payload goes in on **stdin** — there are no `--feature`/`--summary` flags:
+
+   ```bash
+   node ~/.claude/scripts/learnings-write.js append "$REPO" <<'JSON'
+   {"entries":[{"feature":"{slug}","type":"pitfall","source":"extracted",
+     "summary":"...","tags":["..."],"paths":["{located file}"]}]}
+   JSON
+   ```
+
+   `paths` carries the located files — PHASE 1 step 3 loads with `--paths`, so a learning written
+   without them is invisible to this skill's own next relevance load. 0-3 tags per
+   `LEARNING-WRITE.md § Tag Vocabulary`. A non-zero exit is a failed step, not a zero result — fix
+   the payload and re-run (same rule as PHASE 1 step 3). Then run the Consolidation Gate once
+   (`LEARNING-WRITE.md § Consolidation Gate`). Skip both silently otherwise. No state auto-push
+   (TWEAK-DISCIPLINE § Registration policy).
 
    **Stale-learning correction** — separate from the 0-1 budget above, and not gated on the bugfix
    filter: PHASE 1 step 3's load surfaced a learning this tweak just made **wrong** (a convention it
-   renamed, a limit it lifted, a path it moved) → correct that entry in place with
-   `learnings-write.js enrich` (patch its `summary`; `match` on `feature` + `type` +
-   `summaryEquals`). This repairs existing memory rather than adding to it, so it neither counts
+   renamed, a limit it lifted, a path it moved) or **superseded** (the workaround it prescribes is no
+   longer the best route) → correct that entry in place. Same stdin shape as `append`, with the patch
+   fields **flat alongside `match`** — a nested `{"match":…,"patch":{…}}` is silently ignored:
+
+   ```bash
+   node ~/.claude/scripts/learnings-write.js enrich "$REPO" <<'JSON'
+   {"patches":[{"match":{"feature":"...","type":"pitfall",
+     "summaryEquals":"<exact current summary>"},
+     "summary":"<corrected summary>"}]}
+   JSON
+   ```
+
+   **This call fails silently.** Exit 0 with `{"patched":0,"alreadyApplied":1}` on a *first*
+   correction means the payload was not understood, not that the work was already done — re-read the
+   entry and confirm the summary actually changed before reporting it. Only `patched: 1` is success.
+   This repairs existing memory rather than adding to it, so it neither counts
    against the 0-1 budget nor triggers the Consolidation Gate, and it is not a new backlog write.
    Leaving a contradicted learning in place is the drift trap this closes — the next run reads it as
    current and undoes the tweak.
 
 4. **Report** — one fenced block per `shared/OUTPUT.md` § Report Block (≤72 chars, Label-value
-   grammar), with any "what changed" prose detail outside the fence. Fields:
+   grammar), with any "what changed" prose detail outside the fence.
+
+   > **Todo**: Read `.claude/skills/shared/OUTPUT.md` § Report Block now, before composing the
+   > block — 75 lines. Reconstructing the grammar from memory drops the `====` underline and lets
+   > explanatory sentences into the fence, the two rules that decide whether the user can scan the
+   > result at all.
+
+   Repeat the `Card:`/`Guard:`, `Gate:` and `Lane:` lines here even though they printed mid-run —
+   this block is the durable record. Fields:
    - what changed, with `file:line` refs; checks run; commit sha
    - a `Guard:` line reflecting PHASE 0's actual result — never assert "no card overlap" if the
      guard didn't run (say so instead); card mode prints this exact form instead of a `Guard:`
@@ -415,7 +474,18 @@ bullet below describes:
      `consulted ({trigger}) → revised` / `consulted ({trigger}) → confirmed` / `unavailable`). Omit
      entirely on Lane A/B — there is nothing to log.
    - a `Learning:` line when one was written; `Escalation overridden: {criterion}` when applicable
-   - `Next steps: /dev-ship {card}` **only** when the guard flagged a TODO card (free-text mode
-     only — card mode is terminal). Otherwise a tweak is terminal: no next-step offer. The one
-     card-mode exception is an escalation park (`references/escalate.md § 3 (a)`) — that path prints
-     its own `Pick it up with /dev-ship {name}.` line instead of this one.
+   - a post-fence `Next steps:` numbered block (`shared/SKILL-PATTERNS.md § Next Steps`) when either
+     trigger fires; neither fires → a tweak is terminal, no next-step offer:
+     1. PHASE 3 could not run a project-mandated post-build step → the command the user must run,
+        first in the list. Fires in card mode too, where the tweak is otherwise terminal.
+     2. the guard flagged a TODO card (free-text mode only) → `/dev-ship {card}`
+
+     An escalation park (`references/escalate.md § 3 (a)`) prints its own
+     `Pick it up with /dev-ship {name}.` line instead of this block.
+
+   > **Todo**: raised a skill-feedback point alongside this report (friction observed during the
+   > run, per `~/.claude/CLAUDE.md § Skill Feedback`) → store it now, in one call:
+   > `node ~/.claude/scripts/skill-feedback.js add --skill dev-tweak --note "<point>"` (repeat
+   > `--note` per point; `--source user` for a point the user raised). The report is not the store —
+   > an unstored point is lost, so `/core-audit` never sees its recurrence count. Nothing observed
+   > during the run → no call, no ritual closer.
