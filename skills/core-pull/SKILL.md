@@ -15,7 +15,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 4.2.1
+  version: 4.2.2
   category: core
 ---
 
@@ -42,7 +42,7 @@ Pull remote changes, analyze the diff, refresh `.project/` context, analyze team
 1. **Run the pre-flight script** — one call replaces all individual checks (worktree guard, open worktrees, dirty status, remote + fetch, context staleness, onboard condition, team mode):
 
    ```bash
-   python3 .claude/skills/core-pull/scripts/preflight.py --path .
+   python3 ~/.claude/skills/core-pull/scripts/preflight.py --path .
    ```
 
    Parse the JSON output and keep it for all later phases. Then match rows top-down — this table is the only routing authority:

@@ -24,7 +24,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 2.9.0
+  version: 2.9.1
   category: core
 ---
 
@@ -92,8 +92,8 @@ Stop.
 3. **Detect existing project** — run both scripts in one call:
 
    ```bash
-   MODE=$(python3 .claude/skills/core-setup/scripts/detect-mode.py --path .)
-   EXISTING=$(python3 .claude/skills/core-setup/scripts/detect-existing.py --path .)
+   MODE=$(python3 ~/.claude/skills/core-setup/scripts/detect-mode.py --path .)
+   EXISTING=$(python3 ~/.claude/skills/core-setup/scripts/detect-existing.py --path .)
    ```
 
    `MODE` is one of `greenfield` | `mature` | `ambiguous`. `EXISTING` reports whether config files exist (any detected config = "yes" below).
