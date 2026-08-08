@@ -161,10 +161,18 @@ the path once, at the first item. No HTML preview — same reasoning as
 
 ## Step F — "Now that you've played it" interview close
 
-After the last item, ask **one** open question (English source text, emit in the runtime language per
-`shared/LANGUAGE.md`):
+After the last item, close the round in this order — never with the bare open question alone, which
+reads as vague after a walk in which every item was already settled:
 
-> "Now that you've played it: what should be different or better?"
+1. **Name what you noticed but did not file.** During the walk you will have seen things that were
+   not any item's `expected`: an inconsistency, a rough edge, a follow-up the evidence suggested.
+   List them, one line each, max 3. Noticed nothing → say that in one line; never manufacture a list.
+2. **Then** ask the open question (English source text, emit in the runtime language per
+   `shared/LANGUAGE.md`): "Now that you've played it: what should be different or better?"
+
+The named observations are the anchor: they give the user something concrete to react to, and they
+are Claude's own findings, so a "nothing to add" answer still leaves them on the table for the
+report instead of losing them.
 
 Follow up on whatever the user raises — one clarifying question at a time. SUBJECTIVE answers get
 the same mandatory clarify-then-recategorize as Step D. Stop the moment the user has nothing more to

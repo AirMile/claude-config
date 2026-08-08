@@ -54,7 +54,7 @@ only prepares evidence for the human to confirm against.
 no automation vehicle can drive (Tauri/Electron without a working WebDriver), skip this sweep
 entirely — no vehicle means no evidence. Evidence-class items then run in **user-evidence mode**:
 the proof comes from the user in Step C instead of from this sweep. Same condition, other side:
-when the harness cannot even *start* the app, `phase-3-manual-finalize.md § Step 2`'s
+when the harness cannot even _start_ the app, `phase-3-manual-finalize.md § Step 2`'s
 prepare-then-hand-over branch owns the launch.
 
 **Primary — fresh Sonnet agent, not a fork.** The sweep's context (the item list, the app URL, the
@@ -104,13 +104,38 @@ the end, which is why "I did it wrong" and "it's broken" were indistinguishable.
 step block per § Typography below instead of walking it — a resume honours that choice for the rest
 of the item.
 
+**A step is presented only if it is executable as written.** The `steps[]` come from an agent that
+never watched anyone perform them. Before shipping a step, check that it names the concrete action —
+the menu path, the control, the command — and not just the outcome. Names only the outcome → expand
+it yourself from the codebase/UI before presenting; that is a route, not a question for the user.
+Calibrate the level of detail to the project's `Explanation Level` (project CLAUDE.md → User
+Preferences); at Beginner, name the click path and the keystroke, not the concept.
+
+> **STOP — a broken item is Claude's to catch too, not only the user's.** Step C's item-text
+> correction sits under `Kom er niet uit`, so it only fires once the _user_ is stuck. Two defects
+> show up earlier than that, while you are presenting or checking the item, and both silently
+> produce a wrong verdict if walked as written:
+>
+> - **The vehicle cannot cause the effect.** The step names a tool or control that does not produce
+>   the thing under test, so the expected outcome would hold with or without the fix — the item is
+>   unfalsifiable and a Pass on it means nothing.
+> - **The observation is humanly impossible.** The step asks the user to see something they have no
+>   way to identify (one row among hundreds, a change they never had a baseline for).
+>
+> This is a **route, not a verdict** — decide it yourself, do not open a modal. Say in one line what
+> is broken and why, propose the corrected step, patch the ledger item's `steps`/`expected` via the
+> Step E upsert, and record it as a `stepLog` entry with `divergedFromItemText: true` so the report
+> can show the item was repaired rather than merely passed. Do not spend a `helpAttempt` on it —
+> that counter is for the user being stuck, and this is not that.
+
 ## Step B2 — Guided walk
 
 **Checkpoint rule.** A step is a **checkpoint** when it establishes state that later steps consume,
 and Claude cannot verify that state itself. Testable straight from the item text at presentation
 time: does step N name an identifier, path, or value that step N+1 uses? This is deliberately _not_
-"how complex is the step" — Claude has no model of the user's familiarity, so that axis degrades to
-always-on in practice. The checkpoint rule is per-step, not per-item: most items have one fragile
+"how complex is the step" — familiarity is Step B's concern (it calibrates the step text against the
+project's `Explanation Level`), and as a checkpoint axis it degrades to always-on in practice.
+The checkpoint rule is per-step, not per-item: most items have one fragile
 step and several trivial ones. The MT5 case that motivated this file is exactly this class — "set
 `InpStepLineMaxSegments` to 3" establishes state that the following steps all depend on; if it never
 took, everything after it measures nothing.
@@ -120,7 +145,11 @@ took, everything after it measures nothing.
 - Consecutive non-checkpoint steps ship in one message, plainly numbered, and are answered with
   free text ("reageer met `ok` zodra je klaar bent" or a one-line description of what happened).
 - A checkpoint step ships alone and asks for the concrete value it established ("welke waarde staat
-  er nu in het veld?") — not a yes/no.
+  er nu in het veld?") — not a yes/no. When the step **dictates** the value ("set X to 3"), that
+  read-back proves application, not the value: ask for the applied state (a screenshot of the
+  control, or the field read back) rather than the number you just supplied. If a later step in the
+  same item produces a side channel carrying that value (a diagnostic export, a log line), verify it
+  there instead and say you did — a measurement outranks a report.
 - Escalate to `AskUserQuestion` only when a reply is genuinely ambiguous (neither clearly matches nor
   clearly contradicts what the step should have produced).
 
@@ -199,22 +228,8 @@ now`) — the 3rd time this item reaches Step C, the modal drops the 4th option 
     config). **Defer is for external blockers only** — "it is broken" is by definition a **Fail**,
     never a Defer.
 
-> **STOP — a broken item is Claude's to catch too, not only the user's.** The item-text correction
-> above sits under `Kom er niet uit`, so it only fires once the *user* is stuck. Two defects show up
-> earlier than that, while you are presenting or checking the item, and both silently produce a
-> wrong verdict if walked as written:
->
-> - **The vehicle cannot cause the effect.** The step names a tool or control that does not produce
->   the thing under test, so the expected outcome would hold with or without the fix — the item is
->   unfalsifiable and a Pass on it means nothing.
-> - **The observation is humanly impossible.** The step asks the user to see something they have no
->   way to identify (one row among hundreds, a change they never had a baseline for).
->
-> This is a **route, not a verdict** — decide it yourself, do not open a modal. Say in one line what
-> is broken and why, propose the corrected step, patch the ledger item's `steps`/`expected` via the
-> Step E upsert, and record it as a `stepLog` entry with `divergedFromItemText: true` so the report
-> can show the item was repaired rather than merely passed. Do not spend a `helpAttempt` on it —
-> that counter is for the user being stuck, and this is not that.
+> **Item-text defects are caught at presentation time, not here** — see § Step B's STOP. If one
+> surfaces only now, apply it the same way: repair the item, do not spend a `helpAttempt`.
 
 **Systemic blocker discovered mid-item** — when the Skip/Defer reason is an environment/
 infrastructure issue that will equally block every remaining un-walked item (not something specific
@@ -238,6 +253,16 @@ top of a verbal Pass is redundant, not rigorous.
 
 Judgment-class items (`perception`, `audio`) never trigger the skip-condition above or this gate —
 the verdict itself is the evidence, and only the user can supply it, so the modal always fires.
+
+> **Evidence you yourself called incomplete is a detected consult trigger.** When your own summary
+> for an item names a gap — "this instrument cannot prove X", "accepted by construction", an
+> inference the vehicle cannot check — and closing that gap would change the ship's scope (new
+> tooling, a deferred item, a REQ re-read), that clears `shared/SECOND-OPINION.md § Gate 0`. Do
+> **not** add an option to the modal above: it is already at the 4-option cap and a 5th entry fails
+> at runtime (`SKILL-PATTERNS.md § Modal Option Cap`). Fire the consult BEFORE presenting the
+> verdict modal (counterpart per `SECOND-OPINION.md § Counterpart` — Fable when the judgment itself
+> is hard), pre-register your own position first, then present the modal once with the digest
+> visible. The user still decides; the digest never becomes the verdict.
 
 ## Step D — Immediate detail capture on Fail/Tweak (do NOT fix)
 
@@ -329,10 +354,18 @@ first-item app-URL note goes before it, never after, so the steps never scroll o
 
 ## Step F — "Now that you see it running" interview close
 
-After the last item, ask **one** open question (English source text, emit in the runtime language per
-`shared/LANGUAGE.md`):
+After the last item, close the round in this order — never with the bare open question alone, which
+reads as vague after a walk in which every item was already settled:
 
-> "Now that you see it running: what should be different or better?"
+1. **Name what you noticed but did not file.** During the walk you will have seen things that were
+   not any item's `expected`: an inconsistency, a rough edge, a follow-up the evidence suggested.
+   List them, one line each, max 3. Noticed nothing → say that in one line; never manufacture a list.
+2. **Then** ask the open question (English source text, emit in the runtime language per
+   `shared/LANGUAGE.md`): "Now that you see it running: what should be different or better?"
+
+The named observations are the anchor: they give the user something concrete to react to, and they
+are Claude's own findings, so a "nothing to add" answer still leaves them on the table for the
+report instead of losing them.
 
 Follow up on whatever the user raises — one clarifying question at a time, no pre-built dimension
 checklist. SUBJECTIVE answers get the same mandatory clarify-then-recategorize as Step D. Stop the
