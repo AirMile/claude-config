@@ -88,7 +88,7 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
    - Glob + Grep for existing code that imports the feature name. ≥1 match: briefly mention files.
    - Project context load: `node ~/.claude/scripts/context-load.js "$REPO" define "{feature-name}"` → `{ project, projectContext }` (see [shared/PROJECT-CONTEXT-LOAD.md](.claude/skills/shared/PROJECT-CONTEXT-LOAD.md) for field rationale).
    - **Onboarding check** (after the extract): `project === null` → warn `⚠️ No project.json found. Consider /core-setup.`; present but `stack === null && features.length === 0` → warn `ℹ️ project.json lacks codebase context. /core-setup can fill this in.`; present with content → continue silently. Non-blocking.
-   - Read `.claude/research/stack-baseline.md` — **decision input, not just fallback**: extract the section(s) matching this feature's stack area (e.g. navigation, storage, maps) into memory so PHASE 1b's baseline gate and PHASE 2's baseline check can reuse them without re-reading. If absent, use `project.json.stack` as basis.
+   - **Read** `.claude/research/stack-baseline.md` **now** and extract the section(s) matching this feature's stack area (e.g. navigation, storage, maps) into memory — PHASE 1b's baseline gate and PHASE 2's baseline check both read from that extract and neither re-reads the file. **Decision input, not just fallback**: confirming the file exists is not this step. If absent, use `project.json.stack` as basis.
    - **Backlog read-only** (required — feeds the PHASE 1 risk-check + PHASE 3 externalRef passthrough): `node ~/.claude/scripts/backlog-load.js "$REPO" read-feature "{feature-name}"` → `{ present, risk, dependencies, externalRef, description, note, ... }` (see [shared/BACKLOG-LOAD.md](.claude/skills/shared/BACKLOG-LOAD.md)). Keep `risk`, `dependencies`, `externalRef`, `description`, and `note` in memory for PHASE 1 and PHASE 3 — `description` feeds the PHASE 1a context echo and coverage check; a non-null `note` is a prior park — surface it verbatim as a `PARKED PREVIOUSLY: {note}` line before the first interview question (PHASE 1a). Mutations (status, date, `auto` flag) happen in PHASE 4. `present: false` → log `Backlog: ⓘ not present — risk-check skipped` and continue.
    - **Open-items load** (same batch — feeds the PHASE 2 Backlog Impact Check **and PHASE 1a's Assumption Block non-goal bullets**): `node ~/.claude/scripts/backlog-load.js "$REPO" open-items "{feature-name}"` → `{ backlogPresent, items }` and keep the compact list in memory. `backlogPresent: false` or empty `items` → the Impact Check will skip silently.
    - **Seed load** (required — feeds PHASE 1a's Assumption Block; PHASE 2's Seed Alignment Check reuses this same read, no re-read): follow [shared/SEED.md](.claude/skills/shared/SEED.md) § Reader → `SEED_CONTEXT`. Keep `markdown` in memory; pull out the sections relevant to the interview dimensions if present — Out of Scope, Open Decisions, Key Features/Goal, Constraints. `SEED_CONTEXT.present: false` → no seed-sourced bullets, continue (backlog/learnings sources still apply).
@@ -106,15 +106,19 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
      >
      > Parse `PRIOR_DECISIONS_START/END` block from response. Store for PHASE 1a "Surface relevant past decisions" render. Empty or missing block → silent skip (no output).
 
-   - **Learnings load** (via [shared/LEARNINGS-LOAD.md](.claude/skills/shared/LEARNINGS-LOAD.md)) —
+   - **Learnings load** —
      **run this unconditionally, before PHASE 1a's opening question; this is the only load point**
      (Step 3 of `phase-0-define-classify.md` reuses this result — it does not re-run the load):
 
+     ```bash
+     node ~/.claude/scripts/learnings-search.js "$REPO" load \
+       --feature "{feature-name}" --scopes "component" --pitfall-prefix true
      ```
-     scopes: [component]
-     pitfall-prefix: true
-     current-feature: {feature-name}
-     ```
+
+     That command IS the whole invocation (scopes `[component]`, `pitfall-prefix: true`,
+     `current-feature: {feature-name}`). Read
+     [shared/LEARNINGS-LOAD.md](.claude/skills/shared/LEARNINGS-LOAD.md) only for the relevance
+     model or an edge case — not to recover the syntax.
 
      **Dev-define-specific extra filter**: also include learnings whose `feature` matches a **direct** dependency of the current feature AND `type === "pitfall"` — lessons that bit us last time in code we're about to touch. Show a `RELEVANT LEARNINGS` block before the first AskUserQuestion of PHASE 1 (max 5 entries, pitfalls first, then patterns) — only on ≥1 match. No match → silent (the load still ran; only the display is conditional).
 
@@ -133,9 +137,11 @@ define's phases in prose. Do **not** call `TaskCreate`/`TaskUpdate` here (it wou
 > call `AskUserQuestion` on a dimension with no citable second reading, stop — that is inventing
 > options, not reading them off the evidence.
 >
-> **Barrier**: neither form may render until every agent spawned for this phase has returned —
-> `context-aggregator` (PHASE 0 §5) at minimum, plus a Fable consult if one was clicked
-> mid-interview. See `phase1a-interview.md § Interview Start` for the full rule.
+> **Barrier**: the Assumption Block waits on `context-aggregator` (PHASE 0 §5) **alone** — that
+> agent feeds the `PREVIOUSLY DECIDED` list the block sits above. It does **not** wait on a
+> mid-interview consult, nor on any other agent running in parallel (a scout, an Explore pass):
+> each has its own single consumer and none of them gates the opening question. Full rule:
+> `phase1a-interview.md § Interview Start`.
 
 > **Todo**: Read `.claude/skills/dev-ship/references/dev-define/references/phase1a-interview.md` for the full interview protocol — dimension checklist, tone rules, modal form, one-question-at-a-time flow, and adaptive stop condition.
 

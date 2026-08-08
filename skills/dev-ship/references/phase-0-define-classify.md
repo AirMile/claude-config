@@ -37,6 +37,12 @@ to the checkpoint in Step 2a.
 
 ## Step 1 — Resolve the feature
 
+Read the card with
+`node ~/.claude/scripts/backlog-load.js "$REPO" read-feature "{feature-name}"` (or `open-items` for
+the whole list) — that one call already returns `name`, `type`, `status`, `description`, `source`,
+`note`, `dependencies`, and `transition`, which is everything this step and the two gates below
+need. Do not hand-parse `backlog.json` for a read.
+
 Resolve `feature-name` exactly as `dev-define` PHASE 0 step 1 does (arg → backlog `transition`
 match → first TODO → concept → suggestions), with one dev-ship-specific addition **before** the
 define-style transition match: a feature with `transition: "shipping"` (queued via the board's
@@ -58,6 +64,22 @@ no special-casing at this step; Step 4b's gate-accept sync is what promotes it o
 > writes and a plan-mode entry later; a note that says "don't build this" should stop the run here,
 > not there. **Context only — never a verdict**: a park note is not a block, and plenty of parks are
 > "not now", so continue unless the user says otherwise.
+
+> **Provenance gate — same slot, same reason (before any bookkeeping runs).** The
+> `backlog-load.js` read this step just did already returned `source` and `description` — no extra
+> call. A card is **machine-authored** when `source` names a skill (`/dev-ship`, `/project-todo`,
+> `/project-plan`) rather than the user, and **self-declared unmeasured** when its own description
+> says so ("ongemeten", "eerst reproduceren", "gevonden tijdens de define van {other-card}", or any
+> wording naming a derivation instead of an observed symptom). **Both true** → print one line —
+> `MACHINE-AUTHORED, UNMEASURED: {source} · {the description's own caveat}` — then ask once via
+> `AskUserQuestion` (header "Premisse", options: "Toch definen (Recommended)" / "Parkeren tot het
+> gemeten is"). Only one of the two true → print the line, ask nothing, continue.
+>
+> Why here and not at Step 2c: the standing park escape that covers exactly this
+> (`dev-define/workflow.md § Constraints` → premise invalidation) is not loaded until Step 2c, four
+> writes and a plan-mode entry later, and `define-park.md § 4` then undoes every one of them.
+> **Never a verdict** — a machine author is not evidence of a wrong premise and plenty of such cards
+> are real; this is a stop to ask, not a stop to park.
 
 Then check
 `.project/features/{feature-name}/feature.json` to set the `defineNeeded` flag for the rest of PHASE 0:
@@ -94,7 +116,17 @@ Plan mode blocks `.project/` writes, so **every** bookkeeping write happens here
    transition match is precisely how such a card was resolved. This keeps the card in the board's IN
    PROGRESS section between phases, when no agent is running. It is removed by refactor's
    completion-batch (feature shipped) or by PHASE 5 cleanup on every other exit path.
-4. **Minimal light checkpoint** (SHIP-CHECKPOINT.md write point 0) — `init`
+4. **Minimal light checkpoint** (SHIP-CHECKPOINT.md write point 0):
+
+   ```bash
+   echo '<the full object described below>' \
+     | node ~/.claude/scripts/ship-checkpoint.js init {feature-name}
+   ```
+
+   An apostrophe in any free-text field breaks that `echo '...'` quoting before node ever runs —
+   write the payload to a temp file and `cat file | node ...` instead. The command above is the
+   whole invocation; read `shared/SHIP-CHECKPOINT.md` only for the other write points or the full
+   schema. Create
    `.project/session/ship-{feature}.json` with `pipeline: "dev"`, `feature`, `startedAt`/`updatedAt`,
    `status: "running"`, `phase: "PHASE 0 · define"`, `completedPhases: []`, `baselineSha` (from Step
    0), empty `results`/`prompts`, `activeWorkflow: null`, and `plan: {}`. This is the **last

@@ -1,6 +1,12 @@
 # Phase 1a Interview Protocol
 
-Full protocol for the interview phase of dev-ship's define phase (PHASE 0) — each dimension opens as either an anchored open question or, when the evidence is contested, an `AskUserQuestion` modal (see `§ Modal Form`). Load this file when PHASE 1a starts. Form choice, anchoring rules, and the escalation ladder come from [shared/QUESTIONING.md](.claude/skills/shared/QUESTIONING.md) — read it together with this file.
+Full protocol for the interview phase of dev-ship's define phase (PHASE 0) — each dimension opens as either an anchored open question or, when the evidence is contested, an `AskUserQuestion` modal (see `§ Modal Form`). Load this file when PHASE 1a starts.
+
+> **Todo**: Read `.claude/skills/shared/QUESTIONING.md` now, before the opening question. It owns
+> the CONDITIONS the rules below only name: § Contested Dimension (whether a dimension opens as a
+> modal at all), § Second-Opinion Option (when the "Second opinion" option must be offered),
+> § Before Asking, and § Escalation Ladder. § Modal Form below states those rules but does not
+> restate their conditions, so it cannot be applied without this file.
 
 ## Dimension Checklist
 
@@ -65,7 +71,11 @@ When § Tone Rules routes a dimension to a modal instead of an open question:
 > interview (the next dimension's question, PHASE 1b) continues in the meantime, per
 > `SECOND-OPINION.md § Latency`'s rule that a detected/clicked trigger never stalls the whole
 > interactive flow. Don't half-render the Assumption Block and fill in the rest once
-> `context-aggregator` lands — wait, then compose it whole. The user can still interrupt (Esc/stop)
+> `context-aggregator` lands — wait, then compose it whole. **Wait the house way**
+> (`shared/SKILL-PATTERNS.md § Fork Delegation`): end the turn and wake on the agent's
+> task-notification. Do **not** poll the agent's output file — it is the full JSONL transcript, it
+> echoes the prompt back (so a grep for any delimiter the prompt itself contains matches
+> immediately), and reading it overflows the context. The user can still interrupt (Esc/stop)
 > to skip any wait; this rule only blocks Claude from starting to type early, it does not remove
 > that escape.
 
@@ -144,13 +154,34 @@ Follow the escalation ladder in `shared/QUESTIONING.md § Escalation Ladder`, ap
 
 **In PHASE 1b**: treat each `unresolved` dimension as a gap to fill via a structured design choice (AskUserQuestion with options), not via another open question. The user couldn't answer in interview mode; structured options help more at that point.
 
+### Measurable unknowns — ask for the reading, don't guess
+
+A dimension can turn on a fact the user cannot recall but the running system can produce in
+minutes: a timing, a count, a log line, a reproduction. That is a **measurement gap, not a judgment
+gap** — the escalation ladder's step-2 hypothesis modal is the wrong instrument for it, and
+deferring it to the build is worse: the plan-approval gate closes before the build starts, so
+evidence that arrives later cannot gate anything.
+
+Ask for the reading **now**, inside the interview, with concrete steps: which input/toggle to set,
+which action to take, what to paste back. Give the falsifiable form up front — what each possible
+answer would mean — so the user knows why it is worth the two minutes.
+
+Fire only when all three hold: (a) the reading needs nothing that does not already exist (no new
+instrumentation to build first), (b) it would change the plan, (c) the user has access right now.
+Any one missing → carry the unknown into the gate as a stated assumption instead, and name it in
+the closing recap.
+
+A reading that contradicts the card's own premise is a PARK-ESCAPE (`dev-define/workflow.md
+§ Constraints` → premise invalidation) reached with evidence in hand rather than inferred from
+loaded context — route to `define-park.md` as normal.
+
 ## Context from Backlog
 
 The backlog record (title + `description`) and concept pitch already tell you _what_ is being defined. Do not re-explain it. The interview explores the _why_, _for whom_, and _where it ends_ — not what it is.
 
 **The backlog `description` is coverage, not decoration.** Treat it as a prior answer in the `§ Before Asking` check: a specific description (written per `shared/BACKLOG.md § Description quality`) often covers Goal & why and sometimes scope boundaries — paraphrase-confirm it ("The card says {gist} — still accurate?") instead of asking an open goal question the card already answers.
 
-**Backlog-generated features**: when the feature came out of `/project-plan` decomposition (`source: "/project-plan"`), the user did not author the card — "what problem does this solve for you?" has no answer they can generate and reads as if you ignored your own planning. Open with your derived understanding (description + seed) as a paraphrase-confirm, then spend the interview on the genuinely open dimensions: success specifics, edge cases, non-goals.
+**Machine-authored cards**: when `source` names a skill rather than the user (`/project-plan` decomposition, `/project-todo` capture, `/dev-ship` — a card a define or verify round spun off, often from a consult), the user did not author the card — "what problem does this solve for you?" has no answer they can generate and reads as if you ignored your own planning. Open with your derived understanding (description + seed) as a paraphrase-confirm, then spend the interview on the genuinely open dimensions: success specifics, edge cases, non-goals — **and treat the card's own premise as a claim to check, not a given**: the Step 1 provenance gate (`phase-0-define-classify.md`) already flagged it if the card is also self-declared unmeasured, and this is the dimension where that flag gets spent.
 
 **Vague description**: if the card text is too thin to anchor on (a title restatement, missing behavior or boundary), name that explicitly — "The card only says '{description}', which doesn't tell me {specific gap}" — and ask the user to fill exactly that gap. Never silently pretend the card gave context it didn't; naming the gap also surfaces weak descriptions for repair.
 
@@ -166,13 +197,14 @@ When the user explicitly asks for your view on the current dimension:
 
 1. **Switch out of open-question mode** — the user has paused their own thinking and wants input.
 2. **Give a recommendation with one tradeoff**, not multiple-choice. Format: "I'd lean toward X because Y; the tradeoff is Z." One option, named clearly.
+   **Exception — premise challenges.** When the honest recommendation is "this card should not be built as written", the budget does not apply: the claim is only actionable with the evidence attached, so walk the specific path (`file:line`) that settles it. The one-sentence cap governs preferences between defensible options, not a refutation.
 3. **Then return control**: "Does that fit, or do you see it differently?"
 
 Do NOT:
 
 - Offer 3 options without a preference (the user already signalled they want your call).
 - Defer with "what do you prefer?" (that's what they just asked you).
-- Launch into a long analysis (one sentence recommendation + one sentence tradeoff is the budget).
+- Launch into a long analysis (one sentence recommendation + one sentence tradeoff is the budget — except for the premise challenge above).
 
 ### Domain Primers ("wat betekent X?", "wat is een Y?", "I'm new to Z")
 
