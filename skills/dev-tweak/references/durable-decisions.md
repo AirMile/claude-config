@@ -6,18 +6,11 @@ the common case (a tweak touching files no pipeline feature ever built) never re
 This is dev-tweak's only route back to a feature's already-settled design questions:
 `durableDecisions[]` has no other reader on the modify path (`shared/FEATURE-LOAD.md`).
 
-## 1. Project the fields — never a full Read
+## 1. Rank the matches
 
-`feature.json`'s `rationale`/`finding` narratives routinely run to thousands of words. Read only
-the three fields the next section holds:
-
-```bash
-node -e 'const f=require(process.argv[1]);
-  const keep=["decision","constraint","chosen"];
-  const p=(f.durableDecisions||[]).map(
-    x=>Object.fromEntries(keep.map(k=>[k,x[k]])));
-  console.log(JSON.stringify(p,null,1))' <path-to-feature.json>
-```
+The projection itself already ran in SKILL.md PHASE 1 step 4 (that step only reaches this file when
+at least one projected entry carries a `constraint` or `chosen`) — `feature.json`'s
+`rationale`/`finding` narratives run to thousands of words, so never full-Read one here either.
 
 Multiple features matched the grep → rank by how many of the located files each feature's
 `files[].path` covers (a feature naming two of your three files outranks one naming a single

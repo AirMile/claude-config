@@ -12,7 +12,7 @@ reads:
 writes: [project-context.learnings, backlog.status, backlog.features]
 metadata:
   author: claude-config
-  version: 1.29.0
+  version: 1.30.0
   category: dev
 ---
 
@@ -186,9 +186,19 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    (repo-relative path match). No match on any feature → skip silently, no cost — most tweaks touch
    files no pipeline feature ever built.
 
-   > **Todo**: a feature matched → Read
-   > `.claude/skills/dev-tweak/references/durable-decisions.md` and follow it (field projection,
-   > multi-match tiebreak, and how the recorded constraints bind PHASE 2).
+   > **Todo**: a feature matched → project its decisions first (cheap, no Read):
+   >
+   > ```bash
+   > node -e 'const f=require(process.argv[1]);
+   >   console.log(JSON.stringify((f.durableDecisions||[]).map(
+   >     x=>({decision:x.decision,constraint:x.constraint,chosen:x.chosen}))))' \
+   >   <path-to-feature.json>
+   > ```
+   >
+   > Every projected entry has a null/absent `constraint` **and** `chosen` → no recorded constraint
+   > can bind this tweak: say so in one clause and continue, no Read. Otherwise → Read
+   > `.claude/skills/dev-tweak/references/durable-decisions.md` and follow it (multi-match tiebreak,
+   > how the constraints bind PHASE 2).
 
 5. **Lane routing**.
 
@@ -199,7 +209,7 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    >
    > | #   | Condition                                                                                                                                          | Lane |
    > | --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-   > | 1   | Stale or obsolete/superseded card, or a docs-only / `.project`-only change                                                                         | A    |
+   > | 1   | Stale or obsolete/superseded card, or a docs-only / `.project`-only change (docs-only = no tracked source file is edited; a docstring or comment edit _inside_ a source file is a code change and does not qualify) | A    |
    > | 2   | A verify round in this run failed, **or** a size-gate escalation was consciously overridden (§ Escalation gate c)                                  | C    |
    > | 3   | PHASE 1 locate left ≥2 candidate sites open, or landed on none                                                                                     | B    |
    > | 4   | A learning printed with type `pitfall` carries the `⟨path⟩` marker (its own `paths[]` overlap a located file) — read the marker, never re-classify | B    |
@@ -224,10 +234,16 @@ Tweak configuration (per shared/TWEAK-DISCIPLINE.md):
    (`Pre-edit gate: ✓ 4/4`) before the first `Edit` — a gate that leaves no trace cannot be
    distinguished from a gate that was skipped. An escalation firing in PHASE 1 is the one exception:
    the run ends at `references/escalate.md` instead, which prints its own two-line report.
-2. **Lane execution** — run the lane PHASE 1 step 5 picked, exactly as
-   [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Lane routing defines it (A direct /
-   B plan-mode design / C + `Plan` agent on `model: "opus"` + Fable consult per
-   [shared/SECOND-OPINION.md](../shared/SECOND-OPINION.md)). Four dev-side deltas:
+2. **Lane execution** — run the lane PHASE 1 step 5 picked:
+   - **A — direct.** No `EnterPlanMode`. Edit straight away.
+   - **B — designed.** `EnterPlanMode` (skip if already active) → design → write the decision to the
+     plan file → `ExitPlanMode` → implement.
+   - **C — B plus a second opinion.** A `Plan` agent (`model: "opus"`) writes the design, then a
+     Fable consult on the plan file per
+     [shared/SECOND-OPINION.md](../shared/SECOND-OPINION.md), both before `ExitPlanMode`.
+
+   Semantics and the hard rules stay in
+   [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Lane routing. Four dev-side deltas:
    - **Row 4 (pitfall) triggered the lane** → the plan file's design names the concrete mitigation
      in one line — part of the design, not a separate print.
    - **Lane C** → the Fable digest must be visible **before** `ExitPlanMode`, when the gate is
@@ -386,8 +402,9 @@ bullet below describes:
      buckets every changed file as NEW / OVERLAP / PRE-EXISTING; NEW cannot tell your file from
      theirs).
    - **Message type is never `feat`** — a tweak adds no net-new capability (size-gate criterion 1).
-     Use `{fix|refactor|perf|style|test|chore}({slug}): {summary}`, `test` when the only change is
-     added or expanded test coverage.
+     Use `{fix|refactor|perf|style|test|docs|chore}({slug}): {summary}`; `test` when the only change
+     is added or expanded test coverage, `docs` when it is a docstring/comment/markdown-only edit
+     (PHASE 3's comment-only branch).
    - Cleanup: remove the baseline file and the commit-message scratch file.
 
 2. **Card-mode completion** (skip entirely in free-text mode): move the card from

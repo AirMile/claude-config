@@ -137,9 +137,10 @@ scope → Read `references/escalate.md`.
 
 1. **Scoped commit** per [shared/SCOPED-COMMIT.md](../shared/SCOPED-COMMIT.md). Deltas: baseline
    `pre-tweak-status.txt`; OVERLAP policy **auto-include** (the fix is the point); fallback: ask
-   which files belong to the tweak; message `{fix|refactor|perf|style|chore}({slug}): {summary}` —
-   never `feat` (net-new capability is an escalation criterion by definition); cleanup: remove the
-   baseline file.
+   which files belong to the tweak; message
+   `{fix|refactor|perf|style|test|docs|chore}({slug}): {summary}` — never `feat` (net-new capability
+   is an escalation criterion by definition), `test` when the only change is added or expanded test
+   coverage, `docs` for a docstring/comment/markdown-only edit; cleanup: remove the baseline file.
 2. **Card-mode completion** (skip entirely in free-text mode): per
    [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Card pickup completion write — flip
    the card `shipped: true` + `shippedAt` + `shippedSha` + `summary` (this tweak's one-line

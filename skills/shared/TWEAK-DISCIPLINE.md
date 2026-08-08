@@ -57,7 +57,7 @@ matches picks the lane, never a score or a sum:
 
 | #   | Condition                                                                                                         | Lane |
 | --- | ----------------------------------------------------------------------------------------------------------------- | ---- |
-| 1   | Stale or obsolete/superseded card, or a docs-only / `.project`-only change                                        | A    |
+| 1   | Stale or obsolete/superseded card, or a docs-only / `.project`-only change (docs-only = no tracked source file is edited; a docstring or comment edit _inside_ a source file is a code change and does not qualify) | A    |
 | 2   | A verify round in this run failed, **or** a size-gate escalation was consciously overridden (§ Escalation gate c) | C    |
 | 3   | PHASE 1 locate left ≥2 candidate sites open, or landed on none                                                    | B    |
 | 4   | A learning printed with type `pitfall` carries the `⟨path⟩` marker (its `paths[]` overlap a located file)         | B    |
