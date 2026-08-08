@@ -42,10 +42,24 @@ match → first TODO → concept → suggestions), with one dev-ship-specific ad
 define-style transition match: a feature with `transition: "shipping"` (queued via the board's
 ⚡ Ship (auto) menu item) wins the no-arg resolution — but only on **dev-track types**: skip
 entries with `type === "PAGE"` or `"COMPONENT"` (those belong to `/design-ship`; `PAGE-GAP` is
-dev-track and stays here). An arg that resolves to a `type === "TWEAK"` entry (a `/dev-tweak`
+dev-track and stays here), and skip entries with `status === "CANCELLED"` (a closed card carrying a
+leftover `transition` is stale queue state, not a request to build). An arg that resolves to a
+`type === "TWEAK"` entry (a `/dev-tweak`
 escalation handoff, per `shared/TWEAK-DISCIPLINE.md § Escalation gate`) is a normal resolution here —
 no special-casing at this step; Step 4b's gate-accept sync is what promotes it out of `TWEAK` (see
-`phase4-sync.md § TWEAK promotion`). Then check
+`phase4-sync.md § TWEAK promotion`).
+
+> **Park note — surface it before any bookkeeping runs.** The resolved card carries a non-null
+> `note` → it was parked by an earlier run, and that note is the whole reason a later pickup keeps
+> its context. Print it verbatim now, as `PARKED PREVIOUSLY: {note}`, and let the user redirect
+> before Step 2a writes anything. `backlog-load.js` already returns `note` on the read this step
+> just did (`dev-define/workflow.md` PHASE 0 §4) — no extra call. Define repeats the same line at
+> its first interview question (`dev-define/workflow.md` PHASE 1a), but that is four bookkeeping
+> writes and a plan-mode entry later; a note that says "don't build this" should stop the run here,
+> not there. **Context only — never a verdict**: a park note is not a block, and plenty of parks are
+> "not now", so continue unless the user says otherwise.
+
+Then check
 `.project/features/{feature-name}/feature.json` to set the `defineNeeded` flag for the rest of PHASE 0:
 
 - **Exists with `status` ≥ DEFINED** (has `requirements[]` + `architecture`) → `defineNeeded = false`.

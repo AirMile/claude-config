@@ -179,21 +179,33 @@ net-new surface)` into the PHASE 5 report. On a non-tweak-sized draft this note 
      hook above before the next `ExitPlanMode`.
    - **Abort (park the whole feature — a decision _not to build_, distinct from Reject)** → the
      interview or the gate can legitimately end in "don't build this now" (scope grew, priorities
-     changed). This is a terminal outcome, **not** a revise-loop. If the user's reason is about
-     _ordering_ rather than "don't build" ("wrong order", "another feature first", "split this"),
-     Read `.claude/skills/dev-ship/references/define-park.md § 1` and offer the Swap/Split outcomes
-     instead of the plain park below — its § 4 cleanup is these same four steps. Otherwise,
-     `ExitPlanMode` to leave plan mode, then revert Step 2a's bookkeeping (nothing was built and no
-     `feature.json` was written, but the pre-plan-mode writes orphan otherwise — a stale board badge
-     and a spurious resume into `PHASE 0 · define` on the next `/dev-ship {feature}`):
+     changed, the premise didn't survive the interview). This is a terminal outcome, **not** a
+     revise-loop. **Read `.claude/skills/dev-ship/references/define-park.md § 1` and follow it — on
+     every Abort, whatever the reason.** That file owns the outcome set (Swap / Split / Park+note /
+     Close), and its § 4 cleanup is the four steps below; § 1 skips its own question when the reason
+     already names the outcome, so routing there costs nothing when the answer is obvious.
+
+     **Do not resolve the outcome here.** "Park it, the card stays `TODO`" is one of the four, not
+     the default. A reason of the form _don't build this_ — the premise doesn't hold, the scope
+     died, another feature superseded it — is § 1's **Close** outcome (`CANCELLED` +
+     `cancelledReason` + `cancelledAt`), and Close is the only path that triggers the mandatory
+     dependent scan in § 6. Leaving such a card at `TODO` puts it straight back in the queue (the
+     board's ⚡ Ship menu offers it again) and leaves dependents pointing at a card that will never
+     ship.
+
+     The four cleanup steps § 4 refers back to — run them after `ExitPlanMode`, since nothing was
+     built and no `feature.json` was written, but the pre-plan-mode writes orphan otherwise (a stale
+     board badge and a spurious resume into `PHASE 0 · define` on the next `/dev-ship {feature}`):
+
      1. `node ~/.claude/scripts/ship-checkpoint.js signal-clear {feature}` — clears the board badge.
      2. `rm -f .project/session/ship-{feature}.json` — removes the init checkpoint (no green
         completion, no resume intended).
      3. `rmdir .project/features/{feature}` — the dir is empty (no `feature.json`).
-     4. In `backlog.json`, strip `transition: "shipping"` from the card, leaving `status` at its
-        prior value (normally `TODO`); add a `note` recording why it was parked (and any context
-        the interview established) so a later pickup keeps the context — see `shared/BACKLOG.md
-§ Park notes`.
+     4. In `backlog.json`, strip `transition: "shipping"` from the card; add a `note` recording why
+        it was parked (and any context the interview established) so a later pickup keeps the
+        context — see `shared/BACKLOG.md § Park notes`. **`status` is decided by the § 5 outcome
+        branch, not here**: Plain park and Swap leave it at its prior value (normally `TODO`); Close
+        and Split set `CANCELLED` in the same write-batch (§ 4's one-write rule).
 
      Then **stop** — do not continue to Step 5.
 
@@ -201,8 +213,9 @@ net-new surface)` into the PHASE 5 report. On a non-tweak-sized draft this note 
      the draft tweak-sized)** → § De-escalation gate (a) in `shared/TWEAK-DISCIPLINE.md`. `ExitPlanMode`
      to leave plan mode, then revert Step 2a's bookkeeping using **the same four steps as Abort above**
      (signal-clear, remove the init checkpoint, `rmdir` the empty feature dir, strip `transition:
-"shipping"` from the backlog card) — no `note` this time (this isn't a park; the tweak run picks
-     the card up next, not a later `/dev-ship` re-invoke). No `feature.json` was written — the draft
+"shipping"` from the backlog card) — no `note` this time, and `status` stays at its prior value
+     (this isn't a park, so define-park's § 5 branch does not apply; the tweak run picks the card up
+     next, not a later `/dev-ship` re-invoke). No `feature.json` was written — the draft
      itself dies here, exactly as on Abort, but not its content: carry the in-memory draft's
      `files[]` and `acceptance[]` into the handoff message, not just the card name — this is the
      only copy of them that will ever exist; losing them here means the tweak run re-locates from
