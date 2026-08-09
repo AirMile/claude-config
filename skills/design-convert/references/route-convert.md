@@ -579,7 +579,8 @@ This route must **NEVER**:
 - Run sketch or inspiration mode without theme (project.json#theme empty)
 - Reach PHASE 2 with plan mode still active — every path has exactly one `ExitPlanMode` point (mode file 1.2, patch detection Step 4, or audit Step D)
 - Skip the `EnterPlanMode` call at PHASE 0.2 (or the patch fast-path's own call) when plan mode isn't already active — the check above only catches "still active at PHASE 2," not "never entered"
-- Skip the visual verification loop when Playwright is available, or substitute an improvised check for the procedure in `convert-verification-loop.md`
+- Skip the visual verification loop when 3.0 resolves any browser vehicle, or substitute an improvised check for the procedure in `convert-verification-loop.md`
+- Run a production build while the verification dev server is running — see `convert-verification-loop.md § 3.1`
 - Reference an asset path that does not exist on disk or as a captured live URL — see `convert-mode-copy.md § Codegen Rules`
 - Regenerate components that already exist in the codebase — import and reuse
 - Exceed 3 verification rounds
@@ -591,6 +592,6 @@ This route must **ALWAYS**:
 - Confirm the mode's PHASE 1 output (token mapping / fidelity table) with the user
 - Follow `shared/FRONTEND-RULES.md` (React/Next.js, HTML/CSS, A-series) and `shared/PATTERNS.md` (Component, Layout)
 - Detect and match the project's framework
-- Run the Playwright verification loop (unless tools unavailable)
+- Run the verification loop on whichever vehicle 3.0 resolves — only its rung 4 skips it
 - Update DevInfo for downstream skill handoff
 - Show a completion report with next steps

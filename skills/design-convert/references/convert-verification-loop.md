@@ -18,7 +18,14 @@ Thresholds come from the loaded `convert-mode-{$MODE}.md → Verification Thresh
 
 ### 3.0 Pre-flight
 
-Check Playwright CLI available: `playwright-cli --version`. If unavailable: skip with message `"No browser available — open the page manually to verify."`, proceed to PHASE 4.
+Resolve a browser vehicle in this order — only the last rung skips verification. A missing `playwright-cli` daemon is not the same thing as a project without a browser, and treating it that way silently drops the whole phase on projects that ship their own Playwright.
+
+1. `playwright-cli --version` succeeds → use it for every step below.
+2. The project depends on Playwright (`playwright` or `@playwright/test` in `package.json`) → drive it directly: write a short script under `.project/tmp/` that imports `chromium` and run it with `node`. The script must live inside the project directory, otherwise package resolution fails.
+3. The project's own `CLAUDE.md` prescribes a screenshot workflow → follow that one; it outranks both rungs above.
+4. None of these → skip with `"No browser available — open the page manually to verify."` and proceed to PHASE 4.
+
+Record the resolved vehicle as `$BROWSER_VEHICLE`. Every later step in this file is written in `playwright-cli` syntax; on rungs 2-3 translate each step to the resolved vehicle rather than skipping it.
 
 ### 3.1 Dev Server
 
@@ -27,6 +34,15 @@ Detect or start dev server:
 1. Check if dev server already running on expected port: `playwright-cli open http://localhost:[port]`
 2. If not running: start in background (`npm run dev` / `npx next dev` based on framework)
 3. Wait for server ready
+
+**Never run a production build while the verification dev server is running.** `next build` (and its equivalents) writes to the same output directory the dev server serves from, so the running server starts 404-ing its own chunks. The page still screenshots and still looks correct — but nothing hydrates, so every interaction check silently fails and the round is worthless. Symptom: 404s on `/_next/static/chunks/*` in the console with no visible change on screen.
+
+When a build belongs to this run, place it outside the loop:
+
+- run it before the dev server starts, or
+- stop the dev server, build, restart it, and re-render before continuing.
+
+Already hit it: stop the server, delete the build output, restart, and redo the last round. Screenshots taken while the chunks were 404-ing are void — do not carry their findings forward.
 
 ### 3.2 Verification Round
 
