@@ -64,7 +64,8 @@ Plan:     auto-derived → lenses {refactorLenses}
           · security {securityDeep or "none"}
 Build:    {passed}/{total} PASS
 Verify:   AUTO {n} PASS · MANUAL {n}
-          ({pass}/{fail}/{tweak}/{skip}/{defer}/{accepted})
+          ({pass}/{fail}/{tweak}/{offloaded}/{skip}
+          /{defer}/{accepted})
           {" · {k} unproven" when any evidence-class Pass carries
           evidence:"none"; omit when k=0}
           · {rounds} fix round(s) · {debug escalation count}
@@ -82,7 +83,13 @@ Deviations ({N} — omit block when N=0):
 - {what the skill prescribed} → {what actually happened} ({location})
 ```
 
-Value notes (keep out of the fence per `shared/OUTPUT.md § Report Block`): the `unproven`
+Value notes (keep out of the fence per `shared/OUTPUT.md § Report Block`): `offloaded` counts
+ledger items handed to a backlog card — `verdict: "offloaded"`, plus any `"tweak"` carrying an
+`offload` field (the two states the verdict-flip rule treats as resolved,
+`phase-3-manual-finalize.md § Findings ledger + routing`). Findings the interview close raised
+count here too: they are ledger items with `source: "interview"`, not a separate category, so a
+round that walked 5 items and offloaded 4 interview findings reports MANUAL 9, not MANUAL 5. The
+`unproven`
 count comes from `manual.items[].evidence === "none"` — the same soft-gate signal the
 walkthrough's own routing summary already surfaces (`phase-3-manual-finalize.md § Findings
 ledger + routing`); repeat it here so it isn't dropped between the two points the policy

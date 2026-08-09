@@ -39,7 +39,7 @@ writes-terminal:
   ]
 metadata:
   author: claude-config
-  version: 0.67.0
+  version: 0.69.0
   category: dev
 ---
 

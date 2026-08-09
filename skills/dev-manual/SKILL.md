@@ -23,7 +23,7 @@ writes:
 writes-terminal: [feature.status, feature.refactor, backlog.overview]
 metadata:
   author: claude-config
-  version: 1.13.0
+  version: 1.15.0
   category: dev
 ---
 
@@ -86,13 +86,21 @@ resume; a park is a stopping point, not a finished phase.
 > different pipeline entirely — refuse with the same message as above if it doesn't match).
 >
 > **Staleness pre-check** (belt-and-suspenders — independent of whatever `shared/WORKTREE.md § 4.6`
-> does later in MANUAL 1's own worktree-switch step): `DEFAULT=$(git -C "$main_root" symbolic-ref
---short HEAD); git -C "$main_root" log --oneline "worktree-{feature}..$DEFAULT" | wc -l`. Zero →
-> say nothing.
+> does later in MANUAL 1's own worktree-switch step): `DEFAULT=$(git symbolic-ref --short HEAD);
+git log --oneline "worktree-{feature}..$DEFAULT" | wc -l`. Zero → say nothing.
+>
+> **Determine isolation once, here.** Run `git -C "$main_root" rev-parse --git-dir`. Refused → this
+> session is worktree-isolated; note that, and for the rest of this run address every path
+> explicitly instead of redirecting git. Works → not isolated. Both probes in this pre-check read
+> **refs**, not a working tree, so a worktree's own git dir answers identically; from inside the
+> worktree resolve the default branch as
+> `git rev-parse --abbrev-ref origin/HEAD | sed 's|origin/||'` instead. Isolated → print
+> `"NOTE: staleness pre-check skipped — git is sandbox-restricted here; MANUAL 2's merge still
+surfaces any conflict."` and continue. This check is advisory, never a gate.
 >
 > Non-zero → the commit count alone does not predict cost, so probe for a real overlap before
-> wording the note. `git -C "$main_root" merge-tree --write-tree --name-only "$DEFAULT"
-"worktree-{feature}"` exits 1 on conflict and lists the conflicting paths from its second line on
+> wording the note. `git merge-tree --write-tree --name-only "$DEFAULT" "worktree-{feature}"`
+> exits 1 on conflict and lists the conflicting paths from its second line on
 > (line 1 is the tree oid); it writes nothing to the working tree.
 >
 > - **Exit 0** → `"NOTE: worktree-{feature} is {N} commit(s) behind {default branch} — merges
@@ -112,7 +120,11 @@ reason to stop now."`
 >
 > **Cross-check before trusting `"phase3-completion"`**: the router derives this purely from whether
 > every entry in `manual.items` is resolved — it never re-reads how many items the round was
-> supposed to walk. Compare **both** directions before believing it:
+> supposed to walk. **Mind the two paths**: the ledger is top-level `manual.items`, a *sibling* of
+> `results` (`ship-checkpoint.js`'s `route` reads `cur.manual`), while the item list is
+> `results.verify.remainingManualItems`. Probing `results.manual` returns `null`, which is
+> indistinguishable from "no ledger yet" and silently routes a half-finished round to completion.
+> Compare **both** directions before believing it:
 >
 > 1. `results.verify.remainingManualItemsCount` (when present) against the length of the
 >    `results.verify.remainingManualItems` array — a count larger than the array means the array was
@@ -125,7 +137,11 @@ reason to stop now."`
 > resume that walked some items, resolved them, and stopped — every ledger entry is resolved, so
 > `route` reports completion while items sit unwalked. Do not route to MANUAL 2 on it; go to
 > **MANUAL 1** and run the walkthrough for the items not yet present in `manual.items` (the same
-> filter `phase-3-manual-finalize.md § Resume entry` bullet 8 uses). Only a genuine array/count
+> filter `phase-3-manual-finalize.md § Resume entry` bullet 8 uses). **Compare the ids as strings.**
+> AGENT 2 writes `remainingManualItems[].id` as a **number**, while `ship-checkpoint.js item`
+> rejects any id that is not a non-empty **string** (exit 5, before any write) — so the ledger
+> carries `String(id)` and a raw `===` against the verify array never matches. Get this wrong and
+> the filter silently re-walks every already-verdicted item. Only a genuine array/count
 > mismatch (direction 1) needs the user: print it and ask how to proceed (re-run auto-verify to
 > regenerate the array, or reconstruct it from `plan.verificationProfile`). Never silently skip the
 > manual round on either.
@@ -168,20 +184,33 @@ of tool calls long; the task list alone leaves the user without a marker for whe
 >
 > **App already running** — the norm on desktop/native/terminal projects: the user has it open, and
 > that is often why they invoked this skill. `phase-3-manual-finalize.md § Step 2` only covers the
-> case where you launch it. Do not relaunch blindly, and do not skip Step 2 either — a process that
-> was started before this resume may hold a build older than the branch under test, and on a
-> compiled or desktop app replacing the artifact on disk does **not** reload it. Confirm the running
-> build from something the app itself renders (a version/build stamp, a visible fingerprint of the
-> change) — a file comparison is evidence about the disk, never about the process. Stale → rebuild
-> and reload BEFORE handing over item 1, and say which signal you used. Step 2's teardown then kills
-> only what you started yourself; leave a pre-existing instance running.
+> case where you launch it. Do not relaunch blindly, and do not skip Step 2 either — a process
+> started before this resume may hold a build older than the branch under test. Apply that file's
+> **No hot reload → confirm the running build another way** rule in full (it owns the reasoning and
+> the disk-vs-process distinction); the only addition here is that its teardown then kills only what
+> you started yourself, so a pre-existing instance is left running.
 >
-> **Checkpoint-only resume note**: unlike a same-session `/dev-ship` run, dev-manual never has
-> AGENT 2's structured result in context — `phase-3-manual-finalize.md § Step 3`'s completion-sync
-> payload (`requirements[]` verdicts, `checklist{}` statuses) must be reconstructed from
-> `feature.json#requirements[]`/`#tests.checklist[]` instead (they already carry `status`/`pass`
-> markers from the build/verify agents) — read that file's current state rather than assuming an
-> in-session result to draw from.
+> **Reconstructing the completion-sync payload**: unlike a same-session `/dev-ship` run, dev-manual
+> never has AGENT 2's structured result in context — `phase-3-manual-finalize.md § Step 3`'s
+> completion-sync payload (`requirements[]` verdicts, `checklist{}` statuses) must be reconstructed
+> from the checkpoint's `results.verify` (`autoPass`/`autoTotal`, `failedAt`, `autoDecisions`) plus
+> this round's own `manual` ledger. **Do not read the verdicts out of
+> `feature.json#requirements[]`/`#tests.checklist[]`** — AGENT 2 is ordered to leave them alone
+> (`prompts/verify.md`: "DO NOT run completion-sync's DONE transition"), so on this path every
+> checklist entry still reads `status: "pending"` and `requirements[].status` is absent. Read
+> feature.json for the item ids, titles and `requirementId` mapping only; the verdicts come from the
+> checkpoint. An acceptance whose condition never occurred is `"skip"`, not `"PASS"`.
+> **Translate the vocabularies**: `completion-sync.js` validates against `PASS|FAIL|BLOCKED|UNCLEAR`
+> (requirements) and `PASS|FAIL|skip` (checklist) and exits 6 on anything else, before any write —
+> so a `"pending"` or `"passed"` forwarded verbatim from feature.json fails the whole call.
+>
+> **Ledger writes from inside the worktree.** MANUAL 1 runs worktree-isolated by construction
+> (Step 1 switched the session in), and the harness rejects compound Bash there — a heredoc, a
+> `cat > file <<EOF`, or a multi-line loop all fail as "too complex to verify". A realistic
+> `ship-checkpoint.js item` payload does not fit on one line, so: `Write` the JSON to the session
+> scratchpad, then run the single plain command
+> `node ~/.claude/scripts/ship-checkpoint.js item {feature} manual < {scratch-path}`. Same for
+> `patch`. Do not rediscover this per write.
 
 ## MANUAL 2 — Refactor + finalize/merge
 
@@ -189,12 +218,13 @@ of tool calls long; the task list alone leaves the user without a marker for whe
 
 > **Todo**: mark MANUAL 1 → `completed`, MANUAL 2 → `in_progress`.
 >
-> **STOP — check where the session stands before entering § 5.** MANUAL 1 may have switched the
-> session into `worktree-{feature}` (`shared/WORKTREE.md § Switch`), which would make it
+> **STOP — check where the session stands before entering § 5.** MANUAL 1's Step 1 may have switched
+> the session into `worktree-{feature}` (`shared/WORKTREE.md § Switch`), which would make it
 > **worktree-isolated** — the harness then refuses every `git -C "$main_root" …`, including
-> § 5's own pre-spawn target-clean check (d) and the merge itself. Probe, don't assume: run
-> `git -C "$main_root" status --porcelain` — check (d) needs that output anyway, so this costs
-> nothing extra.
+> § 5's own pre-spawn target-clean check (d) and the merge itself. MANUAL 0 already determined
+> isolation, but that switch may have changed the answer, so re-run the same probe rather than
+> trusting the earlier one. Use `git -C "$main_root" status --porcelain` as the probe here — check
+> (d) needs that output anyway, so it costs nothing extra.
 >
 > - **It works** → the session was launched in the worktree rather than switched into it, so
 >   `ExitWorktree` has no session to end and returns a no-op error (the same case

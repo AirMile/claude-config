@@ -106,6 +106,13 @@ SCOPE LIMITS (critical — this is a partial verify):
 different state"). A human tester who has never seen the implementation should be able to follow
 `steps` without asking what it means.
 
+`expected` must name an outcome the code under test actually produces. **When it names a quantity**
+— a counter, a panel field, a log value, a bucket — you must have read the code that writes that
+quantity and be able to say what it counts. A value with the right name but a different
+denominator, a different subject, or a different write-trigger than the requirement makes the item
+unfalsifiable: the tester reads a real number that proves nothing. No such quantity is readable →
+phrase `expected` as the observable behaviour instead of inventing a number to read off.
+
 Result fields (structured output object — `remainingManualItems` is an array, empty when none;
 fallback = this exact block):
 SHIP_VERIFY_RESULT_START

@@ -66,18 +66,23 @@ pre-checkable item via the `playwright-cli` daemon by default (scriptable pre-ch
 `shared/BROWSER-VEHICLES.md` for the full routing rule); Claude-in-Chrome only applies when an
 item genuinely needs the real user session (real-credentials/session-dependent items — rare for a
 pre-check sweep by definition) and a live browser is connected — see `shared/CLAUDE-IN-CHROME.md`
-for that tool-loading ritual. Saves one screenshot per item to `.project/screenshots/`, and returns
-ONLY:
+for that tool-loading ritual. Saves one screenshot per item to `.project/screenshots/`.
+**When the item's `expected` names a quantity, the agent also traces it**: grep the worktree for the
+identifier, read the code that writes it, and report a mismatch when what that code counts is not
+what `expected` is about. Returns ONLY:
 
 ```
 EVIDENCE_SWEEP_START
-{item id} | exercised: yes|no | {one-line observation} | {screenshot path or "-"}
-… one line per pre-checkable item
+{item id} | exercised: yes|no | {observation} | {screenshot or "-"}
+  mismatch: {what expected names vs. what the code counts, or "-"}
+… two lines per pre-checkable item
 EVIDENCE_SWEEP_END
 ```
 
 End the turn after the dispatch and wake on the agent's task-notification. On wake, parse the block
-and note each item's screenshot path (you'll attach it in Step B/D), then proceed to Step B.
+and note each item's screenshot path (you'll attach it in Step B/D). **Any item with a non-`-`
+mismatch goes through § Step B's STOP repair before it is presented** — the sweep locates it, the
+STOP decides and patches it. Then proceed to Step B.
 
 **Fallback — inline sweep** (dispatch unavailable or errored): exercise each pre-checkable item
 yourself via the same vehicles and capture one screenshot per item (note its path). Same output
@@ -121,6 +126,19 @@ Preferences); at Beginner, name the click path and the keystroke, not the concep
 >   unfalsifiable and a Pass on it means nothing.
 > - **The observation is humanly impossible.** The step asks the user to see something they have no
 >   way to identify (one row among hundreds, a change they never had a baseline for).
+> - **The named quantity measures something else.** `expected` or a step names a counter, field,
+>   bucket or panel value that exists and is readable — but the code that writes it does not
+>   measure what the requirement is about. Three shapes, all seen in one round: a different
+>   **denominator** (a per-rank/side cap read against whole-run bucket totals), a different
+>   **subject** (a buffer-fill counter read as draw work), a different **write-trigger** (a value
+>   only written on a tick, checked by scrolling). This one is invisible on the surface — the item
+>   reads fine and the number is real — so it survives review and produces a meaningless Pass.
+>
+> **Resolve every named quantity in the source before presenting the item.** Grep the worktree for
+> the identifier, read the code that writes it, and say in one line what it counts and which part
+> of `expected` that corresponds to. This applies to **every** item whose `expected` names a
+> quantity, every round — not only the ones that look suspicious. Cannot be traced to a line of
+> code → treat it as the third defect above and repair the item before presenting it.
 >
 > This is a **route, not a verdict** — decide it yourself, do not open a modal. Say in one line what
 > is broken and why, propose the corrected step, patch the ledger item's `steps`/`expected` via the
