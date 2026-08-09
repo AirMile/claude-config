@@ -139,6 +139,10 @@ Fidelity:   [low | medium | high]
 Key colors: [dominant colors as hex, max 5]
 Dark mode:  [light only | dark only | both visible | unknown]
 Typography: [heading style, body style — approximate]
+            inline accent segments: [present ({which heading}, {which word}) | none]
+            ^ a heading where one word carries a different color. Note it here even
+              on vision-estimated sources — it is the only cue those sources get,
+              and it is the detail most often flattened into a single color.
 Components: [identifiable UI patterns: cards, nav, hero, form, table, etc.]
 Variants:   [component name → detected variant axes: size=sm/md/lg, state=default/hover/disabled, type=primary/ghost]
             [or: no variants detectable]
@@ -454,6 +458,7 @@ Per section in `$PATCH_SECTIONS`:
 1. Read the relevant lines in the existing component file (Read tool). Skip for `contentSource: "cms"` entries (see step 2a below) — there is no component file line to read, the content lives in the CMS.
 2. Generate only the changed JSX/classes/structure based on `$SOURCE_IMAGE`.
    For `$SCOPE = audit` on **value-level** mismatches: each `$PATCH_SECTIONS` entry carries `{file, property, oldValue, figmaValue}` from the discrepancy report — the Edit is a direct value swap (find the exact old value string, replace with the Figma value), no regeneration and no reliance on `$SOURCE_IMAGE`. If `$PATCH_SECTIONS` is empty (audit "Report only" was chosen): skip straight to PHASE 3.
+   For `$SCOPE = audit` on a **segment mismatch flagged `needsMarkup: true`** (convert-audit.md Step D): this is the one value-level case that is _not_ a value swap. The design has a two-tone heading and the code renders it as a single colored element — there is no old value string to replace, the accent segment has no element of its own. Wrap that segment in a `<span>` carrying the Figma color and leave the rest of the heading untouched: `Protect your <span className="text-[#FF5733]">building</span>`. Adding this one element is in scope; restructuring the surrounding markup is not. Skipping it because "Edit only, no regeneration" reads as forbidding it is how this mismatch survives an audit that reported it.
    For `$SCOPE = audit` on a **structural mismatch** (convert-audit.md Step D escalation fired): `$PATCH_SECTIONS` carries section-level work items, not property diffs — this step's "direct value swap, Edit only" rule does not apply. Treat each item as normal codegen instead: new sections → Write a new component file + import it; reordered/rewritten sections → full-file Edit; retired sections → remove the import/usage from the page file only (leave the component file on disk unless the user asked to delete it).
 
 2a. **CMS-backed sections** (`contentSource: "cms"`, tagged in `convert-audit.md` Step A): a CMS write has none of PHASE 4's rollback safety net — that machinery (scoped commit, worktree, recoverable before-state) protects code, not external state. Before mutating:

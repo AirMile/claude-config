@@ -184,15 +184,19 @@ Thumbnail vision (3.2) cannot catch a wrong-but-plausible value — a card `back
 
 **Runs when** `$SECTION_GROUND_TRUTH` is set (audit path, see `convert-audit.md`) OR `$EXTRACTED_STYLES` is set (copy mode with `figma-mcp` / `figma-rest` / `figma-make` / `url` ground truth — see `convert-mode-copy.md § Verification Thresholds`). Skip otherwise (inspiration/sketch, or copy mode that fell back to vision estimation). **Also skip entirely** when `$AUDIT_PROPERTY_SCOPE = "content"` (route-convert.md PHASE 0.4 follow-up) — the user explicitly asked to leave style values as-is, so re-verifying them here would flag "mismatches" the run was told not to touch.
 
-1. On the rendered localhost page, per section (audit: `$AUDIT_SECTIONS[].domSelector`; copy: the element-type selectors from the fidelity table) extract computed styles with the `getComputedStyle` snippet from `convert-mode-copy.md § 1.0`, scoped to the section node.
+1. On the rendered localhost page, per section (audit: `$AUDIT_SECTIONS[].domSelector`; copy: the element-type selectors from the fidelity table) extract computed styles with the `getComputedStyle` snippet from `convert-mode-copy.md § 1.0`, scoped to the section node. Use that snippet as written — its `seg()` walk and wrapper selectors are what this check depends on; a hand-rolled `getComputedStyle(el).color` reads the parent's inherited color and cannot see an accent segment at all.
 2. Compare against ground truth: `background-color`, `color`, `border-radius`, key spacing (`padding`/`gap`), `font-size`/`font-weight`.
    - **Color:** normalize to rgb; exact match required, ≤2/255 per-channel rounding tolerance.
-   - **Spacing / radius:** exact px, ≤1px tolerance.
+   - **Text color, per segment.** A ground-truth row with multiple `seg` entries compares **segment by segment, in document order**, and the segment _count_ is part of the comparison. A heading that rendered as one segment where the design has two is a MISMATCH — not a pass because the first color happened to match. This is the check that catches a two-tone title shipped monochrome; element-level color compare structurally cannot.
+   - **Spacing / radius:** exact px, ≤1px tolerance. Compare each section against **its own** fidelity-table row, never against a page-wide value — comparing every section to one number either passes wrong spacing or floods the report with false mismatches.
 3. Any divergence is an **exact-value MISMATCH** — add to the ROUND assessment (treat as higher-priority than vision findings, since it is a confirmed ground-truth divergence, not a judgment call) and fix in 3.3, within the existing 3-round cap:
 
 ```
 Exact-value check:  [PASS | [N] mismatches]
   [- CardSection background-color: #141414 → #00111e (Figma)  file:line]
+  [- Hero h1 seg 2 "building": rendered #1A1A2E → #FF5733     file:line]
+  [- Hero h1: 1 segment rendered, design has 2                file:line]
+  [- Features padding: 96px → 64px (per-section value)        file:line]
 ```
 
 This makes the loop non-self-referential for these properties: the compare target is the design's exact value, not the code's own baseline (contrast with the Playwright pixel baseline in 3.2, which compares against the code's own prior screenshot).

@@ -15,6 +15,8 @@ Copy-mode counterpart to token mapping: capture exact source values instead of m
 **For `$INPUT_SOURCE = "figma-mcp"`:** extract ground truth via the Figma MCP instead of browser eval:
 
 1. `get_design_context` on the node link → code representation with exact values (colors, spacing, typography, radii, shadows). Parse into `$EXTRACTED_STYLES`.
+   - **Mixed-fill text nodes.** A heading whose characters carry different fills (an accent word in a brand color) arrives as multiple styled runs, not as one color. Record every run as its own segment `{text, fill, weight}` under that node. Collapsing to the dominant fill is the single most common way a two-tone title ships monochrome — the value is already in the response, it gets lost on the way into the table.
+   - **Layout spacing.** Record `paddingTop/Bottom/Left/Right` and `itemSpacing` **per section node**, never one page-wide value. Section padding and grid gaps differ per section in almost every real design.
 2. `get_variable_defs` on the node link → the variables/styles backing those values (token names + values). Merge into `$EXTRACTED_STYLES` — keep the variable names, they inform naming in codegen.
 3. Assets — three-outcome branch, do not assume:
    - `download_assets` present and returns files → save under `public/` (or the framework's static dir), record paths as `$EXTRACTED_ASSETS`.
@@ -23,7 +25,7 @@ Copy-mode counterpart to token mapping: capture exact source values instead of m
 
 `get_variable_defs` returning empty is **normal** — agency files often use raw fills without Figma variables. Not an error: `get_design_context` already carries the exact values; proceed without variable names. `$EXTRACTED_ASSETS` ending up empty after all three outcomes is equally normal — it is not evidence anything went wrong, only evidence the general asset rule below applies.
 
-**For `$INPUT_SOURCE = "figma-rest"`:** same as figma-mcp, but read exact values (fills, typography, layout, radii, effects) from the node-tree JSON captured in 0.1 (`.project/tmp/source-node.json`) → `$EXTRACTED_STYLES`, labeled `computed`. Assets: `GET /v1/images/{key}?ids={asset-node-ids}&format=png|svg` per asset node → `$EXTRACTED_ASSETS`.
+**For `$INPUT_SOURCE = "figma-rest"`:** same as figma-mcp, but read exact values (fills, typography, layout, radii, effects) from the node-tree JSON captured in 0.1 (`.project/tmp/source-node.json`) → `$EXTRACTED_STYLES`, labeled `computed`. The mixed-fill case lives in the text node's `characterStyleOverrides` + `styleOverrideTable` — read both, never `style.fills` alone (that returns the node default and silently drops every accent segment). Assets: `GET /v1/images/{key}?ids={asset-node-ids}&format=png|svg` per asset node → `$EXTRACTED_ASSETS`.
 
 MCP values are labeled `computed` in the fidelity table. Skip the browser-eval sequence below.
 
@@ -32,12 +34,19 @@ MCP values are labeled `computed` in the fidelity table. Skip the browser-eval s
 ```
 playwright-cli open [url]
 playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"
-playwright-cli eval "() => { const pick = el => { const s = getComputedStyle(el); return { text: (el.textContent||'').trim().slice(0,80), color: s.color, background: s.backgroundColor, fontFamily: s.fontFamily, fontSize: s.fontSize, fontWeight: s.fontWeight, lineHeight: s.lineHeight, padding: s.padding, margin: s.margin, gap: s.gap, borderRadius: s.borderRadius, border: s.border, boxShadow: s.boxShadow }; }; const sels = ['h1','h2','h3','p','a','button','nav','header','footer','section','input']; return Object.fromEntries(sels.map(sel => [sel, Array.from(document.querySelectorAll(sel)).slice(0,3).map(pick)])); }"
+playwright-cli eval "() => { const seg = el => { const out = []; for (const n of el.childNodes) { const t = (n.textContent||'').trim(); if (!t) continue; const host = n.nodeType === 3 ? el : n; const s = getComputedStyle(host); out.push({ text: t.slice(0,40), color: s.color, fontWeight: s.fontWeight }); } return out.length > 1 ? out : undefined; }; const pick = el => { const s = getComputedStyle(el); return { text: (el.textContent||'').trim().slice(0,80), segments: seg(el), color: s.color, background: s.backgroundColor, fontFamily: s.fontFamily, fontSize: s.fontSize, fontWeight: s.fontWeight, lineHeight: s.lineHeight, padding: s.padding, margin: s.margin, gap: s.gap, borderRadius: s.borderRadius, border: s.border, boxShadow: s.boxShadow }; }; const sels = ['h1','h2','h3','h4','p','a','button','nav','header','footer','section','input','section > div','[class*=container]','[class*=grid]','[class*=flex]']; return Object.fromEntries(sels.map(sel => [sel, Array.from(document.querySelectorAll(sel)).slice(0,8).map(pick)])); }"
 playwright-cli eval "() => ({ images: Array.from(document.images).slice(0,20).map(i => ({ src: i.currentSrc, alt: i.alt, w: i.naturalWidth, h: i.naturalHeight })), svgCount: document.querySelectorAll('svg').length, fontFamilies: Array.from(new Set(Array.from(document.querySelectorAll('body *')).slice(0,300).map(e => getComputedStyle(e).fontFamily))) })"
 playwright-cli close
 ```
 
 Store the results as `$EXTRACTED_STYLES` (computed values per element type) and `$EXTRACTED_ASSETS` (image URLs, SVG count, font families).
+
+Two parts of that snippet are load-bearing — do not simplify them away:
+
+- **`seg(el)`** walks the inline children, so a heading with an accent `<span>` returns one entry per color segment instead of the parent's inherited color. `getComputedStyle` on the parent alone reports one color for a two-tone title.
+- **The wrapper selectors** (`section > div`, `[class*=container|grid|flex]`) are where section padding and grid gaps actually live in a Tailwind page — `h1`/`p`/`section` carry almost none of it. `slice(0,8)` (not 3) so sections past the top of the page get measured too.
+
+This same snippet is reused by `convert-verification-loop.md § 3.2c` against the rendered page, so it governs verification for **every** input source — including a pure Figma run that never executes the block above.
 
 **Other input sources — fall back to vision estimation:**
 
@@ -56,18 +65,20 @@ FIDELITY EXTRACTION
 ════════════════════════════════════════════════════════════
 
 Colors:                                          Source
-  Heading text         #1A1A2E                   computed
-  Body text            #4A4A68                   computed
-  Primary CTA bg       #FF5733                   computed
-  Page background      #FAFAFA                   computed
+  Hero h1 · seg 1  "Protect your"  #1A1A2E · 700 computed
+  Hero h1 · seg 2  "building"      #FF5733 · 700 computed
+  Body text                        #4A4A68       computed
+  Primary CTA bg                   #FF5733       computed
+  Page background                  #FAFAFA       computed
 
 Typography:
   Headings             "Inter", sans-serif · 700 · 36px/1.2   computed
   Body                 "Inter", sans-serif · 400 · 16px/1.6   computed
 
-Spacing:
-  Section padding      64px vertical             computed
-  Card gap             24px                      computed
+Spacing (per section):
+  Hero                 padding 96/24px · gap 32px             computed
+  Features             padding 64/24px · gap 24px             computed
+  Footer               padding 48/24px · gap 16px             computed
 
 Radii & shadows:
   Cards                radius 12px · shadow 0 4px 12px rgba(0,0,0,.08)   computed
@@ -85,6 +96,13 @@ Assets:
 ```
 
 `Source` column: `computed` (ground-truth extraction) or `estimated` (vision). Mixed tables are normal when extraction partially failed.
+
+**This table is the only artifact that survives the `ExitPlanMode` handoff below** — codegen and verification both read it, not the raw extraction. A value that cannot be _represented_ here is lost even when §1.0 captured it perfectly. Two shape rules follow from that, and neither is optional:
+
+- **One row per color segment, not per element type.** A text node whose fill is not uniform (an accent word, a gradient-split heading) gets one row per segment, labeled `{element} · seg {n}` with its literal text. Collapsing to the dominant color is forbidden — that is exactly how a two-tone title ships monochrome.
+- **One spacing row per section, never a page-wide row.** `Section padding: 64px` for a whole page is not ground truth, it is an average. List each section with its own padding and gap.
+
+Sections with genuinely identical values may share one row (`Features, Pricing  padding 64/24px`) — merging equal measurements is fine, guessing one value for all of them is not.
 
 **Interactions:** if `$INTERACTION_SPEC` is set (interaction capture in route-convert 0.2), present the INTERACTIONS table (`convert-interactions.md` Step 4) directly below the fidelity table — the 1.2 confirm covers both.
 
@@ -109,6 +127,8 @@ If "Adjust": ask which values to change, update, re-confirm.
 
 - Use exact arbitrary Tailwind values from the fidelity table: `bg-[#FF5733]`, `text-[17px]`, `rounded-[12px]` — when no standard class matches exactly. Visual fidelity beats class purity.
 - Use exact text content from the fidelity table — never paraphrase, never substitute placeholder copy.
+- **Multi-segment rows emit multi-segment markup.** A heading with two `seg` rows becomes one element wrapping a `<span>` per segment, each carrying its own color class: `<h1 className="text-[#1A1A2E]">Protect your <span className="text-[#FF5733]">building</span></h1>`. Never pick one color for the whole heading — the row count in the table is the span count in the output.
+- **Spacing comes from that section's own row**, not from the first section's. A page whose sections all render `py-16` because one value was read off the top of the table is the spacing defect this table shape exists to prevent.
 - Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently. Exception `figma-mcp` **when `$EXTRACTED_ASSETS` is non-empty**: reference the local paths from the branch above, no TODO needed. `$EXTRACTED_ASSETS` empty or unset → the general rule applies regardless of source type.
 - Never invent an asset path. The same rule that forbids paraphrasing placeholder copy (above) applies to assets: a `src`/`href` must resolve to a file written this run or carry the `{/* TODO: localize asset */}` comment with a live URL — never a plausible-looking filename that doesn't exist on disk.
 - Use the exact `font-family` with its fallback stack. If a Google Font is recognized: note the required import in the Generation Summary.

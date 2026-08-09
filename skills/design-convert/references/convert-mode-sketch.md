@@ -24,7 +24,7 @@ Before mapping, determine which properties from `$ANALYSIS` are **authoritative*
 
 ### 1.1 Extract and Map
 
-Extract visual properties from the source image (applying the fidelity filter) and map them to the closest theme tokens (from project.json). Use the same TOKEN MAPPING table format as inspiration mode: per category (Colors, Typography, Spacing) a `Source → Theme Token` table. For `tokens only` properties the Source column reads `(filtered — tokens only)`.
+Extract visual properties from the source image (applying the fidelity filter) and map them to the closest theme tokens (from project.json). Use the same TOKEN MAPPING table format as inspiration mode: per category (Colors, Typography, Spacing) a `Source → Theme Token` table. For `tokens only` properties the Source column reads `(filtered — tokens only)`. Inspiration mode's two-tone-heading rule applies here too: a heading with an accent word gets its own `heading accent →` row and a `<span>` in the output, even when the color itself comes from tokens rather than the sketch.
 
 If `$INTERACTION_SPEC` is set (e.g. the user pasted an interaction spec alongside the sketch): add the Interactions mapping category, same rules as inspiration mode — map to `theme.motion.choreography` tokens, keep explicit deltas only where the pack has no equivalent.
 

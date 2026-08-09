@@ -68,11 +68,11 @@ TOKEN MAPPING
 ════════════════════════════════════════════════════════════
 
 Colors:
-  Source              → Theme Token
-  #FF5733 (accent)    → primary-500 (#3B82F6)
-  #333333 (heading)   → foreground (#1a1a2e)
-  #F5F5F5 (bg)        → background (#ffffff)
-  #666666 (body text) → muted-foreground (#6B7280)
+  Source                    → Theme Token
+  #333333 (heading)         → foreground (#1a1a2e)
+  #FF5733 (heading accent)  → primary-500 (#3B82F6)
+  #F5F5F5 (bg)              → background (#ffffff)
+  #666666 (body text)       → muted-foreground (#6B7280)
 
 Typography:
   Source              → Theme Token
@@ -93,6 +93,8 @@ Interactions:
 
 ════════════════════════════════════════════════════════════
 ```
+
+**Two-tone headings** map to two tokens, not one. Where the source (or `$ANALYSIS`'s `inline accent segments` line) shows a heading with a colored word, give it its own row — `heading accent → primary-500` — and emit it as a `<span>` inside the heading. Mapping the whole heading to one token is the token-mode form of the same defect copy mode gets from a one-color-per-role fidelity table.
 
 **Interaction mapping** (only when `$INTERACTION_SPEC` is set): map each row to the nearest `theme.motion.choreography` entry — the pack vocabulary keeps converted pages consistent. Rows with no pack equivalent keep their explicit delta (the documented-spec exception in route-convert 0.6). If "Motion & interaction feel" was **not** adopted in Q1: drop `$INTERACTION_SPEC` and use pack defaults only — adopting the source's motion is the user's call, same as any other trait.
 
