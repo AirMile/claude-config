@@ -92,9 +92,16 @@ Detect worktree state first:
 
 ```bash
 WT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-MAIN_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-IS_WORKTREE=$([ "$(git rev-parse --git-dir)" != "$MAIN_ROOT/.git" ] && echo true || echo false)
+IS_WORKTREE=$([ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ] && echo true || echo false)
 ```
+
+Compare against `--git-common-dir`, never against a reconstructed
+`{toplevel}/.git`: in a plain checkout `--git-dir` answers with the relative
+`.git`, which never equals an absolute path, so the reconstructed form reports
+`true` on every ordinary repo and makes §4.6 auto-finalize reachable where
+there is no worktree to finalize. In a linked worktree `--git-dir` points at
+`.git/worktrees/{name}` while `--git-common-dir` points at `.git` — the two
+differ exactly when a worktree is in play.
 
 Build the `Worktree:` line (reused verbatim in the printed report in §4.5b below):
 
