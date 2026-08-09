@@ -23,12 +23,19 @@ Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/
 
 ---
 
-**Step 0: External setup context**
+**Step 0b: Task tracking.** Skip for `$PATCH_MODE = true` (single fast-path, no phase-tracking value). Otherwise call `TaskCreate` now — before PHASE 0.1, and before the `EnterPlanMode` call at 0.2 — with these 5 items. Each description names the phase's mandatory Read: the task list is the one artefact that survives plan mode, so a phase whose reference file is not in its task is a phase that gets improvised.
 
-> **Todo**: Read `.claude/skills/shared/VERCEL-CONTEXT.md` — follow the Load Protocol, then apply the guidelines as a bias layer throughout this route.
+1. PHASE 0 — pre-flight, source capture, mode + scope (0.1-0.6)
+2. PHASE 1 — mode procedure; Read `references/convert-mode-{$MODE}.md` (audit path: `references/convert-audit.md`)
+3. PHASE 2 — codegen; Read `references/convert-generate-template.md`
+4. PHASE 3 — verification; Read `references/convert-verification-loop.md`
+5. PHASE 4 — completion; Read `references/convert-completion.md`
 
-**Step 0b: Task tracking.** Skip for `$PATCH_MODE = true` (single fast-path, no phase-tracking value). Otherwise seed a `TaskCreate` list now, before PHASE 0.1, covering this run's phases: **Setup** (0.1-0.6), **Mode + Scope** (PHASE 1), **Codegen** (PHASE 2), **Verify** (PHASE 3), **Completion** (PHASE 4 — backlog sync, devinfo update, scoped commit). Mark each `in_progress`/`completed` at its phase boundary.
-<!-- Rationale: a real run skipped PHASE 4 entirely after finishing PHASE 3 — the verification report reads as a natural stopping point and nothing forced the run back to completion; the task list is what a compacted or resumed session checks to find the unfinished phase. -->
+Task 2 carries an unresolved `{$MODE}` at seed time. The moment 0.3 sets `$MODE`, `TaskUpdate` that task's description to the concrete filename (`references/convert-mode-copy.md`). A task naming a path that does not exist on disk names no file at all — it gets ticked off without ever being opened.
+
+Transitions: PHASE 0 → `in_progress` at 0.1 and PHASE 0 → `completed` at the end of 0.6; PHASE 1 → `in_progress` / PHASE 1 → `completed` around the mode procedure; PHASE 2 → `in_progress` / PHASE 2 → `completed` around codegen; PHASE 3 → `in_progress` / PHASE 3 → `completed` around the verification loop; PHASE 4 → `in_progress` / PHASE 4 → `completed` around completion.
+
+<!-- Rationale: three real runs. One skipped PHASE 4 entirely — the verification report reads as a natural stopping point and nothing forced the run back. One seeded a task list with phase names but no reference paths, and improvised PHASE 3 and PHASE 4 from memory. A third seeded the paths correctly but left `{$MODE}` unresolved in task 2, marked it completed without reading any mode file, and generated the whole page with no fidelity table. Naming the file inside the task only works when the name resolves. -->
 
 ---
 
@@ -42,7 +49,7 @@ Determine the input type from the argument or conversation:
 
 | Input                                             | Detection                                                    | Action                                                                                              |
 | ------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Figma Make URL                                    | URL contains `figma.com/make/` — check before the rows below | Live-preview capture (see "For Figma Make URLs" below); set `$INPUT_SOURCE = "figma-make"`          |
+| Figma Make URL                                    | URL contains `figma.com/make/` — check before the rows below | Live-preview capture (`convert-source-fallbacks.md`); set `$INPUT_SOURCE = "figma-make"`            |
 | Figma URL, MCP connected                          | URL contains `figma.com` AND figma MCP tools available       | MCP capture (see "For Figma URLs (MCP)" below); set `$INPUT_SOURCE = "figma-mcp"`                   |
 | Figma/Canva URL (`figma.com`, `canva.com`)        | URL contains `figma.com` or `canva.com` — no figma MCP       | CLI: `playwright-cli open [url]` → `playwright-cli screenshot`; set `$INPUT_SOURCE = "design-tool"` |
 | File path (`/home/...`, `C:\...`, `.png`, `.jpg`) | Contains path separator or image extension                   | Read file with Read tool (multimodal); set `$INPUT_SOURCE = "file"`                                 |
@@ -63,43 +70,13 @@ options:
 multiSelect: false
 ```
 
-**For Figma URLs (MCP):** requires the remote Figma MCP server (`mcp.figma.com`) to be connected — check that `mcp__figma__*` tools are available (load via ToolSearch if deferred). If unavailable, do NOT degrade silently — follow the fallback ladder: REST API (still ground truth) beats screenshot estimation. Check whether a Figma API token is available (`$FIGMA_TOKEN` env var), then ask:
+**For Figma URLs (MCP):** requires the remote Figma MCP server (`mcp.figma.com`) to be connected — check that `mcp__figma__*` tools are available (load via ToolSearch if deferred).
 
-```yaml
-header: "Figma MCP"
-question: "The Figma MCP server is not connected. How to proceed?"
-options:
-  - label: "Fix the connection first (Recommended)", description: "Stop here — run /mcp to (re)authenticate figma, then re-run this conversion"
-  - label: "REST API fallback", description: "Exact values via api.figma.com — ground truth without MCP" # include only when $FIGMA_TOKEN was found
-  - label: "Screenshot fallback", description: "Vision estimation — values will be marked 'estimated'. Best source: a frame PNG exported from Figma (right-click frame → Export)"
-multiSelect: false
-```
+> **Todo**: MCP not connected, OR the URL contains `figma.com/make/` → Read `.claude/skills/design-convert/references/convert-source-fallbacks.md` and follow it (no-MCP ladder incl. the REST fallback, and the Figma Make procedure). MCP answers normally on a `/design/` URL → skip that file entirely and continue with the three steps below.
 
-On "Fix the connection first": exit the skill. On "REST API fallback": follow the REST procedure below. On "Screenshot fallback": ask the user to export the frame as PNG and provide the file path (pixel-perfect, preferred); only if they can't, fall back to the design-tool row (Playwright capture of figma.com — last resort, canvas rendering is unreliable).
-
-**REST API fallback (`$INPUT_SOURCE = "figma-rest"`):** parse the file key and node id from the URL — `figma.com/design/{key}/...?node-id={id}` (the id uses `-` in URLs, `:` in API calls).
-
-```
-curl -sH "X-Figma-Token: $FIGMA_TOKEN" "https://api.figma.com/v1/images/{key}?ids={id}&format=png&scale=2"
-  → returns JSON with an image URL — download it to .project/tmp/source-capture.png → Read it → $SOURCE_IMAGE
-curl -sH "X-Figma-Token: $FIGMA_TOKEN" "https://api.figma.com/v1/files/{key}/nodes?ids={id}" > .project/tmp/source-node.json
-  → node tree with exact fills, typography, layout → $SOURCE_STRUCTURE
-```
-
-Downstream, `figma-rest` behaves like `figma-mcp`: 0.2 derives structure from `$SOURCE_STRUCTURE`, and the mode files (PHASE 1) take ground-truth values (labeled `computed`) from the node-tree JSON instead of `get_design_context` / `get_variable_defs`.
-
-**Do not offer `.fig` file parsing as a fallback** — the format is a proprietary binary (fig-kiwi); community parsers are reverse-engineered and break on format updates. A user who can export `.fig` can also export a frame PNG or create an API token.
-
-**For Figma Make URLs (`$INPUT_SOURCE = "figma-make"`):** Make files are not design canvases — the Figma MCP canvas tools (`get_metadata` / `get_design_context`) do not work on them. The preview **is** real DOM, and the interaction spec typically lives as text in the Make chat panel. Do not route these through the MCP or design-tool paths.
-
-1. Capture the live preview via Claude-in-Chrome (the user's logged-in Chrome session — Make previews require auth): load tools per `shared/CLAUDE-IN-CHROME.md`, `navigate` to the URL, wait for the preview to render, screenshot → `.project/tmp/source-capture.png` → Read it → `$SOURCE_IMAGE`. If Claude-in-Chrome is unavailable: ask the user to publish the Make preview (Share → Publish) and provide the published URL (then treat as a normal `url` source), or to export a full-page screenshot (`file` fallback, vision-estimated values).
-2. Downstream, `figma-make` behaves like `url`: the preview DOM is ground truth — copy mode's § 1.0 computed-style extraction applies (`$EXTRACTED_STYLES` labeled `computed`), run through the same Claude-in-Chrome session.
-3. Ask once (optional, recommended): _"Paste the Make spec / chat description of the interactions, if there is one — it becomes interaction ground truth."_ Store the pasted text; `convert-interactions.md` Step 1 (loaded in 0.2) parses it.
-4. If the user offers Make-generated code (copy/download): treat it as a **value source, not a code source** — same rule as Figma-emitted code in the mode files' codegen rules.
-
-5. The link must target a specific frame (`node-id` param in the URL). If it points to a whole file/canvas: ask the user for a frame link (right-click frame → _Copy link to selection_). If the frame name suggests a draft or duplicate (contains "V2", "test", "copy"/"kopie", "old", or the metadata shows sibling frames with near-identical names): confirm with the user that this frame is the final version before proceeding.
-6. `get_screenshot` on the node link → save to `.project/tmp/source-capture.png` → Read it. This becomes `$SOURCE_IMAGE`.
-7. `get_metadata` on the same link → store the sparse XML layer outline (frame names, positions, sizes) as `$SOURCE_STRUCTURE` — used in 0.2.
+1. The link must target a specific frame (`node-id` param in the URL). If it points to a whole file/canvas: ask the user for a frame link (right-click frame → _Copy link to selection_). If the frame name suggests a draft or duplicate (contains "V2", "test", "copy"/"kopie", "old", or the metadata shows sibling frames with near-identical names): confirm with the user that this frame is the final version before proceeding.
+2. `get_screenshot` on the node link → save to `.project/tmp/source-capture.png` → Read it. This becomes `$SOURCE_IMAGE`.
+3. `get_metadata` on the same link → store the sparse XML layer outline (frame names, positions, sizes) as `$SOURCE_STRUCTURE` — used in 0.2.
    If `get_metadata` overflows the token limit and the tool dumps the outline to a file (common on full-page frames): store the file path as `$SOURCE_STRUCTURE_FILE` and Read it when needed — do NOT substitute a single whole-frame `get_design_context` (that collapses every section's fills into one result and loses per-section ground truth). The audit path (see `references/convert-audit.md`) reads this dump to harvest per-section child node-ids and calls `get_design_context` per section.
 
 The MCP path provides ground-truth design data downstream: the mode files (PHASE 1) read exact values via `get_design_context` / `get_variable_defs` instead of estimating from pixels — this removes the vision-estimation burden, so the route runs reliably on Sonnet.
@@ -118,6 +95,21 @@ Read .project/tmp/source-capture.png
 Store the resolved source image reference as `$SOURCE_IMAGE` for the verification loop.
 
 > **Todo**: Use the `EnterPlanMode` tool now, before Visual Analysis (0.2). Skip only if plan mode is already active (see `shared/PLAN-MODE.md § Entry`).
+>
+> **The plan file must carry this skill's spine, not replace it.** The harness injects its own plan-mode workflow that claims to supersede other instructions. It governs _how_ the plan is produced — never _what_ the run does after approval. Left unguarded this swaps the whole procedure below for the plan file: a real run improvised PHASE 3 and PHASE 4 wholesale, skipping the exact-value check and the `.project/`-never-staged rule because both live in files the plan never named.
+>
+> The plan file therefore ends with a verbatim block naming each remaining phase and its mandatory Read:
+>
+> ```
+> Remaining phases (route-convert.md — execute after approval):
+>   PHASE 2.0b  $FORBID_LIST from project.json design.principles
+>   PHASE 2.2   Read references/convert-generate-template.md
+>   PHASE 3     Read references/convert-verification-loop.md
+>               ^ never improvise — see the PHASE 3 Todo
+>   PHASE 4     Read references/convert-completion.md
+> ```
+>
+> A plan without this block is incomplete — do not call `ExitPlanMode`.
 
 ### 0.2 Visual Analysis
 
@@ -189,21 +181,28 @@ Store fidelity as `$FIDELITY` (low | medium | high).
 
 Only when `$INPUT_SOURCE ∈ {figma-mcp, figma-rest}` AND `$ANALYSIS` Type = `Full page` — a full-page frame is the only case where "which page does this become" is ambiguous; single components/sections always go straight to the scope selection in 0.4.
 
-**Why this exists:** a full-page Figma frame containing Hero/Footer/Contact pattern-matches "looks like a homepage" structurally, but that is not proof it IS the homepage — a per-category landing page (product/service/sector page) has the exact same anatomy. Skipping this check once caused a real Figma-derived page (named "Brandbeveiliging" in the source file) to silently overwrite an unrelated, already-shipped homepage via the 0.4 audit path below — nothing had been committed in between, so the original homepage content was only recoverable from the conversation transcript, not from disk. A homepage-shaped frame must never be allowed to imply it targets the homepage without this check.
+**Why this exists:** a full-page frame containing Hero/Footer/Contact pattern-matches "looks like a homepage", but a per-category landing page has the same anatomy. Skipping this check once let a frame named "Brandbeveiliging" silently overwrite an already-shipped homepage, unrecoverable from disk. A homepage-shaped frame never implies it targets the homepage.
 
 1. Read the frame's own top-level name (from `$SOURCE_STRUCTURE` / the frame node metadata captured in 0.1).
 2. Classify it:
    - **Generic** — matches `home`, `homepage`, `landing`, `index`, `main`, or the project name itself (case-insensitive) → no extra check, set `$TARGET_PAGE_CONFIRMED = "homepage"` and proceed to 0.3.
    - **Specific** — anything else (a product/service/sector/category name) → this is a signal the frame may represent its OWN page, not the existing homepage. Continue to step 3.
 3. Run a lightweight existing-route check (framework-appropriate; for Next.js App Router: `find app -maxdepth 2 -name "page.tsx"`) to see whether a route matching the frame name already exists. Use the result as context in step 4, not as a silent decision.
+
+3b. **Route match found → compare before recommending.** The frame name alone cannot tell you whether the existing route is unrelated or was already built from this very design. Read that route's page file, list its section imports, and compare their names and visible copy against the frame's text nodes in `$SOURCE_STRUCTURE`. Record the overlap:
+
+- **≥2 sections match** → this route was built from this design. Set `$EXISTING_BUILD = true`; step 4's modal leads with that fact and recommends updating the existing page, not creating a new one. Carry `$EXISTING_BUILD` into 0.4 — it is the strongest form of the backlog-status signal there.
+- **0-1 sections match** → same-named but unrelated route. `$EXISTING_BUILD = false`; step 4 runs as written.
+  <!-- Rationale: a real run found a fully-built /certificeringen whose CTA copy, six benefit cards and three certification blocks were verbatim the frame's — but only via separate exploration. The skill step itself had classified on the frame name alone and would have recommended a new page. -->
+
 4. **AskUserQuestion — mandatory when step 2 classified the frame as Specific; no recommendation heuristic in 0.3/0.4 may substitute for this:**
    ```yaml
    header: "Doelpagina"
-   question: "This Figma frame is named '{frameName}'. Which page should it become?"
+   question: "This Figma frame is named '{frameName}'. Which page should it become?" # $EXISTING_BUILD → prefix: "/{route} already exists and shares {n} sections with this frame."
    options:
-     - label: "New page at /{kebab-frameName}", description: "No matching route found yet — recommended when the frame name is a distinct product/category" # append (Recommended) when step 3 found no existing route
+     - label: "New page at /{kebab-frameName}", description: "No matching route found yet — recommended when the frame name is a distinct product/category" # append (Recommended) only when step 3 found no existing route AND $EXISTING_BUILD is false
      - label: "This IS the existing homepage", description: "Confirm explicitly that this frame should replace app/page.tsx (or the project's detected homepage route)"
-     - label: "A different existing page", description: "I'll specify the target route myself"
+     - label: "A different existing page", description: "I'll specify the target route myself" # append (Recommended) when $EXISTING_BUILD is true, prefilled with the matched route
    multiSelect: false
    ```
 5. Store the answer as `$TARGET_PAGE_CONFIRMED` (`new` | `homepage` | `other:{route}`):
@@ -231,7 +230,9 @@ Note: show `(Recommended)` after the option that matches `$FIDELITY` (low/medium
 
 Store as `$MODE` (sketch | copy | inspiration).
 
-> **Todo**: Read '.claude/skills/design-convert/references/convert-mode-{$MODE}.md' — it defines this mode's theme requirement (applied in 0.6), PHASE 1 procedure with its `ExitPlanMode` point, codegen rules (applied in 2.2), and verification thresholds (applied in PHASE 3).
+> **Todo**: Read '.claude/skills/design-convert/references/convert-mode-{$MODE}.md' — it defines this mode's theme requirement (applied in 0.6), PHASE 1 procedure with its `ExitPlanMode` point, codegen rules (applied in 2.2), and verification thresholds (applied in PHASE 3). Resolve `{$MODE}`to the real filename and Read it now, before 0.4 — not "at PHASE 1". Then`TaskUpdate` task 2 (Step 0b) to that same filename.
+
+**Batching 0.25, 0.3 and 0.4.** These three questions land back-to-back and none of them depends on the previous answer, so ask them in **one** `AskUserQuestion` call with up to three questions rather than three consecutive modals. Keep each question's own option set and its `(Recommended)` marker exactly as specified — batching changes the number of round-trips, never the choices. The audit follow-up (`convert-audit-scope.md`) stays separate: it only exists once "Audit" has been picked.
 
 ### 0.4 Scope Detection
 
@@ -248,29 +249,9 @@ options:
 multiSelect: false
 ```
 
-**Availability guard:** only offer "Audit existing page vs design" when `$INPUT_SOURCE ∈ {figma-mcp, figma-rest, url}` — other sources have no per-section exact value to reconcile against; omit the option entirely for `file`/`chat-image`/`design-tool` sources (their path is patch). **Additionally, when 0.25 ran** (full-page figma-mcp/figma-rest source): omit the audit option entirely when `$TARGET_PAGE_CONFIRMED = "new"` — the user already confirmed this frame targets a page that doesn't exist yet, so there is nothing to audit against.
-
-**Recommended marker (auto-nudge):** show `(Recommended)` after the audit option instead of "Full page" when `$INPUT_SOURCE ∈ {figma-mcp, figma-rest}` AND `$ANALYSIS` Type = `Full page` AND either signal below fires. Otherwise keep `(Recommended)` on "Full page" as today.
-
-- **Phrase signal (weaker):** the conversation implies an already-built page needing reconciliation (phrases like "already built", "existing page", "does it match", "check against the design", "reconcile"; NL: "bestaande pagina", "al gedaan", "klopt het", "controleer", "tweaks").
-- **Backlog-status signal (stronger, prefer this when available):** a page name can already be derived from context (a `$CONVERT_TARGET` set via the backlog-transition lookup in `SKILL.md` PHASE 0.3 Step 3, or a source frame/name that matches an existing `backlog.json` feature by name) AND that feature's `status` is `DONE` or `stage` is `"built"`. This is an objective fact, not a phrasing guess — trust it over the phrase signal when both are checkable, and don't skip it just because the phrase signal didn't fire.
+> **Todo**: `$INPUT_SOURCE ∈ {figma-mcp, figma-rest, url}` → Read `.claude/skills/design-convert/references/convert-audit-scope.md` BEFORE presenting the modal above: it decides whether the audit option is offered at all, whether it outranks "Full page" as the recommended default, and what an accepted audit reconciles. Other sources → omit the audit option from the modal and skip that file.
 
 On "Update existing component": skip PHASE 0.5 and go to PHASE 0.4b.
-
-On "Audit existing page vs design": set `$SCOPE = "audit"`, then ask one follow-up before continuing:
-
-```yaml
-header: "Audit scope"
-question: "What should this audit reconcile?"
-options:
-  - label: "Style + content (Recommended)", description: "Colors, spacing, radii, typography, text, and images — everything convert-audit.md can compare"
-  - label: "Content & images only", description: "Text and images only — leave color, spacing, and typography exactly as they are today"
-multiSelect: false
-```
-
-Store as `$AUDIT_PROPERTY_SCOPE` (`everything` | `content`). No third "structure only" choice here — `convert-audit.md` Step C's escalation check already detects and handles structural mismatches (missing/extra/reordered sections) automatically regardless of this setting; a separate user-selectable mode for it would just create two competing mechanisms for the same case. `$AUDIT_PROPERTY_SCOPE` governs Steps B, C, and 3.2c in `convert-audit.md` and `convert-verification-loop.md` — see those files for the conditional behavior.
-
-Then continue normally through PHASE 0.5, 0.5b, and 0.6 (the audit needs the backlog match, worktree, and the light component scan to map Figma sections to code) — then PHASE 1 dispatches to the audit procedure instead of a mode file (see PHASE 1 below). When `$TARGET_PAGE_CONFIRMED = "other:{route}"` (0.25): the audit target is `{route}`, not `app/page.tsx` — carry `{route}` into 0.5's page-file lookup and into `convert-audit.md` Step A.1 in place of the default homepage assumption.
 
 On "Full page" when `$TARGET_PAGE_CONFIRMED = "new"` (0.25): the target page file is `/{kebab-frameName}` (or the user-specified route) — 0.5's backlog/name derivation uses that route's name, not the homepage.
 
@@ -315,6 +296,7 @@ Trigger this check only when **all** of the following hold — each is cheap to 
 - `$IS_WORKTREE = false` (no worktree was created in 0.5b) — inside a worktree, dirty work on the main branch is untouched by this run regardless, so there's nothing to protect and no need to double up with `WORKTREE-CREATE.md`'s own dirty-work guard.
 - The working tree is dirty: `git status --porcelain` is non-empty.
 - This run targets an **already-existing** page/file, not a brand-new one: `$SCOPE = "audit"`, OR (`$SCOPE` = full page AND `$TARGET_PAGE_CONFIRMED ∈ {"homepage", "other:*"}` from §0.25). Skip when `$TARGET_PAGE_CONFIRMED = "new"` or scope is component/patch — those write new files, not over existing ones, so the overwrite risk this guards against doesn't apply.
+- **At least one file this run will overwrite is itself dirty.** Compute this, don't assume it: intersect `git status --porcelain` with the target page file plus the framework's section-component directory (`src/components/**` for the Next.js/Vite layouts in §0.6). Empty intersection → skip the modal, print `Checkpoint: skipped (dirty files don't overlap this run's targets)`, and go straight to Step 2. A dirty tree elsewhere in the repo is not at risk from this run, and asking about it spends a modal on nothing.
 
 When triggered:
 
@@ -419,6 +401,8 @@ Existing:   [N] components found
 
 ## PHASE 1: Mode Procedure
 
+**Two confirmations are mandatory here, and both are load-bearing:** `$MODE` (1:1 copy vs inspiration vs sketch) is chosen by the user at 0.3 — never inferred from the source's fidelity alone — and this phase's output table is confirmed by the user before PHASE 2 starts. They are stated here rather than only in the Restrictions block at the end of this file, because a rule that lives 150 lines past the phase it governs gets read after the phase has already run.
+
 Execute the **PHASE 1** section of the loaded `convert-mode-{$MODE}.md`:
 
 - **copy** → Fidelity Extraction (ground-truth computed styles for URL sources, exact-value table)
@@ -434,6 +418,14 @@ Every mode ends PHASE 1 with a user-confirmed table and its own `ExitPlanMode` p
 ---
 
 ## PHASE 2: Code Generation
+
+### 2.0a PHASE 1 Gate
+
+**STOP** when `$SCOPE ∉ {patch, audit}` and no user-confirmed PHASE 1 artifact exists — the fidelity table (copy) or the token mapping (sketch/inspiration).
+
+Without it, codegen runs off the screenshot alone: the exact values `convert-mode-{$MODE}.md § 1.0` extracts never entered the run, 3.2c has no ground truth to compare against, and the first time anyone notices is when the user starts correcting the rendered page section by section. Nothing downstream errors on its absence, which is precisely why this gate is explicit.
+
+Return to PHASE 1, read the mode file, produce the table, and run its 1.2 confirm before continuing.
 
 ### 2.0b Forbidden Patterns Load
 
@@ -514,6 +506,8 @@ State components:
 
 ### 2.2 Generate Code
 
+> **Todo**: Read `.claude/skills/shared/VERCEL-CONTEXT.md` — follow the Load Protocol, then apply the guidelines as a bias layer for the generation below. Loaded here, not at route entry: it is a codegen bias layer only, so a run that stops in PHASE 0/1, or an audit that reports without patching, never pays for it.
+
 > **Todo**: Read '.claude/skills/design-convert/references/convert-generate-template.md'
 
 ### 2.3 Generation Summary
@@ -564,7 +558,7 @@ Without PHASE 4:
 - worktree remains unmerged on disk and `/diensten`-style routes are unreachable on main (4.6)
 - next session opens with stale handoff data (4.1)
 
-4.4 only prepares report fields and (optionally) opens a live preview — it is **not** the end of the workflow. The user-visible `CONVERT BUILD COMPLETE` report is printed at the end of 4.5b, after 4.4b (user confirms the result) and the scoped commit. If you find yourself about to end the skill after 4.4 without having committed and shown that report: re-read convert-completion.md from §4.4b onward.
+  4.4 only prepares report fields and (optionally) opens a live preview — it is **not** the end of the workflow. The user-visible `CONVERT BUILD COMPLETE` report is printed at the end of 4.5b, after 4.4b (user confirms the result) and the scoped commit. If you find yourself about to end the skill after 4.4 without having committed and shown that report: re-read convert-completion.md from §4.4b onward.
 
 > **Todo**: Read '.claude/skills/design-convert/references/convert-completion.md'
 
@@ -588,8 +582,7 @@ This route must **NEVER**:
 This route must **ALWAYS**:
 
 - Resolve visual input before any code generation
-- Confirm mode (1:1 vs inspiration vs sketch) with user
-- Confirm the mode's PHASE 1 output (token mapping / fidelity table) with the user
+- Confirm mode and the PHASE 1 output table with the user — both gates are stated at PHASE 1 itself and enforced by the 2.0a STOP
 - Follow `shared/FRONTEND-RULES.md` (React/Next.js, HTML/CSS, A-series) and `shared/PATTERNS.md` (Component, Layout)
 - Detect and match the project's framework
 - Run the verification loop on whichever vehicle 3.0 resolves — only its rung 4 skips it

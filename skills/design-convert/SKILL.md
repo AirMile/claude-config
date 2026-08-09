@@ -1,6 +1,6 @@
 ---
 name: design-convert
-description: Use with /design-convert — Figma/URL/screenshot→code, or manage design specs.
+description: Use with /design-convert — Figma/URL/screenshot→code, or design specs.
 argument-hint: "[name|file-path|url|sketch]"
 reads:
   [
@@ -17,7 +17,7 @@ reads:
 writes: [devinfo.handoff, devinfo.tokenDrift, project.design, backlog.status]
 metadata:
   author: claude-config
-  version: 3.10.0
+  version: 3.13.0
   category: design
 ---
 
@@ -44,6 +44,8 @@ The router below classifies the argument and dispatches to the appropriate route
 - `../shared/FRONTEND-RULES.md` — React/TypeScript coding rules (Convert route — web domain)
 - `../shared/PATTERNS.md` — Component patterns (Convert route)
 - `../shared/PLAYWRIGHT.md` — Playwright CLI, screenshot capture (Convert route)
+- `references/convert-source-fallbacks.md` — Figma MCP not connected (REST ladder) or a Figma Make URL (Convert route PHASE 0.1)
+- `references/convert-audit-scope.md` — Whether the audit option is offered/recommended, and what it reconciles (Convert route PHASE 0.4)
 - `./examples/` — Conversion examples (1:1, inspiration, Apple-style)
 - External: `vercel-labs/web-interface-guidelines` — setup-context for Convert route (see `references/route-convert.md § Step 0`)
 
