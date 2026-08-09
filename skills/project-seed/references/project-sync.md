@@ -35,23 +35,24 @@ Present findings:
 PROJECT SYNC ANALYSIS
 
 Concept: {title}
-Backlog features: {count} · Codebase routes: {count} · Entities: {count} · Endpoints: {count} · Built components: {count} · Shipped (archived): {count} · Deferred drift: {count}
+Backlog {count} · Routes {count} · Entities {count} · Endpoints {count}
+Built {count} · Shipped {count} · Deferred drift {count}
 
 GAPS DETECTED:
 
-| #  | Source            | Name             | Type    | In Concept         |
-| -- | ----------------- | ---------------- | ------- | ------------------ |
-| 1  | Backlog           | {feature-name}   | FEATURE | No                 |
-| 2  | Codebase          | /api/webhooks    | API     | No                 |
-| 3  | Entity            | User             | DATA    | Partial            |
-| 4  | Architecture      | {component-name} | BUILT   | No                 |
-| 5  | Archive           | {feature-name}   | SHIPPED | No                 |
-| 6  | /dev-ship (define phase) drift | {featureDecides} | drift   | drift — {category} |
+| #  | Source        | Name             | Type    | In Concept    |
+| -- | ------------- | ---------------- | ------- | ------------- |
+| 1  | Backlog       | {feature-name}   | FEATURE | No            |
+| 2  | Codebase      | /api/webhooks    | API     | No            |
+| 3  | Entity        | User             | DATA    | Partial       |
+| 4  | Architecture  | {component-name} | BUILT   | No            |
+| 5  | Archive       | {feature-name}   | SHIPPED | No            |
+| 6  | ship drift    | {featureDecides} | drift   | drift — {cat} |
 
 ALREADY COVERED:
 - {feature described in both concept and backlog}
 
-{LEARNINGS CONTEXT block, if any — context for integration phrasing, not gap rows}
+{LEARNINGS CONTEXT block, if any — phrasing context, not gap rows}
 ```
 
 Architecture rows (source = `Architecture`, type `BUILT`) are components with `status: "done"` in `project-context.json` that the concept does not describe — built reality the concept is missing. Archive rows (source = `Archive`, type `SHIPPED`) are the same idea for finished features: shipped, archived, and invisible to every other source in step 1. On a project that archives, expect these to outnumber the `BUILT` rows. Drift rows (source = `/dev-ship (define phase) drift`, `/game-ship (define phase) drift`, `/project-plan drift`, `/project-todo drift`) originate from deferred `seedDrift[]` entries — decisions that already happened in earlier skill runs and were explicitly skipped or hit `/project-todo`'s record-only path. The `In Concept` column renders `drift — {category}` so contradiction / new-direction / scope-expansion are visibly distinct. Show `seedSays` in the `Name` column (for contradictions this is a verbatim seed quote) and `featureDecides` as context so the user understands what changed.

@@ -68,16 +68,41 @@ If scope context found AND concept already loaded:
 2. Neither condition holds → skip the modal, proceed with Concept scope directly.
 3. Otherwise, offer only the populated options (always include Concept and Standalone):
 
+Never exceed 4 options (`shared/SKILL-PATTERNS.md § Modal Option Cap`). With more populated scopes than fit, the 4th option is `"More →"` and the remainder moves to a second modal, shown only if it is picked.
+
 ```yaml
+# modal 1
 header: "Scope"
 question: "What do you want to {brainstorm about | analyze}?"
 options:
-  - label: "Concept (Recommended)", description: "Work with concept from project.json"
-  - label: "Feature from backlog", description: "Focus on a specific feature"   # only if populated
-  - label: "Page / UX flow", description: "Focus on layout, UX or user flow"   # only if populated
-  - label: "Standalone idea", description: "Standalone idea, not linked to the project"
+  - label: "Concept (Recommended)"
+    description: "Work with concept from project.json"
+  - label: "Seed section" # only if the seed has >= 6 `##`
+    description: "One section of the seed, not the whole document"
+  - label: "Feature from backlog" # only if populated
+    description: "Focus on a specific feature"
+  - label: "More →" # only if options remain
+    description: "Page / UX flow, Standalone idea"
+multiSelect: false
+
+# modal 2 — only after "More →"
+header: "Scope"
+question: "What do you want to {brainstorm about | analyze}?"
+options:
+  - label: "Page / UX flow" # only if populated
+    description: "Focus on layout, UX or user flow"
+  - label: "Standalone idea"
+    description: "Standalone idea, not linked to the project"
 multiSelect: false
 ```
+
+**If "Seed section":**
+
+The reason this scope exists: on a mature seed, "challenge/expand one section" is the normal request, and routing it through concept scope reads and rewrites a document ten times its size.
+
+- Grep `.project/project-seed.md` for `^## ` (plus `^### ` one level down); AskUserQuestion to choose one — the 4 most likely first (recently dated sections, sections carrying an open question), rest via the built-in Other
+- Read **only that section** (`offset`/`limit`) as input context; the rest of the seed stays unread
+- Techniques apply to the section, not the whole concept — say so in the technique brief, or the analysis drifts to the document as a whole
 
 **If "Feature from backlog":**
 
@@ -104,6 +129,7 @@ multiSelect: false
 **Output path follows scope automatically:**
 
 - Scope = concept → write to `.project/project-seed.md` + update project.json metadata (name, pitch)
+- Scope = seed section → targeted Edits into that section of `.project/project-seed.md`; every other section stays byte-identical (`shared/THINKING-OUTPUT.md § Seed save procedure` step 2)
 - Scope = feature → write to `.project/features/{name}/thinking.md`
 - Scope = page/UX → write to `.project/thinking/{topic}.md`
 - Scope = standalone idea → write to `.project/thinking/{topic}.md`
@@ -115,7 +141,7 @@ Run directly after the scope is known (after § PHASE 1a; seed variant: after th
 1. **Skip** when `.project/` does not exist, or scope = standalone idea. Log nothing.
 2. **Built-state + backlog summary**: set `$REPO`, run the `ideation` profile from [PROJECT-CONTEXT-LOAD.md](PROJECT-CONTEXT-LOAD.md).
 3. **Learnings** via [LEARNINGS-LOAD.md](LEARNINGS-LOAD.md), scope-dependent:
-   - scope = concept (or seed implementation scope): `scopes: [architectural]`, `pitfall-prefix: true`, `current-feature: none`
+   - scope = concept (or seed implementation / seed section scope): `scopes: [architectural]`, `pitfall-prefix: true`, `current-feature: none`
    - scope = feature or page/UX: `scopes: [component, architectural]`, `pitfall-prefix: true`, `current-feature: {kebab-name}`
 4. **Prior thinking (cheap name match)**: Grep `.project/thinking/*.md` for the concept-title / feature-name tokens (tokens ≥ 3 chars). Report matches as `Prior thinking: {file} — {first H1}` — filenames + H1 only, **never read the full files**. A later phase (or the user) decides whether one is worth reading.
 5. **Compose one `PROJECT MEMORY` block** and show it as its own message right after composing it — this is informational output, not gated by any confirm step (carry it into the plan-mode phases as context):

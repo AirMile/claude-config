@@ -98,13 +98,29 @@ multiSelect: false
 header: "Scope"
 question: "What do you want to think about?"
 options:
-  - label: "Page / UX flow", description: "Focus on layout, UX or user flow"
-  - label: "Assignment / Large Feature", description: "Scope a task assignment, large feature, or cross-cutting concern"
-  - label: "Standalone idea", description: "Standalone idea, not linked to the project"
+  # first option ONLY when the seed has >= 6 `##` headings
+  - label: "Seed section"
+    description: "Work out or challenge one section of the seed"
+  - label: "Page / UX flow"
+    description: "Focus on layout, UX or user flow"
+  - label: "Assignment / Large Feature"
+    description: "Scope a task, large feature, or cross-cutting concern"
+  - label: "Standalone idea"
+    description: "Standalone idea, not linked to the project"
 multiSelect: false
 ```
 
-**If "Feature from backlog" / "Page / UX flow" / "Standalone idea":** follow the matching scope handler in [shared/INPUT-PARSING.md § PHASE 1a](../../shared/INPUT-PARSING.md) (seed variant — "proceed" = Step 2).
+**If "Feature from backlog" / "Page / UX flow" / "Standalone idea":** follow the matching scope handler in [shared/INPUT-PARSING.md § PHASE 1a](../../shared/INPUT-PARSING.md) (seed variant — "proceed" = Step 2). Read **§ PHASE 1a only**: § Auto-detect concept is superseded by this file's own detection, and § PHASE 1b / § Chat Context flow apply only if the route actually reaches them.
+
+**If "Seed section":**
+
+On a mature seed, reworking one section is the common case, not an edge case — without this route it detours through feature scoping and lands in a mismatched output shape.
+
+- Grep `.project/project-seed.md` for `^## ` (plus `^### ` one level down); AskUserQuestion to pick one — the 4 most likely first (recently dated sections, sections carrying an explicit open question), the rest via the built-in Other
+- Read **only that section** (`offset`/`limit`), never the whole seed
+- Set scope = `section`; Round 1 uses the focused-edit axes (Step 2 item 3), not the fresh-scoping templates
+- Run Step 1d, then proceed to Step 2 with the section text as context
+- Output: **targeted Edits into that section only** — `shared/THINKING-OUTPUT.md § Seed save procedure` step 2 already prescribes that surgical contract. A section change never rewrites the seed in full
 
 **If "Assignment / Large Feature":**
 
@@ -119,7 +135,7 @@ Free-text intake — these are open questions, not multiple-choice. Ask in one m
 - Run Step 1d, then proceed to Step 2 with `scope=implementation` (uses the implementation Round 1 template)
 - Output path: `.project/project-seed.md` — treat the implementation scope as the project concept, update `project.json` `seed.name` and `seed.pitch` accordingly
 
-**Output path follows scope** — routing is canonical in [shared/THINKING-OUTPUT.md](../../shared/THINKING-OUTPUT.md) (loaded in PHASE 5); do not decide paths here. Two seed-only mappings THINKING-OUTPUT does not list: **assignment** behaves as feature scope (`.project/features/{slug}/thinking.md`, or `.project/project-seed.md` on user choice); **implementation** behaves as concept scope (`.project/project-seed.md` + project.json metadata).
+**Output path follows scope** — routing is canonical in [shared/THINKING-OUTPUT.md](../../shared/THINKING-OUTPUT.md) (loaded in PHASE 5); do not decide paths here. Three seed-only mappings THINKING-OUTPUT does not list: **assignment** behaves as feature scope (`.project/features/{slug}/thinking.md`, or `.project/project-seed.md` on user choice); **implementation** behaves as concept scope (`.project/project-seed.md` + project.json metadata); **section** writes targeted Edits into its own section of `.project/project-seed.md` and leaves every other section byte-identical.
 
 **Step 1b: Source + scope selection (if no concept found)**
 
@@ -168,9 +184,9 @@ Run Step 1d (once scope is set), then proceed to Step 2 with the argument as sta
 
 > **Todo**: Read `.claude/skills/project-seed/references/project-sync.md` and execute the sync flow: gather project state → detect gaps (incl. deferred `seedDrift[]`) → select → integrate → write + drift cleanup.
 
-**Step 1d: Project Memory Load** — mandatory. It sits last in this file because every route above feeds into it, but it **runs right after Step 1a or Step 1b resolves the scope**, before any PHASE 2 question.
+**Step 1d: Project Memory Load — runs right after Step 1a/1b resolves the scope, before any PHASE 2 question** (mandatory; it sits last in this file only because every route above feeds into it).
 
-> **Todo**: Once the active scope is known, read [shared/INPUT-PARSING.md § Project Memory Load](../../shared/INPUT-PARSING.md) and run it (seed variant: implementation and assignment scopes use the concept-scope learnings config). Step 2 question rounds must derive Round-1 options from what is actually built — including the archived features, which no other source reports — and PHASE 4 output must not silently contradict `status: done` components.
+> **Todo**: Once the active scope is known, read [shared/INPUT-PARSING.md § Project Memory Load](../../shared/INPUT-PARSING.md) — **that section only**, not the whole file — and run it (seed variant: implementation, assignment and section scopes use the concept-scope learnings config). Step 2 question rounds must derive Round-1 options from what is actually built — including the archived features, which no other source reports — and PHASE 4 output must not silently contradict `status: done` components.
 
 Skip only for: the Sync route (Step 1c — `project-sync.md` gathers richer state itself), standalone scope, and projects without `.project/`.
 

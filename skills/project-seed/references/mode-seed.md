@@ -14,7 +14,7 @@ The output is a structured markdown document that feeds `/project-plan` or the b
 
 ### Enter Plan Mode
 
-**STOP — before PHASE 2's first AskUserQuestion**: call `EnterPlanMode` now (explore route only — the PHASE 1 "Sync with project" route ends in its own writes and stays outside plan mode; skip if plan mode is already active, see PLAN-MODE.md skip-check). Do not ask any PHASE 2 question — including the Setup gate below — before this call completes. PHASES 2-4 run in plan mode: the concept document (PHASE 4) is a reviewable artefact whose rejection sends the exploration back for revision — a genuine approval gate — and it is written to the plan file for review.
+**STOP — before PHASE 2's first AskUserQuestion**: call `EnterPlanMode` now (explore route only — the PHASE 1 "Sync with project" route ends in its own writes and stays outside plan mode; skip if plan mode is already active, see PLAN-MODE.md skip-check). Read only [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) § Entry now (§ Exit later, before PHASE 5) — skip § Conditional entry, § Administrative exit and § Used by, which document other skills' usage. Do not ask any PHASE 2 question — including the Setup gate below — before this call completes. PHASES 2-4 run in plan mode: the concept document (PHASE 4) is a reviewable artefact whose rejection sends the exploration back for revision — a genuine approval gate — and it is written to the plan file for review.
 
 ### PHASE 2: Explore and Expand
 
@@ -106,7 +106,12 @@ multiSelect: false
 
 **Further rounds:** same pattern — present the "Deeper Dive" AskUserQuestion after each round, with follow-up questions targeting gaps from previous rounds (features/mechanics specifics, differentiation, style/atmosphere/tone, motivation/engagement model, or any direction the user showed interest in). Switch the recommended option to "Proceed to summary" once enough context has been gathered (typically after 2-3 rounds). The rounds provide structure, not a rigid script — follow the conversation naturally if the user asks their own questions, goes deeper on one topic, or skips questions entirely.
 
-**Before drafting any question**: if the aspect is generative — vision, tone, story/theme, naming/title — do NOT put it in an AskUserQuestion option set. Ask it as a single anchored open question instead ([shared/QUESTIONING.md](../../shared/QUESTIONING.md) governs form choice, anchoring, and escalation). Clickable rounds stay the default for every other (enumerable) aspect.
+**Before drafting any question**, two kinds of aspect never belong in an option set:
+
+- **Generative** — vision, tone, story/theme, naming/title. Ask a single anchored open question instead ([shared/QUESTIONING.md](../../shared/QUESTIONING.md) governs form choice, anchoring, and escalation).
+- **Visual or formal** — layout, geometry, colour, information density, iconography, on-screen wording. Do not ask, **show**: build 3-5 concrete variants first (HTML page, ASCII or markdown mock) with real sample data from the project, then let the user point at one or blend two. A modal whose options the user cannot picture is a modal answered with "you decide" — and then the design was chosen by the executor, not the user.
+
+Clickable rounds stay the default for every other (enumerable) aspect.
 
 **Question rules:**
 
@@ -143,6 +148,13 @@ multiSelect: false
 
 Anchoring the overview to the plan file is deliberate: `ExitPlanMode` always shows that file, so the overview cannot be skipped the way a standalone output step can.
 
+**Iteration rounds — only when the artefact is judged by looking at it.** A design the user assesses visually (a panel, a layout, a colour system) is not settled by one document: the phase loops — variant set → user reaction → revised variant set — and only the last round proceeds to PHASE 5. Rules for the loop:
+
+- One artefact path per round with a version suffix; keep the earlier versions, the user compares against them.
+- The mandatory second-opinion hook fires **once, at the save**. Extra consults per round are legitimate but user-requested — never automatic, or every round costs a spawn.
+- Each round states in one line what the user's reaction changed **and** what it explicitly did not change. An unrecorded rejection comes back two rounds later as the same proposal.
+- The seed is written **once**, at the end of the last round (PHASE 5) — never per round.
+
 Create a structured markdown document (pure markdown, no preamble or "Here's your document:" framing; `#` title, `##` sections). Required: **Title** (H1), **Short description** (1-2 sentences), **Core concept**. Additional sections by type — pick the set from scope: implementation → Implementation projects; feature/assignment → Features/assignments; concept/page/standalone → judge the content (creative vs product; hybrid → merge both sets):
 
 - Creative concepts (games, stories, art): Characters, Mechanics/Gameplay, Narrative/Plot, Aesthetic/Style, Tone and Atmosphere, Unique Elements
@@ -165,10 +177,14 @@ consulted once earlier in the session for a different purpose.
 > § Brief contents). Fold the digest into the concept doc before exiting, print the one-line log
 > (§ Logging — no report table here), set `secondOpinionUsed`.
 
-**End of thinking phase**: follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol — write the concept document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 5 (output destination and `.project/` writes).
+**End of thinking phase**: follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol — write the concept document to the plan file, then `ExitPlanMode`.
 
-### PHASE 5: Output Destination
+### PHASE 5: Output Destination — the run is not complete without it
+
+**STOP — approval at `ExitPlanMode` is not the end of the run.** The run ends when a save-confirmation block has been printed. No block, no run — and an approved plan whose result never reached `.project/` is the one failure mode the user cannot see happening.
 
 > **Todo**: Read `.claude/skills/shared/THINKING-OUTPUT.md` — mode `seed`, `{kind}` = `idea`. Follow the scope routing and seed save procedure there.
+
+Two things this phase owns that no other phase does: `seed.scope` is written to the scope **actually used** (a scope switched mid-run otherwise leaves a stale value behind), and § Continue offers the next move. Printing `CONCEPT SAVED` / `THINKING OUTPUT SAVED` is the artefact that proves PHASE 5 ran.
 
 ---
