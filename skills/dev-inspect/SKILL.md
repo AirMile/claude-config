@@ -1,11 +1,11 @@
 ---
 name: dev-inspect
-description: Edit the element behind a pasted inspect-overlay ref, then screenshot-verify. Use with /dev-inspect, or auto-triggers on a bracketed [path:line ...] element ref with an edit request.
+description: Edit a pasted inspect-overlay ref ([path:line ...]) and screenshot-verify. Use with /dev-inspect.
 argument-hint: "[pasted [ref] block(s) + change description]"
 reads: [project.theme]
 metadata:
   author: claude-config
-  version: 1.2.1
+  version: 1.3.0
   category: dev
 ---
 
@@ -70,6 +70,12 @@ paste is wasted tokens in a rapid-fire session.
    (criterion 5 is the backlog guard, which does not run here). Skip the Read when the file is
    already in context this session.
 
+   **Criterion 2 (file span > 3) does not fire on a uniform cosmetic batch** — every ref gets the
+   same one-line styling edit (one class/property, same direction, no logic, no new surface).
+   `references/escalate.md` § 1 already rules this the letter-not-spirit case, so report it
+   instead of asking: `Size gate: file span {n} — cosmetic batch, not escalated.` A batch that is
+   not uniform, or any other criterion firing, escalates normally.
+
    > **Todo**: any criterion fires → Read
    > `.claude/skills/dev-inspect/references/escalate.md` and follow it — never continue silently.
 
@@ -90,7 +96,9 @@ paste is wasted tokens in a rapid-fire session.
   > `.claude/skills/dev-inspect/references/resolve-degraded.md` and resolve per its ladder.
 
 - **Multi-ref**: resolve every ref first, group by file, then implement file-by-file. Re-run the
-  size gate on the resolved file set.
+  size gate on the resolved file set. Refs that resolve to the same target dedupe to one — a
+  payload carrying the same ref twice is a failed clipboard copy, not two edits: say so and ask
+  for the missing ref rather than acting on the duplicate.
 
 ## PHASE 2 — Implement
 
@@ -112,7 +120,11 @@ Always runs — the edit is not done until it is seen working.
    [shared/TAURI-VEHICLE.md](../shared/TAURI-VEHICLE.md) instead of any browser vehicle below;
    follow its smart-install gate if `mcp__tauri-mcp__*` isn't connected yet. **Otherwise**:
    `playwright-cli` daemon by default (scriptable single-shot verify — see
-   [shared/BROWSER-VEHICLES.md](../shared/BROWSER-VEHICLES.md)). **Opt into Claude-in-Chrome**
+   [shared/BROWSER-VEHICLES.md](../shared/BROWSER-VEHICLES.md)). Falling back to the project's own
+   Playwright (a `node` script driving `chromium`): write that script **inside the project
+   directory**, not the scratchpad — package resolution walks up from the script's own path, so a
+   scratchpad script fails with `ERR_MODULE_NOT_FOUND` even with Playwright installed. Delete it
+   after the run. **Opt into Claude-in-Chrome**
    only when `tabs_context_mcp` finds the exact page already open in a live Chrome tab — the user
    just clicked the overlay there, so reusing that tab (real session, no fresh navigation) is
    faster than a cold CLI launch. Mechanics per
@@ -127,20 +139,28 @@ Always runs — the edit is not done until it is seen working.
 3. **Locate the element live**: full mode → the overlay's attrs are in the dev DOM — selector
    `[data-inspector-relative-path="<path>"][data-inspector-line="<line>"]` (deterministic);
    degraded → the CSS selector from the ref. Scroll into view; brief wait for HMR after edits.
-4. **Capture & judge**: element-scoped screenshot plus one wider container shot. Verdict on:
+4. **Render sanity — a verdict on an unrendered page is worse than no verdict.** Before reading
+   any value, assert the page actually styled: `document.styleSheets.length > 0`. Zero
+   stylesheets means the round is **void** — every computed value is a UA default, and a UA
+   default is indistinguishable from a successful "remove this property" edit (a `border-radius`
+   read of `0px` looks identical whether the class was removed or the CSS never loaded). Do not
+   report PASS and do not carry the findings forward: restart the dev server (a long HMR session
+   can leave the bundler serving 404s for its own chunks), re-navigate, redo the round. Same rule
+   as [design-convert § 3.1](../design-convert/references/convert-verification-loop.md).
+5. **Capture & judge**: element-scoped screenshot plus one wider container shot. Verdict on:
    (a) the requested change is visible, (b) theme tokens are honored — spot-check one
    `getComputedStyle` eval against the digest when in doubt, (c) surrounding layout is
    unregressed (container shot). Cheap console-error check (error level only, ignore patterns per
    PLAYWRIGHT.md § Console Error Inspection) when the edit touched logic. Optionally grep the
    touched files against the relevant `shared/ANTI-SLOP.md` packs (`tokens` always; `dark` /
    `motion` when applicable) as a static complement.
-5. **On fail**: one inline fix round (back to PHASE 2 for that ref, evidence first — what does
+6. **On fail**: one inline fix round (back to PHASE 2 for that ref, evidence first — what does
    the screenshot/computed style actually show?).
 
    > **Todo**: verify fails a second time → Read
    > `.claude/skills/dev-inspect/references/fix-round.md` and follow it. No silent retry loops.
 
-6. **Multi-ref**: verify per ref, batching captures on the same page into one navigation. No
+7. **Multi-ref**: verify per ref, batching captures on the same page into one navigation. No
    browser available → degradation ladder per PLAYWRIGHT.md § Graceful Degradation; report
    `verify: skipped (manual: open {url})`. Playwright runner: always `close` at the end.
 
@@ -149,12 +169,18 @@ Always runs — the edit is not done until it is seen working.
 Runs once per prompt, after every ref in the payload has been edited and PHASE-3-verified — not per
 ref mid-run.
 
-1. **Confirm**: one AskUserQuestion, one question per ref (max 4 per modal — batch larger payloads
-   into consecutive modals), `multiSelect: false` per question:
+1. **Confirm**: one AskUserQuestion, `multiSelect: false` per question. Ask **one question per
+   distinct change, not per ref** — refs that received the same edit (same property, same
+   direction) collapse into a single question naming the count and the files; refs whose changes
+   differ get their own question (max 4 per modal — batch larger payloads into consecutive
+   modals). N identical questions is a rejected modal, not a thorough one. An `adjust`/`revert`
+   answer on a collapsed question applies to every ref in that batch, and the retry ladder below
+   treats the batch as one unit. `{target}` below is the single `file:line` for a per-ref
+   question, or `{n} files: {a}, {b}, {c}` for a collapsed one.
 
    ```yaml
    header: "Change OK?"
-   question: "Did «{change}» at {file:line} land correctly?"
+   question: "Did «{change}» at {target} land correctly?"
    options:
      - label: "Yes, keep it (Recommended)"
        description: "Change is correct — keep it as-is"
