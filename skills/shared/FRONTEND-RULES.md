@@ -113,16 +113,17 @@ General and TypeScript rules: see `shared/CODING-RULES.md`.
 
 ### MUST_DO (Critical)
 
-| ID   | Rule                               | Check                                   |
-| ---- | ---------------------------------- | --------------------------------------- |
-| H001 | Valid HTML structure               | DOCTYPE, html, head, body               |
-| H002 | One h1 per page                    | SEO, accessibility                      |
-| H003 | Heading hierarchy (h1→h2→h3)       | No h3 before h2                         |
-| H004 | Color contrast ≥4.5:1 for text     | WCAG AA                                 |
-| H005 | Color contrast ≥3:1 for UI         | Borders, icons                          |
-| H006 | Touch targets ≥44x44px             | Mobile accessibility                    |
-| H007 | No interleaved layout reads/writes | Forced reflow prevention                |
-| H008 | No scrollTop-driven animation      | Scroll Timeline or IntersectionObserver |
+| ID   | Rule                                    | Check                                                                               |
+| ---- | --------------------------------------- | ----------------------------------------------------------------------------------- |
+| H001 | Valid HTML structure                    | DOCTYPE, html, head, body                                                           |
+| H002 | One h1 per page                         | SEO, accessibility                                                                  |
+| H003 | Heading hierarchy (h1→h2→h3)            | No h3 before h2                                                                     |
+| H004 | Color contrast ≥4.5:1 for text          | WCAG AA                                                                             |
+| H005 | Color contrast ≥3:1 for UI              | Borders, icons                                                                      |
+| H006 | Touch targets ≥44x44px                  | Mobile accessibility                                                                |
+| H007 | No interleaved layout reads/writes      | Forced reflow prevention                                                            |
+| H008 | No scrollTop-driven animation           | Scroll Timeline or IntersectionObserver                                             |
+| H009 | Section overlap is a paired declaration | Negative block-start margin + matching radius on the same element — both or neither |
 
 #### Examples
 
@@ -176,6 +177,32 @@ elements.forEach((el, i) => {
   animation: parallax linear;
   animation-timeline: scroll();
 }
+```
+
+**H009** Section overlap is a paired declaration
+
+A negative block-start margin on a section exists to slide it over its
+predecessor so a rounded top edge reveals the colour behind it. Without that
+radius the overlap is invisible and simply crops the previous section's bottom
+padding — the page still renders, every padding value in the code is still
+correct, and only the rendered seam is wrong. Emit both or neither. Applies to
+every section, not just the one being edited: removing the radius from an
+existing section means removing its negative margin in the same edit.
+
+```jsx
+// ✗ Incorrect — margin with no radius: eats 60px of the previous
+//   section's bottom padding, silently
+<section className="-mt-[60px] bg-navy py-24">
+
+// ✗ Incorrect — radius with no margin on a section meant to overlap:
+//   the curve reveals the page background, not the section above
+<section className="rounded-t-[60px] bg-navy py-24">
+
+// ✓ Correct — paired, same element, matching value
+<section className="relative z-20 -mt-[60px] overflow-hidden rounded-t-[60px] bg-navy py-24">
+
+// ✓ Correct — no overlap intended: neither class
+<section className="bg-navy py-24">
 ```
 
 ### SHOULD_DO (High)
