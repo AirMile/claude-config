@@ -15,6 +15,8 @@ Update `.project/session/devinfo.json`:
       "pageFile": "[page file path]",
       "components": ["[list of created component files]"],
       "verificationRounds": "[computed — see §4.4, do not hand-write]",
+      "refineRounds": "[from PHASE 3.5's REFINE ROUNDS record; absent when 3.5 did not run]",
+      "preserved": "[$PRESERVE paths from 0.6b, or omitted when empty]",
       "finalMatchQuality": "[from the last ROUND ASSESSMENT block in convert-verification-loop.md §3.2 — do not hand-write; if no assessment block exists, this field is absent, not guessed]",
       "framework": "[detected framework]",
       "theme": "[.project/project.json#theme or null]",
@@ -108,10 +110,11 @@ Build the `Worktree:` line (reused verbatim in the printed report in §4.5b belo
 - `$IS_WORKTREE = true` → `Worktree:    {WT_BRANCH} — UNMERGED (auto-finalized in §4.6)`
 - `$IS_WORKTREE = false` → `Worktree:    not in a worktree`
 
-Compute the verification-artifact count rather than recalling it:
+Compute the verification-artifact count rather than recalling it. The `-newer` test scopes the count to **this** run: `.project/tmp` survives between runs, so an unscoped `ls` counts leftovers from an earlier conversion in the same project and reports a round count that never happened. No baseline file (non-git project) → fall back to counting all matches, and say `rounds (unscoped count)` in the report.
 
 ```bash
-ROUNDS=$(ls .project/tmp/verify-round-*.png 2>/dev/null | wc -l)
+ROUNDS=$(find .project/tmp -maxdepth 1 -name 'verify-round-*.png' \
+  -newer .project/session/pre-convert-sha.txt 2>/dev/null | wc -l | tr -d ' ')
 ```
 
 `$ROUNDS = 0` and Playwright was available this run → the verification loop was skipped or ran degraded. Print `Verification: NOT RUN — convert-verification-loop.md was skipped` on the completion report (§4.5b) instead of a match-quality claim, and add it to 4.4b's Open-gaps bucket. `$ROUNDS > 0` → `verificationRounds = $ROUNDS`, `finalMatchQuality` = the `Match quality:` value from the last round's `ROUND ASSESSMENT` block (§3.2) — never a value recalled from memory without that block existing.
@@ -124,38 +127,58 @@ If the visual verification loop rendered a live page (Playwright was available a
 
 > **Todo**: if the verification loop ran live (not skipped), present its page URL `http://localhost:[port]/[page-path]` (as `$CONVERT_PREVIEW_URL`, an `http://` URL) via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser). Set `$PREVIEW_OPENED = true`. Verification skipped (no Playwright/dev-server) → skip, no error.
 
-### 4.4b Final Verification Round
+Also carry PHASE 3.5's `REFINE ROUNDS` record into the report fields: `Refine: [n] rounds` for the report block below, and the `Applied`/`Preserved`/`Parked` lines feed 4.4b's two buckets. No 3.5 record exists (no browser vehicle) → `Refine: not run — no browser vehicle`, never a guessed count.
 
-Whatever was shown so far (live preview, if any) is one-directional — it doesn't ask whether the result actually satisfies the user, or surface decisions made along the way that they might want to revisit. Close that gap here, **before** treating the run as done — and before §4.5b commits anything, so a "still needs work" answer never gets locked into a commit.
+### 4.4b Decisions and Open Gaps
+
+The user already accepted the result in PHASE 3.5 — this step is not a second
+approval gate for the visual outcome. It surfaces the things a screenshot cannot
+show: deliberate deviations the user may want to revisit, and anything the run
+could not finish or verify.
 
 Before writing anything below, if the run emitted any local asset path this session: `ls` each one. Any path that does not resolve is an Open gap, never a Decision.
 
 Report two labeled buckets — do not merge them:
 
-- **Decisions (max 3 lines)** — deliberate deviations you stand behind and would defend if asked, e.g. "kept X unlicensed asset out and substituted Y", "left section Z out of the page (no Figma match) but didn't delete the file". Omit if none.
+- **Decisions (max 3 lines)** — deliberate deviations you stand behind and would defend if asked, e.g. "kept X unlicensed asset out and substituted Y", "left section Z out of the page (no Figma match) but didn't delete the file". Every path in `$PRESERVE` (0.6b) belongs here with the reason it was preserved — that is a decision the user made and will want restated at the end. Omit the bucket only if there are genuinely none.
 - **Open gaps (no line cap, one line each)** — anything the run could not complete, could not verify, or worked around: a substituted/invented asset or value, a verification step that was skipped or ran degraded, a fetch that failed. State `Gaps: none` explicitly if there genuinely are none — an omitted header reads as "forgotten," not "checked."
 
 Each line in both buckets must cite a concrete referent — a file path, a `file:line`, or a value visible in `git diff` vs the baseline SHA. Do not describe the codebase from memory; grep the diff first. A line you cannot cite is a line you should not write.
 
+**Gaps bucket empty → do not ask anything.** Print both buckets and continue to
+4.5. PHASE 3.5 already collected the user's changes; a second "is dit goed?" here
+is the double confirmation `SKILL-PATTERNS.md` warns about.
+
+**Gaps bucket non-empty → one question, because a gap is a thing the run could
+not close on its own:**
+
 ```yaml
-header: "Verification"
-question: "Klopt dit resultaat, of zijn er nog open punten voordat dit als afgerond geldt?"
+header: "Open gaps"
+question: "{n} open item(s) from this run. Address them now, or record them?"
 options:
-  - label: "Ziet er goed uit (Aanbevolen — only when Gaps: none)", description: "Geen verdere wijzigingen nodig"
-  - label: "Er zijn open gaps (Aanbevolen when the Gaps bucket is non-empty)", description: "Pak de gerapporteerde open gaps meteen op"
-  - label: "Er zijn andere open punten", description: "Beschrijf wat nog moet worden aangepast — deze skill-run pakt het meteen op"
+  - label: "Address them now (Recommended)", description: "Fix the reported gaps, then finish the run"
+  - label: "Record as backlog items", description: "Commit what stands; the gaps become FEATURE cards via 4.3"
 multiSelect: false
 ```
 
-On "Er zijn open gaps" or "Er zijn andere open punten": treat the response (the Gaps bucket, or free-text) as new input, address it before continuing to 4.5. Loop this question once more if the follow-up also surfaces changes; don't loop indefinitely — after the second round, hand off remaining items as a plain list instead of re-asking.
+On "Address them now": address them, then continue to 4.5 — no re-ask loop here. A
+fix that turns out to need visual confirmation goes back to PHASE 3.5's loop,
+which is the phase that owns iteration; this step does not grow its own.
 
 ### 4.5 Dev-server cleanup
 
 First remove session-scoped working screenshots (convert artifacts only):
 
 ```bash
-rm -f .project/tmp/source-capture*.png .project/tmp/patch-before*.png .project/tmp/verify-round-*.png
+for p in 'source-capture*.png' 'patch-before*.png' 'verify-round-*.png' \
+         'extract-computed-styles.mjs' 'rendered-styles*.json'; do
+  find .project/tmp -maxdepth 1 -name "$p" -delete 2>/dev/null
+done
 ```
+
+This is the earliest point where that is safe. PHASE 3.5's refine loop
+re-captures and re-shows these on every round; deleting them while that loop can
+still reopen destroys the comparison evidence for the next round.
 
 Do NOT delete `.project/tmp/smoke-render-*.png` — those back the devinfo `buildScreenshot` handoff (24h staleness rule applies there).
 
@@ -213,6 +236,9 @@ Mode:         [1:1 copy | Inspiration | Sketch→high-fi]
 Framework:    [detected framework]
 Tasks:        [n phases tracked | "not tracked"]
 Verification: [N] rounds, [High|Medium|Low] | "NOT RUN"
+Responsive:   [PASS | N findings | interpretation (390px)]
+Refine:       [N] rounds with the user | "not run"
+Preserved:    [paths kept in their existing styling | "none"]
 Interactions: [N implemented, PASS | N mismatches]
 Code quality: [PASS | N violations fixed]
 Gaps:         [N linked | M created | K pending | "none"]

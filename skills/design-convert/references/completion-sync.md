@@ -128,15 +128,15 @@ Triggers when ALL of the following are true:
 - **Not** reached via Build's Step 2.5 "save spec only" off-ramp — that user explicitly chose "don't build", so re-prompting to build would contradict their choice. Suppress the offer in that case.
 
 ```yaml
-header: "Spec opgeslagen"
-question: "Spec voor '{$ARG_NAME}' is vastgelegd. Wil je nu bouwen?"
+header: "Spec saved"
+question: "The spec for '{$ARG_NAME}' is recorded. Build it now?"
 options:
-  - label: "Ja, Build starten (Recommended)", description: "Laad de Build-route met {$ARG_NAME} pre-geselecteerd — spec inline beschikbaar"
-  - label: "Later", description: "Item staat in backlog klaar om te bouwen"
+  - label: "Yes, start Build (Recommended)", description: "Load the Build route with {$ARG_NAME} pre-selected — spec available inline"
+  - label: "Later", description: "The item sits in the backlog, ready to build"
 multiSelect: false
 ```
 
-"Ja, Build starten" → continue with `route-build.md` flow using `$TARGET = $ARG_NAME`, `$TARGET_TYPE = $ARG_TYPE`, `$ARG_ENTITY` pre-set (skip entity selection in Build Step 1–3).
+"Yes, start Build" → continue with `route-build.md` flow using `$TARGET = $ARG_NAME`, `$TARGET_TYPE = $ARG_TYPE`, `$ARG_ENTITY` pre-set (skip entity selection in Build Step 1–3).
 "Later" → end skill.
 
 Before showing this offer, print the visual review link so the user can inspect the just-saved spec either way:

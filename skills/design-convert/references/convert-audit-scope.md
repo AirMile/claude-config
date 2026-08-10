@@ -1,12 +1,6 @@
 # Convert Audit Scope
 
-Loaded from `route-convert.md` PHASE 0.4 when the audit option is on the table — i.e. `$INPUT_SOURCE ∈ {figma-mcp, figma-rest, url}`. Governs whether the audit option is offered at all, whether it is the recommended default, and what an accepted audit reconciles.
-
-## Availability guard
-
-Only offer "Audit existing page vs design" when `$INPUT_SOURCE ∈ {figma-mcp, figma-rest, url}` — other sources have no per-section exact value to reconcile against; omit the option entirely for `file`/`chat-image`/`design-tool` sources (their path is patch).
-
-**Additionally, when 0.25 ran** (full-page figma-mcp/figma-rest source): omit the audit option entirely when `$TARGET_PAGE_CONFIRMED = "new"` — the user already confirmed this frame targets a page that doesn't exist yet, so there is nothing to audit against.
+Loaded from `route-convert.md` PHASE 0.4 **after** its inline availability guard has already established that the audit option is on the table. Governs whether the audit option is the recommended default, and what an accepted audit reconciles. The guard itself lives inline in the route file — it is three lines, and reading a whole reference to learn that the option does not apply is a read that pays for nothing.
 
 ## Recommended marker (auto-nudge)
 

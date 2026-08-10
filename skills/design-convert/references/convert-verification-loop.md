@@ -29,11 +29,16 @@ Record the resolved vehicle as `$BROWSER_VEHICLE`. Every later step in this file
 
 ### 3.1 Dev Server
 
-Detect or start dev server:
+Detect or start dev server — **check before starting, and report which one you got**:
 
-1. Check if dev server already running on expected port: `playwright-cli open http://localhost:[port]`
-2. If not running: start in background (`npm run dev` / `npx next dev` based on framework)
-3. Wait for server ready
+1. Probe the expected port first: `curl -s -o /dev/null -w "%{http_code}" http://localhost:[port]`
+2. `200` → reuse that server. Never start a second one on a port that already answers.
+3. Otherwise start in background (`npm run dev` / `npx next dev` based on framework) and wait for ready.
+4. Print one line either way — same reasoning as `route-convert.md § 0.5b`: a step whose successful path is silence leaves the user unable to tell whether a process was spawned in their project.
+
+```
+Dev server: [reused existing on :3000 | started (pid N) on :3000]
+```
 
 **Never run a production build while the verification dev server is running.** `next build` (and its equivalents) writes to the same output directory the dev server serves from, so the running server starts 404-ing its own chunks. The page still screenshots and still looks correct — but nothing hydrates, so every interaction check silently fails and the round is worthless. Symptom: 404s on `/_next/static/chunks/*` in the console with no visible change on screen.
 
@@ -53,17 +58,18 @@ VERIFICATION ROUND [N]/3
 
 **Sequence:**
 
+0. `playwright-cli open http://localhost:[port]/[page-path]` — required first on a cold daemon; `goto` alone returns `The browser 'default' is not open`. Already open → `goto` is enough.
 1. `playwright-cli goto http://localhost:[port]/[page-path]`
 2. Wait for hydration — `playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"`
 3. `playwright-cli screenshot --filename=.project/tmp/verify-round-[N].png` + `Read` → capture generated page
 4. `playwright-cli console error` → check for runtime JS errors (see `skills/shared/PLAYWRIGHT.md` → Console Error Inspection)
    → Filter output against PLAYWRIGHT.md → Default Ignore Patterns before reporting; only unfiltered lines become findings.
 
-**Runner verification (round 1 only — create or compare baseline):**
+**Runner verification (OPTIONAL, round 1) — skip on a first conversion.**
 
-Check runner available: `npx playwright --version 2>/dev/null`.
+A pixel/aria baseline compares the page against *its own* previous output, so on a page being converted for the first time it has nothing to compare to: it writes a snapshot and passes by construction. It earns its cost only on a re-conversion or an audit of a page that already has a baseline on disk. Skipping is the normal outcome — record it: `Runner: skipped (first conversion)` in the round assessment, so a reader can tell it was decided rather than forgotten.
 
-If available → generate on-the-fly spec (see `skills/shared/PLAYWRIGHT.md → Runner Mode`):
+Baseline already present, or the page was converted before → check runner available (`npx playwright --version 2>/dev/null`) and generate the on-the-fly spec (see `skills/shared/PLAYWRIGHT.md → Runner Mode`):
 
 ```typescript
 // .project/playwright-runs/convert-{slug}-r1.spec.ts  (temporary)
@@ -100,7 +106,7 @@ test("visual baseline dark — {slug}", async ({ browser }) => {
 });
 ```
 
-If `$ANALYSIS` Responsive shows multiple viewports: add a mobile variant (codegen emitted responsive prefixes — guard them):
+If `$ANALYSIS` Responsive shows multiple viewports: add a mobile variant to the baseline too (the responsive check itself is §3.2e and runs regardless):
 
 ```typescript
 test("visual baseline mobile — {slug}", async ({ browser }) => {
@@ -116,8 +122,6 @@ test("visual baseline mobile — {slug}", async ({ browser }) => {
   await ctx.close();
 });
 ```
-
-Vision-compare the mobile screenshot against the source's mobile frame only when the source actually has one; otherwise the mobile run is a regression + overflow guard only (no design to match it against).
 
 First run: `npx playwright test ... --update-snapshots` (create baseline in `.project/playwright-runs/__screenshots__/`).
 Subsequent rounds (2, 3): baseline already present → run without `--update-snapshots` → FAIL on pixel regression or aria structure change.
@@ -179,6 +183,7 @@ After the first visual verification, scan all generated files:
 - Missing labels: `<input>`/`<select>` without `<label>` or `aria-label` (R004)
 - Div-soup: `<div onClick>` without `role="button"` — use `<button>` (R001)
 - Implicit any: functions/parameters without type annotation (T002)
+- Unpaired section overlap: a section element carrying a negative block-start margin (`-mt-*`, `-mt-[Npx]`, `margin-block-start: -…`) with no top radius (`rounded-t-*`, `border-start-*-radius`) on that same element — or the reverse (H009). Grep every section file this run produced, not only the ones the current round edited: the defect never shows up as a broken-looking section, only as a wrong seam with its neighbour.
 
 **Inspiration mode only:**
 
@@ -198,13 +203,29 @@ Code quality:  [PASS | [N] violations]
 
 Thumbnail vision (3.2) cannot catch a wrong-but-plausible value — a card `background-color: #141414` where the design specifies `#00111e` looks fine in a thumbnail. When per-section ground truth exists, compare computed styles directly instead of relying on vision alone.
 
-**Runs when** `$SECTION_GROUND_TRUTH` is set (audit path, see `convert-audit.md`) OR `$EXTRACTED_STYLES` is set (copy mode with `figma-mcp` / `figma-rest` / `figma-make` / `url` ground truth — see `convert-mode-copy.md § Verification Thresholds`). Skip otherwise (inspiration/sketch, or copy mode that fell back to vision estimation). **Also skip entirely** when `$AUDIT_PROPERTY_SCOPE = "content"` (route-convert.md PHASE 0.4 follow-up) — the user explicitly asked to leave style values as-is, so re-verifying them here would flag "mismatches" the run was told not to touch.
+**Runs when** `$SECTION_GROUND_TRUTH` is set (audit path, see `convert-audit.md`) OR `$EXTRACTED_STYLES` is set (copy mode with `figma-mcp` / `figma-rest` / `figma-make` / `url` ground truth — see `convert-mode-copy.md § Verification Thresholds`). Skip otherwise (inspiration/sketch, or copy mode that fell back to vision estimation).
 
-1. On the rendered localhost page, per section (audit: `$AUDIT_SECTIONS[].domSelector`; copy: the element-type selectors from the fidelity table) extract computed styles with the `getComputedStyle` snippet from `convert-mode-copy.md § 1.0`, scoped to the section node. Use that snippet as written — its `seg()` walk and wrapper selectors are what this check depends on; a hand-rolled `getComputedStyle(el).color` reads the parent's inherited color and cannot see an accent segment at all.
-2. Compare against ground truth: `background-color`, `color`, `border-radius`, key spacing (`padding`/`gap`), `font-size`/`font-weight`.
+**Exclude every section rendered by a file in `$PRESERVE`** (route-convert.md 0.6b). Those components are deliberately off-design — the user chose their existing styling over the frame's — so their computed values will diverge by construction. Reporting that divergence as a mismatch invites a "fix" that overwrites the decision, the same failure the content-fill guard prevents on the audit path (`convert-audit.md` Step B). Name them once in the check's output as `— skipped (preserved)`, so their absence reads as deliberate rather than forgotten. **Also skip entirely** when `$AUDIT_PROPERTY_SCOPE = "content"` (route-convert.md PHASE 0.4 follow-up) — the user explicitly asked to leave style values as-is, so re-verifying them here would flag "mismatches" the run was told not to touch.
+
+1. Run the same extraction script against the rendered page. Copy it into the project first — ESM resolves `playwright` relative to the script file, so running it from `~/.claude/skills/` exits `ERR_MODULE_NOT_FOUND` (see `convert-mode-copy.md § 1.0`). Already copied earlier this run → reuse that copy.
+
+   ```bash
+   cp -n ~/.claude/skills/design-convert/scripts/extract-computed-styles.mjs .project/tmp/
+   node .project/tmp/extract-computed-styles.mjs \
+     "http://localhost:[port]/[page-path]" > .project/tmp/rendered-styles.json
+   ```
+
+   Audit path: add `--selector "$AUDIT_SECTIONS[].domSelector"` per section. Do not hand-roll a smaller version — a plain `getComputedStyle(el).color` reads the parent's inherited color and cannot see an accent segment at all, which is precisely the mismatch this check exists to catch.
+2. Compare against ground truth: `background-color`, `color`, `border-radius`, key spacing (`padding`/`gap`/`margin-top`), `font-size`/`font-weight`.
    - **Color:** normalize to rgb; exact match required, ≤2/255 per-channel rounding tolerance.
    - **Text color, per segment.** A ground-truth row with multiple `seg` entries compares **segment by segment, in document order**, and the segment _count_ is part of the comparison. A heading that rendered as one segment where the design has two is a MISMATCH — not a pass because the first color happened to match. This is the check that catches a two-tone title shipped monochrome; element-level color compare structurally cannot.
    - **Spacing / radius:** exact px, ≤1px tolerance. Compare each section against **its own** fidelity-table row, never against a page-wide value — comparing every section to one number either passes wrong spacing or floods the report with false mismatches.
+   - **Seam, per consecutive section pair.** Every check above measures one element's own box, so none of them can see a section that overlaps its neighbour. The script's `seams[]` array already carries the rendered distance between consecutive top-level sections; compare each entry against the `offset` field of the _second_ section's fidelity row (absent field = expected 0).
+
+   - **Line breaks, per heading.** Compare `round(boundingHeight / lineHeight)` on each rendered heading against its `Line breaks` row. A mismatch is a MISMATCH, not a cosmetic note: the usual cause is a `max-width` or `text-balance` the design does not have, and it changes the composition of the section. Report as `2 lines rendered, design has 1`.
+
+     A negative result means that section is pulled over the one above it. Non-zero where the design has no offset is a MISMATCH — this is the one check that looks at two sections at once, and the only one that catches a negative margin cropping the previous section's bottom padding while every padding value in the code is still correct. Fix per H009: the offset and the top radius are one declaration, so remove or add them together.
+
 3. Any divergence is an **exact-value MISMATCH** — add to the ROUND assessment (treat as higher-priority than vision findings, since it is a confirmed ground-truth divergence, not a judgment call) and fix in 3.3, within the existing 3-round cap:
 
 ```
@@ -213,9 +234,32 @@ Exact-value check:  [PASS | [N] mismatches]
   [- Hero h1 seg 2 "building": rendered #1A1A2E → #FF5733     file:line]
   [- Hero h1: 1 segment rendered, design has 2                file:line]
   [- Features padding: 96px → 64px (per-section value)        file:line]
+  [- Doelgroep→Onderscheid seam: -60px rendered, design has 0  file:line]
+  [- Proces h2: 2 lines rendered, design has 1                 file:line]
 ```
 
 This makes the loop non-self-referential for these properties: the compare target is the design's exact value, not the code's own baseline (contrast with the Playwright pixel baseline in 3.2, which compares against the code's own prior screenshot).
+
+### 3.2e Responsive check (every generation scope — no gate)
+
+**Runs on every round-1 verification**, regardless of how many viewports the source has. A Figma frame almost never ships a mobile variant, so gating this on "source has multiple viewports" meant it fired on virtually no run — while codegen emitted responsive prefixes on every one of them. The viewport nobody looked at is where wrapping and overflow defects live.
+
+1. Resize to 390×844, reload, wait for hydration.
+2. **Overflow assert**: `document.documentElement.scrollWidth === clientWidth`. Unequal → MISMATCH (name the overflowing element).
+3. Screenshot **and Read it** — full-page at 390 is unreadably tall, so capture viewport-sized slices while scrolling and read each one. A full-page thumbnail is not a mobile check; text legibility and mid-word heading breaks only show at slice scale.
+4. Source has a mobile frame → vision-compare against it. No mobile frame → this is an overflow, wrapping and legibility check, not a design comparison — say so explicitly in the round assessment rather than implying a match.
+5. Findings join the ROUND ASSESSMENT at 3.2c priority.
+
+Add to the assessment block:
+
+```
+Responsive:  [PASS | N findings] (390px)
+  [- hero h1 breaks mid-phrase: "zichtbaar / maken."  file:line]
+  [- kicker label lines collide (design leading only
+     valid on one line)                               file:line]
+```
+
+Desktop-only source → §3.4 records `Responsive: interpretation (no mobile source frame)`.
 
 ### 3.2d Interaction check (when `$INTERACTION_SPEC` is set)
 
@@ -257,6 +301,8 @@ VISUAL VERIFICATION COMPLETE
 
 Rounds:         [N]/3
 Final match:    [High | Medium | Low]
+Responsive:     [PASS | N findings | interpretation
+                (no mobile source frame)]
 Source:         [source image description]
 Generated:      [page URL]
 
@@ -266,6 +312,8 @@ Remaining:
 
 ════════════════════════════════════════════════════════════
 ```
+
+**The ROUND ASSESSMENT block from §3.2 is the artifact PHASE 4 reads.** `convert-completion.md § 4.4` takes `finalMatchQuality` from the last one printed and forbids recalling a value without it. Printing your own summary instead of the block therefore does not just change the formatting — it removes the only thing §4.4 is allowed to source that field from, and the honest result is `Verification: NOT RUN` on the completion report. Print the block.
 
 Close browser: `playwright-cli close` (or `tabs_close_mcp` if Claude-in-Chrome was used, e.g. a `figma-make` session)
 

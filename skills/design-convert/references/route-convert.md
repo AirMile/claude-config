@@ -23,17 +23,18 @@ Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/
 
 ---
 
-**Step 0b: Task tracking.** Skip for `$PATCH_MODE = true` (single fast-path, no phase-tracking value). Otherwise call `TaskCreate` now — before PHASE 0.1, and before the `EnterPlanMode` call at 0.2 — with these 5 items. Each description names the phase's mandatory Read: the task list is the one artefact that survives plan mode, so a phase whose reference file is not in its task is a phase that gets improvised.
+**Step 0b: Task tracking.** Skip for `$PATCH_MODE = true` (single fast-path, no phase-tracking value). Otherwise call `TaskCreate` now — before PHASE 0.1, and before the `EnterPlanMode` call at 0.2 — with these 6 items. Each description names the phase's mandatory Read: the task list is the one artefact that survives plan mode, so a phase whose reference file is not in its task is a phase that gets improvised.
 
-1. PHASE 0 — pre-flight, source capture, mode + scope (0.1-0.6)
+1. PHASE 0 — pre-flight, source capture, mode + scope + preserve list (0.1-0.6b)
 2. PHASE 1 — mode procedure; Read `references/convert-mode-{$MODE}.md` (audit path: `references/convert-audit.md`)
 3. PHASE 2 — codegen; Read `references/convert-generate-template.md`
 4. PHASE 3 — verification; Read `references/convert-verification-loop.md`
-5. PHASE 4 — completion; Read `references/convert-completion.md`
+5. PHASE 3.5 — refine with the user; Read `references/convert-refine-round.md`
+6. PHASE 4 — completion; Read `references/convert-completion.md`
 
 Task 2 carries an unresolved `{$MODE}` at seed time. The moment 0.3 sets `$MODE`, `TaskUpdate` that task's description to the concrete filename (`references/convert-mode-copy.md`). A task naming a path that does not exist on disk names no file at all — it gets ticked off without ever being opened.
 
-Transitions: PHASE 0 → `in_progress` at 0.1 and PHASE 0 → `completed` at the end of 0.6; PHASE 1 → `in_progress` / PHASE 1 → `completed` around the mode procedure; PHASE 2 → `in_progress` / PHASE 2 → `completed` around codegen; PHASE 3 → `in_progress` / PHASE 3 → `completed` around the verification loop; PHASE 4 → `in_progress` / PHASE 4 → `completed` around completion.
+Transitions: PHASE 0 → `in_progress` at 0.1 and PHASE 0 → `completed` at the end of 0.6b; PHASE 1 → `in_progress` / PHASE 1 → `completed` around the mode procedure; PHASE 2 → `in_progress` / PHASE 2 → `completed` around codegen; PHASE 3 → `in_progress` / PHASE 3 → `completed` around the verification loop; PHASE 3.5 → `in_progress` / PHASE 3.5 → `completed` around the refine round; PHASE 4 → `in_progress` / PHASE 4 → `completed` around completion.
 
 <!-- Rationale: three real runs. One skipped PHASE 4 entirely — the verification report reads as a natural stopping point and nothing forced the run back. One seeded a task list with phase names but no reference paths, and improvised PHASE 3 and PHASE 4 from memory. A third seeded the paths correctly but left `{$MODE}` unresolved in task 2, marked it completed without reading any mode file, and generated the whole page with no fidelity table. Naming the file inside the task only works when the name resolves. -->
 
@@ -75,7 +76,7 @@ multiSelect: false
 > **Todo**: MCP not connected, OR the URL contains `figma.com/make/` → Read `.claude/skills/design-convert/references/convert-source-fallbacks.md` and follow it (no-MCP ladder incl. the REST fallback, and the Figma Make procedure). MCP answers normally on a `/design/` URL → skip that file entirely and continue with the three steps below.
 
 1. The link must target a specific frame (`node-id` param in the URL). If it points to a whole file/canvas: ask the user for a frame link (right-click frame → _Copy link to selection_). If the frame name suggests a draft or duplicate (contains "V2", "test", "copy"/"kopie", "old", or the metadata shows sibling frames with near-identical names): confirm with the user that this frame is the final version before proceeding.
-2. `get_screenshot` on the node link → save to `.project/tmp/source-capture.png` → Read it. This becomes `$SOURCE_IMAGE`.
+2. `get_screenshot` on the node link → Read the returned image. This becomes `$SOURCE_IMAGE`. The MCP returns the image inline; there is no file to write, so `$SOURCE_IMAGE` lives in context only on this path — PHASE 3.5 shows the *rendered* screenshot rather than a source/output pair, and §4.5's `source-capture*.png` cleanup is a no-op here.
 3. `get_metadata` on the same link → store the sparse XML layer outline (frame names, positions, sizes) as `$SOURCE_STRUCTURE` — used in 0.2.
    If `get_metadata` overflows the token limit and the tool dumps the outline to a file (common on full-page frames): store the file path as `$SOURCE_STRUCTURE_FILE` and Read it when needed — do NOT substitute a single whole-frame `get_design_context` (that collapses every section's fills into one result and loses per-section ground truth). The audit path (see `references/convert-audit.md`) reads this dump to harvest per-section child node-ids and calls `get_design_context` per section.
 
@@ -104,8 +105,11 @@ Store the resolved source image reference as `$SOURCE_IMAGE` for the verificatio
 > Remaining phases (route-convert.md — execute after approval):
 >   PHASE 2.0b  $FORBID_LIST from project.json design.principles
 >   PHASE 2.2   Read references/convert-generate-template.md
+>               ^ $PRESERVE is a STOP boundary — see 2.1
 >   PHASE 3     Read references/convert-verification-loop.md
 >               ^ never improvise — see the PHASE 3 Todo
+>   PHASE 3.5   Read references/convert-refine-round.md
+>               ^ show the user a screenshot before PHASE 4 runs
 >   PHASE 4     Read references/convert-completion.md
 > ```
 >
@@ -122,38 +126,40 @@ SOURCE ANALYSIS
 Type:       [Full page | Section/component | Multiple components]
 Sections:   [enumerated list of visual sections top-to-bottom]
 Layout:     [single column | multi-column | grid | sidebar + content | etc.]
-Responsive: [single viewport | mobile + desktop | mobile + tablet + desktop | unknown]
-Sizing:     [per key element: fixed (explicit px/rem) | fill (flex:1 / width:100%) | hug (fit-content/auto)]
+Responsive: [1 viewport | mobile+desktop | mobile+tablet+desktop | unknown]
+Sizing:     [per key element: fixed (px/rem) | fill (flex:1 / 100%)
+            | hug (fit-content/auto)]
 Fidelity:   [low | medium | high]
-            low    = handdrawn/monochrome, placeholder boxes, no typography detail
-            medium = Figma/Canva draft, rough colors, partial components, not pixel-accurate
-            high   = polished mockup or live-site screenshot, pixel-accurate
+            low    = handdrawn/mono, placeholder boxes, no type detail
+            medium = Figma/Canva draft, rough colors, not pixel-accurate
+            high   = polished mockup or live screenshot, pixel-accurate
 Key colors: [dominant colors as hex, max 5]
 Dark mode:  [light only | dark only | both visible | unknown]
 Typography: [heading style, body style — approximate]
-            inline accent segments: [present ({which heading}, {which word}) | none]
-            ^ a heading where one word carries a different color. Note it here even
-              on vision-estimated sources — it is the only cue those sources get,
-              and it is the detail most often flattened into a single color.
-Components: [identifiable UI patterns: cards, nav, hero, form, table, etc.]
-Variants:   [component name → detected variant axes: size=sm/md/lg, state=default/hover/disabled, type=primary/ghost]
-            [or: no variants detectable]
+            accent segments: [present ({heading}, {word}) | none]
+            ^ a heading where one word carries a different color. Note it
+              even on vision-estimated sources — it is their only cue, and
+              the detail most often flattened into a single color.
+Components: [UI patterns: cards, nav, hero, form, table, etc.]
+Variants:   [component → axes: size=sm/md/lg, state=default/hover,
+            type=primary/ghost | no variants detectable]
 States:     [no separate state frames | loading | error | empty | success]
-            Detect only frames/artboards that explicitly show a non-default state. Store as $STATES.
-Properties: [design properties with direct CSS mapping — note only what is visibly present:
+            Only frames that explicitly show a non-default state. → $STATES
+Properties: [design properties with a direct CSS mapping — only what is
+             visibly present:
               fill → background-color/color: [value(s)]
               stroke → border: [value(s)]
               corner-radius → border-radius: [value(s)]
               shadow → box-shadow: [value(s)]
               opacity → opacity: [value(s)]
               rotation → transform: rotate([value(s)])]
-Motion intent: [detected motion/animation cues — note what is present:
-                transitions: [elements with visible transition/animation frames]
-                hover states: [if hover variants shown: element → effect]
-                animated: [elements labeled "animated" or with motion arrows/paths]
-                glass/blur: [backdrop-filter surfaces visible?]
-                spring/bounce: [bouncy or elastic motion implied?]
-                → store as $MOTION_INTENT (description string or "none detected")]
+Motion:     [detected motion cues — note what is present:
+             transitions: [elements with transition/animation frames]
+             hover states: [if hover variants shown: element → effect]
+             animated: [elements labeled "animated" or with motion paths]
+             glass/blur: [backdrop-filter surfaces visible?]
+             spring/bounce: [bouncy or elastic motion implied?]
+             → $MOTION_INTENT (description, or "none detected")]
 
 ════════════════════════════════════════════════════════════
 ```
@@ -249,7 +255,12 @@ options:
 multiSelect: false
 ```
 
-> **Todo**: `$INPUT_SOURCE ∈ {figma-mcp, figma-rest, url}` → Read `.claude/skills/design-convert/references/convert-audit-scope.md` BEFORE presenting the modal above: it decides whether the audit option is offered at all, whether it outranks "Full page" as the recommended default, and what an accepted audit reconciles. Other sources → omit the audit option from the modal and skip that file.
+**Availability guard for the audit option** (inline — it decides whether the file below is worth reading at all):
+
+- `$INPUT_SOURCE ∉ {figma-mcp, figma-rest, url}` → omit the audit option entirely. Other sources have no per-section exact value to reconcile against; their path is patch.
+- `$TARGET_PAGE_CONFIRMED = "new"` (0.25) → omit it too: the user already confirmed this frame targets a route that does not exist yet, so there is nothing to audit against.
+
+> **Todo**: audit option still on the table after the guard → Read `.claude/skills/design-convert/references/convert-audit-scope.md` BEFORE presenting the modal: it decides whether the audit option outranks "Full page" as the recommended default, and what an accepted audit reconciles. Guard omitted the option → skip that file.
 
 On "Update existing component": skip PHASE 0.5 and go to PHASE 0.4b.
 
@@ -286,6 +297,12 @@ If scope is a component: skip this step.
 ### 0.5b Worktree Setup
 
 Feature-name: use backlog-matched feature name from 0.5 (page scope), or component name derived from scope selection (component scope). Follow `shared/WORKTREE-CREATE.md → Auto-create worktree`. Skip if no clear feature-name is available or if already in a worktree (procedure detects).
+
+Print the outcome either way — a step whose only successful path is silence gets skipped without anyone noticing:
+
+```
+Worktree:   [created {branch} | already in one ({branch}) | skipped — {reason}]
+```
 
 ### 0.5c Reversibility Checkpoint & Commit Baseline
 
@@ -392,10 +409,69 @@ PROJECT CONTEXT
 Framework:  [detected]
 Theme:      [Available (project.json#theme) | Not available]
 Existing:   [N] components found
-  Reusable: [component names that match source sections]
+  Matched:  [component names that match source sections]
+  Shared:   [of those, the ones used on >1 page]
 
 ════════════════════════════════════════════════════════════
 ```
+
+For every matched component, also resolve **where else it is used** — grep the
+framework's page files for its import. That count is what makes 0.6b's question
+answerable; without it the user is asked to preserve components with no way to
+see which ones a restyle would leak into.
+
+### 0.6b Preserve List
+
+Runs when the scan above matched ≥1 existing component to a source section, or
+`$EXISTING_BUILD = true` (0.25). No matches → skip silently, set `$PRESERVE = []`.
+
+Every match is a fork the run must not take on its own. The design is one input;
+the codebase's own visual language is the other, and only the user knows which
+one wins per component. Shared layout (header/footer) and wired-up forms are the
+usual answer — rebuilding those from a page-level frame changes every other page
+that mounts them.
+
+**Classify each match before asking** — the answer space is not the same for all
+of them:
+
+- **Prop-driven and shared** (a hero, a CTA banner: the page passes title/image/
+  CTA in, the component owns only the styling). Content and styling are separate
+  axes here, so "keep it or rebuild it" is not a real question — the design's
+  *content* always lands via props, and the only decision is whether the shared
+  *styling* may move. Offer these the third option below as their default.
+- **Shared, not prop-driven** (its content lives inside it). Keep-as-is is the
+  recommended answer: a page-level frame is not a mandate to restyle other pages.
+- **Used only on this page.** Rebuild freely; nothing leaks.
+
+```yaml
+header: "Keep as-is"
+question: "These components overlap with the design. Per component: keep its current styling, rebuild it from the design, or change only this page's props?"
+options:
+  - label: "{Component} — props only (Recommended)", description: "{path} — prop-driven, also on {/x, /y}. This page gets the design's content; the shared styling stays untouched."
+  - label: "{Component} — keep as-is (Recommended)", description: "{path} — also on {/x, /y}; rebuilding changes those pages too"
+  - label: "{Component} — only here", description: "{path} — safe to rebuild from the design"
+multiSelect: true
+```
+
+Order shared components (used on >1 page) first — those are the ones where a
+page-level design decision leaks site-wide. More than 4 matches → name the
+remainder in one prose line above the modal; the built-in Other reaches them.
+
+A "props only" answer puts the file in `$PRESERVE` **and** records that this
+page's props are in scope: 2.1's STOP boundary still applies to its class names,
+colors, spacing and radii, while the page file may pass whatever the design
+specifies. A design detail reachable only by restyling the component (a badge
+rendered as a pill where the code renders a checklist) is reported in the
+Generation Summary, not silently applied.
+
+Store the selected paths as `$PRESERVE[]`. It is read again at 2.1, 2.2, the
+verification loop's 3.2c, and the PHASE 3.5 refine round.
+
+<!-- Rationale: a real run restyled three existing sections from the frame, one
+of which mounted on four pages, and had to be reverted after the user twice
+answered a modal with free text saying which components to leave alone. The
+reuse rule existed (see Restrictions) but had no decision point, no variable,
+and no gate — so nothing in the flow ever asked. -->
 
 ---
 
@@ -484,23 +560,44 @@ Output:
   Page file:    [path]
   Components:   [list with paths]
   Reusing:      [existing components to import]
+  Preserved:    [$PRESERVE paths — styling untouched] | none
 
 Strategy per section:
-  [Section 1] → [new component | reuse existing]
-  [Section 2] → [new component | reuse existing]
+  [Section 1] → [new component | reuse existing | PRESERVE]
+  [Section 2] → [new component | reuse existing | PRESERVE]
   ...
 
+{Per shared component NOT in $PRESERVE that this run will restyle:}
+Leaks:
+  ⚠ restyling [Component] also changes [/a, /b]
+
 {If $VARIANTS is non-empty:}
-Variant components:   (mechanism: React+Tailwind → cva; else native binding per shared/CODEGEN.md)
-  [ComponentName] → [cva | native] ([variant axes: type × size])
-  [ComponentName] → [cva | native] ([variant axes: state])
+Variant components:   (React+Tailwind → cva; else native, per CODEGEN.md)
+  [ComponentName] → [cva | native] ([axes: type × size])
+  [ComponentName] → [cva | native] ([axes: state])
 
 {If $STATES is non-empty:}
 State components:
-  [ComponentName] → loading: skeleton | error: ErrorBoundary | empty: EmptyState
+  [ComponentName] → loading: skeleton | error: boundary | empty: state
 
 ════════════════════════════════════════════════════════════
 ```
+
+**Existing components are imported, not regenerated.** A section whose visual
+pattern already has a component in the codebase gets that component imported and
+given props — it does not get a second, near-identical implementation written
+from the frame. This is stated here as well as in the Restrictions block at the
+end of the file, for the same reason PHASE 1 restates its two gates: a rule that
+lives 300 lines past the phase it governs is read after that phase has run. The
+`Strategy per section` line above is where the decision becomes visible; a
+`new component` on a section that matched the 0.6 scan needs a reason in the plan.
+
+**`$PRESERVE` is a hard boundary.** **STOP** before editing any file in
+`$PRESERVE`: those files may gain a prop, a call site, or a new import — their
+existing class names, colors, spacing, and radii stay exactly as they are. If the
+design cannot be reached without restyling a preserved file, say so in the
+Generation Summary and leave it alone. Reaching the design is not worth silently
+overriding the answer the user gave at 0.6b.
 
 **Template reuse check:** if an already-converted page implements the same section structure (e.g. sibling pages generated from one design template — sector/product variants), plan the run as **reuse + content variation**: import that page's section components and vary only content/assets. Note in the plan when the remaining siblings would be better served by `/design-content` than by full conversions. Never regenerate near-identical components side by side.
 
@@ -524,15 +621,18 @@ Files created:
 Existing components imported:
   ✓ [component path]              (reused)
 
+Preserved (styling untouched):
+  ✓ [component path]              (0.6b)
+
 {If cva used but not present in package.json:}
 Dependencies:
-  ⚠ cva not found in package.json — install: npm install class-variance-authority
+  ⚠ cva missing — npm install class-variance-authority
 
-Mode:       [1:1 copy | Inspiration with theme tokens | Sketch → high-fi (fidelity: {$FIDELITY})]
-Theme:      [Integrated from project.json#theme | Extracted from source]
+Mode:       [1:1 copy | Inspiration | Sketch→high-fi ({$FIDELITY})]
+Theme:      [From project.json#theme | Extracted from source]
 Dark mode:  [✓ dark: classes applied | — no dark mode in theme]
-Responsive: [✓ responsive prefixes applied | — single viewport (TODO comment placed)]
-States:     [✓ state components generated: [loading|error|empty] | — no state frames detected]
+Responsive: [✓ prefixes applied | — single viewport (TODO placed)]
+States:     [✓ generated: [loading|error|empty] | — none detected]
 
 ════════════════════════════════════════════════════════════
 ```
@@ -547,9 +647,24 @@ The loop is scope-aware (see its § Scope selection): generation scopes (copy/sk
 
 ---
 
-## PHASE 4: Completion + Finalize (REQUIRED after PHASE 3)
+## PHASE 3.5: Refine With the User (REQUIRED before PHASE 4)
 
-PHASE 4 is mandatory — the convert route is not complete without it. Load and execute `convert-completion.md` immediately after PHASE 3 ends, **before reporting completion to the user**.
+PHASE 3 checks the output against the **source**. It cannot check it against the
+user's intent — proportion, weight, which of two defensible readings of a frame
+is the right one. `Match quality: High` at 3.4 means the values are right, not
+that the page is done, and treating it as done is how a run reaches PHASE 4 with
+the bookkeeping finished and the page still wrong.
+
+Skip only when 3.0 resolved no browser vehicle (nothing was rendered, so there is
+nothing to show). Every other path runs it, including patch and audit.
+
+> **Todo**: Read '.claude/skills/design-convert/references/convert-refine-round.md'
+
+---
+
+## PHASE 4: Completion + Finalize (REQUIRED after PHASE 3.5)
+
+PHASE 4 is mandatory — the convert route is not complete without it. Load and execute `convert-completion.md` immediately after PHASE 3.5 ends, **before reporting completion to the user**. PHASE 4 writes the backlog, the handoff, and the commit: it runs after the user has accepted the result at 3.5, never before.
 
 Without PHASE 4:
 
@@ -576,8 +691,10 @@ This route must **NEVER**:
 - Skip the visual verification loop when 3.0 resolves any browser vehicle, or substitute an improvised check for the procedure in `convert-verification-loop.md`
 - Run a production build while the verification dev server is running — see `convert-verification-loop.md § 3.1`
 - Reference an asset path that does not exist on disk or as a captured live URL — see `convert-mode-copy.md § Codegen Rules`
-- Regenerate components that already exist in the codebase — import and reuse
-- Exceed 3 verification rounds
+- Regenerate components that already exist in the codebase — import and reuse (restated at 2.1, which is where the decision is made)
+- Restyle a file in `$PRESERVE` — the 0.6b answer outranks the design (STOP gate at 2.1)
+- Exceed 3 verification rounds in PHASE 3 — PHASE 3.5's refine rounds are uncapped and are not verification rounds
+- Reach PHASE 4 without PHASE 3.5 having shown the user a screenshot, whenever 3.0 resolved a browser vehicle
 
 This route must **ALWAYS**:
 
@@ -586,5 +703,6 @@ This route must **ALWAYS**:
 - Follow `shared/FRONTEND-RULES.md` (React/Next.js, HTML/CSS, A-series) and `shared/PATTERNS.md` (Component, Layout)
 - Detect and match the project's framework
 - Run the verification loop on whichever vehicle 3.0 resolves — only its rung 4 skips it
+- Send the result as an image in PHASE 3.5 before any PHASE 4 bookkeeping runs
 - Update DevInfo for downstream skill handoff
 - Show a completion report with next steps

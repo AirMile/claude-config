@@ -17,7 +17,7 @@ reads:
 writes: [devinfo.handoff, devinfo.tokenDrift, project.design, backlog.status]
 metadata:
   author: claude-config
-  version: 3.13.0
+  version: 3.18.0
   category: design
 ---
 
@@ -45,7 +45,9 @@ The router below classifies the argument and dispatches to the appropriate route
 - `../shared/PATTERNS.md` — Component patterns (Convert route)
 - `../shared/PLAYWRIGHT.md` — Playwright CLI, screenshot capture (Convert route)
 - `references/convert-source-fallbacks.md` — Figma MCP not connected (REST ladder) or a Figma Make URL (Convert route PHASE 0.1)
-- `references/convert-audit-scope.md` — Whether the audit option is offered/recommended, and what it reconciles (Convert route PHASE 0.4)
+- `references/convert-audit-scope.md` — Whether the audit option is recommended, and what it reconciles (Convert route PHASE 0.4)
+- `references/convert-refine-round.md` — Show the result and iterate with the user (Convert route PHASE 3.5)
+- `scripts/extract-computed-styles.mjs` — Ground-truth computed styles, section boxes and seams; copy into `.project/tmp/` and run the copy, never in place (Convert route PHASE 1 §1.0 and PHASE 3 §3.2c)
 - `./examples/` — Conversion examples (1:1, inspiration, Apple-style)
 - External: `vercel-labs/web-interface-guidelines` — setup-context for Convert route (see `references/route-convert.md § Step 0`)
 

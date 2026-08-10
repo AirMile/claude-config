@@ -15,8 +15,9 @@ Copy-mode counterpart to token mapping: capture exact source values instead of m
 **For `$INPUT_SOURCE = "figma-mcp"`:** extract ground truth via the Figma MCP instead of browser eval:
 
 1. `get_design_context` on the node link → code representation with exact values (colors, spacing, typography, radii, shadows). Parse into `$EXTRACTED_STYLES`.
-   - **Mixed-fill text nodes.** A heading whose characters carry different fills (an accent word in a brand color) arrives as multiple styled runs, not as one color. Record every run as its own segment `{text, fill, weight}` under that node. Collapsing to the dominant fill is the single most common way a two-tone title ships monochrome — the value is already in the response, it gets lost on the way into the table.
+   - **Mixed-fill text nodes.** A heading whose characters carry different fills (an accent word in a brand color) arrives as multiple styled runs, not as one color. Record every run as its own segment `{text, fill, weight, family}` under that node. Record `family` even when it looks like a substitution — the Codegen Rules below decide what to do with it, and a family dropped here cannot be questioned later. Collapsing to the dominant fill is the single most common way a two-tone title ships monochrome — the value is already in the response, it gets lost on the way into the table.
    - **Layout spacing.** Record `paddingTop/Bottom/Left/Right` and `itemSpacing` **per section node**, never one page-wide value. Section padding and grid gaps differ per section in almost every real design.
+   - **Section offset.** A section frame that starts _above_ the bottom of the frame before it is deliberately overlapping — record that distance as a negative block-start offset for that section, together with the top radius that makes the overlap visible. Sections that simply stack record nothing. This is the only value in the extraction describing a relationship between two sections rather than one section's own box, which is exactly why a per-section padding read cannot represent it.
 2. `get_variable_defs` on the node link → the variables/styles backing those values (token names + values). Merge into `$EXTRACTED_STYLES` — keep the variable names, they inform naming in codegen.
 3. Assets — three-outcome branch, do not assume:
    - `download_assets` present and returns files → save under `public/` (or the framework's static dir), record paths as `$EXTRACTED_ASSETS`.
@@ -29,24 +30,29 @@ Copy-mode counterpart to token mapping: capture exact source values instead of m
 
 MCP values are labeled `computed` in the fidelity table. Skip the browser-eval sequence below.
 
-**For `$INPUT_SOURCE = "url"` or `"figma-make"`:** extract computed styles instead of estimating from pixels. The browser session from PHASE 0.1 is closed — re-open the URL. For `figma-make` this must run via Claude-in-Chrome (the preview needs the user's logged-in session — see route-convert 0.1) — its `navigate` + `javascript_tool` per `shared/CLAUDE-IN-CHROME.md`. For a plain `url` source (no session dependency), use the `playwright-cli` sequence below by default (scriptable — see `shared/BROWSER-VEHICLES.md`):
+**For `$INPUT_SOURCE = "url"` or `"figma-make"`:** extract computed styles instead of estimating from pixels. **Copy the script into the project first, then run the copy** — ESM resolves `playwright` relative to the script file, and `~/.claude/skills/` has no `node_modules`, so running it in place always exits `ERR_MODULE_NOT_FOUND`:
 
-```
-playwright-cli open [url]
-playwright-cli run-code "async page => { await page.waitForTimeout(3000); }"
-playwright-cli eval "() => { const seg = el => { const out = []; for (const n of el.childNodes) { const t = (n.textContent||'').trim(); if (!t) continue; const host = n.nodeType === 3 ? el : n; const s = getComputedStyle(host); out.push({ text: t.slice(0,40), color: s.color, fontWeight: s.fontWeight }); } return out.length > 1 ? out : undefined; }; const pick = el => { const s = getComputedStyle(el); return { text: (el.textContent||'').trim().slice(0,80), segments: seg(el), color: s.color, background: s.backgroundColor, fontFamily: s.fontFamily, fontSize: s.fontSize, fontWeight: s.fontWeight, lineHeight: s.lineHeight, padding: s.padding, margin: s.margin, gap: s.gap, borderRadius: s.borderRadius, border: s.border, boxShadow: s.boxShadow }; }; const sels = ['h1','h2','h3','h4','p','a','button','nav','header','footer','section','input','section > div','[class*=container]','[class*=grid]','[class*=flex]']; return Object.fromEntries(sels.map(sel => [sel, Array.from(document.querySelectorAll(sel)).slice(0,8).map(pick)])); }"
-playwright-cli eval "() => ({ images: Array.from(document.images).slice(0,20).map(i => ({ src: i.currentSrc, alt: i.alt, w: i.naturalWidth, h: i.naturalHeight })), svgCount: document.querySelectorAll('svg').length, fontFamilies: Array.from(new Set(Array.from(document.querySelectorAll('body *')).slice(0,300).map(e => getComputedStyle(e).fontFamily))) })"
-playwright-cli close
+```bash
+mkdir -p .project/tmp
+cp ~/.claude/skills/design-convert/scripts/extract-computed-styles.mjs .project/tmp/
+node .project/tmp/extract-computed-styles.mjs "[url]" > .project/tmp/extracted-styles.json
 ```
 
-Store the results as `$EXTRACTED_STYLES` (computed values per element type) and `$EXTRACTED_ASSETS` (image URLs, SVG count, font families).
+`ERR_MODULE_NOT_FOUND` means the copy step was skipped, not that the page failed. `convert-completion.md § 4.5` deletes the copy at the end of the run.
 
-Two parts of that snippet are load-bearing — do not simplify them away:
+Store the parsed result as `$EXTRACTED_STYLES` (`elements`, `sections`, `seams`) and `$EXTRACTED_ASSETS` (`assets`). Exit 1 means the page never loaded — that is a blocking gap, not a reason to fall back to vision estimation on a source that has a DOM.
 
-- **`seg(el)`** walks the inline children, so a heading with an accent `<span>` returns one entry per color segment instead of the parent's inherited color. `getComputedStyle` on the parent alone reports one color for a two-tone title.
-- **The wrapper selectors** (`section > div`, `[class*=container|grid|flex]`) are where section padding and grid gaps actually live in a Tailwind page — `h1`/`p`/`section` carry almost none of it. `slice(0,8)` (not 3) so sections past the top of the page get measured too.
+`figma-make` is the one exception: its preview needs the user's logged-in session, so the script cannot reach it. Drive Claude-in-Chrome instead (`navigate` + `javascript_tool` per `shared/CLAUDE-IN-CHROME.md`) and run the script's `page.evaluate` body as the injected snippet — same contract, same output shape.
 
-This same snippet is reused by `convert-verification-loop.md § 3.2c` against the rendered page, so it governs verification for **every** input source — including a pure Figma run that never executes the block above.
+What the script measures, and why each part is load-bearing (do not hand-roll a smaller version):
+
+- **`seg(el)`** walks inline children, so a heading with an accent `<span>` returns one entry per color segment. `getComputedStyle` on the parent alone reports a single color for a two-tone title.
+- **Wrapper selectors** (`section > div`, `[class*=container|grid|flex]`) are where section padding and grid gaps actually live in a Tailwind page — `h1`/`p`/`section` carry almost none of it. It takes 8 per selector, not 3, so sections past the top of the page get measured.
+- **`sections[]`** gives one padding/margin/radius row per section, so each section is compared against its own fidelity row instead of a page-wide average.
+- **`seams[]`** is the only measurement that looks at two sections at once — it is what catches a negative margin cropping the previous section's bottom padding while every padding value in the code is still correct.
+- **The scroll pass** fires scroll-triggered entrances before measuring; without it every element below the fold reports its pre-animation state.
+
+The same script is what `convert-verification-loop.md § 3.2c` runs against the rendered page, so it governs verification for **every** input source — including a pure Figma run that never executes the command above.
 
 **Other input sources — fall back to vision estimation:**
 
@@ -76,9 +82,9 @@ Typography:
   Body                 "Inter", sans-serif · 400 · 16px/1.6   computed
 
 Spacing (per section):
-  Hero                 padding 96/24px · gap 32px             computed
-  Features             padding 64/24px · gap 24px             computed
-  Footer               padding 48/24px · gap 16px             computed
+  Hero                 padding 96/24px · gap 32px                 computed
+  Features             padding 64/24px · gap 24px · offset -60px  computed
+  Footer               padding 48/24px · gap 16px                 computed
 
 Radii & shadows:
   Cards                radius 12px · shadow 0 4px 12px rgba(0,0,0,.08)   computed
@@ -87,6 +93,11 @@ Exact text (per section):
   Hero h1              "Pricing that scales with you"
   Hero CTA             "Start free trial"
   ...
+
+Line breaks (per heading):
+  Hero h1              3 lines · "Pricing that" / "scales" /
+                       "with you"                          computed
+  Features h2          1 line                              computed
 
 Assets:
   /img/hero-dashboard.png   (1280×720)
@@ -101,6 +112,8 @@ Assets:
 
 - **One row per color segment, not per element type.** A text node whose fill is not uniform (an accent word, a gradient-split heading) gets one row per segment, labeled `{element} · seg {n}` with its literal text. Collapsing to the dominant color is forbidden — that is exactly how a two-tone title ships monochrome.
 - **One spacing row per section, never a page-wide row.** `Section padding: 64px` for a whole page is not ground truth, it is an average. List each section with its own padding and gap.
+- **One line-break row per heading.** Where a heading wraps is a design decision, not a rendering accident — `max-width`, `text-balance` and font choice all move it, and a heading that ships on two lines where the design has one reads as a different design. The value is already in hand at §1.0: the text node carries both its height and its line-height, so `round(height / lineHeight)` is the line count, and the frame render shows which word starts each line. Without this row both are captured and then discarded.
+- **An `offset` field belongs to the section that carries it, never to a sibling.** Only sections the design actually overlaps get one; the rest omit the field entirely. Copying an offset across rows because neighbouring sections "look the same" produces a negative margin on a section that was never meant to overlap — which crops the previous section's bottom padding while every padding value in the table stays correct, so nothing downstream reads as wrong.
 
 Sections with genuinely identical values may share one row (`Features, Pricing  padding 64/24px`) — merging equal measurements is fine, guessing one value for all of them is not.
 
@@ -126,12 +139,47 @@ If "Adjust": ask which values to change, update, re-confirm.
 ## Codegen Rules (applied in PHASE 2.2)
 
 - Use exact arbitrary Tailwind values from the fidelity table: `bg-[#FF5733]`, `text-[17px]`, `rounded-[12px]` — when no standard class matches exactly. Visual fidelity beats class purity.
+- **"No standard class matches" is a lookup, not an impression.** Before emitting any arbitrary value, resolve it against the project's own token list (`project.json#theme`, or the `@theme`/`:root` block in the stylesheet — read it once at 2.2 and keep it). Three outcomes, and only the last one produces an arbitrary value:
+  - **Exact match** → emit the token class. `rounded-[16px]` where `--radius-2xl: 1rem` exists is a token written the long way; it renders identically and silently opts the page out of every future token change.
+  - **Composite value whose *tint* is tokenised but whose geometry is not** (shadows are the usual case: the design's blur/offset is its own, the colour is the brand's) → keep the geometry from the design, take the colour from the token. A shadow carrying the design tool's near-miss purple is the same defect as a heading carrying it, and it hides better.
+  - **No equivalent** → arbitrary value, as above.
+
+  This check is not optional under "the user approved mapping to project tokens" at 0.6 — that approval is what *requires* it. It applies to every property with a token namespace: colour, radius, shadow, font, spacing, z-index. Spacing legitimately lands on "no equivalent" most often (a 107px section padding is not on anyone's scale); radii and shadow tints almost never do.
+
+  <!-- Rationale: one run emitted rounded-[16px]/[20px]/[24px] against exact
+  --radius-2xl/-card-sm/-card-md tokens, and shadows tinted rgb(45 40 112) — the
+  Figma purple the same run had been told to map to rgb(43 33 113). Colour was
+  checked because the mapping was visible in the fidelity table; radius and shadow
+  were not, because nothing asked. -->
+
 - Use exact text content from the fidelity table — never paraphrase, never substitute placeholder copy.
 - **Multi-segment rows emit multi-segment markup.** A heading with two `seg` rows becomes one element wrapping a `<span>` per segment, each carrying its own color class: `<h1 className="text-[#1A1A2E]">Protect your <span className="text-[#FF5733]">building</span></h1>`. Never pick one color for the whole heading — the row count in the table is the span count in the output.
+- **Separate rhythm from composition before deciding whether a spacing value is exact-worthy.** Not every number in the table deserves the same fidelity:
+  - **Rhythm** — section padding, grid gaps between repeated cards. The design's spread here (80 / 84 / 91 / 107px across four sections) is almost never a designed distinction; it is where the frames happened to land. The project usually already owns this: a `Section`/layout component with padding variants, a standard gap scale. Adopt it, and say so in the Generation Summary with the per-section delta so the user can object.
+  - **Composition** — a negative section offset and its top radius, an image offset that stacks two columns, a fixed card or media height, an aspect ratio. These carry layout meaning; rounding them changes proportion, not air. Emit exactly.
+  - Where the two conflict, rhythm loses to whatever the codebase already does and composition wins over it.
+
+  A design that genuinely varies its rhythm deliberately (a dark section given more air than its neighbours) is the exception — flag it and ask rather than flattening it silently.
+
 - **Spacing comes from that section's own row**, not from the first section's. A page whose sections all render `py-16` because one value was read off the top of the table is the spacing defect this table shape exists to prevent.
+- **An `offset` row emits the negative margin _and_ the top radius together** (`-mt-[60px] rounded-t-[60px]` on the same element, per `shared/FRONTEND-RULES.md` H009). A row without an `offset` field emits neither — no negative margin, no top radius. These two classes are one declaration: the margin slides the section over its predecessor, the radius is what makes that overlap read as a curve instead of as 60px of the previous section's padding being cut off.
 - Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently. Exception `figma-mcp` **when `$EXTRACTED_ASSETS` is non-empty**: reference the local paths from the branch above, no TODO needed. `$EXTRACTED_ASSETS` empty or unset → the general rule applies regardless of source type.
 - Never invent an asset path. The same rule that forbids paraphrasing placeholder copy (above) applies to assets: a `src`/`href` must resolve to a file written this run or carry the `{/* TODO: localize asset */}` comment with a live URL — never a plausible-looking filename that doesn't exist on disk.
 - Use the exact `font-family` with its fallback stack. If a Google Font is recognized: note the required import in the Generation Summary.
+- **A font name on an accent segment is a claim to verify, not a value to copy.** (The token lookup above catches values the project has *named*; this catches roles the project has already *solved* — a pattern, not a token.) Design tools substitute freely: a run styled "Times New Roman Bold Italic" or "Playfair Display Medium Italic" inside an otherwise-branded heading is usually the tool's stand-in for *emphasis*, not a second typeface the brand owns. Before emitting any font class on a segment, grep the codebase for the same visual role — an accent word in a heading — and read what it already does:
+
+  ```bash
+  grep -rn "text-accent\|text-\[#" src/components --include=*.tsx | grep -i "italic\|<span"
+  ```
+
+  An existing implementation of that pattern outranks the literal font mapping, even when the user approved "map Figma fonts to project fonts" at 0.6 — that answer authorises reusing the project's fonts, not introducing a second serif the site never used. Emit a different family from the surrounding heading **only** when the codebase already does so somewhere, or when the user names that font explicitly. When the design's font genuinely has no counterpart, say so in the Generation Summary instead of picking the nearest-looking one silently.
+
+  <!-- Rationale: a real run mapped Playfair Display Italic → the project's second
+  serif on six headings. The codebase's own accent pattern was `text-accent-primary
+  italic` with no font override — inheriting the heading font — and the user had to
+  point at an existing section to show what right looked like. The colour rules
+  already force a per-segment check; fonts had none. -->
+
 - Figma sources (`figma-mcp`/`figma-rest`): Figma-emitted code is a **value source, not a code source**. Never copy absolute pixel offsets (`left-[92.33px]`) — reconstruct element groups with flex/grid + gap (visual result identical, code responsive). Replace data-URI SVG gradients with equivalent CSS gradients. Repeated visual patterns (buttons, cards, badges) become one shared component even when the file has no Figma components.
 - `$INTERACTION_SPEC` rows with `source: spec-text` or `observed` are ground truth — implement with exact values: arbitrary easing (`ease-[cubic-bezier(0.25,0.46,0.45,0.94)]`), exact scale/translate/duration values. Implementation patterns (sibling-dimming, scroll entrances, `prefers-reduced-motion` wrapper): `convert-generate-template.md § Motion`.
 - Gold standard: `../examples/PricingPage-1to1.tsx`.
