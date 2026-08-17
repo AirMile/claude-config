@@ -100,6 +100,14 @@ Interactions:
 
 ### 1.2 Confirm Mapping
 
+**There is exactly one gate here.** Branch on plan-mode state — asking both is the double confirmation `SKILL-PATTERNS.md` warns about:
+
+**Plan mode active (the normal path — entered at route-convert 0.1)** → `ExitPlanMode` **is** this confirmation. Write SOURCE ANALYSIS + INSPIRATION BRIEF + TOKEN MAPPING into the plan file, then call it. Its rejection path is the "Adjust" branch: the correction arrives as prose, apply it, update the plan file, call `ExitPlanMode` again. Do not also ask the modal below.
+
+> **Todo**: after approval, all remaining phases (codegen, verification, completion) run in Sonnet. Do NOT re-enter plan mode later in this run.
+
+**Plan mode not active** (patch fast-path already exited, or the user started the skill outside it — see `shared/PLAN-MODE.md § Exit`) → there is no approval gate yet, so ask:
+
 ```yaml
 header: "Token Mapping"
 question: "Is this mapping from source design to your project tokens correct?"
@@ -110,8 +118,6 @@ multiSelect: false
 ```
 
 If "Adjust": ask which mappings to change, update, re-confirm.
-
-> **Todo**: Use the `ExitPlanMode` tool once the mapping is confirmed — present SOURCE ANALYSIS + INSPIRATION BRIEF + TOKEN MAPPING as the plan output. After user approval, all remaining phases (codegen, verification, completion) run in Sonnet. Do NOT re-enter plan mode later in this run. Skip this exit if plan mode is no longer active (patch path already exited) or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
 
 ## Codegen Rules (applied in PHASE 2.2)
 

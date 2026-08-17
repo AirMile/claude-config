@@ -62,7 +62,12 @@ Only when page scope AND this run created a **new** page (`$TARGET_PAGE_CONFIRME
 
 1. **Locate the primary nav component**: glob `components/**/nav*.{tsx,jsx}` and check `components/site/navbar.tsx` specifically (common convention). Pick the file that defines a links array of `{ label, href }`-shaped entries (e.g. a `NAV_LINKS`/`links` constant).
    - No match found → skip silently, print one line: `Nav-wiring: no navigation component found — link the new page manually.`
-2. **Already linked?** If the array already contains an entry whose `href` matches the new route → skip (nothing to do).
+2. **Already linked, or deliberately not?** Skip silently — no modal — when either holds:
+   - the array contains an entry whose `href` matches the new route → nothing to do; or
+   - a **sibling route under the same parent segment** (`/{parent}/*`) exists on disk and is likewise absent from the array. That is an established convention, not an oversight: the project reaches those pages from a hub page instead of the nav, and asking makes the user re-decide the same thing once per sibling. Print `Nav-wiring: skipped — sibling /{parent}/{sibling} is also not in the nav (existing convention).`
+
+   The question in step 3 only earns its round-trip when the new route has no precedent to follow.
+
 3. Otherwise, ask:
    ```yaml
    header: "Navigation"
@@ -89,6 +94,10 @@ Persist what fits the existing design-spec schema — nothing else (`shared/DASH
 Trigger C — scan all generated/updated component files for stub handlers. Follow [Discovery — Gap-Discovery](../../shared/SKILL-PATTERNS.md#gap-discovery). **Source:** `"/design-convert"` · **Direction:** `"frontend→dev"` · **Type:** `FEATURE`. If no gaps: skip this step.
 
 ### 4.4 Completion Report — prepare fields
+
+**STOP** when no `REFINE ROUNDS` block (`convert-refine-round.md` § 3.5d) was printed this run and 3.0 resolved a browser vehicle. PHASE 3.5 did not execute — the user has not seen the result. Go back and run it; do not source `refineRounds` from the conversation.
+
+Same shape as 2.0a's PHASE 1 gate: the phase's artifact is what its consumer is allowed to read, so its absence is detectable here rather than silently papered over.
 
 Detect worktree state first:
 
@@ -117,7 +126,17 @@ ROUNDS=$(find .project/tmp -maxdepth 1 -name 'verify-round-*.png' \
   -newer .project/session/pre-convert-sha.txt 2>/dev/null | wc -l | tr -d ' ')
 ```
 
+The glob counts **PHASE 3 rounds only**. PHASE 3.5's re-captures are a different phase with its own uncapped counter (`Refine:` on the report), so name them anything but `verify-round-*` — a refine capture written under that name inflates `verificationRounds` past the 3-round cap the loop actually honoured.
+
 `$ROUNDS = 0` and Playwright was available this run → the verification loop was skipped or ran degraded. Print `Verification: NOT RUN — convert-verification-loop.md was skipped` on the completion report (§4.5b) instead of a match-quality claim, and add it to 4.4b's Open-gaps bucket. `$ROUNDS > 0` → `verificationRounds = $ROUNDS`, `finalMatchQuality` = the `Match quality:` value from the last round's `ROUND ASSESSMENT` block (§3.2) — never a value recalled from memory without that block existing.
+
+`$EXTRACTED_STYLES` was set this run (Figma/URL ground truth) → check that 3.2c ran the script rather than a hand-rolled substitute:
+
+```bash
+test -f .project/tmp/rendered-styles.json && echo ran || echo skipped
+```
+
+`skipped` → print `Exact-value check: NOT RUN — 3.2c hand-rolled or skipped` on the completion report and add it to 4.4b's Open-gaps bucket. That file is the only evidence spacing, radii and seams were compared at all; a per-segment colour eval passing is a different, smaller check (`convert-verification-loop.md § 3.2c` forbids the substitution outright, which is exactly why its absence needs a trace).
 
 Check whether this run's `TaskCreate` list (Step 0b) exists and every phase reached `completed`: no list, or an unfinished phase → print `Tasks: not tracked this run` on the completion report (§4.5b) instead of omitting the line silently.
 
@@ -127,7 +146,9 @@ If the visual verification loop rendered a live page (Playwright was available a
 
 > **Todo**: if the verification loop ran live (not skipped), present its page URL `http://localhost:[port]/[page-path]` (as `$CONVERT_PREVIEW_URL`, an `http://` URL) via `.claude/skills/shared/HTML-PRESENT.md` (auto-opens in the browser). Set `$PREVIEW_OPENED = true`. Verification skipped (no Playwright/dev-server) → skip, no error.
 
-Also carry PHASE 3.5's `REFINE ROUNDS` record into the report fields: `Refine: [n] rounds` for the report block below, and the `Applied`/`Preserved`/`Parked` lines feed 4.4b's two buckets. No 3.5 record exists (no browser vehicle) → `Refine: not run — no browser vehicle`, never a guessed count.
+Also carry PHASE 3.5's `REFINE ROUNDS` record into the report fields: `Refine: [n] rounds` for the report block below, and the `Applied`/`Preserved`/`Parked` lines feed 4.4b's two buckets.
+
+No `REFINE ROUNDS` block was printed this run and 3.0 resolved no browser vehicle → `Refine: not run — no browser vehicle` (the STOP gate above already rules out the other case: a vehicle resolved but PHASE 3.5 didn't run).
 
 ### 4.4b Decisions and Open Gaps
 
@@ -217,9 +238,21 @@ Follow `shared/SCOPED-COMMIT.md`. Convert's deltas:
   - `$SCOPE ∈ {page, component, build}` → `feat({target}): {subject}`
   - `$SCOPE = audit` → `fix({target}): {subject}` (an audit patches existing markup)
   - `{subject}`: one short sentence (≤65 chars) describing what was built/changed — not counts, not mode/scope labels.
+- **Staging + commit** — **never a bare `git add`** (`SCOPED-COMMIT.md § 2`). Land via the atomic script, which builds the commit in an isolated index and lands it with a compare-and-swap:
+
   ```bash
-  git commit -m "{type}({target}): {subject}"
+  mkdir -p .project/tmp
+  printf '%s\n' "{type}({target}): {subject}" > .project/tmp/commit-msg.txt
+  bash ~/.claude/scripts/scoped-commit.sh \
+    --message .project/tmp/commit-msg.txt --files "<comma-separated paths>"
   ```
+
+  Build `--files` from the baseline diff plus new files, then **subtract two things before calling** — one bad path makes the whole call exit non-zero, so filter up front rather than retrying:
+  - anything under `.project/` (local-only, per the bullet above);
+  - gitignored paths — `git check-ignore <paths>` and drop every hit. Skill output is not automatically committable: `scripts/` is gitignored in some projects, so a generated asset-prep script legitimately stays out of the commit.
+
+  **Deleted files belong in `--files` like any other path** — the script stages them as deletions. A run that generalises a section into a shared component retires the originals; leaving those paths out lands a tree that still contains files the run removed, and the next run sees two implementations of the same section.
+
 - **Guard**: skip the commit (no error) if the diff vs. baseline is empty and nothing is staged — set `$COMMIT_RESULT = "no changes to commit"` for the report below.
 - **Worktree**: if `$IS_WORKTREE = true`, this commits inside the worktree branch, same as any other skill's scoped commit — §4.6 immediately below merges that now-committed branch. This is what closes the gap `shared/FINALIZE.md`'s own Uncommitted-Check would otherwise halt on.
 - Clean up the baseline file after a successful commit: `rm -f .project/session/pre-convert-sha.txt`.
@@ -236,8 +269,9 @@ Mode:         [1:1 copy | Inspiration | Sketch→high-fi]
 Framework:    [detected framework]
 Tasks:        [n phases tracked | "not tracked"]
 Verification: [N] rounds, [High|Medium|Low] | "NOT RUN"
-Responsive:   [PASS | N findings | interpretation (390px)]
-Refine:       [N] rounds with the user | "not run"
+Exact-value:  [PASS | N mismatches fixed | "NOT RUN"]
+Responsive:   mobile/tablet/desktop [PASS | N findings | interpretation]
+Refine:       [N] rounds with the user | "not run" | "NOT RUN"
 Preserved:    [paths kept in their existing styling | "none"]
 Interactions: [N implemented, PASS | N mismatches]
 Code quality: [PASS | N violations fixed]

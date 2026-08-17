@@ -95,6 +95,21 @@ Parked:     [items handed to 4.3, or none]
 `Rounds: 1` (accepted immediately) is a normal, good outcome — report it, don't
 treat it as a phase that was skipped.
 
+**This block is the artifact PHASE 4 reads.** `convert-completion.md § 4.4`
+takes `refineRounds` and 4.4b's Applied/Preserved/Parked buckets from it, and is
+forbidden to source them anywhere else. A run that reaches PHASE 4 without this
+block having been printed did not execute this phase — the honest report line is
+`Refine: NOT RUN — convert-refine-round.md was skipped`, not a count recalled
+from the conversation. Print the block.
+
+<!-- Rationale: a real run refined six times across four user messages, marked
+its PHASE 3.5 task completed, and never opened this file. The path was named in
+three places (route-convert.md task seed, plan block, Todo marker) and none of
+them forced the Read. What was missing is a printed artifact whose absence is
+detectable downstream — §3.2's ROUND ASSESSMENT has exactly that anchoring and
+survived the same run; this phase had none, and shipped refineRounds: 5 in
+devinfo next to "Refine: 6 rounds" in the report. -->
+
 **Do not clean up `.project/tmp/verify-round-*.png` here.** That happens in
 `convert-completion.md` §4.5, after this loop is closed — deleting them mid-loop
 destroys the comparison evidence for the next round.

@@ -17,7 +17,7 @@ reads:
 writes: [devinfo.handoff, devinfo.tokenDrift, project.design, backlog.status]
 metadata:
   author: claude-config
-  version: 3.18.0
+  version: 3.21.0
   category: design
 ---
 

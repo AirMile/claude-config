@@ -67,69 +67,9 @@ VERIFICATION ROUND [N]/3
 
 **Runner verification (OPTIONAL, round 1) — skip on a first conversion.**
 
-A pixel/aria baseline compares the page against *its own* previous output, so on a page being converted for the first time it has nothing to compare to: it writes a snapshot and passes by construction. It earns its cost only on a re-conversion or an audit of a page that already has a baseline on disk. Skipping is the normal outcome — record it: `Runner: skipped (first conversion)` in the round assessment, so a reader can tell it was decided rather than forgotten.
+A pixel/aria baseline compares the page against _its own_ previous output, so on a page being converted for the first time it has nothing to compare to: it writes a snapshot and passes by construction. Skipping is the normal outcome — record it as `Runner: skipped (first conversion)` in the round assessment, so a reader can tell it was decided rather than forgotten.
 
-Baseline already present, or the page was converted before → check runner available (`npx playwright --version 2>/dev/null`) and generate the on-the-fly spec (see `skills/shared/PLAYWRIGHT.md → Runner Mode`):
-
-```typescript
-// .project/playwright-runs/convert-{slug}-r1.spec.ts  (temporary)
-import { test, expect } from "@playwright/test";
-
-test("visual baseline — {slug}", async ({ page }) => {
-  await page.goto("{url}");
-  await page.waitForLoadState("networkidle");
-  // Pixel-diff: first run creates baseline, subsequent runs compare
-  await expect(page).toHaveScreenshot("convert-{slug}.png", {
-    mask: [
-      page.locator('[data-testid="timestamp"]'),
-      page.locator(".skeleton"),
-    ],
-    maxDiffPixelRatio: { $VERIFY_PIXEL_RATIO },
-  });
-  // Structural equivalence: semantic HTML of output vs expected
-  await expect(page.locator("main")).toMatchAriaSnapshot();
-});
-```
-
-If `$HAS_DARK_MODE = true`: add dark variant:
-
-```typescript
-test("visual baseline dark — {slug}", async ({ browser }) => {
-  const ctx = await browser.newContext({ colorScheme: "dark" });
-  const page = await ctx.newPage();
-  await page.goto("{url}");
-  await page.waitForLoadState("networkidle");
-  await expect(page).toHaveScreenshot("convert-{slug}-dark.png", {
-    maxDiffPixelRatio: { $VERIFY_PIXEL_RATIO },
-  });
-  await ctx.close();
-});
-```
-
-If `$ANALYSIS` Responsive shows multiple viewports: add a mobile variant to the baseline too (the responsive check itself is §3.2e and runs regardless):
-
-```typescript
-test("visual baseline mobile — {slug}", async ({ browser }) => {
-  const ctx = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-  });
-  const page = await ctx.newPage();
-  await page.goto("{url}");
-  await page.waitForLoadState("networkidle");
-  await expect(page).toHaveScreenshot("convert-{slug}-mobile.png", {
-    maxDiffPixelRatio: { $VERIFY_PIXEL_RATIO },
-  });
-  await ctx.close();
-});
-```
-
-First run: `npx playwright test ... --update-snapshots` (create baseline in `.project/playwright-runs/__screenshots__/`).
-Subsequent rounds (2, 3): baseline already present → run without `--update-snapshots` → FAIL on pixel regression or aria structure change.
-
-Note: the pixel/aria baseline is generated from the code's own output, so on the audit path (and copy mode with ground truth) it is a **structural-regression guard only** — it cannot catch a wrong design value that was already present when the baseline was created. That is what 3.2c is for.
-
-Runner FAIL = discrepancy found → treat as fix target alongside Vision findings.
-Runner not available → skip runner, continue with Vision-only sanity check.
+> **Todo**: baseline already on disk, or this page was converted before → Read `.claude/skills/design-convert/references/convert-runner-baseline.md` and follow it. Otherwise skip that file entirely.
 
 **Vision comparison (sanity check — always run, even if runner is available):**
 
@@ -160,15 +100,17 @@ JS errors (from console):
   [- TypeError: foo is undefined at HeroSection:14]
   [- Failed to load module: ./Icon — verify import path]
 
-Action: [✓ Acceptable — stop | → Fix and re-check]
+Action: [✓ Acceptable — go to PHASE 3.5 | → Fix and re-check]
 ═════════════════════════
 ```
 
 Runtime errors are always fixable in this phase — resolve before visual discrepancies (a crashing component can cause visual issues that don't exist elsewhere).
 
+**This is not the end of the run.** The report above looks like a natural stopping point but isn't one — and a run has ended here before. Go to `route-convert.md` **PHASE 3.5** now and Read `convert-refine-round.md`: the user has not yet seen the result. PHASE 4 runs only after they accept it there, and it is what syncs the backlog, updates devinfo, and creates the recoverable commit.
+
 **Decision logic:**
 
-- **No significant discrepancies** → stop loop, proceed to PHASE 4
+- **No significant discrepancies** → stop loop, go to PHASE 3.5 (not PHASE 4 — see above)
 - **Copy mode:** early stop requires match quality **High** — **Medium** is acceptable only at round 3, with remaining discrepancies listed
 - **Fixable discrepancies AND rounds remaining** → apply targeted edits, increment round, repeat from 3.2
 - **Round 3 reached** → stop loop regardless, report remaining discrepancies
@@ -216,9 +158,11 @@ Thumbnail vision (3.2) cannot catch a wrong-but-plausible value — a card `back
    ```
 
    Audit path: add `--selector "$AUDIT_SECTIONS[].domSelector"` per section. Do not hand-roll a smaller version — a plain `getComputedStyle(el).color` reads the parent's inherited color and cannot see an accent segment at all, which is precisely the mismatch this check exists to catch.
+
 2. Compare against ground truth: `background-color`, `color`, `border-radius`, key spacing (`padding`/`gap`/`margin-top`), `font-size`/`font-weight`.
    - **Color:** normalize to rgb; exact match required, ≤2/255 per-channel rounding tolerance.
    - **Text color, per segment.** A ground-truth row with multiple `seg` entries compares **segment by segment, in document order**, and the segment _count_ is part of the comparison. A heading that rendered as one segment where the design has two is a MISMATCH — not a pass because the first color happened to match. This is the check that catches a two-tone title shipped monochrome; element-level color compare structurally cannot.
+   - **Text weight/style, per segment.** Same walk, same document order — compare `fontWeight`/`fontStyle` segment by segment against the fidelity row. The extraction script already returns both per segment (`extract-computed-styles.mjs § seg()`), so this reuses the same `rendered-styles.json` the color check above reads. A segment whose row calls for `700`/`italic` and rendered without it is a MISMATCH, same priority as a color mismatch — this is the check that catches an accent span that lost its `font-bold` while its color class survived.
    - **Spacing / radius:** exact px, ≤1px tolerance. Compare each section against **its own** fidelity-table row, never against a page-wide value — comparing every section to one number either passes wrong spacing or floods the report with false mismatches.
    - **Seam, per consecutive section pair.** Every check above measures one element's own box, so none of them can see a section that overlaps its neighbour. The script's `seams[]` array already carries the rendered distance between consecutive top-level sections; compare each entry against the `offset` field of the _second_ section's fidelity row (absent field = expected 0).
 
@@ -242,24 +186,40 @@ This makes the loop non-self-referential for these properties: the compare targe
 
 ### 3.2e Responsive check (every generation scope — no gate)
 
-**Runs on every round-1 verification**, regardless of how many viewports the source has. A Figma frame almost never ships a mobile variant, so gating this on "source has multiple viewports" meant it fired on virtually no run — while codegen emitted responsive prefixes on every one of them. The viewport nobody looked at is where wrapping and overflow defects live.
+**Runs on every round-1 verification**, regardless of how many viewports the source has. A Figma frame almost never ships a mobile or tablet variant, so gating this on "source has multiple viewports" meant it fired on virtually no run — while `convert-generate-template.md § Responsive layout` emits `md:`/`lg:` prefixes on every generation. The tier nobody looked at is where wrapping and overflow defects live, and checking mobile alone leaves the entire `md:` (768px+) breakpoint — real markup, never rendered once during verification.
 
-1. Resize to 390×844, reload, wait for hydration.
+**Three tiers, always** — matching the breakpoints codegen actually emits (`convert-generate-template.md`: no prefix = mobile, `md:` = tablet 768px+, `lg:` = desktop 1024px+) and `shared/PLAYWRIGHT.md § Viewport Configuration`'s canonical widths:
+
+| Tier    | Viewport | Tailwind prefix it exercises |
+| ------- | -------- | ---------------------------- |
+| Mobile  | 390×844  | (none — default)             |
+| Tablet  | 768×1024 | `md:`                        |
+| Desktop | 1440×900 | `lg:`                        |
+
+For **each** tier:
+
+1. Resize, reload, wait for hydration.
 2. **Overflow assert**: `document.documentElement.scrollWidth === clientWidth`. Unequal → MISMATCH (name the overflowing element).
-3. Screenshot **and Read it** — full-page at 390 is unreadably tall, so capture viewport-sized slices while scrolling and read each one. A full-page thumbnail is not a mobile check; text legibility and mid-word heading breaks only show at slice scale.
-4. Source has a mobile frame → vision-compare against it. No mobile frame → this is an overflow, wrapping and legibility check, not a design comparison — say so explicitly in the round assessment rather than implying a match.
+3. Screenshot **and Read it** — a full-page shot of a long page is unreadably tall at any width, so capture viewport-sized slices while scrolling and read each one. A full-page thumbnail is not a tier check; text legibility, mid-word heading breaks, and `md:`/`lg:` layout switches (column count, hidden/shown elements) only show at slice scale.
+4. **Source-frame compare, gated on `$RESPONSIVE_VIEWPORTS`** (route-convert.md § 0.2):
+   - `mobile+tablet+desktop` → this tier has a source frame; vision-compare against it.
+   - `mobile+desktop` → mobile and desktop compare against their source frames; tablet has none — it is codegen's own `md:` interpolation between the two, so run the overflow/wrap/legibility check only, and say so explicitly rather than implying a match.
+   - `1 viewport` or `unknown` → only the tier matching that viewport (if identifiable) compares against a source frame; the other two are overflow/wrap-only checks.
 5. Findings join the ROUND ASSESSMENT at 3.2c priority.
 
-Add to the assessment block:
+Add to the assessment block, one line per tier:
 
 ```
 Responsive:  [PASS | N findings] (390px)
   [- hero h1 breaks mid-phrase: "zichtbaar / maken."  file:line]
+Responsive:  [PASS | N findings] (768px)
+  [- card grid still 1-column past the md: breakpoint  file:line]
+Responsive:  [PASS | N findings] (1440px)
   [- kicker label lines collide (design leading only
      valid on one line)                               file:line]
 ```
 
-Desktop-only source → §3.4 records `Responsive: interpretation (no mobile source frame)`.
+A tier with no source frame to compare against still gets its own line — mark it `interpretation` instead of `PASS`/`N findings`, e.g. `Responsive: interpretation (no tablet source frame) (768px)`. Never omit a tier's line — that reads as "not checked," and every tier is checked regardless of source coverage.
 
 ### 3.2d Interaction check (when `$INTERACTION_SPEC` is set)
 
@@ -301,8 +261,9 @@ VISUAL VERIFICATION COMPLETE
 
 Rounds:         [N]/3
 Final match:    [High | Medium | Low]
-Responsive:     [PASS | N findings | interpretation
-                (no mobile source frame)]
+Responsive:     mobile  [PASS | N findings | interpretation]
+                tablet  [PASS | N findings | interpretation]
+                desktop [PASS | N findings | interpretation]
 Source:         [source image description]
 Generated:      [page URL]
 
@@ -316,5 +277,3 @@ Remaining:
 **The ROUND ASSESSMENT block from §3.2 is the artifact PHASE 4 reads.** `convert-completion.md § 4.4` takes `finalMatchQuality` from the last one printed and forbids recalling a value without it. Printing your own summary instead of the block therefore does not just change the formatting — it removes the only thing §4.4 is allowed to source that field from, and the honest result is `Verification: NOT RUN` on the completion report. Print the block.
 
 Close browser: `playwright-cli close` (or `tabs_close_mcp` if Claude-in-Chrome was used, e.g. a `figma-make` session)
-
-**This is not the end of the run.** The report above looks like a natural stopping point but isn't one — return to `route-convert.md` PHASE 4 now, before reporting anything to the user. PHASE 4 is what syncs the backlog, updates devinfo, and creates the recoverable commit; skipping it here has previously caused a run to finish with real edits on disk but no completion report, no backlog sync, and no commit.

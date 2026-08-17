@@ -14,6 +14,28 @@ Copy-mode counterpart to token mapping: capture exact source values instead of m
 
 **For `$INPUT_SOURCE = "figma-mcp"`:** extract ground truth via the Figma MCP instead of browser eval:
 
+**Delegate the extraction — never run it in the main context.** A full-page frame returns 10–15k tokens of raw `get_design_context` output, and none of it is needed again once §1.1's table exists (`shared/SKILL-PATTERNS.md § Pass Paths, Not Content`).
+
+Dispatch one extraction agent per frame: `Agent` tool, `subagent_type: "general-purpose"`, `model: "sonnet"` (mechanical extraction against a fixed schema, per `§ Agent Model Selection`). Several frames → dispatch in one message (`§ Parallel Dispatch`).
+
+The brief carries, verbatim:
+
+- the explicit node-ids (never a bare `get_metadata` — that reads the Figma desktop app's current selection, which the agent cannot see);
+- §1.1's table shape rules — one row per colour segment · one spacing row per section · one line-break row per heading · `offset` only on sections that actually overlap;
+- this rule, which otherwise lives in a file the agent never reads: _"do NOT substitute a single whole-frame `get_design_context` — that collapses every section's fills into one result and loses per-section ground truth"_ (`route-convert.md:81`). A fresh Sonnet with a node list and a token budget is exactly the actor most likely to make that call.
+
+The agent returns ONLY the filled fidelity-table rows, and writes its raw output to `.project/tmp/figma-extract-{node}.json` so a later spot-check can grep one value without reloading the dump. Store those paths as `$EXTRACTED_RAW[]`.
+
+**Row-count assertion (mandatory).** A delegated table fails by _omission_, and §3.2c cannot catch that: it drives its comparison off the table's rows, so a row the agent never emitted never mismatches. Before accepting the table, count against `$SOURCE_STRUCTURE` — which is already in the main context and costs nothing to re-read:
+
+- one spacing row per section frame;
+- one line-break row per heading text node;
+- at least one `seg` row per heading whose text node reports more than one style run.
+
+Counts short → re-dispatch that frame naming the gap. Do not fall back to running the extraction inline: that is the cost this step avoids.
+
+The steps below are the brief handed to each extraction agent — they describe what the agent does, not what runs here:
+
 1. `get_design_context` on the node link → code representation with exact values (colors, spacing, typography, radii, shadows). Parse into `$EXTRACTED_STYLES`.
    - **Mixed-fill text nodes.** A heading whose characters carry different fills (an accent word in a brand color) arrives as multiple styled runs, not as one color. Record every run as its own segment `{text, fill, weight, family}` under that node. Record `family` even when it looks like a substitution — the Codegen Rules below decide what to do with it, and a family dropped here cannot be questioned later. Collapsing to the dominant fill is the single most common way a two-tone title ships monochrome — the value is already in the response, it gets lost on the way into the table.
    - **Layout spacing.** Record `paddingTop/Bottom/Left/Right` and `itemSpacing` **per section node**, never one page-wide value. Section padding and grid gaps differ per section in almost every real design.
@@ -121,7 +143,15 @@ Sections with genuinely identical values may share one row (`Features, Pricing  
 
 ### 1.2 Confirm
 
-The question body must open with the `Sections:` line from SOURCE ANALYSIS (0.2), enumerated top-to-bottom in the exact order they will be generated — this is the only point in the route where that order becomes an artifact the user sees before codegen, rather than a mental note. If SOURCE ANALYSIS was compressed into this same confirmation (common when 0.2 and 1.1 end up presented together), the section order must still appear as its own line, not buried inside prose.
+Whichever form this takes, the confirmation must open with the `Sections:` line from SOURCE ANALYSIS (0.2), enumerated top-to-bottom in the exact order they will be generated — this is the only point in the route where that order becomes an artifact the user sees before codegen, rather than a mental note. Even when 0.2 and 1.1 are presented together, the section order appears as its own line, never buried inside prose.
+
+**There is exactly one gate here.** Branch on plan-mode state — asking both is the double confirmation `SKILL-PATTERNS.md` warns about:
+
+**Plan mode active (the normal path — entered at route-convert 0.1)** → `ExitPlanMode` **is** this confirmation. Write SOURCE ANALYSIS + FIDELITY EXTRACTION (+ INTERACTIONS when captured) into the plan file, then call it. Its rejection path is the "Adjust" branch: the user's correction arrives as prose, apply it, update the plan file, call `ExitPlanMode` again. Do not also ask the modal below.
+
+> **Todo**: after approval, all remaining phases (codegen, verification, completion) run in Sonnet. Do NOT re-enter plan mode later in this run.
+
+**Plan mode not active** (patch fast-path already exited, or the user started the skill outside it — see `shared/PLAN-MODE.md § Exit`) → there is no approval gate yet, so ask:
 
 ```yaml
 header: "Fidelity"
@@ -134,17 +164,15 @@ multiSelect: false
 
 If "Adjust": ask which values to change, update, re-confirm.
 
-> **Todo**: Use the `ExitPlanMode` tool once the extraction is confirmed — present SOURCE ANALYSIS + FIDELITY EXTRACTION (+ INTERACTIONS when captured) as the plan output. After user approval, all remaining phases (codegen, verification, completion) run in Sonnet. Do NOT re-enter plan mode later in this run. Skip this exit if plan mode is no longer active (patch path already exited) or the skill was started in plan mode by the user (see `shared/PLAN-MODE.md § Exit`).
-
 ## Codegen Rules (applied in PHASE 2.2)
 
 - Use exact arbitrary Tailwind values from the fidelity table: `bg-[#FF5733]`, `text-[17px]`, `rounded-[12px]` — when no standard class matches exactly. Visual fidelity beats class purity.
 - **"No standard class matches" is a lookup, not an impression.** Before emitting any arbitrary value, resolve it against the project's own token list (`project.json#theme`, or the `@theme`/`:root` block in the stylesheet — read it once at 2.2 and keep it). Three outcomes, and only the last one produces an arbitrary value:
   - **Exact match** → emit the token class. `rounded-[16px]` where `--radius-2xl: 1rem` exists is a token written the long way; it renders identically and silently opts the page out of every future token change.
-  - **Composite value whose *tint* is tokenised but whose geometry is not** (shadows are the usual case: the design's blur/offset is its own, the colour is the brand's) → keep the geometry from the design, take the colour from the token. A shadow carrying the design tool's near-miss purple is the same defect as a heading carrying it, and it hides better.
+  - **Composite value whose _tint_ is tokenised but whose geometry is not** (shadows are the usual case: the design's blur/offset is its own, the colour is the brand's) → keep the geometry from the design, take the colour from the token. A shadow carrying the design tool's near-miss purple is the same defect as a heading carrying it, and it hides better.
   - **No equivalent** → arbitrary value, as above.
 
-  This check is not optional under "the user approved mapping to project tokens" at 0.6 — that approval is what *requires* it. It applies to every property with a token namespace: colour, radius, shadow, font, spacing, z-index. Spacing legitimately lands on "no equivalent" most often (a 107px section padding is not on anyone's scale); radii and shadow tints almost never do.
+  This check is not optional under "the user approved mapping to project tokens" at 0.6 — that approval is what _requires_ it. It applies to every property with a token namespace: colour, radius, shadow, font, spacing, z-index. Spacing legitimately lands on "no equivalent" most often (a 107px section padding is not on anyone's scale); radii and shadow tints almost never do.
 
   <!-- Rationale: one run emitted rounded-[16px]/[20px]/[24px] against exact
   --radius-2xl/-card-sm/-card-md tokens, and shadows tinted rgb(45 40 112) — the
@@ -153,7 +181,7 @@ If "Adjust": ask which values to change, update, re-confirm.
   were not, because nothing asked. -->
 
 - Use exact text content from the fidelity table — never paraphrase, never substitute placeholder copy.
-- **Multi-segment rows emit multi-segment markup.** A heading with two `seg` rows becomes one element wrapping a `<span>` per segment, each carrying its own color class: `<h1 className="text-[#1A1A2E]">Protect your <span className="text-[#FF5733]">building</span></h1>`. Never pick one color for the whole heading — the row count in the table is the span count in the output.
+- **Multi-segment rows emit multi-segment markup.** A heading with two `seg` rows becomes one element wrapping a `<span>` per segment, each carrying its own color class: `<h1 className="text-[#1A1A2E]">Protect your <span className="text-[#FF5733]">building</span></h1>`. Never pick one color for the whole heading — the row count in the table is the span count in the output. **The same applies to weight and style.** When a segment's row carries a weight or style value that differs from the element's own base (heading is 400/normal, an accent segment is 700 or italic), emit `font-bold`/`italic`/`font-[weight]` on that segment's span too — a color-only span that silently drops a differing weight is the same defect as a collapsed color, and just as easy to miss because nothing about the span "looks" wrong.
 - **Separate rhythm from composition before deciding whether a spacing value is exact-worthy.** Not every number in the table deserves the same fidelity:
   - **Rhythm** — section padding, grid gaps between repeated cards. The design's spread here (80 / 84 / 91 / 107px across four sections) is almost never a designed distinction; it is where the frames happened to land. The project usually already owns this: a `Section`/layout component with padding variants, a standard gap scale. Adopt it, and say so in the Generation Summary with the per-section delta so the user can object.
   - **Composition** — a negative section offset and its top radius, an image offset that stacks two columns, a fixed card or media height, an aspect ratio. These carry layout meaning; rounding them changes proportion, not air. Emit exactly.
@@ -166,7 +194,7 @@ If "Adjust": ask which values to change, update, re-confirm.
 - Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently. Exception `figma-mcp` **when `$EXTRACTED_ASSETS` is non-empty**: reference the local paths from the branch above, no TODO needed. `$EXTRACTED_ASSETS` empty or unset → the general rule applies regardless of source type.
 - Never invent an asset path. The same rule that forbids paraphrasing placeholder copy (above) applies to assets: a `src`/`href` must resolve to a file written this run or carry the `{/* TODO: localize asset */}` comment with a live URL — never a plausible-looking filename that doesn't exist on disk.
 - Use the exact `font-family` with its fallback stack. If a Google Font is recognized: note the required import in the Generation Summary.
-- **A font name on an accent segment is a claim to verify, not a value to copy.** (The token lookup above catches values the project has *named*; this catches roles the project has already *solved* — a pattern, not a token.) Design tools substitute freely: a run styled "Times New Roman Bold Italic" or "Playfair Display Medium Italic" inside an otherwise-branded heading is usually the tool's stand-in for *emphasis*, not a second typeface the brand owns. Before emitting any font class on a segment, grep the codebase for the same visual role — an accent word in a heading — and read what it already does:
+- **A font name on an accent segment is a claim to verify, not a value to copy.** (The token lookup above catches values the project has _named_; this catches roles the project has already _solved_ — a pattern, not a token.) Design tools substitute freely: a run styled "Times New Roman Bold Italic" or "Playfair Display Medium Italic" inside an otherwise-branded heading is usually the tool's stand-in for _emphasis_, not a second typeface the brand owns. Before emitting any font class on a segment, grep the codebase for the same visual role — an accent word in a heading — and read what it already does:
 
   ```bash
   grep -rn "text-accent\|text-\[#" src/components --include=*.tsx | grep -i "italic\|<span"

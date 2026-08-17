@@ -17,7 +17,7 @@ Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/
 
 **Assertion (PHASE 0 entry):** if `$PATCH_MODE = true` AND `$SOURCE_IMAGE` is unset → abort with `"Patch mode requires $SOURCE_IMAGE — handoff incomplete"`.
 
-**Patch fast-path:** if `$PATCH_MODE = true`, skip PHASE 0.1 through 0.4b Steps 1-2 and jump directly to **PHASE 0.4b Step 3**.
+**Patch fast-path:** if `$PATCH_MODE = true`, skip PHASE 0.1 through 0.4b Steps 1-2 and jump directly to **PHASE 0.4b Step 3**. The fast-path skips PHASE 1 and 2.1, but **not** the reversibility checkpoint — PHASE 2.0 Patch Guard runs §2.1b before its first Edit.
 
 > **Todo**: In patch fast-path, use `EnterPlanMode` (same rationale as the main-flow Todo below) before jumping to PHASE 0.4b Step 3; use `ExitPlanMode` after Step 4 (Confirm), before PHASE 2 Patch Guard.
 
@@ -25,8 +25,8 @@ Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/
 
 **Step 0b: Task tracking.** Skip for `$PATCH_MODE = true` (single fast-path, no phase-tracking value). Otherwise call `TaskCreate` now — before PHASE 0.1, and before the `EnterPlanMode` call at 0.2 — with these 6 items. Each description names the phase's mandatory Read: the task list is the one artefact that survives plan mode, so a phase whose reference file is not in its task is a phase that gets improvised.
 
-1. PHASE 0 — pre-flight, source capture, mode + scope + preserve list (0.1-0.6b)
-2. PHASE 1 — mode procedure; Read `references/convert-mode-{$MODE}.md` (audit path: `references/convert-audit.md`)
+1. PHASE 0 — pre-flight, source capture, mode + scope + preserve list (0.1-0.6c)
+2. PHASE 1 — mode procedure; Read `references/convert-mode-{$MODE}.md` — resolve `{$MODE}` at 0.3 and `TaskUpdate` this line to the real filename (audit path: `references/convert-audit.md`)
 3. PHASE 2 — codegen; Read `references/convert-generate-template.md`
 4. PHASE 3 — verification; Read `references/convert-verification-loop.md`
 5. PHASE 3.5 — refine with the user; Read `references/convert-refine-round.md`
@@ -34,7 +34,7 @@ Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/
 
 Task 2 carries an unresolved `{$MODE}` at seed time. The moment 0.3 sets `$MODE`, `TaskUpdate` that task's description to the concrete filename (`references/convert-mode-copy.md`). A task naming a path that does not exist on disk names no file at all — it gets ticked off without ever being opened.
 
-Transitions: PHASE 0 → `in_progress` at 0.1 and PHASE 0 → `completed` at the end of 0.6b; PHASE 1 → `in_progress` / PHASE 1 → `completed` around the mode procedure; PHASE 2 → `in_progress` / PHASE 2 → `completed` around codegen; PHASE 3 → `in_progress` / PHASE 3 → `completed` around the verification loop; PHASE 3.5 → `in_progress` / PHASE 3.5 → `completed` around the refine round; PHASE 4 → `in_progress` / PHASE 4 → `completed` around completion.
+Transitions: PHASE 0 → `in_progress` at 0.1 and PHASE 0 → `completed` at the end of 0.6c; PHASE 1 → `in_progress` / PHASE 1 → `completed` around the mode procedure; PHASE 2 → `in_progress` / PHASE 2 → `completed` around codegen; PHASE 3 → `in_progress` / PHASE 3 → `completed` around the verification loop; PHASE 3.5 → `in_progress` / PHASE 3.5 → `completed` around the refine round; PHASE 4 → `in_progress` / PHASE 4 → `completed` around completion.
 
 <!-- Rationale: three real runs. One skipped PHASE 4 entirely — the verification report reads as a natural stopping point and nothing forced the run back. One seeded a task list with phase names but no reference paths, and improvised PHASE 3 and PHASE 4 from memory. A third seeded the paths correctly but left `{$MODE}` unresolved in task 2, marked it completed without reading any mode file, and generated the whole page with no fidelity table. Naming the file inside the task only works when the name resolves. -->
 
@@ -76,7 +76,7 @@ multiSelect: false
 > **Todo**: MCP not connected, OR the URL contains `figma.com/make/` → Read `.claude/skills/design-convert/references/convert-source-fallbacks.md` and follow it (no-MCP ladder incl. the REST fallback, and the Figma Make procedure). MCP answers normally on a `/design/` URL → skip that file entirely and continue with the three steps below.
 
 1. The link must target a specific frame (`node-id` param in the URL). If it points to a whole file/canvas: ask the user for a frame link (right-click frame → _Copy link to selection_). If the frame name suggests a draft or duplicate (contains "V2", "test", "copy"/"kopie", "old", or the metadata shows sibling frames with near-identical names): confirm with the user that this frame is the final version before proceeding.
-2. `get_screenshot` on the node link → Read the returned image. This becomes `$SOURCE_IMAGE`. The MCP returns the image inline; there is no file to write, so `$SOURCE_IMAGE` lives in context only on this path — PHASE 3.5 shows the *rendered* screenshot rather than a source/output pair, and §4.5's `source-capture*.png` cleanup is a no-op here.
+2. `get_screenshot` on the node link → Read the returned image. This becomes `$SOURCE_IMAGE`. The MCP returns the image inline; there is no file to write, so `$SOURCE_IMAGE` lives in context only on this path — PHASE 3.5 shows the _rendered_ screenshot rather than a source/output pair, and §4.5's `source-capture*.png` cleanup is a no-op here.
 3. `get_metadata` on the same link → store the sparse XML layer outline (frame names, positions, sizes) as `$SOURCE_STRUCTURE` — used in 0.2.
    If `get_metadata` overflows the token limit and the tool dumps the outline to a file (common on full-page frames): store the file path as `$SOURCE_STRUCTURE_FILE` and Read it when needed — do NOT substitute a single whole-frame `get_design_context` (that collapses every section's fills into one result and loses per-section ground truth). The audit path (see `references/convert-audit.md`) reads this dump to harvest per-section child node-ids and calls `get_design_context` per section.
 
@@ -127,6 +127,8 @@ Type:       [Full page | Section/component | Multiple components]
 Sections:   [enumerated list of visual sections top-to-bottom]
 Layout:     [single column | multi-column | grid | sidebar + content | etc.]
 Responsive: [1 viewport | mobile+desktop | mobile+tablet+desktop | unknown]
+            → $RESPONSIVE_VIEWPORTS (drives which tiers get a source-frame
+              vision-compare vs. an overflow/wrap-only check in §3.2e)
 Sizing:     [per key element: fixed (px/rem) | fill (flex:1 / 100%)
             | hug (fit-content/auto)]
 Fidelity:   [low | medium | high]
@@ -182,6 +184,16 @@ Store fidelity as `$FIDELITY` (low | medium | high).
 **Interaction capture (conditional):** when any interaction cue fires — the probe above found `hits > 0` · `$INPUT_SOURCE = "figma-make"` · the user provided/pasted written interaction documentation · `$MOTION_INTENT` includes hover-variant frames or labeled/animated elements · the user explicitly asks for interactions to be converted:
 
 > **Todo**: Read '.claude/skills/design-convert/references/convert-interactions.md' — capture a structured `$INTERACTION_SPEC` (spec-text parsing, live observation for real-DOM sources, or vision estimation). No cue fired → skip that file entirely; `$MOTION_INTENT` stays a loose supplement and motion follows the pack (0.6), unchanged.
+
+**Sibling frames — one template, N content records.**
+
+Fires when the user supplied more than one frame link, or `$SOURCE_STRUCTURE` shows sibling frames whose section names and layer structure match this one. Confirm the set with the user (name each frame), then plan the run as a template, not as N pages:
+
+- **Extraction**: one agent per frame (§ 1.0), all dispatched in one message.
+- **Codegen**: ONE set of section components plus an N-row data module. Fields that differ per frame become props; fields absent on some frames become optional.
+- **Verification**: the full pixel-diff loop on frame 1. Every other frame still gets §3.2c (exact values) and §3.2e (overflow) — those are cheap and are the only checks that would catch a template that breaks on different content. Skipping them ships N-1 unverified pages.
+
+Sibling node-ids are usually a fixed stride apart (`174:2`, `174:285`, …). Probing a candidate id with `get_screenshot` is cheap; asking the user for the remaining links is cheaper still when the stride is unclear.
 
 ### 0.25 Target Page Identity Check
 
@@ -304,38 +316,9 @@ Print the outcome either way — a step whose only successful path is silence ge
 Worktree:   [created {branch} | already in one ({branch}) | skipped — {reason}]
 ```
 
-### 0.5c Reversibility Checkpoint & Commit Baseline
+### 0.5c Commit Baseline
 
-**Step 1 — Reversibility checkpoint (optional, before the baseline below).** `convert-completion.md §4.5b` only commits once the run finishes cleanly — no help if something goes wrong _mid-run_, before that point is reached (this is exactly how the original homepage-overwrite incident went unnoticed until it was too late to recover from disk). Close that gap here, before PHASE 1/2 write anything.
-
-Trigger this check only when **all** of the following hold — each is cheap to evaluate and already known at this point in the flow:
-
-- `$IS_WORKTREE = false` (no worktree was created in 0.5b) — inside a worktree, dirty work on the main branch is untouched by this run regardless, so there's nothing to protect and no need to double up with `WORKTREE-CREATE.md`'s own dirty-work guard.
-- The working tree is dirty: `git status --porcelain` is non-empty.
-- This run targets an **already-existing** page/file, not a brand-new one: `$SCOPE = "audit"`, OR (`$SCOPE` = full page AND `$TARGET_PAGE_CONFIRMED ∈ {"homepage", "other:*"}` from §0.25). Skip when `$TARGET_PAGE_CONFIRMED = "new"` or scope is component/patch — those write new files, not over existing ones, so the overwrite risk this guards against doesn't apply.
-- **At least one file this run will overwrite is itself dirty.** Compute this, don't assume it: intersect `git status --porcelain` with the target page file plus the framework's section-component directory (`src/components/**` for the Next.js/Vite layouts in §0.6). Empty intersection → skip the modal, print `Checkpoint: skipped (dirty files don't overlap this run's targets)`, and go straight to Step 2. A dirty tree elsewhere in the repo is not at risk from this run, and asking about it spends a modal on nothing.
-
-When triggered:
-
-```yaml
-header: "Reversibility"
-question: "The working tree has uncommitted changes, and this run will overwrite existing files ({target}). Commit a checkpoint first so the run stays reversible?"
-options:
-  - label: "Checkpoint first (Recommended)"
-    description: "Commit the current working tree as a WIP checkpoint — any overwrite after this becomes a `git revert`/`checkout` away from undone"
-  - label: "Continue without a checkpoint"
-    description: "Proceed as-is — overwrites of uncommitted work won't be recoverable via git"
-  - label: "Cancel"
-    description: "Stop this run without making any changes"
-multiSelect: false
-```
-
-- **"Checkpoint first"**: `git add -A && git commit -m "chore: wip checkpoint before /design-convert {target}"`. Deliberately `-A` + `chore` — this is a safety WIP point the user can later `git reset --soft` away, not a scoped feature commit (contrast with §4.5b's scoped, filtered commit at the end).
-- **"Continue without a checkpoint"**: no commit; proceed straight to Step 2.
-- **"Cancel"**: stop the route cleanly, no further PHASE 0 steps.
-- Trigger conditions not met → skip straight to Step 2, unchanged from before.
-
-**Step 2 — Commit baseline.** Per `shared/SCOPED-COMMIT.md → §1 Baseline` (SHA form) — captured **after** both the worktree switch (0.5b) and any checkpoint above, so it always points at a real, currently-reachable commit:
+Per `shared/SCOPED-COMMIT.md → §1 Baseline` (SHA form) — captured **after** the worktree switch (0.5b), so it always points at a real, currently-reachable commit:
 
 ```bash
 mkdir -p .project/session
@@ -343,6 +326,8 @@ git rev-parse HEAD > .project/session/pre-convert-sha.txt 2>/dev/null || true
 ```
 
 This baseline is what `convert-completion.md §4.5b Scoped Commit` diffs against at the end of the run — without it, a direct-on-main convert run (no worktree) leaves no commit and no recoverable "before" state if something goes wrong mid-run. Non-git projects: the `git rev-parse` fails silently (`|| true`), §4.5b's commit step then no-ops via its own guard.
+
+The baseline only helps once the run finishes cleanly. The mid-run gap — an overwrite that happens before PHASE 4 is ever reached — is closed by the reversibility checkpoint at **§2.1b**, deliberately placed there rather than here: at this point the run does not yet know which files it will touch.
 
 ### 0.6 Theme & Project Context
 
@@ -437,8 +422,8 @@ of them:
 - **Prop-driven and shared** (a hero, a CTA banner: the page passes title/image/
   CTA in, the component owns only the styling). Content and styling are separate
   axes here, so "keep it or rebuild it" is not a real question — the design's
-  *content* always lands via props, and the only decision is whether the shared
-  *styling* may move. Offer these the third option below as their default.
+  _content_ always lands via props, and the only decision is whether the shared
+  _styling_ may move. Offer these the third option below as their default.
 - **Shared, not prop-driven** (its content lives inside it). Keep-as-is is the
   recommended answer: a page-level frame is not a mandate to restyle other pages.
 - **Used only on this page.** Rebuild freely; nothing leaks.
@@ -474,6 +459,56 @@ reuse rule existed (see Restrictions) but had no decision point, no variable,
 and no gate — so nothing in the flow ever asked. -->
 
 ---
+
+### 0.6c Content-Source Check (page scope, existing route only)
+
+Runs when scope is a full page AND the target route already exists. Skip for
+component/patch scope and for `$TARGET_PAGE_CONFIRMED = "new"` — nothing is
+rendering data there yet.
+
+The verification loop compares pixels, not truth. A page whose sections render
+CMS/API data screenshots as `Match quality: High` while showing seed or demo
+records: the layout is right and only the content is fictional. Nothing later in
+this route looks at the data, so nothing catches it.
+
+1. Read the target page file's imports. Data-backed when it imports a CMS/ORM
+   client (`@/sanity`, `contentlayer`, `prisma`, `@/lib/api`, …) or awaits a
+   fetch in the page body. No such import → print
+   `Content source: static (no CMS)` and skip to 0.6b.
+2. Query that source for the records the page renders — the project's own client
+   or a read-only HTTP query, whichever is cheaper. **Never write here.**
+3. Report count and provenance:
+
+   ```
+   Content source: {client} · {n} records
+   Placeholder-looking: {m}
+     [ids prefixed demo-/test-/example-/seed-, lorem-ipsum
+      body text, or stock-photo asset hosts]
+   ```
+
+4. `m > 0`, or the count sits far below what the design's sections imply → ask:
+
+   ```yaml
+   header: "Content"
+   question: "This page renders {client} data and {m} of {n} records look like placeholders. Verify the conversion against those?"
+   options:
+     - label: "Fill real content first (Recommended)", description: "Against demo records the verification loop proves nothing — the layout passes while the page shows fiction"
+     - label: "Convert against placeholders", description: "Build the markup now; real content follows later via /design-content"
+     - label: "Cancel", description: "Stop without changes"
+   multiSelect: false
+   ```
+
+Store the answer as `$CONTENT_STATUS`. `placeholders` → PHASE 3.4's final
+assessment carries `Content: placeholders — layout verified, content not`, and
+4.4b lists it as an open gap. A `Match quality: High` claimed over demo data is
+a false statement the report must not make silently.
+
+<!-- Rationale: a real run converted a projects page whose CMS held three
+fictional demo records. The loop would have signed off a page of invented
+content as High — the pixels were correct. It surfaced only because the executor
+queried the dataset on its own initiative. The skill already knows about CMS
+content (convert-audit.md Step A tags contentSource: "cms"), but only on the
+audit path; the generation path had no data check at all. -->
 
 ## PHASE 1: Mode Procedure
 
@@ -520,6 +555,8 @@ Before any generation, load project-specific bans:
 ### 2.0 Patch Guard (scope = patch or audit only)
 
 If `$SCOPE ∉ {patch, audit}`: skip this section and go directly to 2.1.
+
+**Reversibility checkpoint first.** These scopes never reach 2.1, so run **§2.1b** here before the first Edit, using `$PATCH_SECTIONS`' `file` values as the write set. Patch and audit edit existing files by definition — this is the scope the checkpoint matters most for.
 
 Per section in `$PATCH_SECTIONS`:
 
@@ -600,6 +637,44 @@ Generation Summary and leave it alone. Reaching the design is not worth silently
 overriding the answer the user gave at 0.6b.
 
 **Template reuse check:** if an already-converted page implements the same section structure (e.g. sibling pages generated from one design template — sector/product variants), plan the run as **reuse + content variation**: import that page's section components and vary only content/assets. Note in the plan when the remaining siblings would be better served by `/design-content` than by full conversions. Never regenerate near-identical components side by side.
+
+### 2.1b Reversibility Checkpoint
+
+Runs after the GENERATION PLAN above is printed and **before 2.2 writes anything**. This is the first point in the route where the run knows its own blast radius: the plan names every file it will write, edit or delete, and `$PRESERVE` (0.6b) is resolved. §0.5c cannot do this — neither exists yet there.
+
+Trigger this check only when **all** of the following hold:
+
+- `$IS_WORKTREE = false` (no worktree was created in 0.5b) — inside a worktree, dirty work on the main branch is untouched by this run regardless, so there's nothing to protect and no need to double up with `WORKTREE-CREATE.md`'s own dirty-work guard.
+- The working tree is dirty: `git status --porcelain` is non-empty.
+- **The plan's write/edit/delete set intersects the dirty set.** Compute the intersection from the `Output`/`Strategy per section` lines above — never infer it from `$TARGET_PAGE_CONFIRMED`. A run that creates a brand-new page still overwrites as much as an audit does the moment it reuses, generalises or retires an existing component, and "new page" is exactly the case that reads as safe. Empty intersection → skip the modal, print `Checkpoint: skipped (dirty files don't overlap this run's targets)`, and go straight to 2.2. A dirty tree elsewhere in the repo is not at risk from this run, and asking about it spends a modal on nothing.
+
+<!-- Rationale: a real run converted a new /diensten/buitenwerkzaamheden page and,
+in the same pass, deleted two shipped components and edited ten existing pages. The
+0.5c version of this check skipped itself on `$TARGET_PAGE_CONFIRMED = "new"` before
+its own dirty-intersection test could run. The intersection happened to be empty that
+time; had the user been mid-edit in one of the deleted files, it was gone. -->
+
+When triggered:
+
+```yaml
+header: "Reversibility"
+question: "The working tree has uncommitted changes, and this run will overwrite or delete existing files ({target}). Commit a checkpoint first so the run stays reversible?"
+options:
+  - label: "Checkpoint first (Recommended)"
+    description: "Commit the current working tree as a WIP checkpoint — any overwrite after this becomes a `git revert`/`checkout` away from undone"
+  - label: "Continue without a checkpoint"
+    description: "Proceed as-is — overwrites of uncommitted work won't be recoverable via git"
+  - label: "Cancel"
+    description: "Stop this run without making any changes"
+multiSelect: false
+```
+
+- **"Checkpoint first"**: `git add -A && git commit -m "chore: wip checkpoint before /design-convert {target}"`. Deliberately `-A` + `chore` — this is a safety WIP point the user can later `git reset --soft` away, not a scoped feature commit (contrast with §4.5b's scoped, filtered commit at the end).
+- **"Continue without a checkpoint"**: no commit; proceed to 2.2.
+- **"Cancel"**: stop the route cleanly, no code generated.
+- Trigger conditions not met → proceed to 2.2.
+
+`{target}` names the intersecting files, not the page — the user is deciding about work that is already on disk, so the paths at risk are the useful thing to show.
 
 ### 2.2 Generate Code
 
