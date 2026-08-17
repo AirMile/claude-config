@@ -5,7 +5,7 @@ reads: [feature.externalRef, team.commitConvention, team.ticketPrefix]
 writes: [team.commitConvention, team.ticketPrefix]
 metadata:
   author: claude-config
-  version: 1.12.0
+  version: 1.14.0
   category: core
 ---
 
@@ -27,12 +27,15 @@ Run in parallel:
 - `git diff --cached --stat` - size and shape of the change (or `git diff --stat` if nothing
   staged)
 
-Then read the full diff (`git diff --cached`, or `git diff`) **only when the stat totals stay
-under ~1500 changed lines**. At or above that, do not pull it into this thread: the size routing
-in `multi-commit-split.md § 0.2` exists to hand a large diff to a `model: "sonnet"` agent by
-path, and reading it here defeats that before the decision is even reached. A large single-concern
-changeset that needs no split still gets classified from the stat plus targeted reads of the
-files whose message you cannot write without them.
+**Do not read the full diff yet.** § 2's routing test runs on the stat alone, and it decides who
+owns the read: a split routes to `multi-commit-split.md § 0`, which freezes the diff to a file and
+reads it there. Reading it here as well duplicates that read — on a real split changeset that is
+tens of thousands of tokens for nothing (`SKILL-PATTERNS.md § Token Efficiency`, item 4).
+
+Once § 2 routes to the 1-group or 2-group path, read the full diff (`git diff --cached`, or
+`git diff`) **only when the stat totals stay under ~1500 changed lines**. At or above that, keep it
+out of this thread and classify from the stat plus targeted reads of the files whose message you
+cannot write without them.
 
 **Stop conditions** (report and exit):
 
@@ -58,6 +61,10 @@ ls .git/rebase-merge .git/rebase-apply \
 Steps 1–2 run once per project. Skip both if `team.commitConvention` is already set, or — in a
 repo without `.project/project.json` — if `.git/core-commit-convention` exists; read the cached
 value from whichever is present.
+
+Neither cache invalidates on its own. The user saying the repo's convention changed (or a cached
+value that contradicts what `git log` now shows) is the signal to delete
+`.git/core-commit-convention` / clear `team.commitConvention` and re-run step 1.
 
 1. **Convention detect**: count matches over the last 20 subjects — do not eyeball the list.
    Run the count, read the winner off it (>60% = 13+ of 20; no pattern reaches it → `freeform`):
@@ -100,13 +107,15 @@ value from whichever is present.
 
 3. **externalRef detect** (per commit, unless not applicable):
    - No `.project/features/` directory at all → not applicable, skip step 3 silently.
+   - On a trunk branch (`main`/`master`) no feature matches and the name carries no ticket, so
+     both lookups below are empty by construction → no externalRef, continue to step 4.
    - Otherwise read `.project/features/{feature-name}/feature.json` (the feature matching the
      current branch) → check `externalRef`:
      - `type === "github"` → prefix suggestion: `(#{id})` as suffix
      - `type === "jira"` or `"linear"` → prefix suggestion: `{id}: ` as prefix
-   - No feature.json, or no feature matching the current branch (a trunk branch like `main` is the
-     usual case) → check the branch name against `[A-Z]+-\d+` and use a match as prefix
-     suggestion; no match either → no externalRef, continue without a prefix
+   - No feature.json, or no feature matching the current branch → check the branch name against
+     `[A-Z]+-\d+` and use a match as prefix suggestion; no match either → no externalRef,
+     continue without a prefix
 
 4. **Compose integration**: hand the detected convention + externalRef to § 4 (Generate Message).
    Conservative: show the suggestion, user confirms before commit.
@@ -120,10 +129,17 @@ Group from `git diff --stat` / `--name-only` — by path pattern (`.claude/` vs 
 and by type (deletions-only vs additions). **Do not read full diffs here**: a split routes to § 0's
 inventory, which reads them once and owns the classification.
 
+Paths only separate concerns that live in different directories. A single concern spanning a
+manifest, a util and its call sites reads as several groups; one file carrying two concerns reads
+as one. **Ambiguous count → route to the split**: § 0 reads the diff and settles it, so arriving
+there with one concern costs a granularity modal, while missing a third concern costs a rewritten
+history.
+
 > **Todo**: before anything is staged on any path below, Read
 > `.claude/skills/core-commit/references/staging-safety.md` and apply its blocklist, warnings, and
-> `.gitignore` coverage check. The ≥3-group path re-runs the blocklist per commit
-> (`multi-commit-split.md § 0` and § 3); the other two paths get it only here.
+> `.gitignore` coverage check. Every path runs these exactly once against the whole changeset —
+> the ≥3-group path runs them at `multi-commit-split.md § 0` instead of here, since § 0 freezes the
+> path set they check.
 
 Then apply the routing test, in this order:
 

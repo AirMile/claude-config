@@ -11,6 +11,20 @@ then reports as MISSING. SKILL.md Step 2's `> **Todo**` already loaded `staging-
 way here — apply its coverage check now if that has not happened yet. Any resulting `.gitignore`
 edit is a normal changed file and gets assigned by § 2 like any other.
 
+**Run the secret blocklist once, here too.** It matches on _paths_, and § 0 freezes the complete
+path set — so one run over the whole changeset covers every commit this split will produce. A
+per-commit run only re-checks a subset of the same paths:
+
+```bash
+SECRETS='(^|/)\.env|\.(key|pem|pfx|p12|crt)$'
+SECRETS="$SECRETS"'|credentials\.json|secrets\.|service-account.*\.json'
+git status --porcelain | awk '{print $NF}' | grep -nE "$SECRETS"
+```
+
+Any output → **STOP**, warn the user and get those paths out of the changeset before freezing
+anything. A clean set prints nothing and exits 1 — that is the passing case, so run this on its own
+rather than chaining another command behind it, whose output would read as a hit.
+
 **Freeze the baseline before anything is staged** — § 3.5's gate compares against it, and once the
 first commit lands the pre-split state is no longer reconstructible:
 
@@ -55,7 +69,9 @@ infer concerns from directory names.
 2. **Classify every changed file** by its _added_ lines, never by its path. § 0 already froze the
    complete diff, so start there rather than re-deriving it. Pick by size (`wc -l` on
    `presplit.diff`):
-   - **under ~1500 lines** → Read it whole (1–2 calls) and classify from that.
+   - **under ~1500 lines** → Read it whole and classify from that. Budget two calls, not one: a
+     diff runs roughly 30 tokens per line against a 25k-token cap per Read, so ~850 lines is all
+     one call holds.
    - **1500+ lines** → dispatch one `model: "sonnet"` agent with the _path_, never the content
      (`SKILL-PATTERNS.md § Pass Paths, Not Content`). Prompt it to read the diff and return only:
      one line per concern, and a `file → concern(s)` table covering every changed path. Keeping
@@ -87,19 +103,21 @@ Open with § 0's inventory — the user's answer should reflect the real scope, 
 recommended-first. Ask it only after the granularity answer is in: batching it with the granularity
 question asks a conditional question unconditionally.
 
+**Print the planned commit list before asking.** Plain text above the modal: the planned commit
+**subjects**, numbered, one line each, in execution order. "Auto-commit all" makes this modal the
+only approval the split gets, so the answer is meaningless without the list in view — and it
+orients the user on the per-commit path too. Never present this modal without it.
+
 - header: "Gating"
 - question: "This will produce {n} commits. How do you want to approve them?"
 - options:
   - "Confirm each commit (Recommended)" — Step 5's Confirm gate fires once per commit, as usual
-  - "Auto-commit all" — one approval covers the whole split, so the user must see what they are
-    approving before answering: print the full numbered list of planned commit **subjects** as
-    plain text (one line each, in execution order) _above_ this modal. The gating answer itself
-    is that approval — do not follow it with a second confirmation modal, and never print the
-    list without one. Each body is authored at its own commit against the hunks actually staged,
-    under Step 4's rules — bodies are not drafted up front and are not re-approved. Execute all
-    commits back-to-back with no per-commit modal. Still stop immediately and report if any
-    commit fails (hook failure, conflict) — auto mode does not suppress error handling
-    (SKILL.md Step 6).
+  - "Auto-commit all" — the answer to this modal _is_ the approval of the list above: do not
+    follow it with a second confirmation modal. Each body is authored at its own commit against
+    the hunks actually staged, under Step 4's rules — bodies are not drafted up front and are not
+    re-approved. Execute all commits back-to-back with no per-commit modal. Still stop immediately
+    and report if any commit fails (hook failure, conflict) — auto mode does not suppress error
+    handling (SKILL.md Step 6).
 
 An explicit delegation from the user ("do what you think", "just pick") answers this gating
 question on its own — default to "Auto-commit all", state the choice, don't ask.
@@ -130,6 +148,10 @@ by hunk boundary — treat it as two sequential edits, not one hunk.
 
 ## 3. Stage whole-owned files, then build shared files incrementally
 
+> **Todo**: § 4 runs **before** this section's first commit, not after it — discover the test suite
+> and run it now. It is written after § 3 because its per-commit rules only make sense once staging
+> is described; the execution order is § 4's discovery, then § 3's first commit.
+
 **5+ commits → seed the task list first**: `TaskCreate` one task per planned commit (subject as
 the title, in execution order) plus a final "integrity check + report" task; mark each
 `in_progress` when its commit starts and `completed` when it lands (`SKILL-PATTERNS.md § Task
@@ -150,24 +172,15 @@ For each commit, in dependency order:
    ```
 
    DRIFT → **STOP** before staging anything. Report which commit landed (`git log
-   "$EXPECTED"..HEAD`), then re-derive § 0's inventory against the new HEAD: whatever that commit
+"$EXPECTED"..HEAD`), then re-derive § 0's inventory against the new HEAD: whatever that commit
    already carries drops out of the remaining commits, everything else continues under its
    planned subject. Never proceed on the frozen inventory — it no longer describes the tree.
 
-1. `git add` every file wholly owned by this commit, then run `staging-safety.md`'s secret
-   blocklist against what is actually staged — after adding, before committing, so the check sees
-   the real set:
-
-   ```bash
-   SECRETS='(^|/)\.env|\.(key|pem|pfx|p12|crt)$'
-   SECRETS="$SECRETS"'|credentials\.json|secrets\.|service-account.*\.json'
-   git diff --cached --name-only | grep -nE "$SECRETS"
-   ```
-
-   Any output → **STOP**, unstage those paths and warn the user, exactly as the single-commit path
-   does. A clean set prints nothing and exits 1 — that is the passing case, so run this on its own
-   rather than chaining another `git` command behind it, whose output would read as a hit.
-   (`.gitignore` coverage is not checked here — § 0 ran it once for the whole changeset.)
+1. `git add` every file wholly owned by this commit. The secret blocklist and the `.gitignore`
+   coverage check both ran at § 0 against the full path set, which is a superset of every commit's
+   staged set — do not re-run them here. One exception: a file _this split created_ that the
+   baseline never had (a lint fix, a regenerated config) was not in that set — re-run § 0's
+   blocklist against that path before committing it.
 
 2. For each shared file this commit touches, pick one technique:
    - **Fold it** (prefer this for a 1–2 line fragment): assign the whole file to one commit and
@@ -354,3 +367,10 @@ of the split a reader cannot reconstruct from the log. Then continue to SKILL.md
 `git reset --soft HEAD~1` undoes the most recent commit while keeping everything staged exactly
 as it was — safe as long as nothing has been pushed. Fix the staged content, then re-commit.
 Never `git reset --hard` or force-push to recover from a self-made splitting mistake.
+
+**If the split is abandoned** — the user cancels at a Confirm gate, or § 3 step 0 reports drift that
+cannot be absorbed — the commits already made are real work and stay: do not unwind them. Report
+which planned commits landed and which did not, and leave `$SCRATCH` in place. § 3.5 never ran, so
+that baseline is the only surviving record of the pre-split state, and deleting it is what makes the
+remainder unreconstructible. A later `/core-commit` re-freezes from the new HEAD and picks up what
+is left.

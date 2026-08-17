@@ -1,7 +1,8 @@
 # Staging Safety
 
-Run before staging any files — both from the single-commit "stage all" path (SKILL.md Step 2)
-and from every commit in a multi-commit split (`multi-commit-split.md` § 3).
+Run before staging any files — from the single-commit "stage all" path (SKILL.md Step 2), and once
+against the whole changeset at `multi-commit-split.md` § 0 on a multi-commit split. Both checks
+match on paths, so one run per changeset covers every commit it produces.
 
 **Automatically block staging of:**
 

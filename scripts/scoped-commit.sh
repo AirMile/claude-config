@@ -25,6 +25,9 @@
 # script does not decide what belongs in the commit, only lands it safely.
 # Stages each file's CURRENT WORKING-TREE content in full; it does not support
 # staging only part of a file's diff (see § 5's mixed-content fallback note).
+# A path that no longer exists on disk stages as a deletion (git add -A), so a
+# run that renames or retires a file passes those paths in --files like any
+# other. Gitignored paths still fail the call — filter them out before calling.
 #
 # Exit 0 = committed, prints the new commit sha.
 #   2 = usage error. 3 = not a git repo. 4 = nothing to commit for the given
@@ -59,7 +62,10 @@ while (( attempt < RETRIES )); do
   rm -f "$ISO_INDEX"
 
   GIT_INDEX_FILE="$ISO_INDEX" git read-tree "$OLD_HEAD"
-  GIT_INDEX_FILE="$ISO_INDEX" git add -- "${FILE_ARR[@]}"
+  # -A so a path the caller deleted stages as a deletion instead of failing the
+  # whole call with "pathspec did not match any files". Scoped to the explicit
+  # --files pathspecs, so this never widens the commit beyond what was approved.
+  GIT_INDEX_FILE="$ISO_INDEX" git add -A -- "${FILE_ARR[@]}"
   TREE=$(GIT_INDEX_FILE="$ISO_INDEX" git write-tree)
   rm -f "$ISO_INDEX"
 
