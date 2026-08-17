@@ -2,13 +2,15 @@
 
 > **改善 (Kaizen)** — _Good enough today, better tomorrow._
 
-A personal, versioned Claude Code setup — skills, hooks, and project scaffolding linked into `~/.claude/` via symlinks (macOS) or junctions (Windows). Skills run as `/skill-name`; a few delegate to isolated sub-agents under the hood.
+A universal, versioned AI Agent setup — skills, hooks, and project scaffolding shared across **Claude Code**, **Antigravity**, and **GitHub Copilot** via symlinks (macOS) or junctions (Windows). Skills run as `/skill-name`; a few delegate to isolated sub-agents under the hood.
 
 ```
-~/.claude/skills/   →  junction/symlink to this repo's skills/
-~/.claude/agents/   →  junction/symlink to this repo's agents/
-~/.claude/hooks/    →  junction/symlink to this repo's hooks/
-~/.claude/scripts/  →  junction/symlink to this repo's scripts/
+~/.claude/skills/        →  symlink to this repo's skills/ (Claude Code)
+~/.gemini/config/skills/ →  symlink to this repo's skills/ (Antigravity)
+dist/copilot/prompts/    →  auto-synced .prompt.md files (GitHub Copilot)
+~/.claude/agents/        →  symlink to this repo's agents/
+~/.claude/hooks/         →  symlink to this repo's hooks/
+~/.claude/scripts/       →  symlink to this repo's scripts/
 ```
 
 ## Quickstart
@@ -20,13 +22,16 @@ git clone https://github.com/<your-username>/claude-config.git
 cd claude-config
 ```
 
-**2. Bootstrap once per machine** (inside Claude Code):
+**2. Bootstrap once per machine**:
 
-```
-/core-bootstrap
-```
+- Inside Claude Code: `/core-bootstrap`
+- Or from terminal (Universal for Claude Code + Antigravity + GitHub Copilot):
+  ```bash
+  bash scripts/wire-universal-symlinks.sh --global
+  ```
 
-Deploys `CLAUDE.md`, `settings.json`, `keybindings.json`, statusline + 4 global symlinks (`~/.claude/{skills,agents,hooks,scripts}`).
+Deploys global symlinks for Claude Code (`~/.claude/`), Antigravity (`~/.gemini/config/skills`), and generates GitHub Copilot prompts (`dist/copilot/prompts/`).
+
 
 **3. Per project, pick one entry point:**
 

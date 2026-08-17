@@ -944,3 +944,24 @@ personal/
 **For forks**: update `author:` in skill frontmatters to your own handle. Add your
 writing styles to `personal/styles/`. Override defaults in `personal/settings.overlay.json`.
 See [`personal/README.md.template`](../../personal/README.md.template) for the full setup guide.
+
+---
+
+## Cross-Agent Compatibility (Universal Prompting)
+
+Skills authored in `skills/` are shared across **Claude Code**, **Antigravity**, and **GitHub Copilot**. Follow these guidelines to ensure instructions execute reliably across all LLM backends (Claude Opus/Sonnet, Gemini 2.0/3.7, GPT-4o):
+
+1. **Declarative Tool Directives**:
+   - Write actions semantically rather than referencing proprietary tool names.
+   - *Prefer*: "Ask the user for confirmation with options: [A] (Recommended), [B]" over calling specific tool APIs directly in prose.
+   - *Prefer*: "Inspect the staged changes via git diff" over "Execute Read tool on diff".
+
+2. **Standard Frontmatter**:
+   - Every skill must have clean YAML frontmatter with `name` and `description`.
+   - Keep descriptions concise (≤ 200 characters) for maximum compatibility across web and IDE interfaces.
+
+3. **Multi-Agent Discovery**:
+   - Claude Code: `~/.claude/skills/`
+   - Antigravity: `~/.gemini/config/skills/` and `.agents/skills/`
+   - GitHub Copilot: `.github/prompts/*.prompt.md` (synchronized via `scripts/sync-copilot.js`)
+

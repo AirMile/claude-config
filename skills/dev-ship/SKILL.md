@@ -89,6 +89,9 @@ and drives them internally — there are no separate `/dev-define`…`/dev-refac
   (model override only there — it cannot set effort) — a background subagent cannot call the
   Workflow tool (not reachable even via `ToolSearch`), so the fallback is run by the main chat
   itself, never by an intermediate orchestrator agent.
+- **Cross-Agent Execution (Antigravity / Copilot)**: When running outside Claude Code:
+  - **Antigravity**: Launch subagents via `invoke_subagent` or follow the multi-phase planning mode.
+  - **Copilot / Single-agent Mode**: Execute the 6 phases sequentially in the active session with milestone status markers.
 
   | Agent                 | Model    | Effort   | Why                                                                   |
   | --------------------- | -------- | -------- | --------------------------------------------------------------------- |
@@ -104,8 +107,8 @@ and drives them internally — there are no separate `/dev-define`…`/dev-refac
 
 ## Workflow
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items
-(status `pending`), then use `TaskUpdate` to set each phase to `in_progress` at the start and
+**Phase tracking** — first action of the skill: call `TaskCreate` (or native task tool / progress signal) with these 6 items
+(status `pending`), then use `TaskUpdate` (or progress output) to set each phase to `in_progress` at the start and
 `completed` at the end. During context compaction the task list remains visible.
 
 **Durable checkpoint (pause/resume across sessions)** — beyond the compaction-safe `TaskCreate` list,
@@ -126,12 +129,8 @@ then a fresh-session resume when manual items remain.
 
 ### PHASE 0: Define + Classify + Auto-derive technique plan
 
-> **Todo**: call `ToolSearch query="select:TaskCreate,TaskUpdate"` first — both tools are deferred
-> and unusable without their schemas. If they don't resolve (unavailable this session), skip task
-> tracking and continue — but still print one line at every PHASE N → PHASE N+1 transition below
-> (e.g. "PHASE 1 → PHASE 2: build done, auto-verify starting") so a run without the tool still
-> carries a visible progress signal instead of silence between phases (mirrors `dev-manual`'s same
-> fallback for its MANUAL 0–3 items).
+> **Todo**: Track phase progress with native task tools if available, or print one line at every PHASE N → PHASE N+1 transition below
+> (e.g. "PHASE 1 → PHASE 2: build done, auto-verify starting") so progress remains visible across phases.
 > **Check for a resumable run before seeding tasks** (the resume path is deliberately cheap — it
 > skips the fresh-run PHASE 0 file entirely):
 >

@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# scripts/wire-universal-symlinks.sh — Wire universal skills and config across
+# Claude Code (~/.claude), Antigravity (~/.gemini/config), and GitHub Copilot.
+#
+# Usage:
+#   bash scripts/wire-universal-symlinks.sh [--global] [--project /path/to/project]
+#
+# Exit 0 = symlinks wired successfully.
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TARGET_PROJECT=""
+DO_GLOBAL=1
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --global)
+      DO_GLOBAL=1
+      shift ;;
+    --project)
+      TARGET_PROJECT="${2:-}"
+      shift 2 ;;
+    -h|--help)
+      echo "Usage: $0 [--global] [--project /path/to/project]"
+      exit 0 ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1 ;;
+  esac
+done
+
+echo "🔧 Wiring Universal AI Agent Configurations..."
+
+# 1. Sync Copilot Prompts first
+echo "📦 Generating GitHub Copilot Prompts..."
+node "$REPO_ROOT/scripts/sync-copilot.js"
+
+# 2. Global Wiring (Claude Code + Antigravity)
+if [ "$DO_GLOBAL" -eq 1 ]; then
+  echo ""
+  echo "🌐 Wiring Global Symlinks..."
+
+  # Claude Code
+  mkdir -p "$HOME/.claude"
+  for dir in skills agents hooks scripts; do
+    target="$HOME/.claude/$dir"
+    if [ -L "$target" ] || [ ! -e "$target" ]; then
+      ln -sfn "$REPO_ROOT/$dir" "$target"
+      echo "  ✅ ~/.claude/$dir -> $REPO_ROOT/$dir"
+    else
+      echo "  ⚠️ ~/.claude/$dir exists and is not a symlink (skipped)"
+    fi
+  done
+
+  # Antigravity (~/.gemini/config)
+  GEMINI_CONFIG="$HOME/.gemini/config"
+  mkdir -p "$GEMINI_CONFIG"
+  if [ -L "$GEMINI_CONFIG/skills" ] || [ ! -e "$GEMINI_CONFIG/skills" ]; then
+    ln -sfn "$REPO_ROOT/skills" "$GEMINI_CONFIG/skills"
+    echo "  ✅ ~/.gemini/config/skills -> $REPO_ROOT/skills"
+  else
+    echo "  ⚠️ ~/.gemini/config/skills exists and is not a symlink (skipped)"
+  fi
+fi
+
+# 3. Project-specific wiring if requested
+if [ -n "$TARGET_PROJECT" ]; then
+  echo ""
+  echo "📁 Wiring Project: $TARGET_PROJECT..."
+  if [ ! -d "$TARGET_PROJECT" ]; then
+    echo "❌ Error: Project directory does not exist: $TARGET_PROJECT" >&2
+    exit 1
+  fi
+
+  # Wire .claude
+  mkdir -p "$TARGET_PROJECT/.claude"
+  ln -sfn "$REPO_ROOT/skills" "$TARGET_PROJECT/.claude/skills"
+  echo "  ✅ .claude/skills -> $REPO_ROOT/skills"
+
+  # Wire .agents (Antigravity project scope)
+  mkdir -p "$TARGET_PROJECT/.agents"
+  ln -sfn "$REPO_ROOT/skills" "$TARGET_PROJECT/.agents/skills"
+  echo "  ✅ .agents/skills -> $REPO_ROOT/skills"
+
+  # Wire .github/prompts (GitHub Copilot)
+  mkdir -p "$TARGET_PROJECT/.github"
+  ln -sfn "$REPO_ROOT/dist/copilot/prompts" "$TARGET_PROJECT/.github/prompts"
+  echo "  ✅ .github/prompts -> $REPO_ROOT/dist/copilot/prompts"
+
+  # Scaffold AGENTS.md / CLAUDE.md / GEMINI.md if AGENTS.md doesn't exist
+  if [ ! -f "$TARGET_PROJECT/AGENTS.md" ]; then
+    if [ -f "$REPO_ROOT/AGENTS.base.md" ]; then
+      cp "$REPO_ROOT/AGENTS.base.md" "$TARGET_PROJECT/AGENTS.md"
+      echo "  ✅ Created $TARGET_PROJECT/AGENTS.md"
+    fi
+  fi
+fi
+
+echo ""
+echo "🎉 Done! Skills are now universally available across Claude Code, Antigravity, and GitHub Copilot."
