@@ -89,9 +89,8 @@ and drives them internally — there are no separate `/dev-define`…`/dev-refac
   (model override only there — it cannot set effort) — a background subagent cannot call the
   Workflow tool (not reachable even via `ToolSearch`), so the fallback is run by the main chat
   itself, never by an intermediate orchestrator agent.
-- **Cross-Agent Execution (Antigravity / Copilot)**: When running outside Claude Code:
-  - **Antigravity**: Launch subagents via `invoke_subagent` or follow the multi-phase planning mode.
-  - **Copilot / Single-agent Mode**: Execute the 6 phases sequentially in the active session with milestone status markers.
+- **Cross-Agent Execution (Antigravity / Cursor / Copilot)**: When running in an environment without background text-agent tools (e.g. missing `Workflow` or `invoke_subagent`):
+  - **Orchestration Degradation**: You MUST fall back to "Inline Execution Mode" per `shared/SKILL-PATTERNS.md`. Execute the phases sequentially in the active session, assuming the personas of AGENT 1 (build) and AGENT 2 (verify) yourself. Do not block or crash waiting for a background tool.
 
   | Agent                 | Model    | Effort   | Why                                                                   |
   | --------------------- | -------- | -------- | --------------------------------------------------------------------- |

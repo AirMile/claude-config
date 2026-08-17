@@ -556,6 +556,20 @@ Use {when|with} <trigger>. <short addition>. Use with /<command-name>[, optional
 
 ---
 
+## Orchestration Degradation (Inline Fallback)
+
+**When:** A skill defines a multi-agent orchestration pipeline (like `/dev-ship`) that relies on background subagents, but the user executes it in an environment that does not support background text-agent tools (e.g., Antigravity IDE, Cursor, GitHub Copilot).
+
+**How:** Orchestration skills MUST gracefully degrade to a single-session sequential flow ("Inline Execution Mode") rather than crashing or refusing to execute. The main agent assumes the personas of the subagents sequentially.
+
+**Rules:**
+
+- **No background dependencies:** If `invoke_subagent` or `Workflow` tools are missing, the agent MUST NOT block execution. It must read the intended subagent prompt and execute it itself in the current chat.
+- **Maintain milestones:** During inline execution, the agent must still adhere to checkpointing (`completedPhases`) and write to `feature.json`, ensuring the run remains resumable.
+- **Zero-config:** Do not prompt the user to configure custom LLM API keys or external shell scripts to bypass the IDE's missing background capability; always default to inline degradation to utilize the IDE's native context and billing.
+
+---
+
 ## Modal Option Cap
 
 **When:** A skill uses AskUserQuestion (multi-select) where the number of options is dynamic — depends on runtime context, scan results, stack, or user input. Applies to options generated from feature lists, agent outputs, file scans, or other unbounded sources.
