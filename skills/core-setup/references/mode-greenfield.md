@@ -341,11 +341,15 @@ Generate CLAUDE.md following the **canonical structure** from `references/claude
 If the run arrived via the project-add handoff (Phase 0 setup-pending marker), project-add has already written wholesale Claude ignores (`.claude/`, `.project/`, `CLAUDE.md`, `AGENTS.md`) — the `grep` guards below will find them and skip. The appends matter for the standalone path (core-setup run without project-add), where these entries are genuinely absent.
 
 ```bash
-# Ensure Claude tooling & local project data are gitignored (never committed to the project repo)
-grep -qxF 'CLAUDE.md' .gitignore 2>/dev/null || echo 'CLAUDE.md' >> .gitignore
-grep -qxF 'AGENTS.md' .gitignore 2>/dev/null || echo 'AGENTS.md' >> .gitignore
-grep -qxF '.claude/' .gitignore 2>/dev/null || echo '.claude/' >> .gitignore
-grep -qxF '.project/' .gitignore 2>/dev/null || echo '.project/' >> .gitignore
+# Ensure Universal AI Agent tooling & local project data are gitignored
+for item in 'CLAUDE.md' 'AGENTS.md' 'GEMINI.md' 'CODEX.md' '.cursorrules' '.claude/' '.agents/' '.cursor/' '.project/'; do
+  grep -qxF "$item" .gitignore 2>/dev/null || echo "$item" >> .gitignore
+done
+
+# Wire universal symlinks for other AI tools
+for cfg in AGENTS.md GEMINI.md CODEX.md .cursorrules; do
+  [ -L "$cfg" ] || [ ! -e "$cfg" ] && ln -sfn "CLAUDE.md" "$cfg" 2>/dev/null || true
+done
 ```
 
 ---

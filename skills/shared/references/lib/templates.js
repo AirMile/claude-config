@@ -77,7 +77,7 @@ const GLOBAL_CONFIG_HTML = `
 
     if (editing) {
       modal.innerHTML =
-        '<div class="config-header"><h3>~/.claude/CLAUDE.md</h3><div style="display:flex;gap:8px">' +
+        '<div class="config-header"><h3>Global Agent Guidelines</h3><div style="display:flex;gap:8px">' +
         '<button class="config-btn config-btn-save" id="gcfg-save">Save</button>' +
         '<button class="config-btn config-btn-cancel" id="gcfg-cancel">Cancel</button>' +
         '</div></div>' +
@@ -86,7 +86,7 @@ const GLOBAL_CONFIG_HTML = `
     }
 
     modal.innerHTML =
-      '<div class="config-header"><h3>~/.claude/CLAUDE.md</h3><div style="display:flex;gap:8px">' +
+      '<div class="config-header"><h3>Global Agent Guidelines</h3><div style="display:flex;gap:8px">' +
       '<button class="config-btn config-btn-edit" id="gcfg-edit">Bewerken</button>' +
       '<button class="config-btn config-btn-close" id="gcfg-close">&times;</button>' +
       '</div></div>' +
@@ -215,7 +215,7 @@ function getNavBarHtml(projectDir, activePage, projects) {
       </div>
       <div class="pn-prefs-section" id="pn-theme-slot"></div>
       <div class="pn-prefs-section">
-        <button class="pn-config-btn" id="config-open">Global Config (CLAUDE.md)</button>
+        <button class="pn-config-btn" id="config-open">Global Agent Guidelines</button>
       </div>
     </div>
   </div>

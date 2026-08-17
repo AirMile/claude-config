@@ -430,23 +430,54 @@ http
       return;
     }
 
-    // Global CLAUDE.md (read/write)
+    // Global CLAUDE.md / AGENTS.md / GEMINI.md (read/write)
     if (
       parts[0] === "global" &&
       parts[1] === "claude-md" &&
       parts.length === 2
     ) {
-      const globalPath = path.join(
-        require("os").homedir(),
-        ".claude/CLAUDE.md",
-      );
+      const homeDir = require("os").homedir();
+      const globalPath = path.join(homeDir, ".claude/CLAUDE.md");
+      const geminiConfigDir = path.join(homeDir, ".gemini/config");
+      const geminiGlobalPath = path.join(geminiConfigDir, "GEMINI.md");
+      const geminiAgentsGlobalPath = path.join(geminiConfigDir, "AGENTS.md");
+      const cursorGlobalRulesPath = path.join(homeDir, ".cursorrules");
+      const codexGlobalPath = path.join(homeDir, ".codex/instructions.md");
+
+      function syncGlobalConfigs() {
+        if (!fs.existsSync(globalPath)) return;
+        try {
+          if (!fs.existsSync(geminiConfigDir)) fs.mkdirSync(geminiConfigDir, { recursive: true });
+          if (!fs.existsSync(geminiGlobalPath) || fs.lstatSync(geminiGlobalPath).isSymbolicLink()) {
+            try { fs.unlinkSync(geminiGlobalPath); } catch {}
+            fs.symlinkSync(globalPath, geminiGlobalPath);
+          }
+          if (!fs.existsSync(geminiAgentsGlobalPath) || fs.lstatSync(geminiAgentsGlobalPath).isSymbolicLink()) {
+            try { fs.unlinkSync(geminiAgentsGlobalPath); } catch {}
+            fs.symlinkSync(globalPath, geminiAgentsGlobalPath);
+          }
+          if (!fs.existsSync(cursorGlobalRulesPath) || fs.lstatSync(cursorGlobalRulesPath).isSymbolicLink()) {
+            try { fs.unlinkSync(cursorGlobalRulesPath); } catch {}
+            fs.symlinkSync(globalPath, cursorGlobalRulesPath);
+          }
+          const codexDir = path.dirname(codexGlobalPath);
+          if (!fs.existsSync(codexDir)) fs.mkdirSync(codexDir, { recursive: true });
+          if (!fs.existsSync(codexGlobalPath) || fs.lstatSync(codexGlobalPath).isSymbolicLink()) {
+            try { fs.unlinkSync(codexGlobalPath); } catch {}
+            fs.symlinkSync(globalPath, codexGlobalPath);
+          }
+        } catch {}
+      }
 
       if (req.method === "GET") {
         let content = "";
         if (fs.existsSync(globalPath)) {
           try {
             content = fs.readFileSync(globalPath, "utf8");
+            syncGlobalConfigs();
           } catch {}
+        } else if (fs.existsSync(geminiGlobalPath)) {
+          try { content = fs.readFileSync(geminiGlobalPath, "utf8"); } catch {}
         }
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ content }));
@@ -459,7 +490,10 @@ http
         req.on("end", () => {
           try {
             const { content } = JSON.parse(body);
+            const dir = path.dirname(globalPath);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
             fs.writeFileSync(globalPath, content, "utf8");
+            syncGlobalConfigs();
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ ok: true }));
           } catch (err) {
@@ -1014,16 +1048,36 @@ http
         return;
       }
 
-      // CLAUDE.md (read/write)
+      // Project CLAUDE.md / AGENTS.md / GEMINI.md / CODEX.md (read/write)
       if (parts[1] === "claude-md" && parts.length === 2) {
         const claudePath = path.join(projectPath, "CLAUDE.md");
+        const agentsPath = path.join(projectPath, "AGENTS.md");
+        const geminiPath = path.join(projectPath, "GEMINI.md");
+        const codexPath = path.join(projectPath, "CODEX.md");
+        const cursorrulesPath = path.join(projectPath, ".cursorrules");
+
+        function syncProjectConfigs() {
+          if (!fs.existsSync(claudePath)) return;
+          const targets = [agentsPath, geminiPath, codexPath, cursorrulesPath];
+          for (const target of targets) {
+            try {
+              if (!fs.existsSync(target) || fs.lstatSync(target).isSymbolicLink()) {
+                try { fs.unlinkSync(target); } catch {}
+                fs.symlinkSync("CLAUDE.md", target);
+              }
+            } catch {}
+          }
+        }
 
         if (req.method === "GET") {
           let content = "";
           if (fs.existsSync(claudePath)) {
             try {
               content = fs.readFileSync(claudePath, "utf8");
+              syncProjectConfigs();
             } catch {}
+          } else if (fs.existsSync(agentsPath)) {
+            try { content = fs.readFileSync(agentsPath, "utf8"); } catch {}
           }
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ content }));
@@ -1039,6 +1093,7 @@ http
               const dir = path.dirname(claudePath);
               if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
               fs.writeFileSync(claudePath, content, "utf8");
+              syncProjectConfigs();
               res.writeHead(200, { "Content-Type": "application/json" });
               res.end(JSON.stringify({ ok: true }));
             } catch (err) {

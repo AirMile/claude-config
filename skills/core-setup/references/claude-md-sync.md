@@ -86,6 +86,13 @@ Write only selected changes. Placeholder substitutions (`{{PROJECT_NAME}}` etc.)
 
 Per chosen section: replace content between markers with base version. Stack-overwrite: replace `### Stack` block with `inferred-stack` values.
 
+Ensure universal symlinks exist for all supported AI agents:
+```bash
+for cfg in AGENTS.md GEMINI.md CODEX.md .cursorrules; do
+  [ -L "$cfg" ] || [ ! -e "$cfg" ] && ln -sfn "CLAUDE.md" "$cfg" 2>/dev/null || true
+done
+```
+
 ---
 
 ## PHASE D: Report

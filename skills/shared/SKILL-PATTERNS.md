@@ -949,7 +949,7 @@ See [`personal/README.md.template`](../../personal/README.md.template) for the f
 
 ## Cross-Agent Compatibility (Universal Prompting)
 
-Skills authored in `skills/` are shared across **Claude Code**, **Antigravity**, and **GitHub Copilot**. Follow these guidelines to ensure instructions execute reliably across all LLM backends (Claude Opus/Sonnet, Gemini 2.0/3.7, GPT-4o):
+Skills authored in `skills/` are shared across **Claude Code**, **Antigravity**, **Cursor**, **Codex**, and **GitHub Copilot**. Follow these guidelines to ensure instructions execute reliably across all LLM backends (Claude Opus/Sonnet, Gemini 2.0/3.7, GPT-4o, OpenAI o-series):
 
 1. **Declarative Tool Directives**:
    - Write actions semantically rather than referencing proprietary tool names.
@@ -960,8 +960,10 @@ Skills authored in `skills/` are shared across **Claude Code**, **Antigravity**,
    - Every skill must have clean YAML frontmatter with `name` and `description`.
    - Keep descriptions concise (≤ 200 characters) for maximum compatibility across web and IDE interfaces.
 
-3. **Multi-Agent Discovery**:
-   - Claude Code: `~/.claude/skills/`
-   - Antigravity: `~/.gemini/config/skills/` and `.agents/skills/`
-   - GitHub Copilot: `.github/prompts/*.prompt.md` (synchronized via `scripts/sync-copilot.js`)
+3. **Multi-Agent Discovery & Synchronization**:
+   - **Claude Code**: `~/.claude/skills/` (direct symlink)
+   - **Antigravity**: `~/.gemini/config/skills/` and `.agents/skills/` (direct symlink)
+   - **Cursor**: `.cursor/rules/*.mdc` (synchronized via `scripts/sync-universal.js`)
+   - **GitHub Copilot**: `.github/prompts/*.prompt.md` (synchronized via `scripts/sync-universal.js`)
+   - **Codex / Aider / Generic Agents**: `AGENTS.md` and `CODEX.md` (scaffolded via `wire-universal-symlinks.sh`)
 

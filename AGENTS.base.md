@@ -1,6 +1,6 @@
 # Agent Configuration & Project Guidelines
 
-> Universal instructions for AI Agents (Antigravity, Claude Code, GitHub Copilot).
+> Universal instructions for AI Agents (Antigravity, Claude Code, Cursor, Codex, GitHub Copilot).
 
 ## User Preferences
 

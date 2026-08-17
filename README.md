@@ -2,12 +2,14 @@
 
 > **改善 (Kaizen)** — _Good enough today, better tomorrow._
 
-A universal, versioned AI Agent setup — skills, hooks, and project scaffolding shared across **Claude Code**, **Antigravity**, and **GitHub Copilot** via symlinks (macOS) or junctions (Windows). Skills run as `/skill-name`; a few delegate to isolated sub-agents under the hood.
+A universal, versioned AI Agent setup — skills, hooks, and project scaffolding shared across **Claude Code**, **Antigravity**, **Cursor**, **Codex**, and **GitHub Copilot** via symlinks (macOS) or junctions (Windows). Skills run as `/skill-name`; a few delegate to isolated sub-agents under the hood.
 
 ```
 ~/.claude/skills/        →  symlink to this repo's skills/ (Claude Code)
 ~/.gemini/config/skills/ →  symlink to this repo's skills/ (Antigravity)
+dist/cursor/rules/       →  auto-synced .mdc rules (Cursor)
 dist/copilot/prompts/    →  auto-synced .prompt.md files (GitHub Copilot)
+AGENTS.md / CODEX.md     →  universal guidelines (Codex, Aider, Cursor, Antigravity)
 ~/.claude/agents/        →  symlink to this repo's agents/
 ~/.claude/hooks/         →  symlink to this repo's hooks/
 ~/.claude/scripts/       →  symlink to this repo's scripts/
@@ -25,12 +27,12 @@ cd claude-config
 **2. Bootstrap once per machine**:
 
 - Inside Claude Code: `/core-bootstrap`
-- Or from terminal (Universal for Claude Code + Antigravity + GitHub Copilot):
+- Or from terminal (Universal for Claude Code + Antigravity + Cursor + Copilot + Codex):
   ```bash
   bash scripts/wire-universal-symlinks.sh --global
   ```
 
-Deploys global symlinks for Claude Code (`~/.claude/`), Antigravity (`~/.gemini/config/skills`), and generates GitHub Copilot prompts (`dist/copilot/prompts/`).
+Deploys global symlinks for Claude Code (`~/.claude/`), Antigravity (`~/.gemini/config/skills`), Cursor (`dist/cursor/rules/`), and generates GitHub Copilot prompts (`dist/copilot/prompts/`).
 
 
 **3. Per project, pick one entry point:**
