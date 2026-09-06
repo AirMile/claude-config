@@ -1,11 +1,11 @@
 ---
 name: dev-inspect
-description: Edit a pasted inspect-overlay ref ([path:line ...]) and screenshot-verify. Use with /dev-inspect.
+description: Edit a pasted inspect-overlay ref and screenshot-verify. Use with /dev-inspect.
 argument-hint: "[pasted [ref] block(s) + change description]"
 reads: [project.theme]
 metadata:
   author: claude-config
-  version: 1.3.0
+  version: 1.4.0
   category: dev
 ---
 
@@ -68,7 +68,10 @@ paste is wasted tokens in a rapid-fire session.
 5. **Size gate** on the projected scope per
    [shared/TWEAK-DISCIPLINE.md](../shared/TWEAK-DISCIPLINE.md) § Size gate — criteria 1-4 and 6
    (criterion 5 is the backlog guard, which does not run here). Skip the Read when the file is
-   already in context this session.
+   already in context this session. **Criterion 2's file span is `git status --short | wc -l`**,
+   not a mental tally — run it fresh on every entry (first paste or subsequent) so a rapid-fire
+   session's mid-flight "4th file" trigger (PHASE 2) is caught by the same command instead of
+   memory.
 
    **Criterion 2 (file span > 3) does not fire on a uniform cosmetic batch** — every ref gets the
    same one-line styling edit (one class/property, same direction, no logic, no new surface).
@@ -78,6 +81,10 @@ paste is wasted tokens in a rapid-fire session.
 
    > **Todo**: any criterion fires → Read
    > `.claude/skills/dev-inspect/references/escalate.md` and follow it — never continue silently.
+
+   **Gate check**: PHASE 1 does not start until this step has printed something — the theme
+   digest (or its "Theme: none" fallback) and a size-gate verdict (pass, cosmetic-batch, or
+   escalated). No printed line here is itself the failure mode, not a thing to catch downstream.
 
 ## PHASE 1 — Resolve targets
 
@@ -108,8 +115,9 @@ motion, a11y — the theme digest from PHASE 0 step 4 is the "prerequisite" it e
 scope-check "component vs callsite" call is the PHASE 1 decision above, applied here before
 editing.
 
-**Mid-flight re-check**: a 4th file or a discovered net-new surface → stop and Read
-`references/escalate.md`.
+**Mid-flight re-check**: re-run PHASE 0 step 5's `git status --short` count before each new edit
+in a multi-edit run — a 4th file or a discovered net-new surface (e.g. a new rendering pattern
+like a portal, not just a class/token swap) → stop and Read `references/escalate.md`.
 
 ## PHASE 3 — Screenshot-verify
 
@@ -147,20 +155,26 @@ Always runs — the edit is not done until it is seen working.
    report PASS and do not carry the findings forward: restart the dev server (a long HMR session
    can leave the bundler serving 404s for its own chunks), re-navigate, redo the round. Same rule
    as [design-convert § 3.1](../design-convert/references/convert-verification-loop.md).
-5. **Capture & judge**: element-scoped screenshot plus one wider container shot. Verdict on:
+5. **Representative-state check — a verdict against a default state is worse than no verdict for
+   fixed/sticky stacking, `z-index`, or any `vh`/`svh`-based sizing.** Reload fresh rather than
+   reusing a scrolled/interacted page — an auto-hiding header or a collapsed overlay can hide the
+   exact bug being fixed. When the edit is viewport-relative, capture a second screenshot at a
+   visibly different aspect ratio (e.g. a wide/short window in addition to the default) — note the
+   viewport(s) checked in the verdict.
+6. **Capture & judge**: element-scoped screenshot plus one wider container shot. Verdict on:
    (a) the requested change is visible, (b) theme tokens are honored — spot-check one
    `getComputedStyle` eval against the digest when in doubt, (c) surrounding layout is
    unregressed (container shot). Cheap console-error check (error level only, ignore patterns per
    PLAYWRIGHT.md § Console Error Inspection) when the edit touched logic. Optionally grep the
    touched files against the relevant `shared/ANTI-SLOP.md` packs (`tokens` always; `dark` /
    `motion` when applicable) as a static complement.
-6. **On fail**: one inline fix round (back to PHASE 2 for that ref, evidence first — what does
+7. **On fail**: one inline fix round (back to PHASE 2 for that ref, evidence first — what does
    the screenshot/computed style actually show?).
 
    > **Todo**: verify fails a second time → Read
    > `.claude/skills/dev-inspect/references/fix-round.md` and follow it. No silent retry loops.
 
-7. **Multi-ref**: verify per ref, batching captures on the same page into one navigation. No
+8. **Multi-ref**: verify per ref, batching captures on the same page into one navigation. No
    browser available → degradation ladder per PLAYWRIGHT.md § Graceful Degradation; report
    `verify: skipped (manual: open {url})`. Playwright runner: always `close` at the end.
 

@@ -27,10 +27,15 @@ often defeat a pinpoint edit:
   fragment wrappers, or a conditionally-mounted `AnimatePresence` itself.
 - **Stale build** — HMR missed the change: hard-reload once before concluding anything.
 
+**Not a technical miss** — the screenshot/computed style show the change *did* land as specified,
+but the rejection was a vague aesthetic call ("not nice", no specifics) rather than a pointed
+correction: skip § 2's technical researcher and go straight to § 2b.
+
 ## 2. Research round (one agent)
 
-When § 1 does not produce a confident diagnosis, spawn **one** researcher (Agent tool,
-`subagent_type: general-purpose`, `model: opus`) instead of a third blind attempt:
+When § 1 does not produce a confident diagnosis (and it is a technical miss), spawn **one**
+researcher (Agent tool, `subagent_type: general-purpose`, `model: opus`) instead of a third blind
+attempt:
 
 - Prompt: the change request, the ref, the edited `file:line` diff, the failure evidence
   (what the screenshot/computed style showed vs expected), and the theme digest excerpt that
@@ -39,6 +44,15 @@ When § 1 does not produce a confident diagnosis, spawn **one** researcher (Agen
   why this beats the failed attempts).
 
 Apply the brief as the **final** attempt, re-verify per PHASE 3.
+
+## 2b. Second-opinion round (subjective rejection)
+
+When the same ref/change is rejected twice with no reproducible technical cause, a third inline
+guess is anchoring, not diagnosis. Spawn one fresh (non-fork) agent per `~/.claude/CLAUDE.md
+§ Model Tiering` ("Opus for an anchoring gap"): give it the screenshot path, the current code, and
+the rejected attempts with the user's verbatim feedback — no prior framing, so it forms an
+independent view. Present its recommendation via AskUserQuestion before applying — this replaces
+one fix-round attempt, it does not add to it.
 
 ## 3. Close honestly
 
