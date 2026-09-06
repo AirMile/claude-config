@@ -15,12 +15,13 @@ writes only a small **pointer + context** file (below); it does **not** read `pr
 `.project/session/ship-prompts/{feature}-verify.txt` and passes its path as `args.verifyPromptPath`
 to `references/workflows/ship-phase12.js`. Keep the literal `{worktreePath}` placeholder **in the
 file** — the script replaces it with AGENT 1's worktree path per its read-and-execute instruction.
-The script runs it with `agentType: "general-purpose"`, `model: "opus"`, `effort: "high"` (matrix:
-SKILL.md § Design — the one independent adversarial judgment; backstops the sonnet build) and
-validates the result against `VERIFY_SCHEMA`.
+The script runs it with `agentType: "general-purpose"`, `model: "sonnet"`, `effort: "high"` (matrix:
+SKILL.md § Design — one independent adversarial judgment in a fresh context, which is the backstop;
+the model is `sonnet` like every other dev-ship agent) and validates the result against
+`VERIFY_SCHEMA`.
 
 **Fallback (Agent tool, when Workflow is unavailable)**: spawn via the `Agent` tool with
-`subagent_type: "general-purpose"` and `model: "opus"` (effort is not settable). Substitute
+`subagent_type: "general-purpose"` and `model: "sonnet"` (effort is not settable). Substitute
 `{worktreePath}` yourself before passing the pointer file content as the prompt.
 
 ### Pointer file (what the main chat writes — the ONLY assembled text)

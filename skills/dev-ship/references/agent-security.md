@@ -28,7 +28,7 @@ parallel with AGENT 3 (writes no `.project/`).
 to its own file, and pass the list as `args.scanners = [{code, promptPath}, ...]` to
 `references/workflows/ship-phase4.js`. The script spawns them in parallel with
 `agentType: "owasp-aNN-scanner"`, `model: "sonnet"`, `effort: "medium"`, validates each against
-`SCAN_SCHEMA`, threshold-filters (confidence ≥ 60%) and runs the **opus triage pass** (§ Triage
+`SCAN_SCHEMA`, threshold-filters (confidence ≥ 60%) and runs the **triage pass** (§ Triage
 below) over the merged findings.
 
 **Fallback (Agent tool, when Workflow is unavailable)**: spawn each scanner via the `Agent` tool
@@ -60,14 +60,15 @@ OWASP_CONTEXT:
 {stack summary · endpoints · auth pattern · data model}
 ```
 
-## Triage (opus pass over the merged findings)
+## Triage (pass over the merged findings)
 
 The full triage instruction body is the **static** file
 `.claude/skills/dev-ship/references/prompts/security-triage.md` — the triage agent reads it itself.
 `ship-phase4.js` calls that agent with `"Read the triage instructions in the file at
 {triagePromptPath}, then triage these findings: …"` and appends the threshold-filtered findings as
-JSON at call time; it runs as one `model: "opus"`, `effort: "high"` agent (matrix: SKILL.md § Design
-— the only pass without a test backstop).
+JSON at call time; it runs as one `model: "sonnet"`, `effort: "high"` agent (matrix: SKILL.md § Design
+— judgment over scanner findings; the only pass without a test backstop, but still `sonnet` like the
+rest of the pipeline).
 
 The main chat writes only a small **pointer + context** file to `triagePromptPath` (it does
 **not** read `prompts/security-triage.md`):

@@ -1,7 +1,7 @@
 export const meta = {
   name: "ship-build-verify",
   description:
-    "dev-ship PHASE 1+2: build the feature (sonnet/high), then adversarial auto-verify in a fresh context (opus/high)",
+    "dev-ship PHASE 1+2: build the feature (sonnet/high), then adversarial auto-verify in a fresh context (sonnet/high)",
   whenToUse:
     "Launched by the dev-ship skill after PHASE 0 — not intended for standalone use.",
   phases: [
@@ -13,7 +13,7 @@ export const meta = {
     {
       title: "Verify",
       detail: "AGENT 2 — dev-verify AUTO/COVERED items, fresh context",
-      model: "opus",
+      model: "sonnet",
     },
   ],
 };
@@ -237,7 +237,7 @@ const verify =
     {
       label: "AGENT 2: verify",
       agentType: "general-purpose",
-      model: "opus",
+      model: "sonnet",
       effort: "high",
       schema: VERIFY_SCHEMA,
     },

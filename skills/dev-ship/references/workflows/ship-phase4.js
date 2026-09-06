@@ -1,7 +1,7 @@
 export const meta = {
   name: "ship-refactor-security",
   description:
-    "dev-ship PHASE 4: single-feature refactor (sonnet/medium) in parallel with targeted OWASP scanners (sonnet/medium), then one opus triage pass over the findings",
+    "dev-ship PHASE 4: single-feature refactor (sonnet/medium) in parallel with targeted OWASP scanners (sonnet/medium), then one sonnet triage pass over the findings",
   whenToUse:
     "Launched by the dev-ship skill after PHASE 3 manual tests — finalize runs after this workflow returns — not intended for standalone use.",
   phases: [
@@ -13,7 +13,7 @@ export const meta = {
     },
     {
       title: "Security",
-      detail: "AGENT S — selected OWASP scanners + opus triage",
+      detail: "AGENT S — selected OWASP scanners + sonnet triage",
       model: "sonnet",
     },
   ],
@@ -211,7 +211,7 @@ const triage =
         `Read the triage instructions in the file at ${A.triagePromptPath}, then triage these findings:\n\nFINDINGS (JSON):\n${JSON.stringify(findings, null, 2)}`,
         {
           label: "security triage",
-          model: "opus",
+          model: "sonnet",
           effort: "high",
           schema: TRIAGE_SCHEMA,
         },

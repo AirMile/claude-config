@@ -95,14 +95,18 @@ and drives them internally — there are no separate `/dev-define`…`/dev-refac
   | Agent                 | Model    | Effort   | Why                                                                   |
   | --------------------- | -------- | -------- | --------------------------------------------------------------------- |
   | AGENT 1 build         | `sonnet` | `high`   | contract-driven TDD — feature.json + tests bound the work             |
-  | AGENT 2 verify        | `opus`   | `high`   | the one independent adversarial judgment; backstops the build         |
+  | AGENT 2 verify        | `sonnet` | `high`   | one independent adversarial judgment; fresh context is the backstop   |
   | AGENT 3 refactor      | `sonnet` | `medium` | test-guarded (revert-on-red), low risk                                |
   | AGENT S scanners      | `sonnet` | `medium` | pattern-driven read-only fan-out                                      |
-  | Security triage       | `opus`   | `high`   | only pass without a test backstop — judgment over findings            |
+  | Security triage       | `sonnet` | `high`   | judgment over scanner findings, no test backstop                      |
   | AGENT F fix (PHASE 3) | `sonnet` | `high`   | plan-bound fixes; the round gate did the thinking (Opus in plan mode) |
 
-> Full rationale (85/15 model, why fresh verify contexts, checkpoint durability, `.project/`
-> sharing, prompt-by-pointer): `references/design-rationale.md`.
+  Every dev-ship agent and workflow runs on `sonnet`. The only `opus` in the pipeline is the
+  independent **second-opinion consult** (`shared/SECOND-OPINION.md`) — a separate authorization
+  class, not part of this matrix.
+
+> Full rationale (the 85/15 one-flow design, why fresh verify contexts, checkpoint durability,
+> `.project/` sharing, prompt-by-pointer): `references/design-rationale.md`.
 
 ## Workflow
 
