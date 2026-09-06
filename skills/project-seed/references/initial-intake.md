@@ -22,29 +22,38 @@
      ```
 
    - **Pending drift count:** `N` = `backlog.json#data.seedDrift[].length` + sum of all `.project/features/*/feature.json#seedDrift[].length` (skip missing files/arrays).
-   - Use AskUserQuestion. With `N > 0`, Sync moves to the top as the recommended option:
+   - Use AskUserQuestion. Both variants surface the sibling modes (`critique`,
+     `brainstorm`) — on a developed seed those are as likely as another edit,
+     and the user should not have to abort and re-invoke with a keyword to
+     reach them. `More →` opens a second modal with the remaining options,
+     shown only if picked (`shared/SKILL-PATTERNS.md § Modal Option Cap`).
 
      ```yaml
-     # N > 0
+     # N > 0 — Sync recommended
      header: "Existing Concept"
      question: "What do you want to do?"
      options:
        - label: "Sync with project (Recommended)", description: "Integrate {N} deferred drift item(s) + built/planned gaps"
        - label: "Edit", description: "Modify the existing concept"
-       - label: "New concept", description: "Start fresh with a new idea"
+       - label: "Critique", description: "Stress-test the concept for weaknesses / risks"
+       - label: "More →", description: "Brainstorm, New concept"
      multiSelect: false
      ```
 
      ```yaml
-     # N = 0 (unchanged)
+     # N = 0
      header: "Existing Concept"
      question: "What do you want to do?"
      options:
        - label: "Edit (Recommended)", description: "Modify the existing concept"
-       - label: "Sync with project", description: "Enrich concept with what has already been built/planned"
-       - label: "New concept", description: "Start fresh with a new idea"
+       - label: "Critique", description: "Stress-test the concept for weaknesses / risks"
+       - label: "Brainstorm", description: "Creatively expand the concept"
+       - label: "More →", description: "Sync with project, New concept"
      multiSelect: false
      ```
+
+     Second modal after `More →` — the options it named (N > 0: Brainstorm,
+     New concept · N = 0: Sync with project, New concept), `multiSelect: false`.
 
    - **If "Edit":**
      - Load existing concept from `.project/project-seed.md`
@@ -67,6 +76,12 @@
 
    - **If "Sync with project":**
      - Proceed to Step 1c (Project Sync)
+   - **If "Critique" / "Brainstorm":**
+     - The concept is already loaded and scope = concept. Read
+       `references/mode-critique.md` / `references/mode-brainstorm.md` and enter
+       at its PHASE 1 with the loaded concept as input (INPUT-PARSING re-detects
+       the same file — cheap and robust). Do not run the seed-mode Round 1
+       templates or the scope-confirmation modal.
    - **If "New concept":**
      - Ignore existing file (will be overwritten on save)
      - Proceed with normal flow below
@@ -118,7 +133,7 @@ On a mature seed, reworking one section is the common case, not an edge case —
 
 - Grep `.project/project-seed.md` for `^## ` (plus `^### ` one level down); AskUserQuestion to pick one — the 4 most likely first (recently dated sections, sections carrying an explicit open question), the rest via the built-in Other
 - Read **only that section** (`offset`/`limit`), never the whole seed
-- Set scope = `section`; Round 1 uses the focused-edit axes (Step 2 item 3), not the fresh-scoping templates
+- Set scope = `section`; Round 1 uses the focused-edit axes (Step 2 "Focused-edit route"), not the fresh-scoping templates
 - Run Step 1d, then proceed to Step 2 with the section text as context
 - Output: **targeted Edits into that section only** — `shared/THINKING-OUTPUT.md § Seed save procedure` step 2 already prescribes that surgical contract. A section change never rewrites the seed in full
 
@@ -138,6 +153,8 @@ Free-text intake — these are open questions, not multiple-choice. Ask in one m
 **Output path follows scope** — routing is canonical in [shared/THINKING-OUTPUT.md](../../shared/THINKING-OUTPUT.md) (loaded in PHASE 5); do not decide paths here. Three seed-only mappings THINKING-OUTPUT does not list: **assignment** behaves as feature scope (`.project/features/{slug}/thinking.md`, or `.project/project-seed.md` on user choice); **implementation** behaves as concept scope (`.project/project-seed.md` + project.json metadata); **section** writes targeted Edits into its own section of `.project/project-seed.md` and leaves every other section byte-identical.
 
 **Step 1b: Source + scope selection (if no concept found)**
+
+**Forced-source shortcut**: `project.json#seed.pitch` is set (a `/core-setup` stub) and there is no usable chat context → the source is "expand the existing pitch"; do not ask Question 1. Announce one line ("Expanding the existing pitch from project.json.") and ask only Question 2 (scope), carrying the pitch as the starting idea.
 
 **If no description provided:**
 

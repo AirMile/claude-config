@@ -61,7 +61,7 @@ No `project.json` write — `.project/thinking/*.md` is the only source of truth
 
 **Mode `seed`**: skip the modal — the concept was already approved at `ExitPlanMode`. Run the [Seed save procedure](#seed-save-procedure) directly (clipboard is not offered) and show the confirmation block below.
 
-**Other modes** (`brainstorm`, `critique`): use AskUserQuestion:
+**Modes `brainstorm` / `critique`**: same rule when this mode owned the `ExitPlanMode` gate (the normal case) — the refined document was just approved there, so skip the modal and run the [Seed save procedure](#seed-save-procedure) directly. Use the AskUserQuestion below **only** when plan mode was pre-owned by the user (no `ExitPlanMode` gate fired — the skip-case in `mode-{brainstorm,critique}.md`), where "Copy to clipboard" is the meaningful alternative:
 
 ```yaml
 header: "Output"

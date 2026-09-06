@@ -24,7 +24,7 @@ writes:
   ]
 metadata:
   author: claude-config
-  version: 2.5.0
+  version: 2.7.0
   category: project
 ---
 
@@ -48,7 +48,7 @@ Transform any idea, concept, feature, or task assignment into a structured seed 
 1. **Keyword routing** — first whitespace-delimited token of the invocation args, case-insensitive:
    - `brainstorm` → brainstorm mode; remaining args = topic input
    - `critique` → critique mode; remaining args = topic input
-   - anything else (including no args) → seed mode; full args = topic input (the `sync` route is handled inside seed-mode intake, as before)
+   - anything else (including no args) → seed mode; full args = topic input (on an existing seed the `sync`, `critique` and `brainstorm` routes are offered inside seed-mode intake)
 
    This parser covers both slash invocation (`/project-seed brainstorm dark-mode toggle`) and Skill-tool invocation (`args: "critique <topic>"`).
 

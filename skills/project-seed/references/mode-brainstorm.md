@@ -50,6 +50,7 @@ Creatively expand and explore ideas through interactive application of brainstor
 2. **Question protocol** — follow [shared/QUESTIONING.md](../../shared/QUESTIONING.md) for form choice, anchoring, and escalation:
    - Formulate 4-6 **anchored** questions from the technique's framework — each references something concrete from the idea/seed/dialogue so far, narrowed to a genuine unknown, with example directions where natural. Present them as a numbered menu (the documented exception to one-per-turn) plus 2-3 concrete suggestions.
    - When the technique surfaces an **enumerable fork** (pick between generated variants, prioritize directions), present it as an AskUserQuestion — typically at the end of a dialogue round ("which of these variants do you want to deepen?") — instead of burying it in the menu.
+   - **Comparison forks**: when the fork compares designs or directions rather than a plain preference, put a compact trade-off table (one criterion per row, options side by side) *before* the modal. Options that each need three lines of description are a comparison in disguise and get answered with "just give me the table" (`mode-seed.md` PHASE 2 comparison rule).
 
 3. **Context7 research (when technical questions arise):** if the idea touches concrete libraries/frameworks and the technique raises feasibility or constraint questions, research first — `mcp__context7__resolve-library-id` + `mcp__context7__query-docs` — and fold findings into your questions and suggestions. Also research before answering when the user asks a technical question mid-dialogue.
 
@@ -113,6 +114,7 @@ Integrate the most valuable variations and insights from all applied techniques 
 - **DO NOT include:** original idea, technique names, comparison to old version, changelog
 - **Exception for concept-scope saves into an existing `project-seed.md`:** when the output is being spliced into a persistent, cumulative document (not generated standalone), a brief "why this changed" callout is allowed where the project's own established convention already keeps this kind of history (e.g. a "Correctie" pattern already present in the document) — match the existing document's own style rather than stripping it.
 - Pure markdown, no framing text ("Here's your refined idea:"); proper heading formatting (`#` title, `##` sections)
+- Preserve any YAML frontmatter already at the top of an existing seed (e.g. `applied_techniques` from a prior critique/brainstorm run)
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 7.
 

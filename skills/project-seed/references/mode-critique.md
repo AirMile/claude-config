@@ -52,6 +52,7 @@ Critically analyze and strengthen ideas through interactive application of analy
 3. **Question protocol** — follow [shared/QUESTIONING.md](../../shared/QUESTIONING.md) for form choice, anchoring, and escalation:
    - Formulate 4-6 **anchored** questions from the technique's framework — each references something concrete from the idea/seed/research findings, narrowed to a genuine unknown. Present them as a numbered menu (the documented exception to one-per-turn) plus 3 concrete points of attention.
    - **Enumerable-fork rule**: the moment a question you're about to ask has ≤3 plausible concrete answers (which risk to mitigate first, trade-off A vs B, accept/cut a weak element) — ask it as AskUserQuestion with your recommended hypothesis first, never as open prose, even mid-dialogue. Only genuinely open questions (no enumerable answer set) go through free text.
+   - **Comparison forks**: when the fork compares designs or directions rather than a plain preference, put a compact trade-off table (one criterion per row, options side by side) _before_ the modal. Options that each need three lines of description are a comparison in disguise and get answered with "just give me the table" (`mode-seed.md` PHASE 2 comparison rule).
 
 4. Presentation template (in user's preferred language):
 
@@ -114,6 +115,7 @@ Integrate all findings from all applied techniques into one refined idea documen
 - **DO NOT include:** original idea, technique names, comparison to old version, changelog, list of problems found
 - **Exception for concept-scope saves into an existing `project-seed.md`:** when the output is being spliced into a persistent, cumulative document (not generated standalone), a brief "why this changed" callout is allowed where the project's own established convention already keeps this kind of history (e.g. a "Correctie" pattern already present in the document) — match the existing document's own style rather than stripping it.
 - Pure markdown, no framing text; proper heading formatting (`#` title, `##` sections)
+- Preserve any YAML frontmatter already at the top of an existing seed; merge new `applied_techniques` entries into it rather than replacing the block
 - Optional YAML frontmatter recording the analysis:
 
   ```yaml
@@ -129,8 +131,9 @@ high-impact problems whose fixes conflict or force a pivot remain after all appl
 
 > **Todo**: Read `.claude/skills/shared/SECOND-OPINION.md` and follow it — the trigger auto-fires
 > the consult (no confirm step) with INPUT = the plan file / refined-idea document (project-seed
-> row of § Brief contents). Fold the digest into the refined document before exiting, print the
-> one-line log (§ Logging — no report table here), set `secondOpinionUsed`.
+> row of § Brief contents). Fold the digest into the refined document before exiting, then print
+> the one-line log (§ Logging — no report table here). That printed log line is the record of the
+> consult — there is no `project.json` field for it.
 
 **End of thinking phase**: follow [shared/PLAN-MODE.md](../../shared/PLAN-MODE.md) Exit protocol — write the refined idea document to the plan file, then `ExitPlanMode`. After approval the skill continues with PHASE 7.
 
