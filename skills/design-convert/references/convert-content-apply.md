@@ -1,7 +1,9 @@
 # Apply & Sync — PHASE 5
 
-Loaded at the start of PHASE 5. Inputs: `$TARGETS`, `$COPY_MAP`, `$I18N_MODE`, `$I18N_FILE`,
-`$GLOSSARY_UPDATES`, `$THEME`, `$BACKLOG_FOUND` (per target), `$MODE`.
+Loaded from `route-content.md` PHASE 5 (standalone entry) or `route-convert.md § PHASE 2c` step 4
+(mid-convert entry — **§ 5.1 and § 5.2 only**, see the note at each of § 5.3/§ 5.4/§ 5.5 below).
+Inputs: `$TARGETS`, `$COPY_MAP`, `$I18N_MODE`, `$I18N_FILE`, `$GLOSSARY_UPDATES`, `$THEME`,
+`$BACKLOG_FOUND` (per target), `$MODE`.
 
 ---
 
@@ -52,9 +54,13 @@ Glossary: [✓] {K} new term(s) persisted to project.theme.voice.terms
 
 If `$GLOSSARY_UPDATES` is empty → skip silently.
 
+**Mid-convert entry stops here** (`route-convert.md § PHASE 2c` reads only § 5.1 and § 5.2) — return
+to that phase, which continues to `convert-completion.md` (PHASE 4) for spot-checking-equivalent
+verification, backlog sync, and the report. § 5.3–5.5 below are the standalone-entry path only.
+
 ---
 
-## 5.3 Spot-check
+## 5.3 Spot-check (standalone entry only)
 
 After all edits, re-read each modified file and verify:
 
@@ -71,7 +77,7 @@ and continue (non-blocking).
 
 ---
 
-## 5.4 Backlog sync
+## 5.4 Backlog sync (standalone entry only)
 
 Per target where `$BACKLOG_FOUND[target] = true`:
 
@@ -87,6 +93,13 @@ Set:    data.updated = today (ISO date)
 Write back
 ```
 
+Also merge `design.{pages|components}[{target}].sectionState[]` (see
+`shared/DASHBOARD-PROJECT.md § pages[].sectionState`): a standalone content run fills copy for the
+**whole** target in one pass (no section scoping here — that only exists on the mid-convert 0.4c
+path), so set every existing entry's `content: "filled"`. Absent `sectionState[]` → nothing to merge,
+skip silently (a pre-`sectionState` page; `contentStatus` above is still the authoritative signal for
+it).
+
 For batch with N targets: batch the mutations — read once, apply all, write once.
 
 Print per target:
@@ -99,18 +112,18 @@ If `$BACKLOG_FOUND[target] = false` → skip silently (standalone run).
 
 ---
 
-## 5.5 Completion report
+## 5.5 Completion report (standalone entry only)
 
 ```
 ╔══════════════════════════════════════════════════════════╗
-║  design-content complete                               ║
+║  design-convert --content complete                     ║
 ╠══════════════════════════════════════════════════════════╣
 ║  Target(s)   {names}  ({single | batch N})              ║
 ║  Files       {N} modified                               ║
 ║  Copy items  {total from $COPY_MAP}                     ║
 ║  Mode        {inline | i18n → $I18N_FILE}               ║
 ║  Glossary    {K} new terms | unchanged                  ║
-║  Backlog     {N} transitioned | standalone              ║
+║  Backlog     {N} transitioned | standalone               ║
 ╚══════════════════════════════════════════════════════════╝
 ```
 

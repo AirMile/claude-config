@@ -1,6 +1,7 @@
 # Scope & Intent — PHASE 1
 
-Loaded at the start of PHASE 1. Inputs: `$TARGETS`, `$SEED`, `$DESIGN`, `$THEME`, `$GLOSSARY`,
+Loaded from `route-content.md` PHASE 1 (standalone entry) or `route-convert.md § PHASE 2c` step 1
+(mid-convert entry). Inputs: `$TARGETS`, `$SEED`, `$DESIGN`, `$THEME`, `$GLOSSARY`,
 `$PAGE_CONTEXT`, `$REQS`, `$ENTITIES`, `$LEARNINGS`, `$MODE`.
 
 Produce `$ARCHETYPE`, `$BRIEF`, and confirmation from the user before any generation.
@@ -52,7 +53,7 @@ header: "Marketing research"
 question: "This page looks marketing-focused. Run /marketing-research first for stronger copy?"
 options:
   - label: "Run /marketing-research first (Recommended)"
-    description: "Stops here — run /marketing-research then /design-content again."
+    description: "Stops here — run /marketing-research then /design-convert --content again."
   - label: "Continue with seed only"
     description: "Uses seed pitch and design spec. Less market-grounded."
 ```
@@ -60,10 +61,10 @@ options:
 If user chooses "Run /marketing-research first":
 
 ```
-Paused. Run /marketing-research {topic} then /design-content again.
+Paused. Run /marketing-research {topic} then /design-convert --content again.
 ```
 
-Stop (leave transition set — user re-triggers after research).
+Stop (leave transition set — user re-triggers after research; mid-convert entry: leave `$RESUME_STATE` as-is, the run simply ends without completing PHASE 2c).
 
 If user chooses "Continue with seed only": `$RESEARCH_CONTEXT = null`. Continue.
 
@@ -146,7 +147,7 @@ Store confirmed brief as `$BRIEF`:
 ### CHECKPOINT: Content Brief
 
 | Aspect       | Value                         |
-| ------------ | ----------------------------- |
+| ------------ | ------------------------------ |
 | Target(s)    | {names + archetypes}          |
 | Tone         | {$BRIEF.tone}                 |
 | Length style | {$BRIEF.lengthStyle}          |
@@ -169,7 +170,7 @@ options:
     description: "Go back to brief questions."
 ```
 
-If "Adjust brief" → return to §1.3.
+If "Adjust brief" → return to § 1.3.
 
 ---
 

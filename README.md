@@ -34,7 +34,6 @@ cd claude-config
 
 Deploys global symlinks for Claude Code (`~/.claude/`), Antigravity (`~/.gemini/config/skills`), Cursor (`dist/cursor/rules/`), and generates GitHub Copilot prompts (`dist/copilot/prompts/`).
 
-
 **3. Per project, pick one entry point:**
 
 | Situation                                    | Run                                                            |
@@ -75,7 +74,7 @@ Skills follow a `{category}-{verb}` naming convention. See [`skills/shared/SKILL
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `dev`       | `project-seed` [→ `brainstorm`/`critique` modes] → `project-plan` → `dev-ship` (define → build → auto-verify) → `dev-manual` (manual verify → debug → refactor → ship, when manual items remain; shared park-first debug rounds) |
 | `game`      | `project-seed` → `project-plan` → `game-ship` (define → build → GUT-verify → playtest → refactor) (+ `game-debug` anywhere, Godot 4.x / GUT)                                                                                     |
-| `design`    | [`/design-tokens`] (incl. motion packs) → `design-convert` (spec / visual→code) & `design-content` (fill copy) feed `design-ship` (build → content → check as one flow, web)                                                     |
+| `design`    | [`/design-tokens`] (incl. motion packs) → `design-convert` (spec / visual→code / content-fill, incl. `--content`) feeds `design-ship` (build → content → check as one flow, web)                                                 |
 | `marketing` | `marketing-research` → `marketing-content` → `marketing-screenshots`                                                                                                                                                             |
 
 Optional `/project-research` enriches the dev seed with market/tech/codebase context before backlog.

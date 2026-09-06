@@ -614,7 +614,7 @@ Skills do **not** write to the backlog at start — saves a read+write roundtrip
 | `"defining"`   | THEME setup prompt                                                                                                               | `design-tokens` (THEME)                  |
 | `"designing"`  | Design/build prompt for a TODO PAGE or COMPONENT                                                                                 | `design-convert`                         |
 | `"converting"` | Convert prompt for a DEFINED PAGE or COMPONENT                                                                                   | `design-convert`                         |
-| `"contenting"` | Fill-content prompt for a built (DOING) PAGE/COMPONENT                                                                           | `design-content`                         |
+| `"contenting"` | Fill-content prompt for a built (DOING) PAGE/COMPONENT                                                                           | `design-convert` (content route)         |
 | `"shipping"`   | ⚡ Ship (auto) menu item on a TODO feature — dev-track → `/dev-ship`, game-track → `/game-ship`, PAGE/COMPONENT → `/design-ship` | `dev-ship` / `game-ship` / `design-ship` |
 
 On successful completion the skill removes the `transition` field. **Exception**: `"shipping"` is
@@ -670,17 +670,17 @@ No backlog write — `transition` remains as set by the dashboard, user can re-c
 
 ### Skill filter & status transition table
 
-The GAME pipeline's standalone skills use `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`; `/game-ship` runs the whole game flow end-to-end via `"shipping"` (dev-track features likewise run through `/dev-ship` via `"shipping"`). The DESIGN pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab. There is no `"auditing"` transition — the runtime audit runs as the check phase inside `/design-ship`, not as a separate per-item skill.
+The GAME pipeline's standalone skills use `transition` values `"defining"` / `"building"` / `"verifying"` / `"refactoring"`; `/game-ship` runs the whole game flow end-to-end via `"shipping"` (dev-track features likewise run through `/dev-ship` via `"shipping"`). The DESIGN pipeline (PAGE/COMPONENT) uses `"designing"` / `"converting"` / `"contenting"` — same pattern, different vocab; all three are consumed by `design-convert` (the design/convert/content routes of that one skill). There is no `"auditing"` transition — the runtime audit runs as the check phase inside `/design-ship`, not as a separate per-item skill.
 
-| Skill            | Filter                                                                                     | New status on success                           |
-| ---------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| `design-tokens`  | `type === "THEME" && transition === "defining"`                                            | `"DONE"` + `shipped: true`                      |
-| `dev-ship`       | `transition === "shipping" && type !== PAGE/COMPONENT` (no-arg pickup)                     | full pipeline → `shipped: true` via refactor    |
-| `design-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`                | `"DOING"` (Path A — DEFINED is skipped)         |
-| `design-convert` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"`               | `"DOING"`                                       |
-| `design-content` | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "contenting"`               | keep `"DOING"`, sets `contentStatus: "filled"`  |
-| `design-ship`    | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "shipping"` (no-arg pickup) | full pipeline → PAGE `"DONE"` + `shipped: true` |
-| `game-ship`      | `transition === "shipping" && type !== PAGE/COMPONENT` (game project; no-arg pickup)       | full pipeline → `shipped: true` via refactor    |
+| Skill                            | Filter                                                                                     | New status on success                           |
+| -------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `design-tokens`                  | `type === "THEME" && transition === "defining"`                                            | `"DONE"` + `shipped: true`                      |
+| `dev-ship`                       | `transition === "shipping" && type !== PAGE/COMPONENT` (no-arg pickup)                     | full pipeline → `shipped: true` via refactor    |
+| `design-convert`                 | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "designing"`                | `"DOING"` (Path A — DEFINED is skipped)         |
+| `design-convert`                 | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "converting"`               | `"DOING"`                                       |
+| `design-convert` (content route) | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "contenting"`               | keep `"DOING"`, sets `contentStatus: "filled"`  |
+| `design-ship`                    | `(type === "PAGE" \|\| type === "COMPONENT") && transition === "shipping"` (no-arg pickup) | full pipeline → PAGE `"DONE"` + `shipped: true` |
+| `game-ship`                      | `transition === "shipping" && type !== PAGE/COMPONENT` (game project; no-arg pickup)       | full pipeline → `shipped: true` via refactor    |
 
 ---
 

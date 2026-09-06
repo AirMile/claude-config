@@ -92,7 +92,7 @@ Next steps:
   2. /design-tokens       → design tokens and colors based on principles
   3. /design-convert       → generate Claude Design brief (brief-mode)
   4. /design-convert       → convert an existing design to code (paste sketch/URL)
-  5. /design-content      → fill built pages/components with real copy (placeholders → on-brand text)
+  5. /design-convert --content → fill built pages/components with real copy (placeholders → on-brand text)
   6. /design-ship         → build + runtime check (performance, SEO, a11y, responsive)
 
 [Only show for each newly added/updated PAGE/COMPONENT — the spec is now persisted, so the review route resolves it:]

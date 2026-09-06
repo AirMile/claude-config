@@ -13,6 +13,9 @@ Thresholds come from the loaded `convert-mode-{$MODE}.md → Verification Thresh
 ### Scope selection
 
 - **Generation scopes** (copy/sketch/inspiration) and **patch**: run the full procedure below.
+- **Section-scoped build** (`$BUILD_SECTIONS` from `route-convert.md` 0.4c is a strict subset of
+  `$ANALYSIS.Sections`): run the full procedure below, scoped to only the sections this run built —
+  see the Vision comparison carve-out below.
 - **`$SCOPE = audit`, value-level**: light pass — 3.0, 3.1, then a single round of 3.2 steps 1–4 (render + console) plus **3.2c** re-checking the patched properties. Skip the runner pixel/aria baseline and the vision-comparison rounds: the "source" is a set of per-property edits, not one screenshot — 3.2c against `$SECTION_GROUND_TRUTH` is the real check here.
 - **`$SCOPE = audit` after a structural-mismatch escalation** (convert-audit.md Step C/D): the light pass plus a **section-presence check** — full-page screenshot, confirm each `$PATCH_SECTIONS` work item landed (added sections render, reordered sections in the intended order, retired sections gone). Findings are fixed and re-checked within the same 3-round cap.
 
@@ -79,8 +82,8 @@ Compare source image vs generated screenshot. Analyze:
 - Spacing (gaps between sections, padding within sections)
 - Color accuracy (1:1 mode: exact match matters; inspiration: theme tokens applied correctly)
 - Typography (heading sizes, weight, alignment)
-- Component rendering (all sections visible, no blank areas, no error overlays)
-- Missing elements (anything in source not present in output)
+- Component rendering (all sections visible, no blank areas, no error overlays) — **`$BUILD_SECTIONS` is set (0.4c) and is a strict subset**: sections outside it are expected-absent this run; note them as `deferred (not in this run's scope)` rather than flagging as missing/blank
+- Missing elements (anything in source not present in output — same carve-out: a section outside `$BUILD_SECTIONS` is deferred, not missing)
 - **Runtime errors** (from step 4 — JS errors indicate broken hydration or missing imports, even if nothing looks wrong visually; report as **P004** findings — see FRONTEND-RULES.md)
 
 **Assessment:**
@@ -200,6 +203,26 @@ For **each** tier:
 
 1. Resize, reload, wait for hydration.
 2. **Overflow assert**: `document.documentElement.scrollWidth === clientWidth`. Unequal → MISMATCH (name the overflowing element).
+2b. **Section-overlap assert**: sections that pull themselves over their predecessor (a negative `margin-top`, usually paired with a rounded top edge) eat exactly that many px out of the previous section's bottom padding — so the space below that section reads narrower than the space above it, at that breakpoint only. Codegen emits the negative margin and forgets the compensation, and the defect is invisible in a single-section screenshot because both sections look fine on their own. Assert it numerically instead:
+
+    ```js
+    // per top-level section in <main>
+    [...document.querySelectorAll('main > *')].map((el, i, all) => {
+      const cs = getComputedStyle(el);
+      // the overlap may sit on the section or on its first child (wrapper pattern)
+      const inner = el.firstElementChild ? getComputedStyle(el.firstElementChild) : null;
+      const overlap = Math.min(parseFloat(cs.marginTop) || 0,
+                               inner ? parseFloat(inner.marginTop) || 0 : 0);
+      if (overlap >= 0 || !all[i - 1]) return null;
+      const prev = getComputedStyle(all[i - 1]);
+      return { visible: (parseFloat(prev.paddingBottom) || 0) + overlap,
+               prevPaddingBottom: parseFloat(prev.paddingBottom) || 0, overlap: -overlap };
+    }).filter(Boolean)
+    ```
+
+    `visible` is the space the reader actually sees under the previous section. It must equal the padding that section would have had without the overlap — i.e. `prevPaddingBottom` must contain the overlap on top of its own value. `visible` far below `prevPaddingBottom - overlap`'s intended value → MISMATCH. Two legitimate exceptions, both of which must be stated rather than silently passed: a hero (no bottom padding of its own — the overlap is the effect), and a deliberately flush seam where the previous section's entire bottom padding IS the overlap (`visible ≈ 0` on both sides of the breakpoint).
+
+    Fix by adding the overlap to the previous section's bottom padding, written as a `calc()` that names the overlap — `md:pb-[calc(6rem+var(--section-overlap))]`, never the pre-added number. A section used on several pages that only overlaps on some gets a prop (`overlapNext`) or receives the compensation via `className` from the page; never hardcode it in the shared section.
 3. Screenshot **and Read it** — a full-page shot of a long page is unreadably tall at any width, so capture viewport-sized slices while scrolling and read each one. A full-page thumbnail is not a tier check; text legibility, mid-word heading breaks, and `md:`/`lg:` layout switches (column count, hidden/shown elements) only show at slice scale.
 4. **Source-frame compare, gated on `$RESPONSIVE_VIEWPORTS`** (route-convert.md § 0.2):
    - `mobile+tablet+desktop` → this tier has a source frame; vision-compare against it.
@@ -210,6 +233,7 @@ For **each** tier:
 Add to the assessment block, one line per tier:
 
 ```
+Overlap:     [PASS | N findings]  (per tier, with the measured px)
 Responsive:  [PASS | N findings] (390px)
   [- hero h1 breaks mid-phrase: "zichtbaar / maken."  file:line]
 Responsive:  [PASS | N findings] (768px)

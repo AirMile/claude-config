@@ -1,27 +1,28 @@
 # Review Gate — PHASE 4
 
-Loaded at the start of PHASE 4. Inputs: `$COPY_MAP`, `$BRIEF`, `$TARGETS`, `$MODE`.
+Loaded from `route-content.md` PHASE 4 (standalone entry) or `route-convert.md § PHASE 2c` step 3
+(mid-convert entry). Inputs: `$COPY_MAP`, `$BRIEF`, `$TARGETS`, `$MODE`.
 
 Present the generated copy for approval before writing anything to disk. Copy is subjective —
 never auto-apply without explicit user confirmation.
 
 ---
 
-## 4.1 Before→after tabel
+## 4.1 Before→after table
 
 Print a compact review table grouped by target (for batch: one section per target):
 
 ```
 ### Copy review: {target} ({archetype})
 
-| Element           | Category    | Before                        | After                                   |
-| ----------------- | ----------- | ----------------------------- | --------------------------------------- |
-| h1                | heading     | Welcome                       | Plan je week in één oogopslag           |
-| button#submit     | cta         | Submit                        | Account aanmaken                        |
-| .empty-state p    | empty-state | No data                       | Nog geen taken. Voeg je eerste toe.     |
-| label[for=email]  | label       | Email                         | E-mailadres                             |
-| aria-label        | label       | Button                        | Sluit dialoog                           |
-| error.network     | error       | Something went wrong          | Kon {service} niet bereiken. Controleer …|
+| Element           | Category    | Before                        | After                                     |
+| ------------------ | ------------ | ------------------------------- | -------------------------------------------- |
+| h1                | heading     | Welcome                       | Plan je week in één oogopslag             |
+| button#submit     | cta         | Submit                         | Account aanmaken                           |
+| .empty-state p    | empty-state | No data                        | Nog geen taken. Voeg je eerste toe.        |
+| label[for=email]  | label       | Email                          | E-mailadres                                |
+| aria-label        | label       | Button                         | Sluit dialoog                              |
+| error.network     | error       | Something went wrong           | Kon {service} niet bereiken. Controleer …  |
 ```
 
 Keep "Before" values truncated to 40 chars; "After" to 60 chars. For batch: repeat per target.
@@ -51,11 +52,16 @@ options:
 multiSelect: false
 ```
 
+> **Todo**: mid-convert entry (`route-convert.md § PHASE 2c`) — use the `ExitPlanMode` tool now, once
+> this modal resolves to "Apply all" or (after § 4.4's step-through) a final "Edit per item" confirm.
+> This is that branch's one `ExitPlanMode` point, before `convert-content-apply.md` writes anything.
+> Standalone entry (`route-content.md`): no plan-mode gate applies — skip this Todo.
+
 ---
 
 ## 4.3 Branch: Apply all
 
-User chose "Apply all" → proceed directly to PHASE 5 (`apply-and-sync.md`).
+User chose "Apply all" → proceed directly to PHASE 5 (`convert-content-apply.md`).
 
 ---
 
@@ -117,8 +123,8 @@ options:
 Update `$BRIEF.tone` (or `$BRIEF.language`) with the selection. Loop back to PHASE 3:
 
 > **Todo**: mark PHASE 4 → `in_progress` (stay in-phase for the retry). Read
-> `.claude/skills/design-content/references/content-generation.md` and regenerate
-> `$COPY_MAP` with the updated `$BRIEF`, then reload this review gate (§4.1).
+> `.claude/skills/design-convert/references/convert-content-generate.md` and regenerate
+> `$COPY_MAP` with the updated `$BRIEF`, then reload this review gate (§ 4.1).
 
 Cap regenerate loops at 3 — after the third loop without Apply/Cancel, ask:
 
@@ -134,9 +140,18 @@ options:
 
 ## 4.6 Branch: Cancel
 
+**Standalone entry:**
+
 ```
-design-content: Cancelled — no files written.
+design-convert --content: Cancelled — no files written.
 Transition "contenting" remains set; re-copy the prompt from the board to retry.
+```
+
+**Mid-convert entry** (`route-convert.md § PHASE 2c`):
+
+```
+Content fill cancelled — no files written. The run stops here (same as any other cancel path in
+route-convert.md); sectionState[] is untouched.
 ```
 
 Stop. No PHASE 5.

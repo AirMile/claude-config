@@ -34,6 +34,8 @@ Convert visual input into working code. Accepts low/medium-fi wireframes, Figma/
 
 Task 2 carries an unresolved `{$MODE}` at seed time. The moment 0.3 sets `$MODE`, `TaskUpdate` that task's description to the concrete filename (`references/convert-mode-copy.md`). A task naming a path that does not exist on disk names no file at all — it gets ticked off without ever being opened.
 
+**Content branch (`$ASPECT = "content"`, set at 0.4c):** the moment 0.4c sets it, `TaskUpdate` task 2 to `references/convert-content-scope.md` (chains into `convert-content-generate.md` → `convert-content-review.md` → `convert-content-apply.md` — PHASE 2c's own sequence) and mark tasks 3 and 3.5 `completed` with a one-line note `"not applicable — content branch"` (PHASE 2/3/3.5 are skipped entirely, see PHASE 1's content-fill note below).
+
 Transitions: PHASE 0 → `in_progress` at 0.1 and PHASE 0 → `completed` at the end of 0.6c; PHASE 1 → `in_progress` / PHASE 1 → `completed` around the mode procedure; PHASE 2 → `in_progress` / PHASE 2 → `completed` around codegen; PHASE 3 → `in_progress` / PHASE 3 → `completed` around the verification loop; PHASE 3.5 → `in_progress` / PHASE 3.5 → `completed` around the refine round; PHASE 4 → `in_progress` / PHASE 4 → `completed` around completion.
 
 <!-- Rationale: three real runs. One skipped PHASE 4 entirely — the verification report reads as a natural stopping point and nothing forced the run back. One seeded a task list with phase names but no reference paths, and improvised PHASE 3 and PHASE 4 from memory. A third seeded the paths correctly but left `{$MODE}` unresolved in task 2, marked it completed without reading any mode file, and generated the whole page with no fidelity table. Naming the file inside the task only works when the name resolves. -->
@@ -228,6 +230,33 @@ Only when `$INPUT_SOURCE ∈ {figma-mcp, figma-rest}` AND `$ANALYSIS` Type = `Fu
    - `homepage` → proceed exactly as the rest of this file already describes; 0.4's audit-option/auto-nudge logic applies unchanged.
    - `other:{route}` → same as `homepage`, but every later reference to "the homepage" / `app/page.tsx` in 0.3–0.5 means the given route instead.
 
+### 0.26 Resume Detection
+
+Skip entirely when `$TARGET_PAGE_CONFIRMED = "new"` (0.25), or no candidate name is resolvable yet
+(neither `$CONVERT_TARGET` from a backlog-transition pickup nor a confirmed target from 0.25) — a
+brand-new page has no prior state to resume. Runs before 0.3, so its result is available when the
+batched 0.25/0.3/0.4 modal (see the batching note below) is assembled — computing it after that
+modal is built would mean the modal's own copy can't reflect it.
+
+1. Resolve the candidate name: `$CONVERT_TARGET` if set, else `$TARGET_PAGE_CONFIRMED` (`homepage` /
+   `other:{route}`).
+2. Read `.project/project.json#design.{pages|components}[]` for the matching entry. Compute:
+   - `$UNBUILT` = `sectionState[]` entries where `build !== "built"` (absent `sectionState[]`, or no
+     matching entry at all → treat as a first-ever run: `$UNBUILT` = all of 0.2's `$ANALYSIS.Sections`
+     once known, `$RESUME_STATE = null`).
+   - `$BUILT_NO_CONTENT` = `sectionState[]` entries where `build === "built" && content !== "filled"`.
+3. Both empty → `$RESUME_STATE = null`. No behavior change downstream.
+4. Otherwise → `$RESUME_STATE = { unbuilt: [...names], builtNoContent: [...names] }`. Print one status
+   line before the batched modal:
+   ```
+   Resume: {name} — {built}/{total} sections built, {filled}/{total} content-filled
+   ```
+   When `$RESUME_STATE` is set, append `" — {len(unbuilt)} section(s) not yet built"` to the "Full
+   page" option's description in the 0.4 modal below — the recommended marker on "Full page" itself
+   is unchanged (there is still more of the page to build), but the description now tells the user
+   this run won't silently redo finished sections. The actual protection against overwriting finished
+   work lives in 0.4c's section-picker default (below), not in this modal's text.
+
 ### 0.3 Mode Selection
 
 **Audit-first override:** check the audit-recommendation signals now (same conditions as 0.4's "Recommended marker" below: `$INPUT_SOURCE ∈ {figma-mcp, figma-rest}` AND `$ANALYSIS` Type = `Full page` AND `$TARGET_PAGE_CONFIRMED ∈ {homepage, other:*}` (0.25) AND the phrase- or backlog-status signal fires). If they fire, **skip this step** and go straight to 0.4 with Scope pre-recommended to Audit — Mode is never selected for that scope (see convert-audit.md's Extraction-overrides-`$MODE` note), so asking it first only to discard the answer wastes a modal. If the user picks a scope other than Audit at 0.4, return here before proceeding.
@@ -250,7 +279,7 @@ Store as `$MODE` (sketch | copy | inspiration).
 
 > **Todo**: Read '.claude/skills/design-convert/references/convert-mode-{$MODE}.md' — it defines this mode's theme requirement (applied in 0.6), PHASE 1 procedure with its `ExitPlanMode` point, codegen rules (applied in 2.2), and verification thresholds (applied in PHASE 3). Resolve `{$MODE}`to the real filename and Read it now, before 0.4 — not "at PHASE 1". Then`TaskUpdate` task 2 (Step 0b) to that same filename.
 
-**Batching 0.25, 0.3 and 0.4.** These three questions land back-to-back and none of them depends on the previous answer, so ask them in **one** `AskUserQuestion` call with up to three questions rather than three consecutive modals. Keep each question's own option set and its `(Recommended)` marker exactly as specified — batching changes the number of round-trips, never the choices. The audit follow-up (`convert-audit-scope.md`) stays separate: it only exists once "Audit" has been picked.
+**Batching 0.25, 0.3 and 0.4.** These three questions land back-to-back and none of them depends on the previous answer, so ask them in **one** `AskUserQuestion` call with up to three questions rather than three consecutive modals. Keep each question's own option set and its `(Recommended)` marker exactly as specified — batching changes the number of round-trips, never the choices. 0.26 (Resume Detection) runs before this batch and only enriches the "Full page" option's description — it never adds a question of its own. The audit follow-up (`convert-audit-scope.md`) and the scope follow-up (`convert-scope-followup.md`, 0.4c) both stay separate: they only exist once "Audit" or "Full page"/"Single component" has been picked, respectively.
 
 ### 0.4 Scope Detection
 
@@ -286,6 +315,16 @@ http://localhost:9876/{project-dir}/review/{target-name}
 
 There the user can confirm the detected sections/components as a wireframe and leave open-questions before conversion proceeds; answers persist to `design.{pages|components}[].reviewNotes[]`. Skip the line if the entity is not yet in the design spec.
 
+### 0.4c Scope Follow-up
+
+Only for `$SCOPE ∈ {"Full page", "Single component"}` — patch already has 0.4b, audit already has its
+own follow-up (`convert-audit-scope.md`); neither needs this one.
+
+> **Todo**: Read `.claude/skills/design-convert/references/convert-scope-followup.md` and follow it.
+> It sets `$ASPECT` (`build` | `content`) and `$BUILD_SECTIONS[]`, and decides where the run goes
+> next: straight into PHASE 0.5 as today (`$ASPECT = build`), or past PHASE 0.5/1/2 into **PHASE 2c
+> Content Fill** (`$ASPECT = content`).
+
 ### 0.4b Patch Detection
 
 Only for scope = patch.
@@ -293,6 +332,11 @@ Only for scope = patch.
 > **Todo**: Read '.claude/skills/design-convert/references/convert-patch-detection.md'
 
 ### 0.5 Backlog Task Lookup (page scope only)
+
+**`$ASPECT = "content"` (0.4c): skip this step and 0.5b/0.5c is entered directly** — the target name is
+already resolved (0.26's `$RESUME_STATE` lookup, or `$CONVERT_TARGET`), so there is nothing left for
+this step to derive. Continue at 0.5b — content-fill still Edits app code, so it still needs the same
+worktree/baseline safety net.
 
 If scope is a full page (not a single component):
 
@@ -385,7 +429,9 @@ Quick scan for reusable components in the project. No deep inventory — just ch
 
 1. Glob for `src/components/**/*.{tsx,jsx}` (or framework equivalent)
 2. List component names and their approximate purpose (from filename + exports)
-3. Match against sections identified in the source image
+3. Match against sections identified in the source image — when `$BUILD_SECTIONS` is set (0.4c), match
+   only against those sections; a leak in a section not selected this run isn't silently missed,
+   since 0.6b re-runs fresh on every run and will catch it whenever that section is later selected.
 
 ```
 PROJECT CONTEXT
@@ -493,7 +539,7 @@ this route looks at the data, so nothing catches it.
    question: "This page renders {client} data and {m} of {n} records look like placeholders. Verify the conversion against those?"
    options:
      - label: "Fill real content first (Recommended)", description: "Against demo records the verification loop proves nothing — the layout passes while the page shows fiction"
-     - label: "Convert against placeholders", description: "Build the markup now; real content follows later via /design-content"
+     - label: "Convert against placeholders", description: "Build the markup now; real content follows later via /design-convert --content {name}, or the Fill-content aspect at re-entry (0.4c)"
      - label: "Cancel", description: "Stop without changes"
    multiSelect: false
    ```
@@ -523,6 +569,8 @@ Execute the **PHASE 1** section of the loaded `convert-mode-{$MODE}.md`:
 Every mode ends PHASE 1 with a user-confirmed table and its own `ExitPlanMode` point — after that, all remaining phases (codegen, verification, completion) run in Sonnet.
 
 **Patch paths (any scope = patch) skip PHASE 1 entirely** — their plan-mode exit happened in patch detection Step 4.
+
+**Content-fill paths (`$ASPECT = "content"`, 0.4c) skip PHASE 1 and PHASE 2 entirely** — go straight to **PHASE 2c Content Fill** below. Its own confirmation gate (`convert-content-review.md`) plays the same role PHASE 1's confirmed table plays for codegen, and its own `ExitPlanMode` point precedes `convert-content-apply.md`'s writes.
 
 **Audit path (`$SCOPE = audit`) replaces PHASE 1 + code generation entirely** — read `references/convert-audit.md`. It runs section discovery, per-section ground-truth extraction, and the discrepancy report, ending with a confirmed `$PATCH_SECTIONS` and its own `ExitPlanMode` point; then PHASE 2.0 Patch Guard applies the accepted fixes and PHASE 3 verifies (including the exact-value check in 3.2c). Do not run a mode file's PHASE 1 for audit — no `$MODE` selection is needed.
 
@@ -603,6 +651,8 @@ Strategy per section:
   [Section 1] → [new component | reuse existing | PRESERVE]
   [Section 2] → [new component | reuse existing | PRESERVE]
   ...
+  {When $BUILD_SECTIONS (0.4c) is a strict subset of $ANALYSIS.Sections: list ONLY the sections in
+   $BUILD_SECTIONS here — sections outside it are not generated and not stubbed this run.}
 
 {Per shared component NOT in $PRESERVE that this run will restyle:}
 Leaks:
@@ -636,7 +686,7 @@ design cannot be reached without restyling a preserved file, say so in the
 Generation Summary and leave it alone. Reaching the design is not worth silently
 overriding the answer the user gave at 0.6b.
 
-**Template reuse check:** if an already-converted page implements the same section structure (e.g. sibling pages generated from one design template — sector/product variants), plan the run as **reuse + content variation**: import that page's section components and vary only content/assets. Note in the plan when the remaining siblings would be better served by `/design-content` than by full conversions. Never regenerate near-identical components side by side.
+**Template reuse check:** if an already-converted page implements the same section structure (e.g. sibling pages generated from one design template — sector/product variants), plan the run as **reuse + content variation**: import that page's section components and vary only content/assets. Note in the plan when the remaining siblings would be better served by `/design-convert --content` than by full conversions. Never regenerate near-identical components side by side.
 
 ### 2.1b Reversibility Checkpoint
 
@@ -714,6 +764,43 @@ States:     [✓ generated: [loading|error|empty] | — none detected]
 
 ---
 
+## PHASE 2c: Content Fill (`$ASPECT = "content"` only, from 0.4c)
+
+Reached only via 0.4c's "Fill content" branch — never from a fresh full/component build. Fills real,
+on-brand copy into sections already `build: "built"` in `sectionState[]` (`$BUILD_SECTIONS` here is
+the `content`-scoped picker's selection, drawn from `$BUILT_NO_CONTENT`, not from `$UNBUILT`). Skips
+PHASE 1 and PHASE 2 entirely — nothing renders differently pixel-wise from a copy swap in the way
+PHASE 3's screenshot-diff checks, so PHASE 3 is skipped too; `convert-content-review.md`'s
+before/after table is this branch's equivalent "show the user the result" step, replacing PHASE 3.5.
+
+1. Read `.claude/skills/design-convert/references/convert-content-scope.md` — archetype
+   classification + content brief for `$TARGETS = [{name: $CONVERT_TARGET, sections:
+$BUILD_SECTIONS}]` (single-target shape — this branch is always single-target, since it arrived
+   via an already-resolved convert run; `route-content.md`'s own batch-mode PHASE 0 is not re-entered
+   here).
+2. Read `.claude/skills/design-convert/references/convert-content-generate.md` — produces
+   `$COPY_MAP`.
+3. Read `.claude/skills/design-convert/references/convert-content-review.md` — before/after table,
+   Apply all / Edit per item / Regenerate / Cancel.
+
+   > **Todo**: Use the `ExitPlanMode` tool once the review approves a course of action (Apply all, or
+   > Edit-per-item's final confirm) — before `convert-content-apply.md` writes anything. Plan mode was
+   > entered at PHASE 0.2, before this branch existed; this is this branch's one `ExitPlanMode` point,
+   > the same role PHASE 1's confirmed table plays for codegen.
+
+4. Read `.claude/skills/design-convert/references/convert-content-apply.md` §5.1 (Apply copy) and
+   §5.2 (Glossary write) only — §5.4 (backlog sync) and §5.5 (completion report) are NOT run here;
+   `convert-completion.md` (PHASE 4, unchanged entry point) is this branch's single completion
+   authority, so the run's backlog/devinfo/commit/report logic is never duplicated between the two
+   paths that can reach content-fill (this branch, and the standalone `route-content.md`).
+
+On "Cancel" (convert-content-review.md §4.6): stop the route cleanly, same as any other cancel path
+in this file — no PHASE 4.
+
+After step 4: proceed directly to **PHASE 4** (`convert-completion.md`) — skip PHASE 3 and PHASE 3.5.
+
+---
+
 ## PHASE 3: Visual Verification Loop
 
 > **Todo**: Read '.claude/skills/design-convert/references/convert-verification-loop.md' — this is not a generic screenshot loop you can reconstruct from memory or project instructions. It carries the §3.2 seven-point discrepancy checklist (including "no blank areas" and "missing elements" — the two checks that catch a broken/fabricated asset path), the round-1 runner baseline spec, and §3.2c (a computed-style diff against `$EXTRACTED_STYLES` — the only mechanism that can confirm which colors actually shipped). A self-designed substitute will not contain these. Do not improvise this phase.
@@ -731,7 +818,10 @@ that the page is done, and treating it as done is how a run reaches PHASE 4 with
 the bookkeeping finished and the page still wrong.
 
 Skip only when 3.0 resolved no browser vehicle (nothing was rendered, so there is
-nothing to show). Every other path runs it, including patch and audit.
+nothing to show). Every other path runs it, including patch and audit. **PHASE 2c
+(content-fill) never reaches this phase at all** — it jumps straight from PHASE 2c to PHASE 4;
+`convert-content-review.md`'s before/after table already served this phase's "show the user before
+PHASE 4" role.
 
 > **Todo**: Read '.claude/skills/design-convert/references/convert-refine-round.md'
 
@@ -761,7 +851,7 @@ This route must **NEVER**:
 - Generate code without first analyzing the source image
 - Use "Lorem ipsum" — always use contextual content from the source or realistic placeholders
 - Run sketch or inspiration mode without theme (project.json#theme empty)
-- Reach PHASE 2 with plan mode still active — every path has exactly one `ExitPlanMode` point (mode file 1.2, patch detection Step 4, or audit Step D)
+- Reach PHASE 2 (or PHASE 2c) with plan mode still active — every path has exactly one `ExitPlanMode` point (mode file 1.2, patch detection Step 4, audit Step D, or PHASE 2c's content-review approval)
 - Skip the `EnterPlanMode` call at PHASE 0.2 (or the patch fast-path's own call) when plan mode isn't already active — the check above only catches "still active at PHASE 2," not "never entered"
 - Skip the visual verification loop when 3.0 resolves any browser vehicle, or substitute an improvised check for the procedure in `convert-verification-loop.md`
 - Run a production build while the verification dev server is running — see `convert-verification-loop.md § 3.1`
@@ -769,7 +859,7 @@ This route must **NEVER**:
 - Regenerate components that already exist in the codebase — import and reuse (restated at 2.1, which is where the decision is made)
 - Restyle a file in `$PRESERVE` — the 0.6b answer outranks the design (STOP gate at 2.1)
 - Exceed 3 verification rounds in PHASE 3 — PHASE 3.5's refine rounds are uncapped and are not verification rounds
-- Reach PHASE 4 without PHASE 3.5 having shown the user a screenshot, whenever 3.0 resolved a browser vehicle
+- Reach PHASE 4 without PHASE 3.5 having shown the user a screenshot, whenever 3.0 resolved a browser vehicle — PHASE 2c's own `convert-content-review.md` before/after table is that branch's equivalent and satisfies this rule for content-fill runs
 
 This route must **ALWAYS**:
 

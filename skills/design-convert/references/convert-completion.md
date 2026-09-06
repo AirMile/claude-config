@@ -40,14 +40,37 @@ Read `.project/backlog.json` per shared/BACKLOG.md. Find feature where `f.name =
 
 If no match: skip silently.
 
+**Section completeness.** Read `design.pages[{name}].sectionState[]` (or `.components[{name}]`).
+Absent/empty → `$SECTION_COMPLETE = true` unconditionally (a pre-`sectionState` page, or a run that
+never went through 0.4c — treat as whole-page, matching pre-partial-build behavior exactly). Present →
+`$SECTION_COMPLETE` is computed per branch below, against whichever field that branch advances.
+
 If match found, branch on entity type:
 
 **Page scope** (`$CONVERT_TARGET` resolves to a page):
 
-- Set `status: "DOING"`, `stage: "built"`, `data.updated` to today — same as the Build route (`build-completion-sync.md` 10d). The page lands at TO CHECK; `/design-ship` is the only gate to `DONE` for pages (build and convert alike). Convert's visual verification loop is a complementary pre-check, not a substitute for the runtime audit (a11y/responsive/darkmode/perf).
-- Remove `transition`, `completedAt`, and `contentStatus` fields if present — `contentStatus` reset ensures the "Fill content" board button and badge reappear after a re-convert so copy is re-reviewed against the new markup.
-- Write back via Edit
-- **Audit re-entry:** this applies unchanged when `$SCOPE = audit` — an audit that patches an already-`DONE` page correctly moves it back to TO CHECK, since markup changed and a runtime re-check is warranted.
+- **Build branch** (`$ASPECT` unset, or `"build"` — i.e. every path except PHASE 2c):
+  - `$SECTION_COMPLETE` = every `sectionState[]` entry has `build: "built"` → `stage: "built"`.
+    Otherwise → `stage: "building"` (reuses the value already used for component scope below — no
+    new vocabulary; a section-scoped build genuinely isn't finished yet).
+  - Set `status: "DOING"`, `data.updated` to today — same as the Build route (`build-completion-sync.md` 10d). A fully-built page lands at TO CHECK; `/design-ship` is the only gate to `DONE` for pages (build and convert alike). Convert's visual verification loop is a complementary pre-check, not a substitute for the runtime audit (a11y/responsive/darkmode/perf).
+  - Remove `transition` and `completedAt` fields if present. Remove `contentStatus` **only when
+    `$SECTION_COMPLETE`** — a full rebuild invalidates prior content review and the "Fill content"
+    board button/badge should reappear, but a section-scoped build that leaves other,
+    already-content-filled sections untouched must not silently reset their `contentStatus`.
+  - Write back via Edit
+  - **Audit re-entry:** this applies unchanged when `$SCOPE = audit` — an audit that patches an already-`DONE` page correctly moves it back to TO CHECK, since markup changed and a runtime re-check is warranted.
+- **Content branch** (`$ASPECT = "content"`, PHASE 2c):
+  - `$SECTION_COMPLETE` = every `sectionState[]` entry touched by `$BUILD_SECTIONS` this run, together
+    with every prior `content: "filled"` entry, now reads `content: "filled"` → `contentStatus:
+"filled"`. Otherwise (sections still pending content) → leave `contentStatus` unset/unchanged — a
+    partial content-fill correctly reads as "not fully filled" to every downstream consumer
+    (`convert-audit.md`'s content-fill guard, `design-ship`'s check gate, the content route's own
+    batch-queue candidate filter).
+  - Set `status: "DOING"`, `data.updated` to today. Do **not** touch `stage` — layout didn't change
+    this run.
+  - Remove `transition` if present.
+  - Write back via Edit
 
 **Component scope** (`$CONVERT_TARGET` resolves to a component):
 
@@ -55,6 +78,22 @@ If match found, branch on entity type:
 - Remove `transition` and `contentStatus` fields if present
 - Do NOT set `shippedSha` or `completedAt` — those belong to the page/feature merge that consumes this component
 - Write back via Edit
+
+### 4.2d Section State Write
+
+Only when `$BUILD_SECTIONS` (0.4c) was set this run — a whole-page/whole-component run without a
+0.4c branch never touches `sectionState[]` (its completeness already defaults to `true` per §4.2's
+absent/empty rule, so there's nothing to advance).
+
+For every section name in `$BUILD_SECTIONS`, merge into `design.{pages|components}[{name}].sectionState[]`
+(create the array if absent, one entry per section seen in `$ANALYSIS.Sections` — see
+`shared/DASHBOARD-PROJECT.md § pages[].sectionState`):
+
+- Build branch → set that entry's `build: "built"`.
+- Content branch → set that entry's `content: "filled"`.
+
+Sections outside `$BUILD_SECTIONS` are left untouched — never regressed, never auto-completed. Write
+back via Edit, in the same pass as §4.2's own write (one read, one write, not two round-trips).
 
 ### 4.2b New-Page Navigation Wiring
 
@@ -96,6 +135,8 @@ Trigger C — scan all generated/updated component files for stub handlers. Foll
 ### 4.4 Completion Report — prepare fields
 
 **STOP** when no `REFINE ROUNDS` block (`convert-refine-round.md` § 3.5d) was printed this run and 3.0 resolved a browser vehicle. PHASE 3.5 did not execute — the user has not seen the result. Go back and run it; do not source `refineRounds` from the conversation.
+
+**Content branch (`$ASPECT = "content"`, PHASE 2c) uses a different precondition** — it never reaches PHASE 3.0, so the check above does not apply. Instead: **STOP** when no approval was recorded by `convert-content-review.md` §4.2/§4.3/§4.4 this run. The review table is that branch's "the user has seen the result" artifact.
 
 Same shape as 2.0a's PHASE 1 gate: the phase's artifact is what its consumer is allowed to read, so its absence is detectable here rather than silently papered over.
 
@@ -261,6 +302,12 @@ Then print the full completion report, using the `Worktree:` line built in §4.4
 
 Omit the `Interactions:` line entirely when no `$INTERACTION_SPEC` was set this run — don't print it empty.
 
+Add a `Sections:` line, and adjust `Next:`, whenever `$BUILD_SECTIONS` (0.4c) was set this run:
+
+```
+Sections:     [built]/[total] built, [filled]/[total] content-filled — remaining: [names, or "none"]
+```
+
 ```
 CONVERT BUILD COMPLETE
 ════════════════════════════════════════════════
@@ -275,6 +322,7 @@ Refine:       [N] rounds with the user | "not run" | "NOT RUN"
 Preserved:    [paths kept in their existing styling | "none"]
 Interactions: [N implemented, PASS | N mismatches]
 Code quality: [PASS | N violations fixed]
+Sections:     [only when $BUILD_SECTIONS was set — see above]
 Gaps:         [N linked | M created | K pending | "none"]
 Bans checked: [N enforced | "none active"]
 Commit:       [{type}({target}): {subject} (sha) | "none"]
@@ -285,12 +333,24 @@ Files ([N]):
   Components: [component paths]
 
 Next: /design-ship {name} — runtime check, ships on PASS.
+      [$SECTION_COMPLETE = false → replace with: /design-convert {name} — resume, {N} section(s) remaining.]
 ════════════════════════════════════════════════
 ```
 
 ### 4.6 Auto-finalize
 
 **Skip if `$IS_WORKTREE = false`** (detected in §4.4).
+
+**Skip also when this run was section-scoped (`$BUILD_SECTIONS` set) and `$SECTION_COMPLETE = false`**
+(§4.2/§4.2d) — even inside a worktree. The commit in §4.5b above still lands (the run's actual output
+is never lost), but the worktree stays open and unmerged until every section is done: this is both
+the mechanism against marking a partial page "finished" (§4.2 already keeps `stage`/`contentStatus`
+from advancing prematurely; this is the matching guard on the merge itself) and the resume mechanism
+for a later day — `sectionState[]` lives in `project.json`, which travels via `claude/state`
+independently of the worktree, so `route-convert.md § 0.5b`'s own collision matrix
+(`shared/WORKTREE-CREATE.md`) already does the right thing on re-entry: clean + matching branch →
+silent reuse; branch merged/gone in the meantime → fresh worktree from `main`, no new state needed
+either way.
 
 Detect `TEAM_MODE` + PR state, then run `shared/FINALIZE.md` directly (no confirmation modal for the merge/cleanup decision):
 

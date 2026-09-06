@@ -1,78 +1,72 @@
----
-name: design-content
-description: Fill built pages/components with real on-brand copy. Use with /design-content, or auto-triggers on PAGE/COMPONENT backlog tasks with transition "contenting".
-argument-hint: "[page-or-component-name]"
-reads:
-  [
-    concept.seed,
-    project.design,
-    project.theme,
-    backlog.status,
-    feature.files,
-    feature.requirements,
-  ]
-writes: [backlog.status, project.theme]
-metadata:
-  author: claude-config
-  version: 1.0.0
-  category: design
----
+# Route: Content
 
-# Content
+Fill built pages and components with real, on-brand copy. Upgrades contextual placeholders to
+reviewed, seed-grounded text via an intentional pipeline: archetype → brief → scan → generate →
+review → apply.
 
-Fill built pages and components with real, on-brand copy. Runs after `design-convert` build/convert
-and before the runtime check. Upgrades contextual placeholders to reviewed, seed-grounded text via an
-intentional pipeline: archetype → brief → scan → generate → review → apply.
+Reached two ways:
 
-**Pipeline position:** `design-tokens → design-convert → design-content → /design-ship` (check + ship)
+1. **Standalone** — `/design-convert --content [name]` (single target) or `/design-convert --content`
+   (no name: batch/queue mode), or the `"contenting"` backlog auto-trigger (`SKILL.md § 0.3 Step 3`).
+   This route owns the full flow below, including its own PHASE 0.
+2. **Mid-convert, via `route-convert.md § 0.4c`** — the "Fill content" aspect branch on an already
+   in-progress Convert run. That branch (PHASE 2c in `route-convert.md`) enters at this file's PHASE 1
+   directly, with `$TARGETS`, `$SEED`, `$DESIGN`, `$THEME`, `$FILES`, `$REQS` already resolved by the
+   Convert route — it never re-enters this file's own PHASE 0, and completion is handled by
+   `convert-completion.md`, not this file's PHASE 5 (§5.4/§5.5 are skipped on that path — see
+   `convert-content-apply.md`).
 
-**Related skills:** `/design-convert` · `/design-ship` · `/marketing-research`
+Content-filling has no visual source and cannot pass through the Convert route's PHASE 0.1 — that is
+the reason this is its own route rather than a mode of Convert.
+
+**Related skills:** `/design-tokens` · `/design-ship` · `/marketing-research`
 
 ## References
 
 - `../shared/SEED.md` — Seed reader (name, pitch, full concept markdown)
 - `../shared/DESIGN.md § UX Writing` — Button labels, error messages, empty states, term consistency
 - `../shared/BACKLOG.md` — Backlog read/write protocol
-- `../shared/PROJECT-CONTEXT-LOAD.md` — entities/learnings (content profile — see §0.3)
-- `./references/scope-intent.md` — Archetype classification, brief, CHECKPOINT, research hook (PHASE 1)
-- `./references/content-generation.md` — Generation rules per element category + glossary (PHASE 3)
-- `./references/review-gate.md` — Before→after approval + regenerate-tone loop (PHASE 4)
-- `./references/apply-and-sync.md` — Apply strategy, backlog write, report (PHASE 5)
+- `../shared/PROJECT-CONTEXT-LOAD.md` — entities/learnings (content profile — see § 0.3)
+- `convert-content-scope.md` — Archetype classification, brief, CHECKPOINT, research hook (PHASE 1)
+- `convert-content-generate.md` — Generation rules per element category + glossary (PHASE 3)
+- `convert-content-review.md` — Before→after approval + regenerate-tone loop (PHASE 4)
+- `convert-content-apply.md` — Apply strategy, backlog write, report (PHASE 5)
 
 ---
 
-## Process
+## Process (standalone entry only — the mid-convert entry starts at PHASE 1)
 
-**Phase tracking** — first action of the skill: call `TaskCreate` with these 6 items
-(status `pending`), then use `TaskUpdate` to set each phase to `in_progress` at the
-start and `completed` at the end. During context compaction the task list remains
-visible — no risk of forgetting phases.
+**Phase tracking** — first action of this route: call `TaskCreate` with these 6 items (status
+`pending`), then use `TaskUpdate` to set each phase to `in_progress` at the start and `completed` at
+the end. During context compaction the task list remains visible — no risk of forgetting phases.
 
-1. PHASE 0: Pre-flight & modus — modus bepalen, context laden, bestanden vinden, i18n detecteren
-2. PHASE 1: Scope & intent — archetype, content-brief, CHECKPOINT (+ optionele research-hook)
-3. PHASE 2: Scan — placeholders + copy-elementen detecteren, KEEP bestaande copy markeren
-4. PHASE 3: Generate — copy per categorie genereren (archetype-tuned, glossary-consistent)
-5. PHASE 4: Review & approve — before→after-tabel, Apply / Edit / Regenerate / Cancel
-6. PHASE 5: Apply + sync + report — schrijven naar code/i18n, backlog-sync, rapport
+1. PHASE 0: Pre-flight & mode — resolve mode, load context, find files, detect i18n
+2. PHASE 1: Scope & intent — archetype, content brief, CHECKPOINT (+ optional research hook)
+3. PHASE 2: Scan — detect placeholders + copy-bearing elements, flag existing copy KEEP
+4. PHASE 3: Generate — generate copy per category (archetype-tuned, glossary-consistent)
+5. PHASE 4: Review & approve — before→after table, Apply / Edit / Regenerate / Cancel
+6. PHASE 5: Apply + sync + report — write to code/i18n, backlog sync, report
 
 ---
 
-## PHASE 0: Pre-flight & modus
+## PHASE 0: Pre-flight & Mode
 
 > **Todo**: call `TaskCreate` with the 6 phase items (see above). Mark PHASE 0 → `in_progress` via `TaskUpdate`.
 
-### 0.1 Modus bepalen
+### 0.1 Determine mode
 
-Drie aanroep-modi:
+Two invocation modes:
 
-**A — Board-knop / één arg:**
+**A — Single target:**
 
 ```
-$SKILL_ARG given  →  MODE = single, TARGET = $SKILL_ARG
-transition === "contenting" in backlog  →  MODE = single, TARGET = feature.name
+$CONTENT_TARGET given (non-empty)  →  MODE = single, TARGET = $CONTENT_TARGET
 ```
 
-**B — Queue/batch (geen arg, geen matching transition):**
+`$CONTENT_TARGET` is set by `SKILL.md § 0.3` — either from `--content {name}`, or from the
+`"contenting"` backlog-transition branch (Step 3).
+
+**B — Queue/batch (`$CONTENT_TARGET` empty):**
 
 ```
 Read .project/backlog.json
@@ -83,7 +77,7 @@ Candidates = features where:
   && contentStatus !== "filled"
 
 0 candidates  →  show:
-  "design-content: Nothing to fill.
+  "design-convert --content: Nothing to fill.
    All built PAGE/COMPONENT items already have contentStatus: filled,
    or no built items exist yet. Run /design-convert first."
   Stop.
@@ -96,13 +90,13 @@ Candidates = features where:
   multiSelect: true
 ```
 
-Store: `$TARGETS` (list, always), `$MODE` (`single` | `batch`). For single: `$TARGETS = [{name: $TARGET}]`.
+Store: `$TARGETS` (list, always), `$MODE` (`single` | `batch`). For single: `$TARGETS = [{name: $CONTENT_TARGET}]`.
 
 ```
-Modus:   {single — {target} | batch — {N} targets: {names}}
+Mode:    {single — {target} | batch — {N} targets: {names}}
 ```
 
-### 0.2 Context laden
+### 0.2 Load context
 
 For each target in `$TARGETS`, record type (PAGE/COMPONENT) from backlog or design spec.
 
@@ -119,7 +113,7 @@ Seed:    [✓] {$SEED.name} — {$SEED.pitch}
 Theme:   [✓|✗] voice "{$THEME.voice}" | no theme voice defined
 ```
 
-### 0.3 Project-context laden (entities + learnings)
+### 0.3 Load project context (entities + learnings)
 
 ```bash
 node -e "
@@ -135,7 +129,7 @@ node ~/.claude/scripts/learnings-search.js "." load --scopes architectural --pit
 
 Store `$ENTITIES`, `$GLOSSARY`, and the loader's `LEARNINGS CONTEXT` block as `$LEARNINGS` (project-wide pitfalls + architectural patterns, relevance-scored — see `../shared/LEARNINGS-LOAD.md`). If files absent → the loader prints nothing; treat all as empty.
 
-### 0.4 Bestanden + feature-context vinden
+### 0.4 Find files + feature context
 
 Per target:
 
@@ -149,7 +143,7 @@ Also read `backlog.json` features for target: collect `dependencies[]`, `pageHin
 Files:   [✓] {target}: {N} file(s) — {list}   (per target)
 ```
 
-### 0.5 i18n detecteren
+### 0.5 Detect i18n
 
 Glob: `src/i18n/**/*.json`, `locales/**/*.json`, `messages/**/*.json`, `public/locales/**/*.json`, `src/strings.ts`, `src/constants/strings.*`.
 
@@ -158,9 +152,9 @@ Not found → `$I18N_MODE = false`. Print: `i18n: [✗] none — inline copy`
 
 ---
 
-## PHASE 1: Scope & intent
+## PHASE 1: Scope & Intent
 
-> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`. Read `.claude/skills/design-content/references/scope-intent.md` and follow that procedure.
+> **Todo**: mark PHASE 0 → `completed`, PHASE 1 → `in_progress`. Read `.claude/skills/design-convert/references/convert-content-scope.md` and follow that procedure.
 
 ---
 
@@ -177,7 +171,7 @@ Scan each file in `$FILES[target]` (per target, sequentially for batch). Collect
 - Empty string attributes where content is expected (`alt=""` on non-decorative, `aria-label=""`, `placeholder=""`)
 - Empty-state containers with no text child
 
-**Copy-dragende elementen** — expected to have real copy:
+**Copy-bearing elements** — expected to have real copy:
 
 - All `<button>`, `<a>`, `<label>`, `<h1>`–`<h6>`, `<p>`
 - `placeholder`, `aria-label`, `alt` attributes
@@ -189,7 +183,7 @@ Scan each file in `$FILES[target]` (per target, sequentially for batch). Collect
   `<meta property="og:description">`, Next.js `metadata.title`/`metadata.description`/`metadata.openGraph`
   export, `react-helmet`/`next/head` contents
 
-**KEEP-markers** — do NOT overwrite:
+**KEEP markers** — do NOT overwrite:
 
 - Strings ≥ 8 words that sound product-specific (contain seed domain terms)
 - Strings already matching `$GLOSSARY` terms
@@ -214,18 +208,18 @@ Stop (no backlog write, no transition clear — standalone runs only; backlog it
 
 ## PHASE 3: Generate
 
-> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/design-content/references/content-generation.md` and follow that procedure to produce `$COPY_MAP`.
+> **Todo**: mark PHASE 2 → `completed`, PHASE 3 → `in_progress`. Read `.claude/skills/design-convert/references/convert-content-generate.md` and follow that procedure to produce `$COPY_MAP`.
 
 ---
 
-## PHASE 4: Review & approve
+## PHASE 4: Review & Approve
 
-> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/design-content/references/review-gate.md` and follow that procedure.
+> **Todo**: mark PHASE 3 → `completed`, PHASE 4 → `in_progress`. Read `.claude/skills/design-convert/references/convert-content-review.md` and follow that procedure.
 
 ---
 
-## PHASE 5: Apply + sync + report
+## PHASE 5: Apply + Sync + Report
 
-> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`. Read `.claude/skills/design-content/references/apply-and-sync.md` and follow that procedure.
+> **Todo**: mark PHASE 4 → `completed`, PHASE 5 → `in_progress`. Read `.claude/skills/design-convert/references/convert-content-apply.md` and follow that procedure.
 
 > **Todo**: mark PHASE 5 → `completed`.

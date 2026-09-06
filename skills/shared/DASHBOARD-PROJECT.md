@@ -177,6 +177,10 @@ Pre-migration projects may still carry these keys in `project.json` — they are
    - Check if page.name already exists in design.pages
    - If not: push new page
    - If yes: update purpose, status, sections, flows, notes
+2b. Same for `pages[].sectionState[]`: merge on `name`. A section present in `sections[]` but missing
+    from `sectionState[]` gets a fresh `{name, build: "pending", content: "pending"}` entry. An
+    existing entry's `build`/`content` values are left untouched by this merge — they only advance via
+    `convert-completion.md`'s own explicit write, never as a side effect of re-analysis.
 3. Same for flows (merge on name, update steps/notes)
    Flow object shape: `{ "name": string, "steps": [page-name, ...], "notes": string }`
    Steps are page-names from `design.pages[].name` — orphan steps are allowed but generate a warning.
@@ -405,15 +409,15 @@ No deletion, no update — append only. For live status of a running run: see `.
 
 ### project.json sections
 
-| Section             | Written by                                                         | When                                     |
-| ------------------- | ------------------------------------------------------------------ | ---------------------------------------- |
-| `seed`              | `/project-seed` (incl. brainstorm/critique modes), `/project-plan` | On seed creation/iteration/plan          |
-| `design`            | `/design-convert`, `/design-tokens`                                | On design spec/page build/theme creation |
-| `theme`             | `/design-tokens`                                                   | After theme create/update                |
-| `stack`             | `/core-setup`, `/project-plan`, `/dev-ship`, `/design-convert`     | On detection/new deps                    |
-| `data`              | `/dev-ship`, `/game-ship`                                          | On entity definition                     |
-| `endpoints`         | `/dev-ship`                                                        | On API definition / after build          |
-| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                  | On run completion (PHASE 6)              |
+| Section             | Written by                                                                      | When                                            |
+| ------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `seed`              | `/project-seed` (incl. brainstorm/critique modes), `/project-plan`              | On seed creation/iteration/plan                 |
+| `design`            | `/design-convert`, `/design-tokens`                                             | On design spec/page build/theme creation        |
+| `theme`             | `/design-tokens`, `/design-convert` (content-fill: `voice.terms` glossary only) | After theme create/update · after content apply |
+| `stack`             | `/core-setup`, `/project-plan`, `/dev-ship`, `/design-convert`                  | On detection/new deps                           |
+| `data`              | `/dev-ship`, `/game-ship`                                                       | On entity definition                            |
+| `endpoints`         | `/dev-ship`                                                                     | On API definition / after build                 |
+| `optimization_runs` | `/dev-optimize`, `/game-optimize`                                               | On run completion (PHASE 6)                     |
 
 Feature status changes go to `.project/backlog.json` (see [BACKLOG.md](BACKLOG.md)) — not to project.json.
 
@@ -421,19 +425,21 @@ For the `project-context.json` writer table see [DASHBOARD-CONTEXT.md](DASHBOARD
 
 ### Skill sync overview
 
-| Skill                       | project.json                                   | project-context.json                                              | When                              |
-| --------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- | --------------------------------- |
-| `/core-setup`               | `stack` (full)                                 | `context` (initial)                                               | After project generation          |
-| `/dev-ship`                 | `data.entities`, `endpoints`, `stack.packages` | `context`, `architecture.routes[]`, `learnings` (write)           | Ship run (define→refactor phases) |
-| `/design-convert`           | `design` (pages, flows, principles)            | —                                                                 | On each run                       |
-| `/design-convert`           | `stack.packages`, `design.pages`               | —                                                                 | After completion sync             |
-| `/design-tokens`            | `design.principles`                            | —                                                                 | After completion                  |
-| `/game-ship`                | `data.entities`, `stack.packages`              | `context`, `architecture`, `learnings` (write)                    | Ship run (define→refactor phases) |
-| `/team-verify`              | `stack.packages`, `endpoints`, `data.entities` | `architecture` (write)                                            | PHASE 7 completion                |
-| `/dev-optimize`             | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion                |
-| `/game-optimize`            | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion                |
-| `/core-pull`                | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                          |
-| `/core-setup --mode=mature` | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | One-time on join                  |
+| Skill                            | project.json                                   | project-context.json                                              | When                                            |
+| -------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------- |
+| `/core-setup`                    | `stack` (full)                                 | `context` (initial)                                               | After project generation                        |
+| `/dev-ship`                      | `data.entities`, `endpoints`, `stack.packages` | `context`, `architecture.routes[]`, `learnings` (write)           | Ship run (define→refactor phases)               |
+| `/design-convert`                | `design` (pages, flows, principles)            | —                                                                 | On each run                                     |
+| `/design-convert`                | `stack.packages`, `design.pages`               | —                                                                 | After completion sync                           |
+| `/design-convert`                | `design.pages[].sectionState`                  | —                                                                 | After completion sync (build/content-fill runs) |
+| `/design-convert` (content-fill) | `theme.voice.terms`                            | —                                                                 | After content apply                             |
+| `/design-tokens`                 | `design.principles`                            | —                                                                 | After completion                                |
+| `/game-ship`                     | `data.entities`, `stack.packages`              | `context`, `architecture`, `learnings` (write)                    | Ship run (define→refactor phases)               |
+| `/team-verify`                   | `stack.packages`, `endpoints`, `data.entities` | `architecture` (write)                                            | PHASE 7 completion                              |
+| `/dev-optimize`                  | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion                              |
+| `/game-optimize`                 | `optimization_runs` (append)                   | —                                                                 | PHASE 6 completion                              |
+| `/core-pull`                     | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, signal-triggered) | Per pull                                        |
+| `/core-setup --mode=mature`      | `endpoints`, `data.entities`, `stack.packages` | `context`, `architecture`, `learnings` (synced, full LLM scan)    | One-time on join                                |
 
 ## Server
 
@@ -468,6 +474,11 @@ The `design` key in `project.json` is managed exclusively by the `design-convert
         "purpose": "Overview with metrics and status",
         "status": "DEF",
         "sections": ["hero", "metrics-grid", "activity-feed"],
+        "sectionState": [
+          { "name": "hero", "build": "built", "content": "filled" },
+          { "name": "metrics-grid", "build": "built", "content": "pending" },
+          { "name": "activity-feed", "build": "pending", "content": "pending" }
+        ],
         "flows": ["login → dashboard", "dashboard → settings"],
         "uses": [],
         "notes": "",
@@ -526,6 +537,8 @@ The `design` key in `project.json` is managed exclusively by the `design-convert
 **Status values (pages and components):** `IDEA` | `DEF` | `BLT` | `DONE`
 
 **`pages[].uses[]`** — auto-maintained by Build/convert post-pass. List of component names imported by this page. Do not edit manually.
+
+**`pages[].sectionState?[]`** — auto-maintained by `design-convert` only (both the codegen and content-fill paths). Tracks per-section progress for section-scoped/partial conversion runs, keyed by `name` (matches an entry in `sections[]` by string, not by index, so it survives re-analysis/reordering). Schema per item: `{ name, build: "pending"|"built", content: "pending"|"filled" }`. A section newly seen in a visual analysis that has no existing entry is initialized to `{name, build: "pending", content: "pending"}`. Never regressed from `"built"`/`"filled"` back to `"pending"` by a later run — only `convert-completion.md`'s own write can advance a status. An entry whose section no longer appears in a later analysis is not auto-deleted — same philosophy as `gaps[]`/`reviewNotes[]`. Absent array (pages created before this field existed) is read as "no section-level state yet" — full-page-scoped behavior is unaffected.
 
 **`{pages|components}[].reviewNotes?[]`** — **user-owned**, optional. Open questions and review decisions captured in the visual review route (`/{project}/review/{entity}`, served by `serve-backlog.js`). `design-convert` merges never write or delete this field — it survives spec re-merges untouched. Schema per item: `{ question, answer, status: "open"|"resolved", at }` (`at` = ISO timestamp). The review route POSTs the full array to `/{project}/review/{entity}/save`.
 

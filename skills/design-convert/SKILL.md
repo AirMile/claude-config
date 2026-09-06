@@ -1,7 +1,7 @@
 ---
 name: design-convert
-description: Use with /design-convert — Figma/URL/screenshot→code, or design specs.
-argument-hint: "[name|file-path|url|sketch]"
+description: Use with /design-convert — Figma/URL/screenshot→code, design specs, or content fill.
+argument-hint: "[name|file-path|url|sketch|--content [name]]"
 reads:
   [
     devinfo.handoff,
@@ -14,7 +14,14 @@ reads:
     project.stack,
     concept.seed,
   ]
-writes: [devinfo.handoff, devinfo.tokenDrift, project.design, backlog.status]
+writes:
+  [
+    devinfo.handoff,
+    devinfo.tokenDrift,
+    project.design,
+    backlog.status,
+    project.theme,
+  ]
 metadata:
   author: claude-config
   version: 3.21.0
@@ -23,10 +30,11 @@ metadata:
 
 # Design
 
-One skill, two routes:
+One skill, three routes:
 
 1. **Design route** — manages project design specification (pages, user flows, design principles, components) in `.project/project.json → design`, or generates a Claude Design brief. Modes: Capture, Brief, Build. **Build is game-only**: it emits Godot `.tscn` via `render-godot.md`; **web spec→code build now runs via `/design-ship`** (build → content → check), so the Build action redirects web targets there.
-2. **Convert route** — converts visual input (sketch, wireframe, Figma/Canva, Figma Make, screenshot, URL, pasted image) into working code using project tokens (web, interactive — including hover/scroll interactions via `$INTERACTION_SPEC` capture). Modes: Sketch → high-fi, 1:1 copy, Inspiration. Each mode loads its own procedure file (`references/convert-mode-{mode}.md`) after mode selection.
+2. **Convert route** — converts visual input (sketch, wireframe, Figma/Canva, Figma Make, screenshot, URL, pasted image) into working code using project tokens (web, interactive — including hover/scroll interactions via `$INTERACTION_SPEC` capture). Modes: Sketch → high-fi, 1:1 copy, Inspiration. Each mode loads its own procedure file (`references/convert-mode-{mode}.md`) after mode selection. Also reachable mid-convert via its own 0.4c aspect branch, for section-scoped partial builds (build layout now, fill content later).
+3. **Content route** — fills already-built pages/components with real, on-brand copy (`/design-convert --content [name]`, or the `"contenting"` backlog auto-trigger). Content-filling has no visual source, so it cannot pass through the Convert route's PHASE 0.1 — it gets its own route instead. Archetype → brief → scan → generate → review → apply.
 
 The router below classifies the argument and dispatches to the appropriate route reference file. Each route file is only loaded in sessions where it is needed.
 
@@ -46,7 +54,10 @@ The router below classifies the argument and dispatches to the appropriate route
 - `../shared/PLAYWRIGHT.md` — Playwright CLI, screenshot capture (Convert route)
 - `references/convert-source-fallbacks.md` — Figma MCP not connected (REST ladder) or a Figma Make URL (Convert route PHASE 0.1)
 - `references/convert-audit-scope.md` — Whether the audit option is recommended, and what it reconciles (Convert route PHASE 0.4)
+- `references/convert-scope-followup.md` — Section-subset + build-vs-content-fill aspect choice (Convert route PHASE 0.4c)
 - `references/convert-refine-round.md` — Show the result and iterate with the user (Convert route PHASE 3.5)
+- `references/route-content.md` — Content route: fills built pages/components with real copy (standalone `--content` entry, or Convert route PHASE 2c)
+- `references/convert-content-scope.md`, `convert-content-generate.md`, `convert-content-review.md`, `convert-content-apply.md` — Content route phases (archetype/brief → generate → review → apply)
 - `scripts/extract-computed-styles.mjs` — Ground-truth computed styles, section boxes and seams; copy into `.project/tmp/` and run the copy, never in place (Convert route PHASE 1 §1.0 and PHASE 3 §3.2c)
 - `./examples/` — Conversion examples (1:1, inspiration, Apple-style)
 - External: `vercel-labs/web-interface-guidelines` — setup-context for Convert route (see `references/route-convert.md § Step 0`)
@@ -61,10 +72,14 @@ The router below classifies the argument and dispatches to the appropriate route
 PREFLIGHT → CONVERT_PATCH   (handoff build-incomplete + user picks Patch)
 PREFLIGHT → DESIGN_ROUTE    ($ROUTE = design — no visual input)
 PREFLIGHT → CONVERT_ROUTE   ($ROUTE = convert — visual input detected)
+PREFLIGHT → CONTENT_ROUTE   ($ROUTE = content — --content arg or "contenting" transition)
 PREFLIGHT → ERROR           (pre-flight fail)
 
 DESIGN_ROUTE  → [route-design.md state machine]
 CONVERT_ROUTE → [route-convert.md state machine]
+CONVERT_ROUTE → CONVERT_ROUTE#PHASE_2c (0.4c aspect branch = "Fill content" — reads the content
+                 route's phase files directly, never re-enters CONTENT_ROUTE/route-content.md)
+CONTENT_ROUTE → [route-content.md state machine]
 CONVERT_PATCH → CONVERT_ROUTE (with $PATCH_MODE = true)
 ```
 
@@ -148,7 +163,13 @@ If `handoff.target === $SKILL_ARG`: mark "Patch" as Recommended. On "Patch": fol
 
 Classify the argument to set `$ROUTE`:
 
-**Step 1 — Visual input** _(highest priority — checked before Steps 2-4):_
+**Step 0 — Content flag** _(checked before every other step):_
+
+`$SKILL_ARG` starts with `--content` → `$ROUTE = "content"`. The remainder of the argument (after
+`--content`, trimmed) is `$CONTENT_TARGET` — empty when none was given (batch/queue mode, resolved
+by `route-content.md` PHASE 0). → Stop (proceed to dispatch).
+
+**Step 1 — Visual input** _(highest priority among the remaining steps — checked before Steps 2-4):_
 
 `$SKILL_ARG` matches any of:
 
@@ -188,7 +209,10 @@ Triggers when Step 2 set `$ROUTE = design` AND `$SKILL_ARG` is non-empty.
    The design route's Mode A will offer "Convert from sketch/mockup" as a
    sub-option for entities without a spec — that is the canonical path from
    "designing" to convert. Do not auto-route here.
-6. Any other transition value (or absent) → keep `$ROUTE = design`.
+6. Match found and `f.transition === "contenting"` →
+   - Set `$ROUTE = content`
+   - Set `$CONTENT_TARGET = $SKILL_ARG`
+7. Any other transition value (or absent) → keep `$ROUTE = design`.
 
 **Step 4 — No argument:**
 
@@ -201,7 +225,7 @@ PRE-FLIGHT CHECK
 ════════════════════════════════════════════════
 Directory:  [✓|✗] .project/
 Session:    [✓] [New session | Continuing from {skill}]
-Route:      [Design | Convert]
+Route:      [Design | Convert | Content]
 Mode:       [— | patch (handoff) | backlog transition]
 ════════════════════════════════════════════════
 ```
@@ -224,6 +248,10 @@ TSX codegen (spec management itself is identical). When `$DOMAIN === "native"`: 
 
 > **Todo**: Read `.claude/skills/design-convert/references/route-convert.md`
 
+**If `$ROUTE = content`:**
+
+> **Todo**: Read `.claude/skills/design-convert/references/route-content.md`
+
 ---
 
 ## Restrictions
@@ -231,4 +259,4 @@ TSX codegen (spec management itself is identical). When `$DOMAIN === "native"`: 
 - Always run PHASE 0 before dispatching
 - Never skip handoff detection
 - Never guess $ROUTE — follow the classification steps exactly
-- Never load both route files in the same session, except via the Design route's convert dispatches — Mode A → "Convert from sketch/mockup", or Mode C → "Convert visual input" / "Other" convert (each loads `route-convert.md` and abandons the Design state machine). Any other simultaneous load is forbidden.
+- Never load more than one route file in the same session, except: (a) the Design route's convert dispatches — Mode A → "Convert from sketch/mockup", or Mode C → "Convert visual input" / "Other" convert (each loads `route-convert.md` and abandons the Design state machine); (b) the Convert route's own PHASE 0.4c aspect branch — "Fill content" (PHASE 2c) reads the content route's phase files directly (`convert-content-scope.md` → `convert-content-generate.md` → `convert-content-review.md` → `convert-content-apply.md`) on top of an already-loaded `route-convert.md`, without ever loading `route-content.md` itself, and returns to `convert-completion.md` for completion. Any other simultaneous load is forbidden.

@@ -411,7 +411,7 @@ Gaps:             {N linked | M created | K pending | "none"}
 Page deps:        +{$COMP_FEAT_COUNT} feature deps, {$COMP_COMP_COUNT} component deps   (PAGE only)
 pageHint:         {$PAGEHINT_COUNT} features updated   (PAGE only)
 Worktree:         {worktree-{$TARGET}} — MERGED (Step 12) | not in a worktree
-Next:             /design-content {$TARGET} — fill copy (placeholders → real text)   (PAGE/COMPONENT, when $VERIFY_STATUS != FAIL)
+Next:             /design-convert --content {$TARGET} — fill copy (placeholders → real text)   (PAGE/COMPONENT, when $VERIFY_STATUS != FAIL)
                   /design-ship {$TARGET}  — runtime audit, moves PAGE to DONE on PASS   (after content filled)
 ```
 
@@ -421,7 +421,7 @@ If the smoke check rendered a live page (`$SMOKE != "SKIPPED"` and `$SMOKE_URL` 
 
 > **Todo**: Apply the Next-Step Clipboard Offer (binary Ja/Nee) —
 > read '.claude/skills/shared/NEXT-STEP-OFFER.md'.
-> Recommended command: /design-content {$TARGET} → fill copy and content for the built page.
+> Recommended command: /design-convert --content {$TARGET} → fill copy and content for the built page.
 
 The report is **not** the end of the build — Step 12 (worktree finalize) runs after it, exactly as the Convert route's §4.4 report is followed by §4.5–4.6.
 

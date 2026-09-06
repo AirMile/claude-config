@@ -1,6 +1,7 @@
 # Content Generation — PHASE 3
 
-Loaded at the start of PHASE 3. Inputs: `$TARGETS`, `$PLACEHOLDER_MAP`, `$BRIEF`, `$SEED`,
+Loaded from `route-content.md` PHASE 3 (standalone entry) or `route-convert.md § PHASE 2c` step 2
+(mid-convert entry). Inputs: `$TARGETS`, `$PLACEHOLDER_MAP`, `$BRIEF`, `$SEED`,
 `$SPEC`, `$THEME`, `$ENTITIES`, `$GLOSSARY`, `$REQS`, `$PAGE_CONTEXT`, `$RESEARCH_CONTEXT`.
 
 Produce `$COPY_MAP` — a structured list of `{target, file, element, old, new, category, rationale}`.
@@ -213,4 +214,4 @@ Generate: {N} copy items — headings: {N}, cta: {N}, labels: {N}, empty-states:
           Glossary: {K} new terms added
 ```
 
-Then continue to PHASE 4 (review-gate.md).
+Then continue to PHASE 4 (`convert-content-review.md`).
