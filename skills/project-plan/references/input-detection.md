@@ -10,7 +10,9 @@
 
 2. **Check for existing files (only if .project exists):**
    - Read `SEED_CONTEXT` per `shared/SEED.md` Reader. Concept present as `SEED_CONTEXT.present`.
-   - Check if `.project/backlog.json` exists
+   - Check if `.project/backlog.json` exists **and is a real backlog** — parse it; a file
+     with no `schemaVersion` or an empty `features[]` (e.g. a `/core-setup` scaffold) counts
+     as "no backlog" → Scenario B, not A.
 
 3. **Scenario A: Both concept AND backlog exist**
    - Use `SEED_CONTEXT.markdown` as concept content

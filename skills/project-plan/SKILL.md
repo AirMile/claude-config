@@ -1,11 +1,11 @@
 ---
 name: project-plan
-description: "Turn a seed into a gap-checked, prioritized feature backlog for /project-plan."
+description: "Use when a seed is ready to become a gap-checked, prioritized feature backlog."
 reads: [backlog.status, concept.seed, backlog.seedDrift, project.thinking]
 writes: [backlog.status, backlog.features, concept.seed, backlog.seedDrift]
 metadata:
   author: claude-config
-  version: 2.4.0
+  version: 2.5.0
   category: project
 ---
 
@@ -47,7 +47,9 @@ invocation → continue below.
 **Phase tracking** — first action of the skill: call `TaskCreate` with these items
 (status `pending`), then use `TaskUpdate` to set each phase to `in_progress` at the
 start and `completed` at the end. During context compaction the task list remains
-visible — no risk of forgetting phases.
+visible — no risk of forgetting phases. If `TaskCreate` is unavailable in this
+session, restate the phase checklist in chat at each phase boundary instead (the
+`> **Todo**: mark PHASE X` markers below are that restatement).
 
 1. Stack Detection
 2. PHASE 0: Input Detection
@@ -69,10 +71,10 @@ visible — no risk of forgetting phases.
 1. Try to read `.project/project.json`
 2. Check fields in order:
    - `stack.engine === "godot"` → **GAME MODE**
-   - `concept.platform === "game"` → **GAME MODE**
+   - `project-seed.md` / `seed.pitch` describes a game (engine, gameplay, levels) → **GAME MODE**
    - No match or no project.json → **WEB MODE**
 3. **[WEB MODE] Mobile sub-detection:** `stack.framework`/`stack.packages[]` contains
-   `react-native` or `expo` (or `concept.platform === "mobile"`) → set **WEB-MOBILE**.
+   `react-native` or `expo` (or the seed describes a native mobile app) → set **WEB-MOBILE**.
    WEB-MOBILE runs the full WEB pipeline EXCEPT Page-Discovery: the `/design-convert`
    browser pipeline (Playwright/DOM) does not run against React Native, so screens stay
    FEATURE-typed and flow through `/dev-ship`.
@@ -189,11 +191,15 @@ Dependency tree:
      (e.g. `the pillars`, `1, 5, 6`, `all except home`). Re-resolve transitive
      dependencies on the new goal set, re-show the proposed P1, re-ask.
    - "Start minimal — one slice" → propose the thinnest single goal feature + its deps.
-   - **[only when the degenerate-graph check fires]** "Reindex by build risk" → re-derive
-     phases by build order instead of importance: P1 = foundation + highest-risk features
-     (risk ≥4, or features the concept flags as having no fallback) + one low-risk feature
-     as an end-to-end validation slice; P2+ = remaining features ordered by risk descending.
-     Re-apply the dependency invariant (step 2) afterward.
+   - **[only when the degenerate-graph check fires]** "Reindex by build order" → re-derive
+     phases by build order instead of importance:
+     - **Walking skeleton**: P1 = foundation (deps-free features) + a stubbed end-to-end
+       slice through one top-level goal feature (stub the layers in between). P2 = fill in
+       real behaviour, ordered by dependency layer, higher `risk` first _within_ a layer —
+       never break topological order.
+     - Re-apply the dependency invariant (step 2). A risk-≥4 feature deep in the graph
+       pulls its whole dependency chain into P1 — that is expected; the stub is what keeps
+       P1 thin, not feature exclusion.
 
    User can always say "all" or "none" in the adjust free-text.
 
@@ -245,12 +251,12 @@ P4:
 
 **Requirements coverage check** (conditional — run before the Seed Alignment Check):
 
-> **Todo**: check `project.json#concept.goals[]` and the seed for a requirements/rubric
-> section now — mandatory to _check_ even when the outcome is silent-skip.
+> **Todo**: check the seed for a requirements/rubric section now — mandatory to
+> _check_ even when the outcome is silent-skip.
 
-Trigger only when the concept declares explicit requirements/goals — `project.json#concept.goals[]`
-non-empty, OR the seed has a requirements/rubric section (heading/table matching eisen/requirements/
-rubric/criteria). No such source → skip silently (free-form concepts have no formal requirements).
+Trigger only when `project-seed.md` has a requirements/rubric section (heading/table
+matching eisen/requirements/rubric/criteria). No such source → skip silently
+(free-form concepts have no formal requirements).
 
 Map each stated requirement to the feature(s) that satisfy it and the phase they land in:
 

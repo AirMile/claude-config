@@ -69,13 +69,16 @@ Parallel sync: those are dev-ship/design-ship runtime concerns this skill never 
    - **If `seedUpdateApproved: false` AND `seedDrift[]` non-empty:** Write drift entries into the backlog JSON data object as `data.seedDrift[]` (merge with existing entries if any). Each entry follows the schema from `shared/SEED.md` § Drift entry schema.
    - **If no drift detected:** skip silently.
 
-6. **Update project dashboard** (see `shared/DASHBOARD.md`):
+6. **Update project dashboard** (`project.json` v2 schema: `shared/DASHBOARD-PROJECT.md`):
 
-   If concept info is available from input:
-   1. Read `.project/project.json` (or create new with empty schema)
-   2. Fill `concept` section with name, description, goals, audience, scope — **OVERWRITE**
-   3. **[WEB MODE]** Also fill `stack` section with detected framework, language, DB, etc. — only if fields are empty
-   4. Write `.project/project.json`
+   1. Read `.project/project.json` (or create with the empty schema in
+      `DASHBOARD-PROJECT.md § Writing the dashboard`)
+   2. `seed.name` / `seed.pitch` — set from the loaded concept if missing or stale
+      (OVERWRITE per `DASHBOARD-PROJECT.md § Merge strategy per section`; leave `seedFile` / `content` /
+      `thinking` untouched). Do **not** add a `concept` object — v2 has none; `features`
+      stays derived from `backlog.json`.
+   3. **[WEB MODE]** Fill `stack` fields (framework, language, DB) only if empty
+   4. Write `.project/project.json` only if something changed
 
 **Output** (both modes — `{dev|game}` per mode; "(+ stack)" only in web mode):
 
