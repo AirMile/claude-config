@@ -50,7 +50,7 @@ Applies to: Project description, Project name, Tech stack, Suggestions (per cate
 
 ## Phase 1: Detect & Configure
 
-> **Todo**: call `TaskCreate` with the 12 phase items (see above). Mark Phase 1 → `in_progress` via `TaskUpdate`.
+> **Todo**: call `TaskCreate` with the 13 phase items (see above). Mark Phase 1 → `in_progress` via `TaskUpdate`.
 
 1. **Language selection** — AskUserQuestion (two sequential modals, 4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`; show modal 2 only if "More languages →" is picked):
    - Modal 1 options: English (Recommended), Nederlands, Deutsch, "More languages →"
@@ -197,9 +197,13 @@ Store answer as `TEAM_MODE` (`"solo"` or `"team"`). Written to `project.json#tea
    ---
    ```
 
-3. **Project type** — AskUserQuestion (single-select):
-   - Web Frontend, Web Backend, Fullstack, Game, Mobile, Desktop, CLI
-4. **Tech stack** — Plain text numbered list (**single-select**: one primary stack/framework combination). Show relevant complete stacks based on project type in this block:
+3. **Project type** — AskUserQuestion (two sequential modals, 4-option cap per `shared/SKILL-PATTERNS.md § Modal Option Cap`; show modal 2 only if "More types →" is picked). Single-select.
+   - Modal 1 options: Web Frontend, Fullstack, Web Backend, "More types →"
+   - Modal 2 options: Game, Mobile, Desktop, CLI
+   - Store as `PROJECT_TYPE`.
+4. **Tech stack** — Plain text numbered list (**single-select**: one primary stack/framework combination). Show relevant complete stacks based on project type in this block.
+
+   **No-build projects:** if the project has no package manager and no build step — a Claude Code automation repo (skills / subagents / hooks + JSON/Markdown state), a shell/Python script collection, static content with no bundler — offer "None — file-based, no build system" as option 1 and, when picked, set `NO_BUILD=true`. `NO_BUILD` skips Phase 3.1 (version fetch), Phase 4 (Install & Verify) and Phase 7 (Stack Research) entirely, and sets `stack.framework` to a short descriptor (e.g. "Claude Code automation") without triggering research.
 
    ```
    ---
@@ -263,6 +267,8 @@ streaky (Web Frontend)
 └── Standards:    WCAG 2.1 AA · Mobile-first · TanStack Query
 ```
 
+For `NO_BUILD` runs, omit the `Libraries` / `State/Forms` / `Standards` rows (nothing was picked) — show only `Stack:` with the file-based descriptor.
+
 Ask via AskUserQuestion: "Is this overview correct? Would you like to change anything?"
 
 - "Continue with setup (Recommended)" — proceed to Phase 3
@@ -272,7 +278,7 @@ Ask via AskUserQuestion: "Is this overview correct? Would you like to change any
 
 > **Todo**: mark Phase 2 → `completed`, Phase 3 → `in_progress`.
 
-1. **Fetch latest versions** via `npm view <pkg> version` / `pip index versions <pkg>` / `cargo search <pkg>` or equivalent. `pip show` reports an _installed_ package, not the latest — never use it here. Verify against the resolver that will actually install: a registry's advertised latest may not be installable for the target runtime. Never pin a version you have not seen the resolver offer.
+1. **Fetch latest versions** — skip if `NO_BUILD`. Via `npm view <pkg> version` / `pip index versions <pkg>` / `cargo search <pkg>` or equivalent. `pip show` reports an _installed_ package, not the latest — never use it here. Verify against the resolver that will actually install: a registry's advertised latest may not be installable for the target runtime. Never pin a version you have not seen the resolver offer.
 
 2. **Generate project files** appropriate for the chosen stack. Include package manifest, framework config, linting/formatting config, `.env.example` (only relevant vars), and `.gitignore`.
 
@@ -286,6 +292,8 @@ Ask via AskUserQuestion: "Is this overview correct? Would you like to change any
 ## Phase 4: Install & Verify
 
 > **Todo**: mark Phase 3 → `completed`, Phase 4 → `in_progress`.
+
+Skip entirely if `NO_BUILD` (no dependencies, no build step) — mark Phase 4 `completed` and continue.
 
 Install dependencies and run build to verify setup compiles. Non-blocking: continue setup even if install/build fails.
 
@@ -340,6 +348,8 @@ Generate CLAUDE.md following the **canonical structure** from `references/claude
 
 If the run arrived via the project-add handoff (Phase 0 setup-pending marker), project-add has already written wholesale Claude ignores (`.claude/`, `.project/`, `CLAUDE.md`, `AGENTS.md`) — the `grep` guards below will find them and skip. The appends matter for the standalone path (core-setup run without project-add), where these entries are genuinely absent.
 
+**Claude config as deliverable:** if the project's own value is its Claude Code config — an automation repo of skills / subagents / hooks, a config repo, anything where `.claude/` and `CLAUDE.md` are the source being built (typically `NO_BUILD` + project type CLI/other) — do NOT ignore them wholesale. Ignore only `.claude/settings.local.json` and `.project/`, and skip the symlink wiring. Use the standard block below only when Claude config is tooling layered on top of a separate codebase.
+
 ```bash
 # Ensure Universal AI Agent tooling & local project data are gitignored
 for item in 'CLAUDE.md' 'AGENTS.md' 'GEMINI.md' 'CODEX.md' '.cursorrules' '.claude/' '.agents/' '.cursor/' '.project/'; do
@@ -360,7 +370,7 @@ done
 
 Follow `references/stack-baseline-shared.md`.
 
-**Trigger:** `stack.framework` is filled in and `.claude/research/stack-baseline.md` does not yet exist.
+**Trigger:** `stack.framework` is filled in and `.claude/research/stack-baseline.md` does not yet exist. **Skip if `NO_BUILD`** — an improvised file-based descriptor is not a researchable framework; mark Phase 7 `completed` and continue.
 
 > **Todo**: the research agent runs in the background — mark Phase 7 → `completed` once it reports back, not merely once it is dispatched. Continue with Phase 7b while it runs; do not leave Phase 7 sitting `in_progress` after the run otherwise finishes.
 

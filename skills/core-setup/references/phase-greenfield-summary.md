@@ -2,7 +2,21 @@
 
 **Inputs**: project name + dev/test/build commands (Phase 2-4), `dev_tools_installed[]` (Phase 5b), Phase 2.3 project type, `.project/backlog.json` state (Phase 7b/7c).
 
-Show a concise summary of what was set up:
+Show a concise summary of what was set up.
+
+**`NO_BUILD` projects** (no dev/build/test commands): use this shape — list what was created and which phases were skipped, no command block.
+
+```
+SETUP COMPLETE: {project name}
+
+Type:   {type} — {one-line}
+Created:
+  {file}                  {purpose}
+  ...
+Skipped (no build system): dependency install, build verify, stack research
+```
+
+**Buildable projects:**
 
 ```
 SETUP COMPLETE: {project name}
