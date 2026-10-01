@@ -198,7 +198,7 @@ approval gate for the visual outcome. It surfaces the things a screenshot cannot
 show: deliberate deviations the user may want to revisit, and anything the run
 could not finish or verify.
 
-Before writing anything below, if the run emitted any local asset path this session: `ls` each one. Any path that does not resolve is an Open gap, never a Decision.
+Before writing anything below, if the run emitted any local asset path this session: `test -s` each one (exists _and_ non-empty — `ls` passes an empty export). Then `grep -rn "localhost:[0-9]*/assets"` over the page file and every component this run wrote (new files are untracked, so `git diff` alone misses them) — a Figma desktop asset URL dies when Figma closes. Any path that fails and any grep hit is an Open gap, never a Decision.
 
 Report two labeled buckets — do not merge them:
 

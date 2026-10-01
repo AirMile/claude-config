@@ -23,6 +23,7 @@ The brief carries, verbatim:
 - the explicit node-ids (never a bare `get_metadata` — that reads the Figma desktop app's current selection, which the agent cannot see);
 - §1.1's table shape rules — one row per colour segment · one spacing row per section · one line-break row per heading · `offset` only on sections that actually overlap;
 - this rule, which otherwise lives in a file the agent never reads: _"do NOT substitute a single whole-frame `get_design_context` — that collapses every section's fills into one result and loses per-section ground truth"_ (`route-convert.md:81`). A fresh Sonnet with a node list and a token budget is exactly the actor most likely to make that call.
+- the sparse-response rule: _"if `get_design_context` flags its response as sparse (metadata/outline only, no styled code), do NOT extract values from it — correlate its child node-ids with the screenshot and call `get_design_context` on every visible child in one parallel batch, then extract from those"_. A sparse response has no fills or typography to read; a table built from it is a table of guesses labeled `computed`.
 
 The agent returns ONLY the filled fidelity-table rows, and writes its raw output to `.project/tmp/figma-extract-{node}.json` so a later spot-check can grep one value without reloading the dump. Store those paths as `$EXTRACTED_RAW[]`.
 
@@ -42,9 +43,11 @@ The steps below are the brief handed to each extraction agent — they describe 
    - **Section offset.** A section frame that starts _above_ the bottom of the frame before it is deliberately overlapping — record that distance as a negative block-start offset for that section, together with the top radius that makes the overlap visible. Sections that simply stack record nothing. This is the only value in the extraction describing a relationship between two sections rather than one section's own box, which is exactly why a per-section padding read cannot represent it.
 2. `get_variable_defs` on the node link → the variables/styles backing those values (token names + values). Merge into `$EXTRACTED_STYLES` — keep the variable names, they inform naming in codegen.
 3. Assets — three-outcome branch, do not assume:
+   Every asset is recorded as `{path, section, nodeId, designW, designH}` — the slot it fills and its node's design dimensions. §1.1 needs both: the slot decides where the callsite goes, the dimensions are what §3.2c checks the rendered aspect ratio against.
    - `download_assets` present and returns files → save under `public/` (or the framework's static dir), record paths as `$EXTRACTED_ASSETS`.
    - `download_assets` absent from the connected MCP toolset, OR present but returns empty for these nodes (both normal — not every Figma MCP server exposes it, and raster fills on unselected/grouped nodes routinely export empty) → fetch the image URLs `get_design_context` already returned (`http://localhost:.../assets/...`, served live by Figma desktop for the session's duration) directly via Bash (`curl -o public/images/{slug}.jpg {url}`); record the written paths as `$EXTRACTED_ASSETS`. These URLs die when Figma desktop closes — do not defer this fetch.
-   - Fetch also fails → this is a **blocking gap**, not a judgment call. Do not invent a path. Emit the live URL with the `{/* TODO: localize asset */}` comment and add the item to 4.4b's Open-gaps bucket.
+   - Fetch also fails → this is a **blocking gap**, not a judgment call. Do not invent a path, and do not emit the `localhost:.../assets/...` URL either — it renders nothing once Figma desktop closes, so it is a broken image that merely looks resolved. Emit the placeholder from `shared/CODEGEN.md` (`/placeholder.svg?w={designW}&h={designH}`) with a `{/* TODO: localize asset {nodeId} */}` comment and add the item to 4.4b's Open-gaps bucket.
+   - SVG exports stay files. Never open one to copy its paths into JSX, never redraw it, never swap it for a look-alike icon from a library — the exported file is the asset.
 
 `get_variable_defs` returning empty is **normal** — agency files often use raw fills without Figma variables. Not an error: `get_design_context` already carries the exact values; proceed without variable names. `$EXTRACTED_ASSETS` ending up empty after all three outcomes is equally normal — it is not evidence anything went wrong, only evidence the general asset rule below applies.
 
@@ -121,9 +124,10 @@ Line breaks (per heading):
                        "with you"                          computed
   Features h2          1 line                              computed
 
-Assets:
-  /img/hero-dashboard.png   (1280×720)
-  3 inline SVGs (icons)
+Assets (one row per asset — slot · path · design size · node):
+  Hero · visual        /img/hero-dashboard.png  1280×720  node 12:40
+  Header · logo        /img/logo.svg            120×32    node 12:3
+  Features · icon ×3   /img/icon-{a,b,c}.svg    24×24     node 14:7…
 
 ════════════════════════════════════════════════════════════
 ```
@@ -186,12 +190,14 @@ If "Adjust": ask which values to change, update, re-confirm.
   - **Rhythm** — section padding, grid gaps between repeated cards. The design's spread here (80 / 84 / 91 / 107px across four sections) is almost never a designed distinction; it is where the frames happened to land. The project usually already owns this: a `Section`/layout component with padding variants, a standard gap scale. Adopt it, and say so in the Generation Summary with the per-section delta so the user can object.
   - **Composition** — a negative section offset and its top radius, an image offset that stacks two columns, a fixed card or media height, an aspect ratio. These carry layout meaning; rounding them changes proportion, not air. Emit exactly.
   - Where the two conflict, rhythm loses to whatever the codebase already does and composition wins over it.
+- **Figma-emitted code is a value source, not a layout source** (`figma-mcp`/`figma-rest`). `get_design_context` returns absolutely positioned boxes with pixel offsets; copying them produces a page that only renders correctly at the frame's exact width. Rebuild element groups with flex/grid + gap using the table's values. Absolute positioning survives only where the design genuinely layers elements — the composition cases above (overlap, stacked media), a badge pinned to a card corner — never as a substitute for a row or column.
 
   A design that genuinely varies its rhythm deliberately (a dark section given more air than its neighbours) is the exception — flag it and ask rather than flattening it silently.
 
 - **Spacing comes from that section's own row**, not from the first section's. A page whose sections all render `py-16` because one value was read off the top of the table is the spacing defect this table shape exists to prevent.
 - **An `offset` row emits the negative margin _and_ the top radius together** (`-mt-[60px] rounded-t-[60px]` on the same element, per `shared/FRONTEND-RULES.md` H009). A row without an `offset` field emits neither — no negative margin, no top radius. These two classes are one declaration: the margin slides the section over its predecessor, the radius is what makes that overlap read as a curve instead of as 60px of the previous section's padding being cut off.
-- Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently. Exception `figma-mcp` **when `$EXTRACTED_ASSETS` is non-empty**: reference the local paths from the branch above, no TODO needed. `$EXTRACTED_ASSETS` empty or unset → the general rule applies regardless of source type.
+- Reference captured asset URLs directly with a `{/* TODO: localize asset */}` comment — never download assets silently. Exception `figma-mcp` **when `$EXTRACTED_ASSETS` is non-empty**: reference the local paths from the branch above, no TODO needed. `$EXTRACTED_ASSETS` empty or unset → the general rule applies regardless of source type — **except** that a Figma desktop URL (`localhost:*/assets/...`) is never a valid live URL: it is temporary, so it takes the §1.0 placeholder branch instead.
+- **Each asset goes in the slot its table row names, as the file it was exported as.** SVGs render through `<img>` / the framework's Image component — never inlined, redrawn, path-extracted or swapped for a similar library icon. Keep the exported file's root `width`/`height`; size the wrapper to the row's design dimensions, never `w-full h-full` (100% × 100%) on the asset itself — that stretches a fixed-ratio logo to whatever its container happens to be. Data-driven imagery (a CMS image, a user avatar) stays a prop, not a hardcoded export.
 - Never invent an asset path. The same rule that forbids paraphrasing placeholder copy (above) applies to assets: a `src`/`href` must resolve to a file written this run or carry the `{/* TODO: localize asset */}` comment with a live URL — never a plausible-looking filename that doesn't exist on disk.
 - Use the exact `font-family` with its fallback stack. If a Google Font is recognized: note the required import in the Generation Summary.
 - **A font name on an accent segment is a claim to verify, not a value to copy.** (The token lookup above catches values the project has _named_; this catches roles the project has already _solved_ — a pattern, not a token.) Design tools substitute freely: a run styled "Times New Roman Bold Italic" or "Playfair Display Medium Italic" inside an otherwise-branded heading is usually the tool's stand-in for _emphasis_, not a second typeface the brand owns. Before emitting any font class on a segment, grep the codebase for the same visual role — an accent word in a heading — and read what it already does:

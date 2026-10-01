@@ -173,6 +173,12 @@ Thumbnail vision (3.2) cannot catch a wrong-but-plausible value — a card `back
 
      A negative result means that section is pulled over the one above it. Non-zero where the design has no offset is a MISMATCH — this is the one check that looks at two sections at once, and the only one that catches a negative margin cropping the previous section's bottom padding while every padding value in the code is still correct. Fix per H009: the offset and the top radius are one declaration, so remove or add them together.
 
+   - **Assets, per fidelity-table asset row** (Figma sources). An asset is only correct when all four hold — one failing is a MISMATCH, never a cosmetic note:
+     1. **File** — `test -s {path}` passes (exists _and_ non-empty; an empty export resolves on disk but renders nothing).
+     2. **Slot** — the rendered image sits inside the section the row names (`images[].src` in that section's DOM subtree).
+     3. **Callsite** — `grep -rn "{filename}"` over the generated components hits exactly the component for that slot; no `localhost:*/assets` URL and no inlined `<svg>` path data in its place.
+     4. **Geometry** — `renderedW / renderedH` from the script's `images[]` is within ±2% of the row's `designW / designH`. A logo squashed by `w-full h-full` or an `object-cover` crop the design doesn't have fails here while every colour check passes.
+
 3. Any divergence is an **exact-value MISMATCH** — add to the ROUND assessment (treat as higher-priority than vision findings, since it is a confirmed ground-truth divergence, not a judgment call) and fix in 3.3, within the existing 3-round cap:
 
 ```
@@ -183,6 +189,7 @@ Exact-value check:  [PASS | [N] mismatches]
   [- Features padding: 96px → 64px (per-section value)        file:line]
   [- Doelgroep→Onderscheid seam: -60px rendered, design has 0  file:line]
   [- Proces h2: 2 lines rendered, design has 1                 file:line]
+  [- Header logo.svg: rendered 4.6:1, design 3.75:1             file:line]
 ```
 
 This makes the loop non-self-referential for these properties: the compare target is the design's exact value, not the code's own baseline (contrast with the Playwright pixel baseline in 3.2, which compares against the code's own prior screenshot).

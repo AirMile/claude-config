@@ -142,13 +142,19 @@ const result = await page.evaluate((scopeSel) => {
   const seams = rects.slice(1).map((b, i) => Math.round(b.top - rects[i].bottom));
 
   const assets = {
-    images: [...document.images].slice(0, 20).map((i) => ({
-      src: i.currentSrc,
-      alt: i.alt,
-      w: i.naturalWidth,
-      h: i.naturalHeight,
-      broken: i.naturalWidth === 0,
-    })),
+    images: [...document.images].slice(0, 20).map((i) => {
+      const r = i.getBoundingClientRect();
+      return {
+        src: i.currentSrc,
+        alt: i.alt,
+        w: i.naturalWidth,
+        h: i.naturalHeight,
+        renderedW: Math.round(r.width),
+        renderedH: Math.round(r.height),
+        svg: /\.svg(\?|$)/i.test(i.currentSrc),
+        broken: i.naturalWidth === 0,
+      };
+    }),
     svgCount: document.querySelectorAll("svg").length,
   };
 

@@ -428,6 +428,7 @@ Detect from `package.json`:
 Quick scan for reusable components in the project. No deep inventory — just check what exists:
 
 1. Glob for `src/components/**/*.{tsx,jsx}` (or framework equivalent)
+   Also read the `package.json` deps already loaded for framework detection: an installed UI library (`@radix-ui/*`, `@mui/material`, `@chakra-ui/react`, `@mantine/core`, `@headlessui/react`, or a shadcn `components/ui/` dir) is part of what exists. A source button, badge, dialog or tab bar matching one of its primitives reuses that primitive (styled to the design) before any raw markup — rebuilding a `<button>` next to an installed `Button` is the same duplication as ignoring a project component.
 2. List component names and their approximate purpose (from filename + exports)
 3. Match against sections identified in the source image — when `$BUILD_SECTIONS` is set (0.4c), match
    only against those sections; a leak in a section not selected this run isn't silently missed,
@@ -439,6 +440,7 @@ PROJECT CONTEXT
 
 Framework:  [detected]
 Theme:      [Available (project.json#theme) | Not available]
+Library:    [UI library + primitives used | none]
 Existing:   [N] components found
   Matched:  [component names that match source sections]
   Shared:   [of those, the ones used on >1 page]
